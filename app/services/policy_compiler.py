@@ -1,12 +1,9 @@
 from dataclasses import dataclass
 
-from sqlalchemy.orm import Session
-
 from app.models import (
     CompiledPolicyClause,
     CompiledPolicyCondition,
     ConditionGroup,
-    Policy,
 )
 
 
@@ -24,7 +21,7 @@ class CompiledCondition:
 CompiledClause = tuple[CompiledCondition, ...]
 
 
-def compile_condition_tree(root: ConditionGroup) -> list[CompiledClause]:
+def compile_condition_tree_to_clauses(root: ConditionGroup) -> list[CompiledClause]:
     """Compile a nested condition tree into disjunctive normal form.
 
     Each returned tuple is an AND clause. The list of tuples is joined by OR.
@@ -33,16 +30,10 @@ def compile_condition_tree(root: ConditionGroup) -> list[CompiledClause]:
     return _compile_group(root, ancestors=set())
 
 
-def recompile_policy(session: Session, policy: Policy) -> list[CompiledPolicyClause]:
-    """Replace a policy's persisted compiled clauses within the current transaction."""
-    roots = [group for group in policy.condition_groups if group.parent_group is None]
-    if len(roots) != 1:
-        raise PolicyCompilationError(
-            f"Policy {policy.id} must have exactly one root condition group; found {len(roots)}"
-        )
-
-    compiled = compile_condition_tree(roots[0])
-    policy.compiled_clauses = [
+def compile_policy_clauses(canonical_root: ConditionGroup) -> list[CompiledPolicyClause]:
+    """Build flat matching clauses from a canonical condition-tree root."""
+    compiled_clauses = compile_condition_tree_to_clauses(canonical_root)
+    return [
         CompiledPolicyClause(
             conditions=[
                 CompiledPolicyCondition(
@@ -53,10 +44,8 @@ def recompile_policy(session: Session, policy: Policy) -> list[CompiledPolicyCla
                 for condition in clause
             ]
         )
-        for clause in compiled
+        for clause in compiled_clauses
     ]
-    session.flush()
-    return policy.compiled_clauses
 
 
 def _compile_group(root: ConditionGroup, ancestors: set[int]) -> list[CompiledClause]:

@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from app.dependencies import DatabaseSession
 from app.models import (
+    CompiledPolicyClause,
     Condition,
     ConditionGroup,
     ConditionGroupCondition,
@@ -12,7 +13,10 @@ from app.models import (
     PolicyFieldValue,
 )
 from app.schemas import ConditionGroupCreate, PolicyCreate, PolicyRead, PolicyUpdate
-from app.services.policy_compiler import PolicyCompilationError, recompile_policy
+from app.services.policy_compiler import (
+    PolicyCompilationError,
+    compile_policy_clauses,
+)
 
 router = APIRouter(prefix="/policies", tags=["policies"])
 
@@ -29,7 +33,7 @@ def _validate_field_definitions(session: DatabaseSession, values) -> None:
         raise HTTPException(status_code=404, detail=f"Field definitions not found: {missing_ids}")
 
 
-def _condition_group_from_schema(data: ConditionGroupCreate) -> ConditionGroup:
+def _build_canonical_condition_tree(data: ConditionGroupCreate) -> ConditionGroup:
     return ConditionGroup(
         logical_operator=data.logical_operator,
         condition_links=[
@@ -38,12 +42,28 @@ def _condition_group_from_schema(data: ConditionGroupCreate) -> ConditionGroup:
             )
             for item in data.conditions
         ],
-        child_groups=[_condition_group_from_schema(child) for child in data.child_groups],
+        child_groups=[_build_canonical_condition_tree(child) for child in data.child_groups],
     )
 
 
-def _flatten_condition_groups(root: ConditionGroup) -> list[ConditionGroup]:
-    return [root, *(group for child in root.child_groups for group in _flatten_condition_groups(child))]
+def _collect_condition_groups(root: ConditionGroup) -> list[ConditionGroup]:
+    return [
+        root,
+        *(
+            group
+            for child in root.child_groups
+            for group in _collect_condition_groups(child)
+        ),
+    ]
+
+
+def _compile_policy_clauses_or_422(
+    canonical_root: ConditionGroup,
+) -> list[CompiledPolicyClause]:
+    try:
+        return compile_policy_clauses(canonical_root)
+    except PolicyCompilationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("", response_model=PolicyRead, status_code=status.HTTP_201_CREATED)
@@ -52,11 +72,16 @@ def create(data: PolicyCreate, session: DatabaseSession) -> Policy:
 
     policy = Policy(name=data.name, priority=data.priority)
     policy.values = [PolicyFieldValue(**item.model_dump()) for item in data.values]
-    root = _condition_group_from_schema(data.condition_group)
-    policy.condition_groups = _flatten_condition_groups(root)
+
+    # Representation 1: preserve the canonical, human-editable condition tree.
+    canonical_root = _build_canonical_condition_tree(data.condition_group)
+    policy.condition_groups = _collect_condition_groups(canonical_root)
     session.add(policy)
     session.flush()
-    recompile_policy(session, policy)
+
+    # Representation 2: derive and persist flat clauses used only for matching.
+    policy.compiled_clauses = _compile_policy_clauses_or_422(canonical_root)
+    session.flush()
     return session.scalar(_query().where(Policy.id == policy.id))
 
 
@@ -84,13 +109,14 @@ def patch(policy_id: int, data: PolicyUpdate, session: DatabaseSession) -> Polic
         session.flush()
         policy.values = [PolicyFieldValue(**item.model_dump()) for item in data.values]
     if data.condition_group is not None:
-        root = _condition_group_from_schema(data.condition_group)
-        policy.condition_groups = _flatten_condition_groups(root)
+        # Representation 1: replace the canonical, human-editable condition tree.
+        canonical_root = _build_canonical_condition_tree(data.condition_group)
+        policy.condition_groups = _collect_condition_groups(canonical_root)
+        session.flush()
 
-    try:
-        recompile_policy(session, policy)
-    except PolicyCompilationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # Representation 2: regenerate flat matching clauses from the new canonical tree.
+        policy.compiled_clauses = _compile_policy_clauses_or_422(canonical_root)
+        session.flush()
     return session.scalar(_query().where(Policy.id == policy.id))
 
 

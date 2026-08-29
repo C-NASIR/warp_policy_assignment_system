@@ -89,7 +89,7 @@ def test_nonmatching_policy_produces_no_assignment_then_employee_update_applies_
         condition_group("employee_type", "regular"),
         [{"field_definition_id": field["id"], "value": "blue"}],
     )
-    assert client.post(f"/employees/{employee['id']}/reconcile").json() == []
+    assert client.post(f"/employees/{employee['id']}/refresh").json() == []
 
     client.patch(f"/employees/{employee['id']}", json={"employee_type": "regular"})
     assignments = client.get(f"/employees/{employee['id']}/assignments").json()
@@ -164,7 +164,7 @@ def test_updating_policy_tree_recompiles_it_for_employee_reconciliation(client):
         json={"condition_group": condition_group("state", "Wisconsin")},
     )
     assert response.status_code == 200
-    assert client.post(f"/employees/{alice['id']}/reconcile").json() == []
+    assert client.post(f"/employees/{alice['id']}/refresh").json() == []
 
 
 def test_policy_update_validates_nested_tree_and_value_references(client):

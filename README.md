@@ -55,7 +55,7 @@ uv run pytest
 | POST / GET | `/employees` | Create or list employees |
 | GET / PATCH | `/employees/{id}` | Read or update an employee |
 | GET | `/employees/{id}/assignments` | Read resolved assignments |
-| POST | `/employees/{id}/reconcile` | Recompute matching policies and assignments |
+| POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
 | POST / GET | `/field-definitions` | Create or list field definitions |
 | GET | `/field-definitions/{id}` | Read a field definition |
 | POST / GET | `/policies` | Create policies with values or list them |

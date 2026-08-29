@@ -12,8 +12,8 @@ from app.models import (
 from app.services.policy_compiler import (
     CompiledCondition,
     PolicyCompilationError,
-    compile_condition_tree,
-    recompile_policy,
+    compile_condition_tree_to_clauses,
+    compile_policy_clauses,
 )
 
 
@@ -34,7 +34,7 @@ def test_compiles_and_over_nested_or_to_flat_clauses():
     c = condition("department", "Engineering")
     root = group("and", a, children=(group("or", b, c),))
 
-    assert compile_condition_tree(root) == [
+    assert compile_condition_tree_to_clauses(root) == [
         (
             CompiledCondition("state", "=", "California"),
             CompiledCondition("employee_type", "=", "regular"),
@@ -50,7 +50,7 @@ def test_compiles_nested_and_groups_using_cartesian_product():
     left = group("or", condition("state", "California"), condition("state", "Wisconsin"))
     right = group("or", condition("department", "Engineering"), condition("department", "Sales"))
 
-    clauses = compile_condition_tree(group("and", children=(left, right)))
+    clauses = compile_condition_tree_to_clauses(group("and", children=(left, right)))
 
     assert len(clauses) == 4
     assert {tuple((item.field, item.value) for item in clause) for clause in clauses} == {
@@ -63,15 +63,15 @@ def test_compiles_nested_and_groups_using_cartesian_product():
 
 def test_rejects_empty_condition_group():
     with pytest.raises(PolicyCompilationError, match="must contain"):
-        compile_condition_tree(group("and"))
+        compile_condition_tree_to_clauses(group("and"))
 
 
 def test_rejects_unknown_logical_operator():
     with pytest.raises(PolicyCompilationError, match="Unsupported logical operator"):
-        compile_condition_tree(group("xor", condition("state", "California")))
+        compile_condition_tree_to_clauses(group("xor", condition("state", "California")))
 
 
-def test_recompile_policy_persists_and_replaces_compiled_clauses(db):
+def test_compile_policy_clauses_builds_replaceable_compiled_representation(db):
     policy = Policy(name="California regular engineer", priority=10)
     a = condition("state", "California")
     b = condition("employee_type", "regular")
@@ -83,7 +83,9 @@ def test_recompile_policy_persists_and_replaces_compiled_clauses(db):
     db.add(policy)
     db.flush()
 
-    clauses = recompile_policy(db, policy)
+    clauses = compile_policy_clauses(root)
+    policy.compiled_clauses = clauses
+    db.flush()
 
     assert len(clauses) == 2
     assert {
@@ -95,17 +97,10 @@ def test_recompile_policy_persists_and_replaces_compiled_clauses(db):
     }
 
     root.logical_operator = "or"
-    replacement = recompile_policy(db, policy)
+    replacement = compile_policy_clauses(root)
+    policy.compiled_clauses = replacement
+    db.flush()
 
     assert len(replacement) == 3
     assert db.scalar(select(func.count()).select_from(CompiledPolicyClause)) == 3
     assert db.scalar(select(func.count()).select_from(CompiledPolicyCondition)) == 3
-
-
-def test_recompile_policy_requires_one_root_group(db):
-    policy = Policy(name="No conditions", priority=10)
-    db.add(policy)
-    db.flush()
-
-    with pytest.raises(PolicyCompilationError, match="exactly one root"):
-        recompile_policy(db, policy)
