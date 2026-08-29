@@ -12,7 +12,7 @@ from app.schemas import (
 )
 from app.services.employees import create_employee, update_employee
 from app.services.policy_matching import refresh_employee_policies
-from app.services.reconciliation import reconcile_employee
+from app.services.reconciliation import refresh_employee_assignments
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -57,9 +57,9 @@ def assignments(employee_id: int, session: DatabaseSession) -> list[EmployeeAssi
     )
 
 
-@router.post("/{employee_id}/reconcile", response_model=list[AssignmentRead])
-def reconcile(employee_id: int, session: DatabaseSession) -> list[EmployeeAssignment]:
+@router.post("/{employee_id}/refresh", response_model=list[AssignmentRead])
+def refresh(employee_id: int, session: DatabaseSession) -> list[EmployeeAssignment]:
     employee = _employee_or_404(session, employee_id)
     refresh_employee_policies(session, employee.id)
-    reconcile_employee(session, employee)
+    refresh_employee_assignments(session, employee)
     return assignments(employee_id, session)

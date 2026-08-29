@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.models import Employee
 from app.schemas import EmployeeCreate, EmployeeUpdate
 from app.services.policy_matching import refresh_employee_policies
-from app.services.reconciliation import reconcile_employee
+from app.services.reconciliation import refresh_employee_assignments
 
 
 def create_employee(session: Session, data: EmployeeCreate) -> Employee:
@@ -11,7 +11,7 @@ def create_employee(session: Session, data: EmployeeCreate) -> Employee:
     session.add(employee)
     session.flush()
     refresh_employee_policies(session, employee.id)
-    reconcile_employee(session, employee)
+    refresh_employee_assignments(session, employee)
     return employee
 
 
@@ -20,5 +20,6 @@ def update_employee(session: Session, employee: Employee, data: EmployeeUpdate) 
         setattr(employee, field, value)
     session.flush()
     refresh_employee_policies(session, employee.id)
-    reconcile_employee(session, employee)
+    refresh_employee_assignments(session, employee)
     return employee
+

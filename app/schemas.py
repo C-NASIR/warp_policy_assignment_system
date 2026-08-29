@@ -43,7 +43,7 @@ class PolicyValueCreate(BaseModel):
 
 
 class ConditionCreate(BaseModel):
-    field: Literal["state", "department", "employee_type"]
+    field: str = Field(min_length=1, max_length=100)
     operator: Literal["="]
     value: str = Field(min_length=1, max_length=500)
 

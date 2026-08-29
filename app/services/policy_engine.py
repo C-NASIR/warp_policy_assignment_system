@@ -24,7 +24,7 @@ class ResolvedAssignment:
     source_policy_id: int
 
 
-def resolve_assignments(session: Session, employee: Employee) -> list[ResolvedAssignment]:
+def resolve_employee_assignments(session: Session, employee: Employee) -> list[ResolvedAssignment]:
     candidates = session.scalars(
         select(PolicyFieldValue)
         .join(PolicyFieldValue.policy)

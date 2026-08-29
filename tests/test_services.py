@@ -1,7 +1,7 @@
 import pytest
 
 from app.models import Employee, FieldDefinition, Policy, PolicyFieldValue
-from app.services.policy_engine import PolicyConflictError, resolve_assignments
+from app.services.policy_engine import PolicyConflictError, resolve_employee_assignments
 
 
 def test_policy_engine_is_independently_callable(db):
@@ -19,7 +19,7 @@ def test_policy_engine_is_independently_callable(db):
 
     employee.policies = [low, high]
     db.flush()
-    result = resolve_assignments(db, employee)
+    result = resolve_employee_assignments(db, employee)
     assert {(item.value, item.source_policy_id) for item in result} == {
         ("biweekly", high.id),
         ("GitHub", low.id),
@@ -38,7 +38,7 @@ def test_same_priority_same_value_is_not_a_conflict(db):
     db.flush()
     employee.policies = [first, second]
     db.flush()
-    result = resolve_assignments(db, employee)
+    result = resolve_employee_assignments(db, employee)
     assert len(result) == 1
     assert result[0].value == "weekly"
     assert result[0].source_policy_id == first.id
@@ -56,4 +56,4 @@ def test_service_raises_for_equal_priority_different_values(db):
     employee.policies = [first, second]
     db.flush()
     with pytest.raises(PolicyConflictError, match="Conflicting values"):
-        resolve_assignments(db, employee)
+        resolve_employee_assignments(db, employee)

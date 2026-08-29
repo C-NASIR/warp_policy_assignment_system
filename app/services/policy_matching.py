@@ -1,4 +1,4 @@
-from sqlalchemy import and_, case, delete, func, or_, select
+from sqlalchemy import String, and_, case, cast, delete, func, inspect, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -15,21 +15,17 @@ class EmployeePolicyRefreshError(ValueError):
 
 def find_matching_policy_ids(session: Session, employee_id: int) -> list[int]:
     """Return policy IDs having at least one fully satisfied compiled clause."""
+    employee_fields = [column for column in inspect(Employee).columns if not column.primary_key]
     condition_matches = and_(
         CompiledPolicyCondition.operator == "=",
         or_(
-            and_(
-                CompiledPolicyCondition.field == "state",
-                CompiledPolicyCondition.value == Employee.state,
-            ),
-            and_(
-                CompiledPolicyCondition.field == "employee_type",
-                CompiledPolicyCondition.value == Employee.employee_type,
-            ),
-            and_(
-                CompiledPolicyCondition.field == "department",
-                CompiledPolicyCondition.value == Employee.department,
-            ),
+            *(
+                and_(
+                    CompiledPolicyCondition.field == column.key,
+                    CompiledPolicyCondition.value == cast(getattr(Employee, column.key), String),
+                )
+                for column in employee_fields
+            )
         ),
     )
     matched_count = func.sum(case((condition_matches, 1), else_=0))

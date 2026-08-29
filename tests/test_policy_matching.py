@@ -96,6 +96,20 @@ def test_policy_is_returned_once_when_multiple_clauses_match(db):
     assert find_matching_policy_ids(db, alice.id) == [policy.id]
 
 
+def test_matches_employee_columns_without_a_hard_coded_field_list(db):
+    alice = Employee(
+        name="Alice",
+        state="California",
+        department="Engineering",
+        employee_type="regular",
+    )
+    policy = compiled_policy("Named Alice", 10, [[("name", "Alice")]])
+    db.add_all([alice, policy])
+    db.flush()
+
+    assert find_matching_policy_ids(db, alice.id) == [policy.id]
+
+
 def test_unknown_employee_or_unsupported_condition_does_not_match(db):
     alice = Employee(
         name="Alice",
