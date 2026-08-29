@@ -22,6 +22,32 @@ class EmployeePolicy(Base):
     )
 
 
+class EmployeeGroupMembership(Base):
+    __tablename__ = "employee_group_memberships"
+
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    group_id: Mapped[int] = mapped_column(
+        ForeignKey("groups.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+
+class GroupPolicy(Base):
+    __tablename__ = "group_policies"
+
+    group_id: Mapped[int] = mapped_column(
+        ForeignKey("groups.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    policy_id: Mapped[int] = mapped_column(
+        ForeignKey("policies.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+
 class Employee(Base):
     __tablename__ = "employees"
 
@@ -37,7 +63,26 @@ class Employee(Base):
         server_default=func.current_date(),
     )
     policies: Mapped[list[Policy]] = relationship(secondary="employee_policies", back_populates="employees")
+    groups: Mapped[list[Group]] = relationship(
+        secondary="employee_group_memberships",
+        back_populates="employees",
+    )
     assignments: Mapped[list[EmployeeAssignment]] = relationship(back_populates="employee", cascade="all, delete-orphan")
+
+
+class Group(Base):
+    __tablename__ = "groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    employees: Mapped[list[Employee]] = relationship(
+        secondary="employee_group_memberships",
+        back_populates="groups",
+    )
+    policies: Mapped[list[Policy]] = relationship(
+        secondary="group_policies",
+        back_populates="groups",
+    )
 
 
 class FieldDefinition(Base):
@@ -59,6 +104,7 @@ class Policy(Base):
     name: Mapped[str] = mapped_column(String(200))
     priority: Mapped[int]
     employees: Mapped[list[Employee]] = relationship(secondary="employee_policies", back_populates="policies")
+    groups: Mapped[list[Group]] = relationship(secondary="group_policies", back_populates="policies")
     values: Mapped[list[PolicyFieldValue]] = relationship(back_populates="policy", cascade="all, delete-orphan")
     condition_groups: Mapped[list[ConditionGroup]] = relationship(
         back_populates="policy",

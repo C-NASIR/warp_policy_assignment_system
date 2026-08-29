@@ -32,6 +32,18 @@ class EmployeeRead(EmployeeCreate, ORMModel):
     id: int
 
 
+class GroupCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+
+
+class GroupUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+
+
+class GroupRead(GroupCreate, ORMModel):
+    id: int
+
+
 class FieldDefinitionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     cardinality: Literal["one", "many"]

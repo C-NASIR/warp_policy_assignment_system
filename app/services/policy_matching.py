@@ -7,7 +7,9 @@ from app.models import (
     CompiledPolicyClause,
     CompiledPolicyCondition,
     Employee,
+    EmployeeGroupMembership,
     EmployeePolicy,
+    GroupPolicy,
 )
 
 
@@ -16,7 +18,22 @@ class EmployeePolicyRefreshError(ValueError):
 
 
 def find_matching_policy_ids(session: Session, employee_id: int) -> list[int]:
-    """Return policy IDs having at least one fully satisfied compiled clause."""
+    """Return deduplicated direct and group-inherited policy IDs."""
+    direct_policy_ids = find_direct_matching_policy_ids(session, employee_id)
+    group_policy_ids = session.scalars(
+        select(GroupPolicy.policy_id)
+        .join(
+            EmployeeGroupMembership,
+            EmployeeGroupMembership.group_id == GroupPolicy.group_id,
+        )
+        .where(EmployeeGroupMembership.employee_id == employee_id)
+        .distinct()
+    )
+    return sorted(set(direct_policy_ids).union(group_policy_ids))
+
+
+def find_direct_matching_policy_ids(session: Session, employee_id: int) -> list[int]:
+    """Return policies having a compiled clause satisfied by the employee."""
     employee_fields = [column for column in inspect(Employee).columns if not column.primary_key]
     condition_matches = or_(
         *(_condition_matches_employee_column(column) for column in employee_fields)

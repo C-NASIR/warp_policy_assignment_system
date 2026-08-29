@@ -7,11 +7,14 @@ from app.models import (
     Condition,
     ConditionGroup,
     ConditionGroupCondition,
+    Employee,
+    EmployeeGroupMembership,
     EmployeePolicy,
     FieldDefinition,
+    Group,
+    GroupPolicy,
     Policy,
     PolicyFieldValue,
-    Employee,
 )
 
 
@@ -32,6 +35,9 @@ def test_policy_domain_models_have_required_columns():
         Condition: {"id", "field", "operator", "value"},
         ConditionGroup: {"id", "policy_id", "parent_group_id", "logical_operator"},
         ConditionGroupCondition: {"group_id", "condition_id"},
+        Group: {"id", "name"},
+        EmployeeGroupMembership: {"employee_id", "group_id"},
+        GroupPolicy: {"group_id", "policy_id"},
         EmployeePolicy: {"employee_id", "policy_id"},
         FieldDefinition: {"id", "field", "cardinality", "conflict_resolution"},
         PolicyFieldValue: {"policy_id", "field_definition_id", "value"},
@@ -44,15 +50,66 @@ def test_policy_domain_models_have_required_columns():
 
 def test_join_models_use_composite_primary_keys():
     group_condition_pk = {column.key for column in inspect(ConditionGroupCondition).primary_key}
+    employee_group_pk = {column.key for column in inspect(EmployeeGroupMembership).primary_key}
+    group_policy_pk = {column.key for column in inspect(GroupPolicy).primary_key}
     employee_policy_pk = {column.key for column in inspect(EmployeePolicy).primary_key}
     policy_value_pk = {column.key for column in inspect(PolicyFieldValue).primary_key}
 
     assert group_condition_pk == {"group_id", "condition_id"}
+    assert employee_group_pk == {"employee_id", "group_id"}
+    assert group_policy_pk == {"group_id", "policy_id"}
     assert employee_policy_pk == {"employee_id", "policy_id"}
     assert policy_value_pk == {"policy_id", "field_definition_id", "value"}
 
 
-def test_legacy_group_models_and_columns_are_absent():
-    assert "groups" not in Base.metadata.tables
+def test_legacy_group_columns_are_absent():
+    assert "groups" in Base.metadata.tables
+    assert "employee_group_memberships" in Base.metadata.tables
+    assert "group_policies" in Base.metadata.tables
     assert "employee_groups" not in Base.metadata.tables
     assert "group_id" not in {column.key for column in inspect(Policy).columns}
+
+
+def test_group_relationships_persist_memberships_and_policies(db):
+    employee = Employee(
+        name="Alice",
+        state="California",
+        department="Engineering",
+        employee_type="regular",
+    )
+    policy = Policy(name="GitHub Access", priority=10)
+    group = Group(name="Engineering", employees=[employee], policies=[policy])
+    db.add(group)
+    db.flush()
+
+    membership = db.get(EmployeeGroupMembership, (employee.id, group.id))
+    group_policy = db.get(GroupPolicy, (group.id, policy.id))
+
+    assert membership is not None
+    assert group_policy is not None
+    assert employee.groups == [group]
+    assert policy.groups == [group]
+
+
+def test_deleting_group_removes_links_without_deleting_employees_or_policies(db):
+    employee = Employee(
+        name="Alice",
+        state="California",
+        department="Engineering",
+        employee_type="regular",
+    )
+    policy = Policy(name="GitHub Access", priority=10)
+    group = Group(name="Engineering", employees=[employee], policies=[policy])
+    db.add(group)
+    db.flush()
+    employee_id = employee.id
+    policy_id = policy.id
+    group_id = group.id
+
+    db.delete(group)
+    db.flush()
+
+    assert db.get(EmployeeGroupMembership, (employee_id, group_id)) is None
+    assert db.get(GroupPolicy, (group_id, policy_id)) is None
+    assert db.get(Employee, employee_id) is not None
+    assert db.get(Policy, policy_id) is not None
