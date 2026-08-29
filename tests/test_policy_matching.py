@@ -151,10 +151,13 @@ def test_comparison_operators_use_typed_employee_facts(db):
         employee_type="regular",
         location="San Francisco",
         start_date=date(2024, 1, 15),
+        manager_id=10,
     )
     policies = [
         compiled_policy("Started before cutoff", 10, [[("start_date", "<", "2025-01-01")]]),
         compiled_policy("Started by date", 10, [[("start_date", "<=", "2024-01-15")]]),
+        compiled_policy("Low manager ID", 10, [[("manager_id", "<", "100")]]),
+        compiled_policy("Numeric ordering", 10, [[("manager_id", "<", "2")]]),
         compiled_policy("Location", 10, [[("location", "=", "San Francisco")]]),
     ]
     db.add_all([alice, *policies])
@@ -164,6 +167,7 @@ def test_comparison_operators_use_typed_employee_facts(db):
         policies[0].id,
         policies[1].id,
         policies[2].id,
+        policies[4].id,
     ]
 
 

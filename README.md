@@ -23,7 +23,7 @@ For cardinality `one`, the highest-priority policy wins. Equal-priority policies
 
 ## Domain concepts
 
-- **Employee:** current name, state, department, employee type, location, and start date.
+- **Employee:** current name, state, department, employee type, location, start date, and manager ID.
 - **Group:** a named collection of employees that can supply policies to its members.
 - **Employee group membership:** the many-to-many link between employees and groups.
 - **Group policy:** the many-to-many link that makes a policy apply to every member of a group.

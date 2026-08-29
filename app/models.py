@@ -62,6 +62,7 @@ class Employee(Base):
         default=date.today,
         server_default=func.current_date(),
     )
+    manager_id: Mapped[int | None] = mapped_column(nullable=True)
     policies: Mapped[list[Policy]] = relationship(secondary="employee_policies", back_populates="employees")
     groups: Mapped[list[Group]] = relationship(
         secondary="employee_group_memberships",

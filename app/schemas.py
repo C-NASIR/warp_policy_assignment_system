@@ -17,6 +17,7 @@ class EmployeeCreate(BaseModel):
     employee_type: str = Field(min_length=1, max_length=100)
     location: str | None = Field(default=None, min_length=1, max_length=200)
     start_date: date = Field(default_factory=date.today)
+    manager_id: int | None = Field(default=None, gt=0)
 
 
 class EmployeeUpdate(BaseModel):
@@ -26,6 +27,7 @@ class EmployeeUpdate(BaseModel):
     employee_type: str | None = Field(default=None, min_length=1, max_length=100)
     location: str | None = Field(default=None, min_length=1, max_length=200)
     start_date: date | None = None
+    manager_id: int | None = Field(default=None, gt=0)
 
 
 class EmployeeRead(EmployeeCreate, ORMModel):
@@ -71,6 +73,13 @@ class ConditionCreate(BaseModel):
                 date.fromisoformat(self.value)
             except ValueError as exc:
                 raise ValueError("start_date condition values must be ISO dates (YYYY-MM-DD)") from exc
+        elif self.field == "manager_id":
+            try:
+                manager_id = int(self.value)
+            except ValueError as exc:
+                raise ValueError("manager_id condition values must be positive integers") from exc
+            if manager_id <= 0:
+                raise ValueError("manager_id condition values must be positive integers")
         return self
 
 

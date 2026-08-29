@@ -28,6 +28,7 @@ def test_policy_domain_models_have_required_columns():
             "employee_type",
             "location",
             "start_date",
+            "manager_id",
         },
         Policy: {"id", "name", "priority"},
         CompiledPolicyClause: {"id", "policy_id"},
