@@ -2,7 +2,12 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.models import CompiledPolicyClause, CompiledPolicyCondition, ConditionGroup, Policy
+from app.models import (
+    CompiledPolicyClause,
+    CompiledPolicyCondition,
+    ConditionGroup,
+    Policy,
+)
 
 
 class PolicyCompilationError(ValueError):

@@ -1,7 +1,12 @@
 from sqlalchemy import and_, case, delete, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.models import CompiledPolicyClause, CompiledPolicyCondition, Employee, EmployeePolicy
+from app.models import (
+    CompiledPolicyClause,
+    CompiledPolicyCondition,
+    Employee,
+    EmployeePolicy,
+)
 
 
 class EmployeePolicyRefreshError(ValueError):

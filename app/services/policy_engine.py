@@ -4,7 +4,13 @@ from itertools import groupby
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Employee, EmployeePolicy, FieldDefinition, Policy, PolicyFieldValue
+from app.models import (
+    Employee,
+    EmployeePolicy,
+    FieldDefinition,
+    Policy,
+    PolicyFieldValue,
+)
 
 
 class PolicyConflictError(Exception):
