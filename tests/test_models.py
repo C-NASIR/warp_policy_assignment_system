@@ -1,4 +1,4 @@
-from sqlalchemy import inspect
+from sqlalchemy import CheckConstraint, inspect
 
 from app.database import Base
 from app.models import (
@@ -8,7 +8,9 @@ from app.models import (
     ConditionGroup,
     ConditionGroupCondition,
     Employee,
+    EmployeeAssignment,
     EmployeeGroupMembership,
+    EmployeeOverride,
     EmployeePolicy,
     FieldDefinition,
     Group,
@@ -40,6 +42,15 @@ def test_policy_domain_models_have_required_columns():
         EmployeeGroupMembership: {"employee_id", "group_id"},
         GroupPolicy: {"group_id", "policy_id"},
         EmployeePolicy: {"employee_id", "policy_id"},
+        EmployeeOverride: {"id", "employee_id", "field_definition_id", "value"},
+        EmployeeAssignment: {
+            "id",
+            "employee_id",
+            "field_definition_id",
+            "value",
+            "source_policy_id",
+            "source_override_id",
+        },
         FieldDefinition: {"id", "field", "cardinality", "conflict_resolution"},
         PolicyFieldValue: {"policy_id", "field_definition_id", "value"},
     }
@@ -69,6 +80,16 @@ def test_legacy_group_columns_are_absent():
     assert "group_policies" in Base.metadata.tables
     assert "employee_groups" not in Base.metadata.tables
     assert "group_id" not in {column.key for column in inspect(Policy).columns}
+
+
+def test_employee_assignment_requires_exactly_one_source():
+    constraints = {
+        constraint.name
+        for constraint in inspect(EmployeeAssignment).local_table.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+
+    assert "ck_employee_assignment_exactly_one_source" in constraints
 
 
 def test_group_relationships_persist_memberships_and_policies(db):

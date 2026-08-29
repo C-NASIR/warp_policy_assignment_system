@@ -56,6 +56,34 @@ class FieldDefinitionRead(FieldDefinitionCreate, ORMModel):
     id: int
 
 
+class EmployeeOverrideCreate(BaseModel):
+    field_definition_id: int
+    value: str = Field(min_length=1, max_length=500)
+
+
+class EmployeeOverrideUpdate(BaseModel):
+    field_definition_id: int | None = None
+    value: str | None = Field(default=None, min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def require_a_change(self) -> EmployeeOverrideUpdate:
+        if not self.model_fields_set:
+            raise ValueError("At least one override field must be provided")
+        if "field_definition_id" in self.model_fields_set and self.field_definition_id is None:
+            raise ValueError("field_definition_id cannot be null")
+        if "value" in self.model_fields_set and self.value is None:
+            raise ValueError("value cannot be null")
+        return self
+
+
+class EmployeeOverrideRead(ORMModel):
+    id: int
+    employee_id: int
+    field_definition_id: int
+    value: str
+    field_definition: FieldDefinitionRead
+
+
 class PolicyValueCreate(BaseModel):
     field_definition_id: int
     value: str = Field(min_length=1, max_length=500)
@@ -125,5 +153,6 @@ class AssignmentRead(ORMModel):
     employee_id: int
     field_definition_id: int
     value: str
-    source_policy_id: int
+    source_policy_id: int | None
+    source_override_id: int | None
     field_definition: FieldDefinitionRead

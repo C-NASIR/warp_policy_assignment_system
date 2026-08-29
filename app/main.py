@@ -5,6 +5,10 @@ from fastapi.responses import JSONResponse
 
 from app.database import create_tables
 from app.routers import employees, field_definitions, groups, policies
+from app.services.employee_overrides import (
+    EmployeeOverrideConflictError,
+    EmployeeOverrideResourceNotFoundError,
+)
 from app.services.groups import GroupResourceNotFoundError
 from app.services.policy_engine import PolicyConflictError
 
@@ -33,6 +37,22 @@ async def group_resource_not_found_handler(
     exc: GroupResourceNotFoundError,
 ) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(EmployeeOverrideResourceNotFoundError)
+async def employee_override_not_found_handler(
+    _: Request,
+    exc: EmployeeOverrideResourceNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(EmployeeOverrideConflictError)
+async def employee_override_conflict_handler(
+    _: Request,
+    exc: EmployeeOverrideConflictError,
+) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
 @app.get("/")

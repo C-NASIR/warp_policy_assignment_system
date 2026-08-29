@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Literal
 
-from sqlalchemy import Date, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, Date, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.database import Base
@@ -68,7 +68,14 @@ class Employee(Base):
         secondary="employee_group_memberships",
         back_populates="employees",
     )
-    assignments: Mapped[list[EmployeeAssignment]] = relationship(back_populates="employee", cascade="all, delete-orphan")
+    overrides: Mapped[list[EmployeeOverride]] = relationship(
+        back_populates="employee",
+        cascade="all, delete-orphan",
+    )
+    assignments: Mapped[list[EmployeeAssignment]] = relationship(
+        back_populates="employee",
+        cascade="all, delete-orphan",
+    )
 
 
 class Group(Base):
@@ -96,6 +103,7 @@ class FieldDefinition(Base):
     name = synonym("field")
     cardinality: Mapped[Literal["one", "many"]] = mapped_column(String(10))
     conflict_resolution: Mapped[str] = mapped_column(String(50), default="priority")
+    overrides: Mapped[list[EmployeeOverride]] = relationship(back_populates="field_definition")
 
 
 class Policy(Base):
@@ -210,15 +218,45 @@ class PolicyFieldValue(Base):
     field_definition: Mapped[FieldDefinition] = relationship()
 
 
-class EmployeeAssignment(Base):
-    __tablename__ = "employee_assignments"
-    __table_args__ = (UniqueConstraint("employee_id", "field_definition_id", "value"),)
+class EmployeeOverride(Base):
+    __tablename__ = "employee_overrides"
+    __table_args__ = (
+        UniqueConstraint("employee_id", "field_definition_id", "value"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"))
     field_definition_id: Mapped[int] = mapped_column(ForeignKey("field_definitions.id"))
     value: Mapped[str] = mapped_column(String(500))
-    source_policy_id: Mapped[int] = mapped_column(ForeignKey("policies.id"))
+    employee: Mapped[Employee] = relationship(back_populates="overrides")
+    field_definition: Mapped[FieldDefinition] = relationship(back_populates="overrides")
+
+
+class EmployeeAssignment(Base):
+    __tablename__ = "employee_assignments"
+    __table_args__ = (
+        UniqueConstraint("employee_id", "field_definition_id", "value"),
+        CheckConstraint(
+            "(source_policy_id IS NOT NULL AND source_override_id IS NULL) OR "
+            "(source_policy_id IS NULL AND source_override_id IS NOT NULL)",
+            name="ck_employee_assignment_exactly_one_source",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"))
+    field_definition_id: Mapped[int] = mapped_column(ForeignKey("field_definitions.id"))
+    value: Mapped[str] = mapped_column(String(500))
+    source_policy_id: Mapped[int | None] = mapped_column(ForeignKey("policies.id"), nullable=True)
+    source_override_id: Mapped[int | None] = mapped_column(
+        ForeignKey(
+            "employee_overrides.id",
+            name="fk_employee_assignments_source_override_id",
+            ondelete="CASCADE",
+        ),
+        nullable=True,
+    )
     employee: Mapped[Employee] = relationship(back_populates="assignments")
     field_definition: Mapped[FieldDefinition] = relationship()
-    source_policy: Mapped[Policy] = relationship()
+    source_policy: Mapped[Policy | None] = relationship()
+    source_override: Mapped[EmployeeOverride | None] = relationship()

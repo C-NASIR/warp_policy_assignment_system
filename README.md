@@ -4,7 +4,7 @@ Version 1 is a small FastAPI backend that answers: given an employee's current f
 
 ## Architecture
 
-The application uses FastAPI and Pydantic at the API boundary, explicit application services for domain behavior, SQLAlchemy 2 for persistence, and SQLite as the local database. Database access is kept behind SQLAlchemy sessions, so a later PostgreSQL move primarily requires changing `DATABASE_URL` and adding migrations.
+The application uses FastAPI and Pydantic at the API boundary, explicit application services for domain behavior, SQLAlchemy 2 for persistence, and SQLite as the local database. Alembic is configured for future migrations once persistent environments require them. Database access is kept behind SQLAlchemy sessions, so a later PostgreSQL move primarily requires changing `DATABASE_URL`.
 
 ```text
 Employee
@@ -12,6 +12,7 @@ Employee
 → Employee Policies
 → Candidate Field Values
 → Conflict Resolution
+→ Employee Overrides
 → Employee Assignments
 ```
 
@@ -20,6 +21,8 @@ Policy condition trees are compiled into flat OR-of-AND clauses. Employee reconc
 Groups are explicit collections of employees. A group contributes its attached policies as candidates for every member; it does not produce assignments of its own. Direct matches and group-inherited policies are deduplicated and sent through the same policy engine, so priority and conflict behavior is identical regardless of where a policy came from.
 
 For cardinality `one`, the highest-priority policy wins. Equal-priority policies producing different values return HTTP 409 instead of selecting arbitrarily. For cardinality `many`, unique values are retained. If several policies produce the same many-valued result, its recorded source is the highest-priority policy, breaking remaining ties by lowest policy ID.
+
+Manual overrides are field values applied after normal policy resolution. If a field has overrides, all policy-derived values for that field are replaced by its override values. A `one` field accepts one override per employee; a `many` field accepts multiple unique override values. Overrides can also create an assignment when no policy supplies that field. They do not suppress policy conflicts, which remain configuration errors.
 
 ## Domain concepts
 
@@ -33,7 +36,8 @@ For cardinality `one`, the highest-priority policy wins. Equal-priority policies
 - **Field definition:** a named assignment field with `one` or `many` cardinality.
 - **Policy:** a priority-ranked condition tree with assignment values.
 - **Policy field value:** one relationally stored consequence of a policy.
-- **Employee assignment:** a resolved value and the policy that supplied it.
+- **Employee override:** one employee-specific field value that replaces policy results for that field.
+- **Employee assignment:** a final resolved value supplied by exactly one policy or employee override.
 
 ## Install and run
 
@@ -44,7 +48,7 @@ uv sync
 uv run fastapi dev main.py
 ```
 
-The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. By default, data is stored in `policy_assignments.db`. Override it with a SQLAlchemy URL, for example `DATABASE_URL=sqlite:///./other.db`.
+The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. By default, data is stored in `policy_assignments.db`, and missing tables are created on startup. Override it with a SQLAlchemy URL, for example `DATABASE_URL=sqlite:///./other.db`.
 
 Run tests with:
 
@@ -61,6 +65,8 @@ uv run pytest
 | GET / PATCH | `/employees/{id}` | Read or update an employee |
 | GET | `/employees/{id}/assignments` | Read resolved assignments |
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
+| GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
+| PATCH / DELETE | `/employees/{id}/overrides/{override_id}` | Update or remove an override |
 | POST / GET | `/groups` | Create or list groups |
 | GET / PATCH | `/groups/{id}` | Read or update a group |
 | GET | `/groups/{id}/employees` | List group members |
@@ -78,6 +84,8 @@ Adding or removing a group membership recalculates the affected employee immedia
 
 A group policy applies because of the explicit group link, even when its condition tree does not match the member directly. If a policy applies directly and through one or more groups, it is still considered only once. Policy origin can be derived from the membership and group-policy links; final assignments continue to record the winning `source_policy_id`.
 
+Creating, updating, or removing an override recalculates only the employee's assignments; it does not rerun policy matching. Normal assignments have a `source_policy_id`, overridden assignments have a `source_override_id`, and a database check constraint requires exactly one of those sources.
+
 ## Alice example
 
 Create `pay_schedule` (`one`) and `application_access` (`many`). Create a priority-20 policy conditioned on California that produces `biweekly` and `payroll_app`, and a priority-10 policy conditioned on Engineering that produces `weekly` and `GitHub`. Creating Alice in California Engineering automatically resolves:
@@ -92,4 +100,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, PostgreSQL, migrations, policy versions and effective dates, historical evaluation, overrides, automatic company-wide reconciliation, workers and queues, caching, audit logs, authentication/authorization, simulation, and complex explainability.
+Version 1 intentionally excludes a frontend, PostgreSQL, policy versions and effective dates, historical evaluation, time-bounded overrides, override reasons and authorship, automatic company-wide reconciliation, workers and queues, caching, audit logs, authentication/authorization, simulation, and complex explainability.
