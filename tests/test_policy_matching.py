@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 from sqlalchemy import select
 
@@ -15,15 +17,23 @@ from app.services.policy_matching import (
 )
 
 
-def compiled_policy(name: str, priority: int, clauses: list[list[tuple[str, str]]]) -> Policy:
+def compiled_policy(
+    name: str,
+    priority: int,
+    clauses: list[list[tuple[str, str] | tuple[str, str, str]]],
+) -> Policy:
     return Policy(
         name=name,
         priority=priority,
         compiled_clauses=[
             CompiledPolicyClause(
                 conditions=[
-                    CompiledPolicyCondition(field=field, operator="=", value=value)
-                    for field, value in conditions
+                    CompiledPolicyCondition(
+                        field=condition[0],
+                        operator=condition[1] if len(condition) == 3 else "=",
+                        value=condition[-1],
+                    )
+                    for condition in conditions
                 ]
             )
             for conditions in clauses
@@ -131,6 +141,45 @@ def test_unknown_employee_or_unsupported_condition_does_not_match(db):
 
     assert find_matching_policy_ids(db, alice.id) == []
     assert find_matching_policy_ids(db, 999_999) == []
+
+
+def test_comparison_operators_use_typed_employee_facts(db):
+    alice = Employee(
+        name="Alice",
+        state="California",
+        department="Engineering",
+        employee_type="regular",
+        location="San Francisco",
+        start_date=date(2024, 1, 15),
+    )
+    policies = [
+        compiled_policy("Started before cutoff", 10, [[("start_date", "<", "2025-01-01")]]),
+        compiled_policy("Started by date", 10, [[("start_date", "<=", "2024-01-15")]]),
+        compiled_policy("Location", 10, [[("location", "=", "San Francisco")]]),
+    ]
+    db.add_all([alice, *policies])
+    db.flush()
+
+    assert find_matching_policy_ids(db, alice.id) == [
+        policies[0].id,
+        policies[1].id,
+        policies[2].id,
+    ]
+
+
+def test_false_date_comparison_does_not_match(db):
+    alice = Employee(
+        name="Alice",
+        state="California",
+        department="Engineering",
+        employee_type="regular",
+        start_date=date(2026, 1, 1),
+    )
+    policy = compiled_policy("Has early start", 10, [[("start_date", "<", "2025-01-01")]])
+    db.add_all([alice, policy])
+    db.flush()
+
+    assert find_matching_policy_ids(db, alice.id) == []
 
 
 def test_refresh_employee_policies_replaces_stale_links(db):

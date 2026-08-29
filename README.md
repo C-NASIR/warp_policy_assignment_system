@@ -21,8 +21,8 @@ For cardinality `one`, the highest-priority policy wins. Equal-priority policies
 
 ## Domain concepts
 
-- **Employee:** current name, state, department, and employee type.
-- **Condition tree:** nested `and`/`or` expressions over employee fields.
+- **Employee:** current name, state, department, employee type, location, and start date.
+- **Condition tree:** nested `and`/`or` expressions over employee fields using `=`, `<`, and `<=` comparisons.
 - **Compiled policy clause:** one flat set of conditions that must all match.
 - **Employee policy:** a persisted match between an employee and a policy.
 - **Field definition:** a named assignment field with `one` or `many` cardinality.

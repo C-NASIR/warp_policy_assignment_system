@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -14,6 +15,8 @@ class EmployeeCreate(BaseModel):
     state: str = Field(min_length=1, max_length=100)
     department: str = Field(min_length=1, max_length=100)
     employee_type: str = Field(min_length=1, max_length=100)
+    location: str | None = Field(default=None, min_length=1, max_length=200)
+    start_date: date = Field(default_factory=date.today)
 
 
 class EmployeeUpdate(BaseModel):
@@ -21,6 +24,8 @@ class EmployeeUpdate(BaseModel):
     state: str | None = Field(default=None, min_length=1, max_length=100)
     department: str | None = Field(default=None, min_length=1, max_length=100)
     employee_type: str | None = Field(default=None, min_length=1, max_length=100)
+    location: str | None = Field(default=None, min_length=1, max_length=200)
+    start_date: date | None = None
 
 
 class EmployeeRead(EmployeeCreate, ORMModel):
@@ -44,8 +49,17 @@ class PolicyValueCreate(BaseModel):
 
 class ConditionCreate(BaseModel):
     field: str = Field(min_length=1, max_length=100)
-    operator: Literal["="]
+    operator: Literal["=", "<", "<="]
     value: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def require_a_typed_fact_value(self) -> ConditionCreate:
+        if self.field == "start_date":
+            try:
+                date.fromisoformat(self.value)
+            except ValueError as exc:
+                raise ValueError("start_date condition values must be ISO dates (YYYY-MM-DD)") from exc
+        return self
 
 
 class ConditionGroupCreate(BaseModel):

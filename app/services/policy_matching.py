@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import String, and_, case, cast, delete, func, inspect, or_, select
 from sqlalchemy.orm import Session
 
@@ -16,17 +18,8 @@ class EmployeePolicyRefreshError(ValueError):
 def find_matching_policy_ids(session: Session, employee_id: int) -> list[int]:
     """Return policy IDs having at least one fully satisfied compiled clause."""
     employee_fields = [column for column in inspect(Employee).columns if not column.primary_key]
-    condition_matches = and_(
-        CompiledPolicyCondition.operator == "=",
-        or_(
-            *(
-                and_(
-                    CompiledPolicyCondition.field == column.key,
-                    CompiledPolicyCondition.value == cast(getattr(Employee, column.key), String),
-                )
-                for column in employee_fields
-            )
-        ),
+    condition_matches = or_(
+        *(_condition_matches_employee_column(column) for column in employee_fields)
     )
     matched_count = func.sum(case((condition_matches, 1), else_=0))
 
@@ -40,6 +33,41 @@ def find_matching_policy_ids(session: Session, employee_id: int) -> list[int]:
         .order_by(CompiledPolicyClause.policy_id)
     )
     return list(session.scalars(statement))
+
+
+def _condition_matches_employee_column(column):
+    """Build type-aware comparisons for one employee fact column."""
+    employee_value = getattr(Employee, column.key)
+
+    # Dates are persisted as ISO-8601 values, so their string ordering is their
+    # chronological ordering. Integers must remain numeric for < and <=.
+    if column.type.python_type is date:
+        comparable_employee_value = cast(employee_value, String)
+        comparable_condition_value = CompiledPolicyCondition.value
+    elif column.type.python_type is int:
+        comparable_employee_value = employee_value
+        comparable_condition_value = cast(CompiledPolicyCondition.value, column.type)
+    else:
+        comparable_employee_value = employee_value
+        comparable_condition_value = CompiledPolicyCondition.value
+
+    return and_(
+        CompiledPolicyCondition.field == column.key,
+        or_(
+            and_(
+                CompiledPolicyCondition.operator == "=",
+                cast(employee_value, String) == CompiledPolicyCondition.value,
+            ),
+            and_(
+                CompiledPolicyCondition.operator == "<",
+                comparable_employee_value < comparable_condition_value,
+            ),
+            and_(
+                CompiledPolicyCondition.operator == "<=",
+                comparable_employee_value <= comparable_condition_value,
+            ),
+        ),
+    )
 
 
 def refresh_employee_policies(session: Session, employee_id: int) -> list[EmployeePolicy]:

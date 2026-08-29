@@ -1,3 +1,6 @@
+from datetime import date
+
+
 def create_field(client, name, cardinality):
     response = client.post("/field-definitions", json={"name": name, "cardinality": cardinality})
     assert response.status_code == 201
@@ -188,3 +191,83 @@ def test_policy_update_validates_nested_tree_and_value_references(client):
         json={"values": [{"field_definition_id": 999, "value": "red"}]},
     )
     assert missing_field.status_code == 404
+
+
+def test_employee_date_comparison_policy_is_accepted_and_applied(client):
+    badge = create_field(client, "tenure_badge", "one")
+    response = client.post(
+        "/policies",
+        json={
+            "name": "Started by 2024",
+            "priority": 1,
+            "condition_group": {
+                "logical_operator": "and",
+                "conditions": [{"field": "start_date", "operator": "<=", "value": "2024-12-31"}],
+            },
+            "values": [{"field_definition_id": badge["id"], "value": "tenured"}],
+        },
+    )
+    assert response.status_code == 201
+
+    employee = client.post(
+        "/employees",
+        json={
+            "name": "Alice",
+            "state": "California",
+            "department": "Engineering",
+            "employee_type": "regular",
+            "location": "San Francisco",
+            "start_date": "2024-02-01",
+        },
+    )
+    assert employee.status_code == 201
+    assert employee.json()["start_date"] == "2024-02-01"
+    assignments = client.get(f"/employees/{employee.json()['id']}/assignments").json()
+    assert [item["value"] for item in assignments] == ["tenured"]
+
+
+def test_policy_rejects_an_unknown_comparison_operator(client):
+    response = client.post(
+        "/policies",
+        json={
+            "name": "Unsupported",
+            "priority": 1,
+            "condition_group": {
+                "logical_operator": "and",
+                "conditions": [{"field": "start_date", "operator": ">", "value": "2024-12-31"}],
+            },
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_policy_rejects_invalid_typed_condition_values(client):
+    response = client.post(
+        "/policies",
+        json={
+            "name": "Invalid typed value",
+            "priority": 1,
+            "condition_group": {
+                "logical_operator": "and",
+                "conditions": [{"field": "start_date", "operator": "<", "value": "last Tuesday"}],
+            },
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_employee_start_date_defaults_to_current_date(client):
+    response = client.post(
+        "/employees",
+        json={
+            "name": "New starter",
+            "state": "California",
+            "department": "Engineering",
+            "employee_type": "regular",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["start_date"] == date.today().isoformat()

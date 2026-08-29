@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import Date, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.database import Base
@@ -29,6 +30,12 @@ class Employee(Base):
     state: Mapped[str] = mapped_column(String(100))
     department: Mapped[str] = mapped_column(String(100))
     employee_type: Mapped[str] = mapped_column(String(100))
+    location: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    start_date: Mapped[date] = mapped_column(
+        Date,
+        default=date.today,
+        server_default=func.current_date(),
+    )
     policies: Mapped[list[Policy]] = relationship(secondary="employee_policies", back_populates="employees")
     assignments: Mapped[list[EmployeeAssignment]] = relationship(back_populates="employee", cascade="all, delete-orphan")
 

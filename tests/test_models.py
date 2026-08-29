@@ -11,11 +11,21 @@ from app.models import (
     FieldDefinition,
     Policy,
     PolicyFieldValue,
+    Employee,
 )
 
 
 def test_policy_domain_models_have_required_columns():
     expected = {
+        Employee: {
+            "id",
+            "name",
+            "state",
+            "department",
+            "employee_type",
+            "location",
+            "start_date",
+        },
         Policy: {"id", "name", "priority"},
         CompiledPolicyClause: {"id", "policy_id"},
         CompiledPolicyCondition: {"id", "clause_id", "field", "operator", "value"},
