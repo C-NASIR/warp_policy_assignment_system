@@ -135,9 +135,29 @@ Policy scheduling is maintained immediately whenever a version is created or pol
 - Closing a prior open-ended version creates its expiration event at the new version's boundary.
 - Archiving a policy cancels its pending events; reactivation restores future events without duplicating rows.
 
-`reconcile_due_events()` is the callable processing boundary for a future worker. It locks and loads one due batch, deduplicates simultaneous events belonging to the same policy, invokes the existing policy or employee reconciliation paths, and marks events processed only after successful reconciliation. Domain mutations, assignments, audit entries, and schedule status share one transaction; a conflict rolls everything back and leaves the event pending for retry.
+`reconcile_due_events()` is the callable processing boundary for the worker. It locks and loads one due batch, deduplicates simultaneous events belonging to the same policy, invokes the existing policy or employee reconciliation paths, and marks events processed only after successful reconciliation. Domain mutations, assignments, audit entries, and schedule status share one transaction; a conflict rolls everything back and leaves the event pending for retry.
 
-The service already defines dispatch types for employee tenure thresholds and override activation/expiration. Creating those schedules remains deferred until tenure conditions and time-bounded override fields exist. No timer, cron process, queue, or worker is currently running.
+The service already defines dispatch types for employee tenure thresholds and override activation/expiration. Creating those schedules remains deferred until tenure conditions and time-bounded override fields exist. No timer, cron process, or queue invokes the processor automatically.
+
+## Reconciliation worker
+
+The project includes a PostgreSQL-only, one-shot worker command:
+
+```bash
+DATABASE_URL=postgresql+psycopg://user:password@host/database \
+uv run python -m app.workers.reconciliation
+```
+
+The worker does not create tables or discover future dates from domain tables. It expects the application schema to exist, obtains a PostgreSQL advisory lock so overlapping invocations cannot run, and repeatedly calls `reconcile_due_events()` in independent transactions until the due queue is drained or its runtime budget is reached. `FOR UPDATE SKIP LOCKED` protects claimed event rows. A failed batch rolls back and makes the command exit unsuccessfully while its events remain pending.
+
+Configuration:
+
+- `RECONCILIATION_BATCH_SIZE`: due events per transaction; default `50`
+- `RECONCILIATION_MAX_RUNTIME_SECONDS`: maximum drain time; default `900`
+- `RECONCILIATION_ADVISORY_LOCK_KEY`: positive PostgreSQL advisory-lock key
+- `LOG_LEVEL`: standard Python log level; default `INFO`
+
+The command exits successfully without processing when another invocation owns the advisory lock. It is designed to be invoked hourly by an external scheduler; it does not contain an internal timer or sleep loop. There is no SQLite execution path for the worker.
 
 ## Alice example
 
@@ -153,4 +173,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, PostgreSQL, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, tenure-threshold calculation, a periodic scheduled-reconciliation worker, queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
+Version 1 intentionally excludes a frontend, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, tenure-threshold calculation, an internal worker timer or deployment scheduler, queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
