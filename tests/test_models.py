@@ -4,6 +4,7 @@ from sqlalchemy import CheckConstraint, Table, UniqueConstraint, inspect
 
 from app.database import Base
 from app.models import (
+    AuditLog,
     CompiledPolicyClause,
     CompiledPolicyCondition,
     Condition,
@@ -25,6 +26,16 @@ from app.models import (
 
 def test_policy_domain_models_have_required_columns():
     expected = {
+        AuditLog: {
+            "id",
+            "actor",
+            "entity_type",
+            "entity_id",
+            "action",
+            "before",
+            "after",
+            "timestamp",
+        },
         Employee: {
             "id",
             "name",

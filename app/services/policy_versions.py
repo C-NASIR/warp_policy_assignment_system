@@ -12,6 +12,7 @@ from app.models import (
     PolicyFieldValue,
     PolicyVersion,
 )
+from app.services.audit import record_audit_log, snapshot_policy_version
 
 
 class PolicyVersionOverlapError(ValueError):
@@ -33,6 +34,7 @@ def create_policy_version(
     values: list[PolicyFieldValue],
     condition_groups: list[ConditionGroup],
     compiled_clauses: list[CompiledPolicyClause],
+    actor: str = "system",
 ) -> PolicyVersion:
     if effective_until is not None and effective_until < effective_from:
         raise PolicyVersionOverlapError("effective_until cannot be before effective_from")
@@ -41,6 +43,13 @@ def create_policy_version(
         .where(Policy.id == policy.id)
         .with_for_update()
     )
+    prior_version = session.scalar(
+        select(PolicyVersion)
+        .where(PolicyVersion.policy_id == policy.id)
+        .order_by(PolicyVersion.version_number.desc())
+        .limit(1)
+    )
+    before = snapshot_policy_version(prior_version) if prior_version is not None else None
     _close_prior_open_ended_version(session, policy.id, effective_from)
     _reject_overlapping_range(
         session,
@@ -67,6 +76,15 @@ def create_policy_version(
     )
     session.add(version)
     session.flush()
+    record_audit_log(
+        session,
+        actor=actor,
+        entity_type="PolicyVersion",
+        entity_id=version.id,
+        action="created",
+        before=before,
+        after=snapshot_policy_version(version),
+    )
     return version
 
 

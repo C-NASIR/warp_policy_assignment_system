@@ -4,7 +4,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.dates import current_datetime, ensure_utc, start_of_day
-from app.models import Employee, EmployeeAssignment, EmployeeOverride
+from app.models import Employee, EmployeeAssignment, EmployeeOverride, FieldDefinition
+from app.services.audit import record_audit_log, snapshot_assignment
 from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import resolve_employee_assignments
 
@@ -18,6 +19,7 @@ def refresh_employee_assignments(
     employee: Employee,
     evaluation_date: date | None = None,
     reconciliation_at: datetime | None = None,
+    actor: str = "system",
 ) -> list[EmployeeAssignment]:
     effective_at = _reconciliation_timestamp(evaluation_date, reconciliation_at)
     policy_evaluation_date = evaluation_date or effective_at.date()
@@ -54,15 +56,42 @@ def refresh_employee_assignments(
     )
     desired_by_key = {_assignment_key(item): item for item in final_assignments}
     active_assignments: list[EmployeeAssignment] = []
+    field_names = {
+        field.id: field.name
+        for field in session.scalars(
+            select(FieldDefinition).where(
+                FieldDefinition.id.in_(
+                    {
+                        *[item.field_definition_id for item in current_assignments],
+                        *[item.field_definition_id for item in final_assignments],
+                    }
+                )
+            )
+        )
+    }
 
     for assignment in current_assignments:
         if desired_by_key.pop(_assignment_key(assignment), None) is not None:
             active_assignments.append(assignment)
             continue
+        before = snapshot_assignment(
+            assignment,
+            field_name=field_names.get(assignment.field_definition_id),
+        )
         if ensure_utc(assignment.effective_from) == effective_at:
             session.delete(assignment)
         else:
             assignment.effective_until = effective_at
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="EmployeeAssignment",
+            entity_id=assignment.id,
+            action="ended",
+            before=before,
+            after=None,
+            timestamp=effective_at,
+        )
 
     for item in desired_by_key.values():
         assignment = EmployeeAssignment(
@@ -74,6 +103,20 @@ def refresh_employee_assignments(
             effective_from=effective_at,
         )
         session.add(assignment)
+        session.flush()
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="EmployeeAssignment",
+            entity_id=assignment.id,
+            action="created",
+            before=None,
+            after=snapshot_assignment(
+                assignment,
+                field_name=field_names.get(assignment.field_definition_id),
+            ),
+            timestamp=effective_at,
+        )
         active_assignments.append(assignment)
 
     session.flush()

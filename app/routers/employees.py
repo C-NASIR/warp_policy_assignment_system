@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dates import current_datetime
-from app.dependencies import DatabaseSession
+from app.dependencies import AuditActor, DatabaseSession
 from app.models import Employee, EmployeeAssignment, EmployeeOverride
 from app.schemas import (
     AssignmentRead,
@@ -99,12 +99,14 @@ def create_override(
     employee_id: int,
     data: EmployeeOverrideCreate,
     session: DatabaseSession,
+    actor: AuditActor,
 ) -> EmployeeOverride:
     return create_employee_override(
         session,
         employee_id,
         data.field_definition_id,
         data.value,
+        actor,
     )
 
 
@@ -117,6 +119,7 @@ def patch_override(
     override_id: int,
     data: EmployeeOverrideUpdate,
     session: DatabaseSession,
+    actor: AuditActor,
 ) -> EmployeeOverride:
     return update_employee_override(
         session,
@@ -124,6 +127,7 @@ def patch_override(
         override_id,
         data.field_definition_id,
         data.value,
+        actor,
     )
 
 
@@ -135,8 +139,9 @@ def delete_override(
     employee_id: int,
     override_id: int,
     session: DatabaseSession,
+    actor: AuditActor,
 ) -> Response:
-    delete_employee_override(session, employee_id, override_id)
+    delete_employee_override(session, employee_id, override_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

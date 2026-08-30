@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.dates import current_datetime
 from app.models import Employee, EmployeeOverride, FieldDefinition
+from app.services.audit import record_audit_log, snapshot_override
 from app.services.reconciliation import refresh_employee_assignments
 
 
@@ -38,6 +39,7 @@ def create_employee_override(
     employee_id: int,
     field_definition_id: int,
     value: str,
+    actor: str = "system",
 ) -> EmployeeOverride:
     employee = _get_employee(session, employee_id)
     field_definition = _get_field_definition(session, field_definition_id)
@@ -56,6 +58,16 @@ def create_employee_override(
     reconciliation_at = current_datetime()
     session.add(override)
     session.flush()
+    record_audit_log(
+        session,
+        actor=actor,
+        entity_type="EmployeeOverride",
+        entity_id=override.id,
+        action="created",
+        before=None,
+        after=snapshot_override(override),
+        timestamp=reconciliation_at,
+    )
     refresh_employee_assignments(
         session,
         employee,
@@ -70,6 +82,7 @@ def update_employee_override(
     override_id: int,
     field_definition_id: int | None,
     value: str | None,
+    actor: str = "system",
 ) -> EmployeeOverride:
     employee = _get_employee(session, employee_id)
     override = _get_override(session, employee_id, override_id)
@@ -93,6 +106,7 @@ def update_employee_override(
     )
 
     reconciliation_at = current_datetime()
+    before = snapshot_override(override)
     override.retired_at = reconciliation_at
     replacement = EmployeeOverride(
         employee=employee,
@@ -101,6 +115,16 @@ def update_employee_override(
     )
     session.add(replacement)
     session.flush()
+    record_audit_log(
+        session,
+        actor=actor,
+        entity_type="EmployeeOverride",
+        entity_id=replacement.id,
+        action="changed",
+        before=before,
+        after=snapshot_override(replacement),
+        timestamp=reconciliation_at,
+    )
     refresh_employee_assignments(
         session,
         employee,
@@ -113,12 +137,24 @@ def delete_employee_override(
     session: Session,
     employee_id: int,
     override_id: int,
+    actor: str = "system",
 ) -> None:
     employee = _get_employee(session, employee_id)
     override = _get_override(session, employee_id, override_id)
     reconciliation_at = current_datetime()
+    before = snapshot_override(override)
     override.retired_at = reconciliation_at
     session.flush()
+    record_audit_log(
+        session,
+        actor=actor,
+        entity_type="EmployeeOverride",
+        entity_id=override.id,
+        action="removed",
+        before=before,
+        after=None,
+        timestamp=reconciliation_at,
+    )
     refresh_employee_assignments(
         session,
         employee,

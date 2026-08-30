@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -192,3 +192,19 @@ class AssignmentRead(ORMModel):
     @classmethod
     def return_utc_timestamps(cls, value: datetime | None) -> datetime | None:
         return ensure_utc(value) if value is not None else None
+
+
+class AuditLogRead(ORMModel):
+    id: int
+    actor: str
+    entity_type: str
+    entity_id: int
+    action: str
+    before: dict[str, Any] | list[Any] | None
+    after: dict[str, Any] | list[Any] | None
+    timestamp: datetime
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def return_utc_timestamp(cls, value: datetime) -> datetime:
+        return ensure_utc(value)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import DatabaseSession
+from app.dependencies import AuditActor, DatabaseSession
 from app.models import (
     Condition,
     ConditionGroup,
@@ -20,6 +20,7 @@ from app.schemas import (
     PolicyVersionCreate,
     PolicyVersionRead,
 )
+from app.services.audit import record_audit_log, snapshot_entity
 from app.services.policy_compiler import (
     PolicyCompilationError,
     compile_policy_version_clauses,
@@ -82,6 +83,7 @@ def _create_version(
     session: DatabaseSession,
     policy: Policy,
     data: PolicyVersionCreate,
+    actor: str,
 ) -> PolicyVersion:
     _validate_field_definitions(session, data.values)
     canonical_root = _build_canonical_condition_tree(data.condition_group)
@@ -100,15 +102,25 @@ def _create_version(
         values=[PolicyFieldValue(**item.model_dump()) for item in data.values],
         condition_groups=_collect_condition_groups(canonical_root),
         compiled_clauses=compiled_clauses,
+        actor=actor,
     )
 
 
 @router.post("", response_model=PolicyRead, status_code=status.HTTP_201_CREATED)
-def create(data: PolicyCreate, session: DatabaseSession) -> Policy:
+def create(data: PolicyCreate, session: DatabaseSession, actor: AuditActor) -> Policy:
     policy = Policy(name=data.name, status=data.status)
     session.add(policy)
     session.flush()
-    _create_version(session, policy, data)
+    record_audit_log(
+        session,
+        actor=actor,
+        entity_type="Policy",
+        entity_id=policy.id,
+        action="created",
+        before=None,
+        after=snapshot_entity(policy),
+    )
+    _create_version(session, policy, data, actor)
     return session.scalar(_query().where(Policy.id == policy.id))
 
 
@@ -123,13 +135,35 @@ def get(policy_id: int, session: DatabaseSession) -> Policy:
 
 
 @router.patch("/{policy_id}", response_model=PolicyRead)
-def patch(policy_id: int, data: PolicyUpdate, session: DatabaseSession) -> Policy:
+def patch(
+    policy_id: int,
+    data: PolicyUpdate,
+    session: DatabaseSession,
+    actor: AuditActor,
+) -> Policy:
     policy = _policy_or_404(session, policy_id)
+    before = snapshot_entity(policy)
     if data.name is not None:
         policy.name = data.name
     if data.status is not None:
         policy.status = data.status
     session.flush()
+    after = snapshot_entity(policy)
+    if before != after:
+        action = (
+            "archived"
+            if before["status"] != "archived" and after["status"] == "archived"
+            else "changed"
+        )
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="Policy",
+            entity_id=policy.id,
+            action=action,
+            before=before,
+            after=after,
+        )
     return session.scalar(_query().where(Policy.id == policy.id))
 
 
@@ -154,9 +188,10 @@ def add_version(
     policy_id: int,
     data: PolicyVersionCreate,
     session: DatabaseSession,
+    actor: AuditActor,
 ) -> PolicyVersion:
     policy = _policy_or_404(session, policy_id)
-    version = _create_version(session, policy, data)
+    version = _create_version(session, policy, data, actor)
     return session.scalar(_version_query().where(PolicyVersion.id == version.id))
 
 

@@ -4,6 +4,7 @@ from datetime import date, datetime
 from typing import Literal
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     Date,
     DateTime,
@@ -17,6 +18,28 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.database import Base
 from app.dates import current_date, current_datetime
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    __table_args__ = (
+        Index("ix_audit_logs_entity", "entity_type", "entity_id"),
+        Index("ix_audit_logs_actor", "actor"),
+        Index("ix_audit_logs_timestamp", "timestamp"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    actor: Mapped[str] = mapped_column(String(200))
+    entity_type: Mapped[str] = mapped_column(String(100))
+    entity_id: Mapped[int] = mapped_column()
+    action: Mapped[str] = mapped_column(String(100))
+    before: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    after: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
 
 
 class EmployeePolicy(Base):

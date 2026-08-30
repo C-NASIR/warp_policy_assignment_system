@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.database import create_tables
-from app.routers import employees, field_definitions, groups, policies
+from app.routers import audit_logs, employees, field_definitions, groups, policies
 from app.services.employee_overrides import (
     EmployeeOverrideConflictError,
     EmployeeOverrideResourceNotFoundError,
@@ -29,6 +29,7 @@ app.include_router(employees.router)
 app.include_router(field_definitions.router)
 app.include_router(policies.router)
 app.include_router(groups.router)
+app.include_router(audit_logs.router)
 
 
 @app.exception_handler(PolicyConflictError)

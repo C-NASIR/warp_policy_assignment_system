@@ -12,6 +12,7 @@ from app.models import (
     Policy,
     PolicyVersion,
 )
+from app.services.audit import record_audit_log, snapshot_entity
 from app.services.policy_matching import refresh_employee_policies
 from app.services.reconciliation import refresh_employee_assignments
 
@@ -20,10 +21,19 @@ class GroupResourceNotFoundError(ValueError):
     pass
 
 
-def create_group(session: Session, name: str) -> Group:
+def create_group(session: Session, name: str, actor: str = "system") -> Group:
     group = Group(name=name)
     session.add(group)
     session.flush()
+    record_audit_log(
+        session,
+        actor=actor,
+        entity_type="Group",
+        entity_id=group.id,
+        action="created",
+        before=None,
+        after=snapshot_entity(group),
+    )
     return group
 
 
@@ -38,11 +48,26 @@ def get_group(session: Session, group_id: int) -> Group:
     return group
 
 
-def update_group(session: Session, group_id: int, name: str | None) -> Group:
+def update_group(
+    session: Session,
+    group_id: int,
+    name: str | None,
+    actor: str = "system",
+) -> Group:
     group = get_group(session, group_id)
-    if name is not None:
+    if name is not None and name != group.name:
+        before = snapshot_entity(group)
         group.name = name
         session.flush()
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="Group",
+            entity_id=group.id,
+            action="changed",
+            before=before,
+            after=snapshot_entity(group),
+        )
     return group
 
 
@@ -61,18 +86,37 @@ def list_group_employees(session: Session, group_id: int) -> list[Employee]:
     )
 
 
-def add_employee_to_group(session: Session, group_id: int, employee_id: int) -> Employee:
+def add_employee_to_group(
+    session: Session,
+    group_id: int,
+    employee_id: int,
+    actor: str = "system",
+) -> Employee:
     get_group(session, group_id)
     employee = _get_employee(session, employee_id)
     key = {"employee_id": employee_id, "group_id": group_id}
     if session.get(EmployeeGroupMembership, key) is None:
         session.add(EmployeeGroupMembership(**key))
         session.flush()
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="Group",
+            entity_id=group_id,
+            action="employee_added",
+            before=None,
+            after=key,
+        )
         _refresh_employee(session, employee)
     return employee
 
 
-def remove_employee_from_group(session: Session, group_id: int, employee_id: int) -> None:
+def remove_employee_from_group(
+    session: Session,
+    group_id: int,
+    employee_id: int,
+    actor: str = "system",
+) -> None:
     get_group(session, group_id)
     employee = _get_employee(session, employee_id)
     membership = session.get(
@@ -80,8 +124,18 @@ def remove_employee_from_group(session: Session, group_id: int, employee_id: int
         {"employee_id": employee_id, "group_id": group_id},
     )
     if membership is not None:
+        before = {"employee_id": employee_id, "group_id": group_id}
         session.delete(membership)
         session.flush()
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="Group",
+            entity_id=group_id,
+            action="employee_removed",
+            before=before,
+            after=None,
+        )
         _refresh_employee(session, employee)
 
 
@@ -100,18 +154,37 @@ def list_group_policies(session: Session, group_id: int) -> list[Policy]:
     )
 
 
-def add_policy_to_group(session: Session, group_id: int, policy_id: int) -> Policy:
+def add_policy_to_group(
+    session: Session,
+    group_id: int,
+    policy_id: int,
+    actor: str = "system",
+) -> Policy:
     get_group(session, group_id)
     policy = _get_policy(session, policy_id)
     key = {"group_id": group_id, "policy_id": policy_id}
     if session.get(GroupPolicy, key) is None:
         session.add(GroupPolicy(**key))
         session.flush()
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="Group",
+            entity_id=group_id,
+            action="policy_attached",
+            before=None,
+            after=key,
+        )
         _refresh_group_members(session, group_id)
     return policy
 
 
-def remove_policy_from_group(session: Session, group_id: int, policy_id: int) -> None:
+def remove_policy_from_group(
+    session: Session,
+    group_id: int,
+    policy_id: int,
+    actor: str = "system",
+) -> None:
     get_group(session, group_id)
     _get_policy(session, policy_id)
     group_policy = session.get(
@@ -119,8 +192,18 @@ def remove_policy_from_group(session: Session, group_id: int, policy_id: int) ->
         {"group_id": group_id, "policy_id": policy_id},
     )
     if group_policy is not None:
+        before = {"group_id": group_id, "policy_id": policy_id}
         session.delete(group_policy)
         session.flush()
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="Group",
+            entity_id=group_id,
+            action="policy_detached",
+            before=before,
+            after=None,
+        )
         _refresh_group_members(session, group_id)
 
 

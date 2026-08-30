@@ -29,6 +29,8 @@ Manual overrides are field values applied after normal policy resolution. If a f
 
 Employee assignments are temporal results, not independently versioned definitions. Each row has a UTC `effective_from` and optional `effective_until`, using a half-open `[effective_from, effective_until)` interval. Reconciliation compares the newly resolved result with open assignments: unchanged values and sources retain their rows, removed results are closed, and new or changed results create new rows. This preserves both what an employee had at an instant and the exact policy version or override that supplied it.
 
+`AuditLog` is the system-wide mutation journal. Assignment history answers what was true at a point in time; audit logs answer what changed, when, and which actor caused it. Audit entries are written through one service in the same database transaction as the domain mutation, so both the mutation and its audit entries commit or roll back together. API mutations accept an optional `X-Actor` header and use `api` when it is omitted. Automated reconciliation always records assignment mutations as `system`.
+
 Overrides are retained for provenance. Updating an override retires the old immutable row and creates a replacement; deleting one retires it. Only unretired overrides participate in current resolution, while historical assignments can continue referring to the override that produced them.
 
 ## Domain concepts
@@ -46,6 +48,7 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Policy field value:** one relationally stored consequence of a policy version.
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
 - **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override.
+- **Audit log:** an append-only actor, entity, action, before/after snapshot, and timestamp for an important domain mutation.
 
 ## Install and run
 
@@ -57,6 +60,8 @@ uv run fastapi dev main.py
 ```
 
 The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. By default, data is stored in `policy_assignments.db`, and missing tables are created on startup. Override it with a SQLAlchemy URL, for example `DATABASE_URL=sqlite:///./other.db`. The development database is disposable: after a model change, remove the old `.db` file and restart. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
+
+Audit-log reads are protected separately because the application does not yet have user authentication. Set `AUDIT_ADMIN_KEY` and send the same value in `X-Audit-Key`. If the environment variable is absent, audit reads return HTTP 503; a missing or incorrect header returns HTTP 403. In production, inject this value through the deployment secret manager and replace this narrow boundary when application-wide authentication is added.
 
 Run tests with:
 
@@ -88,6 +93,7 @@ uv run pytest
 | GET / PATCH | `/policies/{id}` | Read or update stable policy metadata |
 | GET / POST | `/policies/{id}/versions` | List or create policy versions |
 | GET | `/policies/{id}/versions/{version_id}` | Read one policy version |
+| GET | `/audit-logs` | Read authorized, filterable audit events |
 
 Employee creation and update automatically recalculate that employee. Creating or changing policy configuration intentionally does not reconcile all employees; use the explicit employee reconciliation endpoint.
 
@@ -98,6 +104,22 @@ A group policy applies because of the explicit group link, even when its effecti
 Creating, updating, or removing an override recalculates only the employee's assignments; it does not rerun policy matching. Normal assignments have a `source_policy_version_id`, overridden assignments have a `source_override_id`, and a database check constraint requires exactly one of those sources. Override updates return a new override ID because the previous row is retired for provenance.
 
 Reconciliation is chronological and persists assignment history. Calls older than the latest stored assignment start are rejected instead of rewriting established history. `GET /employees/{id}/assignments` returns the values effective now by default; `as_of` uses half-open interval boundaries, and the history endpoint returns both open and closed rows.
+
+## Auditing contract
+
+The current action vocabulary is:
+
+- `Policy`: `created`, `changed`, `archived`
+- `PolicyVersion`: `created`; `before` is the preceding version snapshot when one exists
+- `Group`: `created`, `changed`, `employee_added`, `employee_removed`, `policy_attached`, `policy_detached`
+- `EmployeeOverride`: `created`, `changed`, `removed`
+- `EmployeeAssignment`: `created`, `ended`
+
+An assignment replacement is intentionally two events: `ended` for the old assignment followed by `created` for the replacement. Unchanged reconciliation results and idempotent group operations produce no events.
+
+Snapshots contain JSON-safe mapped scalar values for the affected entity. Policy-version snapshots additionally contain field values and compiled clauses; assignment snapshots include the field name. Scalar dates and timestamps use ISO 8601 strings. The shared snapshot helper automatically replaces columns named `password`, `token`, `access_token`, `api_key`, or `secret` with `[REDACTED]`, and callers must explicitly redact any other sensitive fields introduced later. Audit payloads must never contain credentials or unnecessary employee data.
+
+`GET /audit-logs` supports `entity_type`, `entity_id`, `actor`, `action`, `from_timestamp`, and `to_timestamp` filters, plus bounded `limit` and `offset` pagination. Results are chronological. There is no mutation or deletion endpoint: audit records are append-only and retained indefinitely in version 1. Any future retention process must be explicitly approved, documented, and run outside ordinary domain mutation paths.
 
 ## Alice example
 
@@ -113,4 +135,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, PostgreSQL, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, automatic date-boundary reconciliation, automatic company-wide reconciliation after policy-version changes, workers and queues, caching, authentication/authorization, and complex explainability beyond persisted source provenance.
+Version 1 intentionally excludes a frontend, PostgreSQL, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, automatic date-boundary reconciliation, automatic company-wide reconciliation after policy-version changes, workers and queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
