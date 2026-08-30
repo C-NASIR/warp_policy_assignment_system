@@ -11,6 +11,10 @@ from app.services.employee_overrides import (
 )
 from app.services.groups import GroupResourceNotFoundError
 from app.services.policy_engine import PolicyConflictError
+from app.services.policy_versions import (
+    EffectivePolicyVersionConflictError,
+    PolicyVersionOverlapError,
+)
 
 
 @asynccontextmanager
@@ -51,6 +55,15 @@ async def employee_override_not_found_handler(
 async def employee_override_conflict_handler(
     _: Request,
     exc: EmployeeOverrideConflictError,
+) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(PolicyVersionOverlapError)
+@app.exception_handler(EffectivePolicyVersionConflictError)
+async def policy_version_conflict_handler(
+    _: Request,
+    exc: PolicyVersionOverlapError | EffectivePolicyVersionConflictError,
 ) -> JSONResponse:
     return JSONResponse(status_code=409, content={"detail": str(exc)})
 

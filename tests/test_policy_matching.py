@@ -9,6 +9,7 @@ from app.models import (
     Employee,
     EmployeePolicy,
     Policy,
+    PolicyVersion,
 )
 from app.services.policy_matching import (
     EmployeePolicyRefreshError,
@@ -24,19 +25,25 @@ def compiled_policy(
 ) -> Policy:
     return Policy(
         name=name,
-        priority=priority,
-        compiled_clauses=[
-            CompiledPolicyClause(
-                conditions=[
-                    CompiledPolicyCondition(
-                        field=condition[0],
-                        operator=condition[1] if len(condition) == 3 else "=",
-                        value=condition[-1],
+        versions=[
+            PolicyVersion(
+                version_number=1,
+                priority=priority,
+                effective_from=date(2020, 1, 1),
+                compiled_clauses=[
+                    CompiledPolicyClause(
+                        conditions=[
+                            CompiledPolicyCondition(
+                                field=condition[0],
+                                operator=condition[1] if len(condition) == 3 else "=",
+                                value=condition[-1],
+                            )
+                            for condition in conditions
+                        ]
                     )
-                    for condition in conditions
-                ]
+                    for conditions in clauses
+                ],
             )
-            for conditions in clauses
         ],
     )
 
@@ -129,10 +136,22 @@ def test_unknown_employee_or_unsupported_condition_does_not_match(db):
     )
     policy = Policy(
         name="Unsupported condition",
-        priority=10,
-        compiled_clauses=[
-            CompiledPolicyClause(
-                conditions=[CompiledPolicyCondition(field="state", operator="contains", value="Cali")]
+        versions=[
+            PolicyVersion(
+                version_number=1,
+                priority=10,
+                effective_from=date(2020, 1, 1),
+                compiled_clauses=[
+                    CompiledPolicyClause(
+                        conditions=[
+                            CompiledPolicyCondition(
+                                field="state",
+                                operator="contains",
+                                value="Cali",
+                            )
+                        ]
+                    )
+                ],
             )
         ],
     )

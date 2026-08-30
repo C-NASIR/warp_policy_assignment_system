@@ -1,3 +1,5 @@
+from collections.abc import Generator
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -41,6 +43,6 @@ def client(session_factory):
 
 
 @pytest.fixture
-def db(session_factory) -> Session:
+def db(session_factory) -> Generator[Session, None, None]:
     with session_factory() as session:
         yield session

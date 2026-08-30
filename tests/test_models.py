@@ -1,4 +1,6 @@
-from sqlalchemy import CheckConstraint, inspect
+from typing import cast
+
+from sqlalchemy import CheckConstraint, Table, UniqueConstraint, inspect
 
 from app.database import Base
 from app.models import (
@@ -17,6 +19,7 @@ from app.models import (
     GroupPolicy,
     Policy,
     PolicyFieldValue,
+    PolicyVersion,
 )
 
 
@@ -32,11 +35,26 @@ def test_policy_domain_models_have_required_columns():
             "start_date",
             "manager_id",
         },
-        Policy: {"id", "name", "priority"},
-        CompiledPolicyClause: {"id", "policy_id"},
+        Policy: {"id", "name", "status", "created_at"},
+        PolicyVersion: {
+            "id",
+            "policy_id",
+            "version_number",
+            "priority",
+            "effective_from",
+            "effective_until",
+            "created_at",
+            "created_by",
+        },
+        CompiledPolicyClause: {"id", "policy_version_id"},
         CompiledPolicyCondition: {"id", "clause_id", "field", "operator", "value"},
         Condition: {"id", "field", "operator", "value"},
-        ConditionGroup: {"id", "policy_id", "parent_group_id", "logical_operator"},
+        ConditionGroup: {
+            "id",
+            "policy_version_id",
+            "parent_group_id",
+            "logical_operator",
+        },
         ConditionGroupCondition: {"group_id", "condition_id"},
         Group: {"id", "name"},
         EmployeeGroupMembership: {"employee_id", "group_id"},
@@ -48,11 +66,11 @@ def test_policy_domain_models_have_required_columns():
             "employee_id",
             "field_definition_id",
             "value",
-            "source_policy_id",
+            "source_policy_version_id",
             "source_override_id",
         },
         FieldDefinition: {"id", "field", "cardinality", "conflict_resolution"},
-        PolicyFieldValue: {"policy_id", "field_definition_id", "value"},
+        PolicyFieldValue: {"policy_version_id", "field_definition_id", "value"},
     }
 
     for model, required_columns in expected.items():
@@ -71,7 +89,7 @@ def test_join_models_use_composite_primary_keys():
     assert employee_group_pk == {"employee_id", "group_id"}
     assert group_policy_pk == {"group_id", "policy_id"}
     assert employee_policy_pk == {"employee_id", "policy_id"}
-    assert policy_value_pk == {"policy_id", "field_definition_id", "value"}
+    assert policy_value_pk == {"policy_version_id", "field_definition_id", "value"}
 
 
 def test_legacy_group_columns_are_absent():
@@ -83,13 +101,32 @@ def test_legacy_group_columns_are_absent():
 
 
 def test_employee_assignment_requires_exactly_one_source():
+    assignment_table = cast(Table, EmployeeAssignment.__table__)
     constraints = {
         constraint.name
-        for constraint in inspect(EmployeeAssignment).local_table.constraints
+        for constraint in assignment_table.constraints
         if isinstance(constraint, CheckConstraint)
     }
 
     assert "ck_employee_assignment_exactly_one_source" in constraints
+
+
+def test_policy_versions_enforce_number_and_effective_range_constraints():
+    policy_version_table = cast(Table, PolicyVersion.__table__)
+    unique_columns = {
+        column.key
+        for constraint in policy_version_table.constraints
+        if isinstance(constraint, UniqueConstraint)
+        for column in constraint.columns
+    }
+    check_names = {
+        constraint.name
+        for constraint in policy_version_table.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+
+    assert unique_columns == {"policy_id", "version_number"}
+    assert "ck_policy_version_valid_effective_range" in check_names
 
 
 def test_group_relationships_persist_memberships_and_policies(db):
@@ -99,7 +136,7 @@ def test_group_relationships_persist_memberships_and_policies(db):
         department="Engineering",
         employee_type="regular",
     )
-    policy = Policy(name="GitHub Access", priority=10)
+    policy = Policy(name="GitHub Access")
     group = Group(name="Engineering", employees=[employee], policies=[policy])
     db.add(group)
     db.flush()
@@ -120,7 +157,7 @@ def test_deleting_group_removes_links_without_deleting_employees_or_policies(db)
         department="Engineering",
         employee_type="regular",
     )
-    policy = Policy(name="GitHub Access", priority=10)
+    policy = Policy(name="GitHub Access")
     group = Group(name="Engineering", employees=[employee], policies=[policy])
     db.add(group)
     db.flush()

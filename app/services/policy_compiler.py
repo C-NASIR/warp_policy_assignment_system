@@ -30,8 +30,8 @@ def compile_condition_tree_to_clauses(root: ConditionGroup) -> list[CompiledClau
     return _compile_group(root, ancestors=set())
 
 
-def compile_policy_clauses(canonical_root: ConditionGroup) -> list[CompiledPolicyClause]:
-    """Build flat matching clauses from a canonical condition-tree root."""
+def compile_policy_version_clauses(canonical_root: ConditionGroup) -> list[CompiledPolicyClause]:
+    """Build flat matching clauses for one version's canonical condition tree."""
     compiled_clauses = compile_condition_tree_to_clauses(canonical_root)
     return [
         CompiledPolicyClause(

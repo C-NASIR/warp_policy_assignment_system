@@ -1,12 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.dates import current_date
 from app.models import (
     Employee,
     EmployeeGroupMembership,
     Group,
     GroupPolicy,
     Policy,
+    PolicyVersion,
 )
 from app.services.policy_matching import refresh_employee_policies
 from app.services.reconciliation import refresh_employee_assignments
@@ -88,7 +90,9 @@ def list_group_policies(session: Session, group_id: int) -> list[Policy]:
             select(Policy)
             .join(GroupPolicy, GroupPolicy.policy_id == Policy.id)
             .where(GroupPolicy.group_id == group_id)
-            .options(selectinload(Policy.values))
+            .options(
+                selectinload(Policy.versions).selectinload(PolicyVersion.values)
+            )
             .order_by(Policy.id)
         )
     )
@@ -129,7 +133,7 @@ def _get_policy(session: Session, policy_id: int) -> Policy:
     policy = session.scalar(
         select(Policy)
         .where(Policy.id == policy_id)
-        .options(selectinload(Policy.values))
+        .options(selectinload(Policy.versions).selectinload(PolicyVersion.values))
     )
     if policy is None:
         raise GroupResourceNotFoundError(f"Policy {policy_id} not found")
@@ -142,5 +146,6 @@ def _refresh_group_members(session: Session, group_id: int) -> None:
 
 
 def _refresh_employee(session: Session, employee: Employee) -> None:
-    refresh_employee_policies(session, employee.id)
-    refresh_employee_assignments(session, employee)
+    evaluation_date = current_date()
+    refresh_employee_policies(session, employee.id, evaluation_date)
+    refresh_employee_assignments(session, employee, evaluation_date)

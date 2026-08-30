@@ -1,7 +1,25 @@
+from datetime import date
+
 import pytest
 
-from app.models import Employee, FieldDefinition, Policy, PolicyFieldValue
+from app.models import (
+    Employee,
+    FieldDefinition,
+    Policy,
+    PolicyFieldValue,
+    PolicyVersion,
+)
 from app.services.policy_engine import PolicyConflictError, resolve_employee_assignments
+
+
+def versioned_policy(name, priority, values):
+    version = PolicyVersion(
+        version_number=1,
+        priority=priority,
+        effective_from=date(2020, 1, 1),
+        values=values,
+    )
+    return Policy(name=name, versions=[version])
 
 
 def test_policy_engine_is_independently_callable(db):
@@ -10,30 +28,48 @@ def test_policy_engine_is_independently_callable(db):
     access = FieldDefinition(name="application_access", cardinality="many")
     db.add_all([employee, pay, access])
     db.flush()
-    low = Policy(name="Low", priority=5)
-    high = Policy(name="High", priority=20)
-    low.values = [PolicyFieldValue(field_definition=pay, value="weekly"), PolicyFieldValue(field_definition=access, value="GitHub")]
-    high.values = [PolicyFieldValue(field_definition=pay, value="biweekly"), PolicyFieldValue(field_definition=access, value="Slack")]
+    low = versioned_policy(
+        "Low",
+        5,
+        [
+            PolicyFieldValue(field_definition=pay, value="weekly"),
+            PolicyFieldValue(field_definition=access, value="GitHub"),
+        ],
+    )
+    high = versioned_policy(
+        "High",
+        20,
+        [
+            PolicyFieldValue(field_definition=pay, value="biweekly"),
+            PolicyFieldValue(field_definition=access, value="Slack"),
+        ],
+    )
     db.add_all([low, high])
     db.flush()
 
     employee.policies = [low, high]
     db.flush()
     result = resolve_employee_assignments(db, employee)
-    assert {(item.value, item.source_policy_id) for item in result} == {
-        ("biweekly", high.id),
-        ("GitHub", low.id),
-        ("Slack", high.id),
+    assert {(item.value, item.source_policy_version_id) for item in result} == {
+        ("biweekly", high.versions[0].id),
+        ("GitHub", low.versions[0].id),
+        ("Slack", high.versions[0].id),
     }
 
 
 def test_same_priority_same_value_is_not_a_conflict(db):
     employee = Employee(name="A", state="CA", department="Eng", employee_type="regular")
     field = FieldDefinition(name="schedule", cardinality="one")
-    first = Policy(name="First", priority=10)
-    second = Policy(name="Second", priority=10)
-    first.values = [PolicyFieldValue(field_definition=field, value="weekly")]
-    second.values = [PolicyFieldValue(field_definition=field, value="weekly")]
+    first = versioned_policy(
+        "First",
+        10,
+        [PolicyFieldValue(field_definition=field, value="weekly")],
+    )
+    second = versioned_policy(
+        "Second",
+        10,
+        [PolicyFieldValue(field_definition=field, value="weekly")],
+    )
     db.add_all([employee, field, first, second])
     db.flush()
     employee.policies = [first, second]
@@ -41,16 +77,22 @@ def test_same_priority_same_value_is_not_a_conflict(db):
     result = resolve_employee_assignments(db, employee)
     assert len(result) == 1
     assert result[0].value == "weekly"
-    assert result[0].source_policy_id == first.id
+    assert result[0].source_policy_version_id == first.versions[0].id
 
 
 def test_service_raises_for_equal_priority_different_values(db):
     employee = Employee(name="A", state="CA", department="Eng", employee_type="regular")
     field = FieldDefinition(name="schedule", cardinality="one")
-    first = Policy(name="First", priority=10)
-    second = Policy(name="Second", priority=10)
-    first.values = [PolicyFieldValue(field_definition=field, value="weekly")]
-    second.values = [PolicyFieldValue(field_definition=field, value="monthly")]
+    first = versioned_policy(
+        "First",
+        10,
+        [PolicyFieldValue(field_definition=field, value="weekly")],
+    )
+    second = versioned_policy(
+        "Second",
+        10,
+        [PolicyFieldValue(field_definition=field, value="monthly")],
+    )
     db.add_all([employee, field, first, second])
     db.flush()
     employee.policies = [first, second]

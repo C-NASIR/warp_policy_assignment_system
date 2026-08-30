@@ -11,15 +11,24 @@ from app.models import (
     EmployeePolicy,
     GroupPolicy,
 )
+from app.services.policy_versions import get_effective_policy_versions
 
 
 class EmployeePolicyRefreshError(ValueError):
     pass
 
 
-def find_matching_policy_ids(session: Session, employee_id: int) -> list[int]:
+def find_matching_policy_ids(
+    session: Session,
+    employee_id: int,
+    evaluation_date: date | None = None,
+) -> list[int]:
     """Return deduplicated direct and group-inherited policy IDs."""
-    direct_policy_ids = find_direct_matching_policy_ids(session, employee_id)
+    direct_policy_ids = find_direct_matching_policy_ids(
+        session,
+        employee_id,
+        evaluation_date,
+    )
     group_policy_ids = session.scalars(
         select(GroupPolicy.policy_id)
         .join(
@@ -32,8 +41,19 @@ def find_matching_policy_ids(session: Session, employee_id: int) -> list[int]:
     return sorted(set(direct_policy_ids).union(group_policy_ids))
 
 
-def find_direct_matching_policy_ids(session: Session, employee_id: int) -> list[int]:
-    """Return policies having a compiled clause satisfied by the employee."""
+def find_direct_matching_policy_ids(
+    session: Session,
+    employee_id: int,
+    evaluation_date: date | None = None,
+) -> list[int]:
+    """Return policies whose effective version has a satisfied compiled clause."""
+    effective_versions = get_effective_policy_versions(
+        session,
+        evaluation_date=evaluation_date,
+    )
+    if not effective_versions:
+        return []
+    versions_by_id = {version.id: version for version in effective_versions.values()}
     employee_fields = [column for column in inspect(Employee).columns if not column.primary_key]
     condition_matches = or_(
         *(_condition_matches_employee_column(column) for column in employee_fields)
@@ -41,15 +61,21 @@ def find_direct_matching_policy_ids(session: Session, employee_id: int) -> list[
     matched_count = func.sum(case((condition_matches, 1), else_=0))
 
     statement = (
-        select(CompiledPolicyClause.policy_id)
+        select(CompiledPolicyClause.policy_version_id)
         .join(CompiledPolicyClause.conditions)
         .join(Employee, Employee.id == employee_id)
-        .group_by(CompiledPolicyClause.id, CompiledPolicyClause.policy_id)
+        .where(CompiledPolicyClause.policy_version_id.in_(versions_by_id))
+        .group_by(CompiledPolicyClause.id, CompiledPolicyClause.policy_version_id)
         .having(func.count(CompiledPolicyCondition.id) == matched_count)
         .distinct()
-        .order_by(CompiledPolicyClause.policy_id)
+        .order_by(CompiledPolicyClause.policy_version_id)
     )
-    return list(session.scalars(statement))
+    return sorted(
+        {
+            versions_by_id[version_id].policy_id
+            for version_id in session.scalars(statement)
+        }
+    )
 
 
 def _condition_matches_employee_column(column):
@@ -87,13 +113,17 @@ def _condition_matches_employee_column(column):
     )
 
 
-def refresh_employee_policies(session: Session, employee_id: int) -> list[EmployeePolicy]:
+def refresh_employee_policies(
+    session: Session,
+    employee_id: int,
+    evaluation_date: date | None = None,
+) -> list[EmployeePolicy]:
     """Replace an employee's policy links with their current compiled-policy matches."""
     employee = session.get(Employee, employee_id)
     if employee is None:
         raise EmployeePolicyRefreshError(f"Employee {employee_id} not found")
 
-    policy_ids = find_matching_policy_ids(session, employee_id)
+    policy_ids = find_matching_policy_ids(session, employee_id, evaluation_date)
     session.execute(delete(EmployeePolicy).where(EmployeePolicy.employee_id == employee_id))
     session.flush()
 

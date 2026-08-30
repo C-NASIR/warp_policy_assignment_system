@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
+from app.dates import current_date
 from app.dependencies import DatabaseSession
 from app.models import Employee, EmployeeAssignment, EmployeeOverride
 from app.schemas import (
@@ -124,6 +125,7 @@ def delete_override(
 @router.post("/{employee_id}/refresh", response_model=list[AssignmentRead])
 def refresh(employee_id: int, session: DatabaseSession) -> list[EmployeeAssignment]:
     employee = _employee_or_404(session, employee_id)
-    refresh_employee_policies(session, employee.id)
-    refresh_employee_assignments(session, employee)
+    evaluation_date = current_date()
+    refresh_employee_policies(session, employee.id, evaluation_date)
+    refresh_employee_assignments(session, employee, evaluation_date)
     return assignments(employee_id, session)

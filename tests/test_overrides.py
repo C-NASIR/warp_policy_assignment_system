@@ -55,7 +55,7 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
     employee = create_employee(client)
     initial = assignments(client, employee["id"])
     assert initial[0]["value"] == "weekly"
-    assert initial[0]["source_policy_id"] == policy["id"]
+    assert initial[0]["source_policy_version_id"] == policy["versions"][0]["id"]
     assert initial[0]["source_override_id"] is None
 
     response = client.post(
@@ -68,7 +68,7 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
 
     overridden = assignments(client, employee["id"])
     assert overridden[0]["value"] == "monthly"
-    assert overridden[0]["source_policy_id"] is None
+    assert overridden[0]["source_policy_version_id"] is None
     assert overridden[0]["source_override_id"] == override["id"]
 
     updated = client.patch(
@@ -83,7 +83,7 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
     assert deleted.status_code == 204
     restored = assignments(client, employee["id"])
     assert restored[0]["value"] == "weekly"
-    assert restored[0]["source_policy_id"] == policy["id"]
+    assert restored[0]["source_policy_version_id"] == policy["versions"][0]["id"]
     assert restored[0]["source_override_id"] is None
 
 
@@ -132,7 +132,7 @@ def test_many_value_overrides_replace_all_policy_values_until_last_is_removed(cl
     figma = figma_response.json()
     overridden = assignments(client, employee["id"])
     assert {item["value"] for item in overridden} == {"Linear", "Figma"}
-    assert all(item["source_policy_id"] is None for item in overridden)
+    assert all(item["source_policy_version_id"] is None for item in overridden)
 
     duplicate = client.post(
         f"/employees/{employee['id']}/overrides",

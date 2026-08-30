@@ -118,16 +118,16 @@ def test_direct_and_group_policies_use_the_same_priority_engine(client):
     engineering = create_group(client)
 
     initial = assignments(client, alice["id"])
-    assert [(item["value"], item["source_policy_id"]) for item in initial] == [
-        ("monthly", direct["id"])
+    assert [(item["value"], item["source_policy_version_id"]) for item in initial] == [
+        ("monthly", direct["versions"][0]["id"])
     ]
 
     client.post(f"/groups/{engineering['id']}/employees/{alice['id']}")
     client.post(f"/groups/{engineering['id']}/policies/{inherited['id']}")
 
     resolved = assignments(client, alice["id"])
-    assert [(item["value"], item["source_policy_id"]) for item in resolved] == [
-        ("monthly", direct["id"])
+    assert [(item["value"], item["source_policy_version_id"]) for item in resolved] == [
+        ("monthly", direct["versions"][0]["id"])
     ]
 
 

@@ -8,7 +8,7 @@ from app.services.policy_engine import ResolvedAssignment
 class FinalAssignment:
     field_definition_id: int
     value: str
-    source_policy_id: int | None = None
+    source_policy_version_id: int | None = None
     source_override_id: int | None = None
 
 
@@ -22,7 +22,7 @@ def apply_employee_overrides(
         FinalAssignment(
             field_definition_id=item.field_definition_id,
             value=item.value,
-            source_policy_id=item.source_policy_id,
+            source_policy_version_id=item.source_policy_version_id,
         )
         for item in resolved_assignments
         if item.field_definition_id not in overridden_field_ids

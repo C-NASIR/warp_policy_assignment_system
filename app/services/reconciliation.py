@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
@@ -6,8 +8,16 @@ from app.services.overrides import apply_employee_overrides
 from app.services.policy_engine import resolve_employee_assignments
 
 
-def refresh_employee_assignments(session: Session, employee: Employee) -> list[EmployeeAssignment]:
-    resolved_assignments = resolve_employee_assignments(session, employee)
+def refresh_employee_assignments(
+    session: Session,
+    employee: Employee,
+    evaluation_date: date | None = None,
+) -> list[EmployeeAssignment]:
+    resolved_assignments = resolve_employee_assignments(
+        session,
+        employee,
+        evaluation_date,
+    )
     overrides = list(
         session.scalars(
             select(EmployeeOverride)
@@ -27,7 +37,7 @@ def refresh_employee_assignments(session: Session, employee: Employee) -> list[E
             employee_id=employee.id,
             field_definition_id=item.field_definition_id,
             value=item.value,
-            source_policy_id=item.source_policy_id,
+            source_policy_version_id=item.source_policy_version_id,
             source_override_id=item.source_override_id,
         )
         for item in final_assignments

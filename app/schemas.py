@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.dates import current_date
 
 
 class ORMModel(BaseModel):
@@ -16,7 +18,7 @@ class EmployeeCreate(BaseModel):
     department: str = Field(min_length=1, max_length=100)
     employee_type: str = Field(min_length=1, max_length=100)
     location: str | None = Field(default=None, min_length=1, max_length=200)
-    start_date: date = Field(default_factory=date.today)
+    start_date: date = Field(default_factory=current_date)
     manager_id: int | None = Field(default=None, gt=0)
 
 
@@ -123,29 +125,55 @@ class ConditionGroupCreate(BaseModel):
         return self
 
 
-class PolicyCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=200)
+class PolicyVersionCreate(BaseModel):
     priority: int
+    effective_from: date = Field(default_factory=current_date)
+    effective_until: date | None = None
+    created_by: str | None = Field(default=None, min_length=1, max_length=200)
     condition_group: ConditionGroupCreate
     values: list[PolicyValueCreate] = Field(default_factory=list)
 
+    @model_validator(mode="after")
+    def require_a_valid_effective_range(self) -> PolicyVersionCreate:
+        if self.effective_until is not None and self.effective_until < self.effective_from:
+            raise ValueError("effective_until cannot be before effective_from")
+        return self
+
+
+class PolicyCreate(PolicyVersionCreate):
+    name: str = Field(min_length=1, max_length=200)
+    status: Literal["active", "archived"] = "active"
+
 
 class PolicyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str | None = Field(default=None, min_length=1, max_length=200)
-    priority: int | None = None
-    condition_group: ConditionGroupCreate | None = None
-    values: list[PolicyValueCreate] | None = None
+    status: Literal["active", "archived"] | None = None
 
 
 class PolicyValueRead(PolicyValueCreate, ORMModel):
     pass
 
 
+class PolicyVersionRead(ORMModel):
+    id: int
+    policy_id: int
+    version_number: int
+    priority: int
+    effective_from: date
+    effective_until: date | None
+    created_at: datetime
+    created_by: str | None
+    values: list[PolicyValueRead]
+
+
 class PolicyRead(ORMModel):
     id: int
     name: str
-    priority: int
-    values: list[PolicyValueRead]
+    status: Literal["active", "archived"]
+    created_at: datetime
+    versions: list[PolicyVersionRead]
 
 
 class AssignmentRead(ORMModel):
@@ -153,6 +181,6 @@ class AssignmentRead(ORMModel):
     employee_id: int
     field_definition_id: int
     value: str
-    source_policy_id: int | None
+    source_policy_version_id: int | None
     source_override_id: int | None
     field_definition: FieldDefinitionRead

@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 from sqlalchemy import func, select
 
@@ -8,12 +10,13 @@ from app.models import (
     ConditionGroup,
     ConditionGroupCondition,
     Policy,
+    PolicyVersion,
 )
 from app.services.policy_compiler import (
     CompiledCondition,
     PolicyCompilationError,
     compile_condition_tree_to_clauses,
-    compile_policy_clauses,
+    compile_policy_version_clauses,
 )
 
 
@@ -71,20 +74,26 @@ def test_rejects_unknown_logical_operator():
         compile_condition_tree_to_clauses(group("xor", condition("state", "California")))
 
 
-def test_compile_policy_clauses_builds_replaceable_compiled_representation(db):
-    policy = Policy(name="California regular engineer", priority=10)
+def test_compile_policy_version_clauses_builds_replaceable_representation(db):
+    policy = Policy(name="California regular engineer")
+    version = PolicyVersion(
+        policy=policy,
+        version_number=1,
+        priority=10,
+        effective_from=date(2020, 1, 1),
+    )
     a = condition("state", "California")
     b = condition("employee_type", "regular")
     c = condition("department", "Engineering")
     nested = group("or", b, c)
     root = group("and", a, children=(nested,))
-    root.policy = policy
-    nested.policy = policy
+    root.policy_version = version
+    nested.policy_version = version
     db.add(policy)
     db.flush()
 
-    clauses = compile_policy_clauses(root)
-    policy.compiled_clauses = clauses
+    clauses = compile_policy_version_clauses(root)
+    version.compiled_clauses = clauses
     db.flush()
 
     assert len(clauses) == 2
@@ -97,8 +106,8 @@ def test_compile_policy_clauses_builds_replaceable_compiled_representation(db):
     }
 
     root.logical_operator = "or"
-    replacement = compile_policy_clauses(root)
-    policy.compiled_clauses = replacement
+    replacement = compile_policy_version_clauses(root)
+    version.compiled_clauses = replacement
     db.flush()
 
     assert len(replacement) == 3

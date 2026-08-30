@@ -1,4 +1,4 @@
-from datetime import date
+from app.dates import current_date
 
 
 def create_field(client, name, cardinality):
@@ -67,16 +67,20 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
     assignments = client.get(f"/employees/{alice['id']}/assignments").json()
     by_value = {assignment["value"]: assignment for assignment in assignments}
     assert set(by_value) == {"biweekly", "payroll_app", "GitHub"}
-    assert by_value["biweekly"]["source_policy_id"] == california_policy["id"]
-    assert by_value["payroll_app"]["source_policy_id"] == california_policy["id"]
-    assert by_value["GitHub"]["source_policy_id"] == engineering_policy["id"]
+    california_version_id = california_policy["versions"][0]["id"]
+    engineering_version_id = engineering_policy["versions"][0]["id"]
+    assert by_value["biweekly"]["source_policy_version_id"] == california_version_id
+    assert by_value["payroll_app"]["source_policy_version_id"] == california_version_id
+    assert by_value["GitHub"]["source_policy_version_id"] == engineering_version_id
     assert by_value["biweekly"]["field_definition"]["name"] == "pay_schedule"
 
     response = client.patch(f"/employees/{alice['id']}", json={"state": "Wisconsin"})
     assert response.status_code == 200
     assignments = client.get(f"/employees/{alice['id']}/assignments").json()
     assert {assignment["value"] for assignment in assignments} == {"weekly", "GitHub"}
-    assert {assignment["source_policy_id"] for assignment in assignments} == {engineering_policy["id"]}
+    assert {assignment["source_policy_version_id"] for assignment in assignments} == {
+        engineering_version_id
+    }
 
 
 def test_nonmatching_policy_produces_no_assignment_then_employee_update_applies_it(client):
@@ -142,7 +146,7 @@ def test_validation_and_missing_references(client):
     assert client.get("/employees/999").status_code == 404
 
 
-def test_updating_policy_tree_recompiles_it_for_employee_reconciliation(client):
+def test_archiving_policy_removes_it_on_employee_reconciliation(client):
     badge = create_field(client, "badge", "one")
     policy = create_policy(
         client,
@@ -164,9 +168,10 @@ def test_updating_policy_tree_recompiles_it_for_employee_reconciliation(client):
 
     response = client.patch(
         f"/policies/{policy['id']}",
-        json={"condition_group": condition_group("state", "Wisconsin")},
+        json={"status": "archived"},
     )
     assert response.status_code == 200
+    assert response.json()["status"] == "archived"
     assert client.post(f"/employees/{alice['id']}/refresh").json() == []
 
 
@@ -180,17 +185,30 @@ def test_policy_update_validates_nested_tree_and_value_references(client):
         [{"field_definition_id": field["id"], "value": "blue"}],
     )
 
-    empty_tree = client.patch(
-        f"/policies/{policy['id']}",
-        json={"condition_group": {"logical_operator": "and"}},
+    empty_tree = client.post(
+        f"/policies/{policy['id']}/versions",
+        json={
+            "priority": 10,
+            "condition_group": {"logical_operator": "and"},
+        },
     )
     assert empty_tree.status_code == 422
 
-    missing_field = client.patch(
-        f"/policies/{policy['id']}",
-        json={"values": [{"field_definition_id": 999, "value": "red"}]},
+    missing_field = client.post(
+        f"/policies/{policy['id']}/versions",
+        json={
+            "priority": 10,
+            "condition_group": condition_group("state", "California"),
+            "values": [{"field_definition_id": 999, "value": "red"}],
+        },
     )
     assert missing_field.status_code == 404
+
+    executable_patch = client.patch(
+        f"/policies/{policy['id']}",
+        json={"priority": 99},
+    )
+    assert executable_patch.status_code == 422
 
 
 def test_employee_date_comparison_policy_is_accepted_and_applied(client):
@@ -270,7 +288,7 @@ def test_employee_start_date_defaults_to_current_date(client):
     )
 
     assert response.status_code == 201
-    assert response.json()["start_date"] == date.today().isoformat()
+    assert response.json()["start_date"] == current_date().isoformat()
 
 
 def test_employee_manager_id_can_be_created_and_updated(client):
