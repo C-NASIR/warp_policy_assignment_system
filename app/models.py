@@ -42,6 +42,53 @@ class AuditLog(Base):
     )
 
 
+class ScheduledReconciliation(Base):
+    __tablename__ = "scheduled_reconciliations"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'processed', 'cancelled')",
+            name="ck_scheduled_reconciliation_status",
+        ),
+        CheckConstraint(
+            "(status = 'processed' AND processed_at IS NOT NULL) OR "
+            "(status IN ('pending', 'cancelled') AND processed_at IS NULL)",
+            name="ck_scheduled_reconciliation_processed_at",
+        ),
+        UniqueConstraint(
+            "entity_type",
+            "entity_id",
+            "trigger_type",
+            "scheduled_at",
+            name="uq_scheduled_reconciliation_event",
+        ),
+        Index(
+            "ix_scheduled_reconciliations_due",
+            "status",
+            "scheduled_at",
+        ),
+        Index(
+            "ix_scheduled_reconciliations_entity",
+            "entity_type",
+            "entity_id",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(100))
+    entity_id: Mapped[int] = mapped_column()
+    trigger_type: Mapped[str] = mapped_column(String(100))
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[Literal["pending", "processed", "cancelled"]] = mapped_column(
+        String(20),
+        default="pending",
+        server_default="pending",
+    )
+    processed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
 class EmployeePolicy(Base):
     __tablename__ = "employee_policies"
 

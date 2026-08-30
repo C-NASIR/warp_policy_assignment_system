@@ -21,6 +21,7 @@ from app.models import (
     Policy,
     PolicyFieldValue,
     PolicyVersion,
+    ScheduledReconciliation,
 )
 
 
@@ -35,6 +36,15 @@ def test_policy_domain_models_have_required_columns():
             "before",
             "after",
             "timestamp",
+        },
+        ScheduledReconciliation: {
+            "id",
+            "entity_type",
+            "entity_id",
+            "trigger_type",
+            "scheduled_at",
+            "status",
+            "processed_at",
         },
         Employee: {
             "id",
@@ -147,6 +157,36 @@ def test_policy_versions_enforce_number_and_effective_range_constraints():
 
     assert unique_columns == {"policy_id", "version_number"}
     assert "ck_policy_version_valid_effective_range" in check_names
+
+
+def test_scheduled_reconciliations_enforce_lifecycle_and_lookup_indexes():
+    table = cast(Table, ScheduledReconciliation.__table__)
+    check_names = {
+        constraint.name
+        for constraint in table.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+    unique_column_sets = {
+        tuple(column.key for column in constraint.columns)
+        for constraint in table.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+    index_names = {index.name for index in table.indexes}
+
+    assert {
+        "ck_scheduled_reconciliation_status",
+        "ck_scheduled_reconciliation_processed_at",
+    } <= check_names
+    assert (
+        "entity_type",
+        "entity_id",
+        "trigger_type",
+        "scheduled_at",
+    ) in unique_column_sets
+    assert {
+        "ix_scheduled_reconciliations_due",
+        "ix_scheduled_reconciliations_entity",
+    } <= index_names
 
 
 def test_group_relationships_persist_memberships_and_policies(db):

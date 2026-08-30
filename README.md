@@ -21,6 +21,8 @@ Employee
 
 Effective ranges are inclusive. Versions for one policy may not overlap, and an archived policy has no effective version. Scheduling a later version automatically closes the previous open-ended version on the preceding day. An effective-date gap is valid and means that policy contributes no behavior during the gap. Creating a future version immediately reconciles current state but does not apply that version early; automatic reconciliation when its effective date arrives remains a separate scheduling concern.
 
+Future changes are represented centrally in `ScheduledReconciliation` while their authoritative dates remain on the owning domain records. Policy-version creation immediately synchronizes pending `becomes_effective` and `expires` events. Because `effective_until` is inclusive, expiration is scheduled for midnight UTC on the following day. The scheduling service can query and reconcile due events transactionally, but version 1 does not include a periodic worker that invokes it.
+
 Groups are explicit collections of employees. A group contributes its attached policies as candidates for every member; it does not produce assignments of its own. Direct matches and group-inherited policies are deduplicated and sent through the same policy engine, so priority and conflict behavior is identical regardless of where a policy came from.
 
 For cardinality `one`, the highest-priority effective policy version wins. Equal-priority versions producing different values return HTTP 409 instead of selecting arbitrarily. For cardinality `many`, unique values are retained. If several versions produce the same many-valued result, its recorded source is the highest-priority version, breaking remaining ties by lowest version ID.
@@ -49,6 +51,7 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
 - **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override.
 - **Audit log:** an append-only actor, entity, action, before/after snapshot, and timestamp for an important domain mutation.
+- **Scheduled reconciliation:** a centralized pending, processed, or cancelled future trigger referencing the domain entity whose date caused it.
 
 ## Install and run
 
@@ -121,6 +124,21 @@ Snapshots contain JSON-safe mapped scalar values for the affected entity. Policy
 
 `GET /audit-logs` supports `entity_type`, `entity_id`, `actor`, `action`, `from_timestamp`, and `to_timestamp` filters, plus bounded `limit` and `offset` pagination. Results are chronological. There is no mutation or deletion endpoint: audit records are append-only and retained indefinitely in version 1. Any future retention process must be explicitly approved, documented, and run outside ordinary domain mutation paths.
 
+## Scheduled reconciliation contract
+
+`ScheduledReconciliation` contains `entity_type`, `entity_id`, `trigger_type`, `scheduled_at`, `status`, and `processed_at`. An indexed `(status, scheduled_at)` lookup lets a future worker find pending work without scanning policy versions, employees, or overrides. Exact event identity is unique, so scheduling the same event repeatedly is idempotent.
+
+Policy scheduling is maintained immediately whenever a version is created or policy status changes:
+
+- A future `effective_from` creates a `PolicyVersion/becomes_effective` event.
+- An inclusive `effective_until` creates a `PolicyVersion/expires` event at the start of the next UTC day.
+- Closing a prior open-ended version creates its expiration event at the new version's boundary.
+- Archiving a policy cancels its pending events; reactivation restores future events without duplicating rows.
+
+`reconcile_due_events()` is the callable processing boundary for a future worker. It locks and loads one due batch, deduplicates simultaneous events belonging to the same policy, invokes the existing policy or employee reconciliation paths, and marks events processed only after successful reconciliation. Domain mutations, assignments, audit entries, and schedule status share one transaction; a conflict rolls everything back and leaves the event pending for retry.
+
+The service already defines dispatch types for employee tenure thresholds and override activation/expiration. Creating those schedules remains deferred until tenure conditions and time-bounded override fields exist. No timer, cron process, queue, or worker is currently running.
+
 ## Alice example
 
 Create `pay_schedule` (`one`) and `application_access` (`many`). Create a priority-20 policy whose initial version is conditioned on California and produces `biweekly` and `payroll_app`, and a priority-10 policy whose initial version is conditioned on Engineering and produces `weekly` and `GitHub`. Creating Alice in California Engineering automatically resolves:
@@ -135,4 +153,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, PostgreSQL, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, automatic date-boundary reconciliation, workers and queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
+Version 1 intentionally excludes a frontend, PostgreSQL, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, tenure-threshold calculation, a periodic scheduled-reconciliation worker, queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.

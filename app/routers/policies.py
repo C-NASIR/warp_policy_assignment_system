@@ -26,6 +26,7 @@ from app.services.policy_compiler import (
     compile_policy_version_clauses,
 )
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
+from app.services.scheduled_reconciliations import sync_policy_version_schedules
 from app.services.policy_versions import create_policy_version
 
 router = APIRouter(prefix="/policies", tags=["policies"])
@@ -93,7 +94,7 @@ def _create_version(
     except PolicyCompilationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    return create_policy_version(
+    version = create_policy_version(
         session,
         policy,
         priority=data.priority,
@@ -105,6 +106,8 @@ def _create_version(
         compiled_clauses=compiled_clauses,
         actor=actor,
     )
+    sync_policy_version_schedules(session, policy)
+    return version
 
 
 @router.post("", response_model=PolicyRead, status_code=status.HTTP_201_CREATED)
@@ -167,6 +170,7 @@ def patch(
             after=after,
         )
         if before["status"] != after["status"]:
+            sync_policy_version_schedules(session, policy)
             refresh_employees_affected_by_policy(session, policy)
     return session.scalar(_query().where(Policy.id == policy.id))
 

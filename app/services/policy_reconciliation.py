@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.dates import current_datetime
+from app.dates import current_datetime, ensure_utc
 from app.models import Employee, Policy
 from app.services.policy_matching import refresh_employee_policies
 from app.services.reconciliation import refresh_employee_assignments
@@ -10,6 +12,7 @@ from app.services.reconciliation import refresh_employee_assignments
 def refresh_employees_affected_by_policy(
     session: Session,
     policy: Policy,
+    reconciliation_at: datetime | None = None,
 ) -> None:
     """Synchronously reconcile employees after a material policy change.
 
@@ -21,7 +24,7 @@ def refresh_employees_affected_by_policy(
     # Ensure pending policy/version changes are visible to the reconciliation
     # queries before beginning the fan-out.
     session.flush()
-    reconciliation_at = current_datetime()
+    reconciliation_at = ensure_utc(reconciliation_at or current_datetime())
     evaluation_date = reconciliation_at.date()
     employees = list(session.scalars(select(Employee).order_by(Employee.id)))
 
