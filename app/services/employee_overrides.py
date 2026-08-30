@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
+from app.dates import current_datetime
 from app.models import Employee, EmployeeOverride, FieldDefinition
 from app.services.reconciliation import refresh_employee_assignments
 
@@ -18,7 +19,10 @@ def list_employee_overrides(session: Session, employee_id: int) -> list[Employee
     return list(
         session.scalars(
             select(EmployeeOverride)
-            .where(EmployeeOverride.employee_id == employee_id)
+            .where(
+                EmployeeOverride.employee_id == employee_id,
+                EmployeeOverride.retired_at.is_(None),
+            )
             .options(joinedload(EmployeeOverride.field_definition))
             .order_by(
                 EmployeeOverride.field_definition_id,
@@ -49,9 +53,14 @@ def create_employee_override(
         field_definition=field_definition,
         value=value,
     )
+    reconciliation_at = current_datetime()
     session.add(override)
     session.flush()
-    refresh_employee_assignments(session, employee)
+    refresh_employee_assignments(
+        session,
+        employee,
+        reconciliation_at=reconciliation_at,
+    )
     return override
 
 
@@ -70,6 +79,11 @@ def update_employee_override(
         else override.field_definition
     )
     target_value = value if value is not None else override.value
+    if (
+        target_field.id == override.field_definition_id
+        and target_value == override.value
+    ):
+        return override
     _validate_override_cardinality(
         session,
         employee_id,
@@ -78,11 +92,21 @@ def update_employee_override(
         excluded_override_id=override.id,
     )
 
-    override.field_definition = target_field
-    override.value = target_value
+    reconciliation_at = current_datetime()
+    override.retired_at = reconciliation_at
+    replacement = EmployeeOverride(
+        employee=employee,
+        field_definition=target_field,
+        value=target_value,
+    )
+    session.add(replacement)
     session.flush()
-    refresh_employee_assignments(session, employee)
-    return override
+    refresh_employee_assignments(
+        session,
+        employee,
+        reconciliation_at=reconciliation_at,
+    )
+    return replacement
 
 
 def delete_employee_override(
@@ -92,9 +116,14 @@ def delete_employee_override(
 ) -> None:
     employee = _get_employee(session, employee_id)
     override = _get_override(session, employee_id, override_id)
-    session.delete(override)
+    reconciliation_at = current_datetime()
+    override.retired_at = reconciliation_at
     session.flush()
-    refresh_employee_assignments(session, employee)
+    refresh_employee_assignments(
+        session,
+        employee,
+        reconciliation_at=reconciliation_at,
+    )
 
 
 def _validate_override_cardinality(
@@ -107,6 +136,7 @@ def _validate_override_cardinality(
     statement = select(EmployeeOverride).where(
         EmployeeOverride.employee_id == employee_id,
         EmployeeOverride.field_definition_id == field_definition.id,
+        EmployeeOverride.retired_at.is_(None),
     )
     if excluded_override_id is not None:
         statement = statement.where(EmployeeOverride.id != excluded_override_id)
@@ -144,6 +174,7 @@ def _get_override(session: Session, employee_id: int, override_id: int) -> Emplo
         .where(
             EmployeeOverride.id == override_id,
             EmployeeOverride.employee_id == employee_id,
+            EmployeeOverride.retired_at.is_(None),
         )
         .options(joinedload(EmployeeOverride.field_definition))
     )

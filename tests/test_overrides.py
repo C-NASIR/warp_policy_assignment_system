@@ -76,15 +76,44 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
         json={"value": "biweekly"},
     )
     assert updated.status_code == 200
-    assert updated.json()["value"] == "biweekly"
+    replacement = updated.json()
+    assert replacement["value"] == "biweekly"
+    assert replacement["id"] != override["id"]
     assert assignments(client, employee["id"])[0]["value"] == "biweekly"
 
-    deleted = client.delete(f"/employees/{employee['id']}/overrides/{override['id']}")
+    deleted = client.delete(
+        f"/employees/{employee['id']}/overrides/{replacement['id']}"
+    )
     assert deleted.status_code == 204
     restored = assignments(client, employee["id"])
     assert restored[0]["value"] == "weekly"
     assert restored[0]["source_policy_version_id"] == policy["versions"][0]["id"]
     assert restored[0]["source_override_id"] is None
+
+    history = client.get(
+        f"/employees/{employee['id']}/assignments/history"
+    ).json()
+    assert [item["value"] for item in history] == [
+        "weekly",
+        "monthly",
+        "biweekly",
+        "weekly",
+    ]
+    assert [item["source_override_id"] for item in history] == [
+        None,
+        override["id"],
+        replacement["id"],
+        None,
+    ]
+    assert all(item["effective_until"] is not None for item in history[:-1])
+    assert history[-1]["effective_until"] is None
+
+    at_override_start = client.get(
+        f"/employees/{employee['id']}/assignments",
+        params={"as_of": history[1]["effective_from"]},
+    )
+    assert at_override_start.status_code == 200
+    assert [item["value"] for item in at_override_start.json()] == ["monthly"]
 
 
 def test_override_can_create_an_assignment_without_a_policy_value(client):

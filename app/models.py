@@ -8,6 +8,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     String,
     UniqueConstraint,
     func,
@@ -15,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.database import Base
-from app.dates import current_date
+from app.dates import current_date, current_datetime
 
 
 class EmployeePolicy(Base):
@@ -276,13 +277,21 @@ class PolicyFieldValue(Base):
 class EmployeeOverride(Base):
     __tablename__ = "employee_overrides"
     __table_args__ = (
-        UniqueConstraint("employee_id", "field_definition_id", "value"),
+        Index(
+            "ix_employee_overrides_employee_retired",
+            "employee_id",
+            "retired_at",
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"))
     field_definition_id: Mapped[int] = mapped_column(ForeignKey("field_definitions.id"))
     value: Mapped[str] = mapped_column(String(500))
+    retired_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     employee: Mapped[Employee] = relationship(back_populates="overrides")
     field_definition: Mapped[FieldDefinition] = relationship(back_populates="overrides")
 
@@ -290,11 +299,25 @@ class EmployeeOverride(Base):
 class EmployeeAssignment(Base):
     __tablename__ = "employee_assignments"
     __table_args__ = (
-        UniqueConstraint("employee_id", "field_definition_id", "value"),
         CheckConstraint(
             "(source_policy_version_id IS NOT NULL AND source_override_id IS NULL) OR "
             "(source_policy_version_id IS NULL AND source_override_id IS NOT NULL)",
             name="ck_employee_assignment_exactly_one_source",
+        ),
+        CheckConstraint(
+            "effective_until IS NULL OR effective_until > effective_from",
+            name="ck_employee_assignment_valid_effective_range",
+        ),
+        Index(
+            "ix_employee_assignments_employee_current",
+            "employee_id",
+            "effective_until",
+        ),
+        Index(
+            "ix_employee_assignments_employee_field_start",
+            "employee_id",
+            "field_definition_id",
+            "effective_from",
         ),
     )
 
@@ -310,8 +333,15 @@ class EmployeeAssignment(Base):
         ForeignKey(
             "employee_overrides.id",
             name="fk_employee_assignments_source_override_id",
-            ondelete="CASCADE",
         ),
+        nullable=True,
+    )
+    effective_from: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+    )
+    effective_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
     )
     employee: Mapped[Employee] = relationship(back_populates="assignments")

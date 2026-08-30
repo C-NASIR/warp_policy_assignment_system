@@ -60,7 +60,13 @@ def test_policy_domain_models_have_required_columns():
         EmployeeGroupMembership: {"employee_id", "group_id"},
         GroupPolicy: {"group_id", "policy_id"},
         EmployeePolicy: {"employee_id", "policy_id"},
-        EmployeeOverride: {"id", "employee_id", "field_definition_id", "value"},
+        EmployeeOverride: {
+            "id",
+            "employee_id",
+            "field_definition_id",
+            "value",
+            "retired_at",
+        },
         EmployeeAssignment: {
             "id",
             "employee_id",
@@ -68,6 +74,8 @@ def test_policy_domain_models_have_required_columns():
             "value",
             "source_policy_version_id",
             "source_override_id",
+            "effective_from",
+            "effective_until",
         },
         FieldDefinition: {"id", "field", "cardinality", "conflict_resolution"},
         PolicyFieldValue: {"policy_version_id", "field_definition_id", "value"},
@@ -109,6 +117,7 @@ def test_employee_assignment_requires_exactly_one_source():
     }
 
     assert "ck_employee_assignment_exactly_one_source" in constraints
+    assert "ck_employee_assignment_valid_effective_range" in constraints
 
 
 def test_policy_versions_enforce_number_and_effective_range_constraints():

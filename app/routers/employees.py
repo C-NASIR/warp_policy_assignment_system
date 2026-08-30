@@ -1,8 +1,10 @@
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
-from app.dates import current_date
+from app.dates import current_datetime
 from app.dependencies import DatabaseSession
 from app.models import Employee, EmployeeAssignment, EmployeeOverride
 from app.schemas import (
@@ -13,6 +15,11 @@ from app.schemas import (
     EmployeeOverrideUpdate,
     EmployeeRead,
     EmployeeUpdate,
+)
+from app.services.employee_assignments import (
+    get_current_employee_assignments,
+    get_employee_assignment_history,
+    get_employee_assignments_as_of,
 )
 from app.services.employee_overrides import (
     create_employee_override,
@@ -55,16 +62,27 @@ def patch(employee_id: int, data: EmployeeUpdate, session: DatabaseSession) -> E
 
 
 @router.get("/{employee_id}/assignments", response_model=list[AssignmentRead])
-def assignments(employee_id: int, session: DatabaseSession) -> list[EmployeeAssignment]:
+def assignments(
+    employee_id: int,
+    session: DatabaseSession,
+    as_of: datetime | None = None,
+) -> list[EmployeeAssignment]:
     _employee_or_404(session, employee_id)
-    return list(
-        session.scalars(
-            select(EmployeeAssignment)
-            .where(EmployeeAssignment.employee_id == employee_id)
-            .options(joinedload(EmployeeAssignment.field_definition))
-            .order_by(EmployeeAssignment.field_definition_id, EmployeeAssignment.value)
-        )
-    )
+    if as_of is None:
+        return get_current_employee_assignments(session, employee_id)
+    return get_employee_assignments_as_of(session, employee_id, as_of)
+
+
+@router.get(
+    "/{employee_id}/assignments/history",
+    response_model=list[AssignmentRead],
+)
+def assignment_history(
+    employee_id: int,
+    session: DatabaseSession,
+) -> list[EmployeeAssignment]:
+    _employee_or_404(session, employee_id)
+    return get_employee_assignment_history(session, employee_id)
 
 
 @router.get("/{employee_id}/overrides", response_model=list[EmployeeOverrideRead])
@@ -125,7 +143,13 @@ def delete_override(
 @router.post("/{employee_id}/refresh", response_model=list[AssignmentRead])
 def refresh(employee_id: int, session: DatabaseSession) -> list[EmployeeAssignment]:
     employee = _employee_or_404(session, employee_id)
-    evaluation_date = current_date()
+    reconciliation_at = current_datetime()
+    evaluation_date = reconciliation_at.date()
     refresh_employee_policies(session, employee.id, evaluation_date)
-    refresh_employee_assignments(session, employee, evaluation_date)
+    refresh_employee_assignments(
+        session,
+        employee,
+        evaluation_date,
+        reconciliation_at,
+    )
     return assignments(employee_id, session)

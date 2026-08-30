@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.dates import current_date
+from app.dates import current_datetime
 from app.models import (
     Employee,
     EmployeeGroupMembership,
@@ -141,11 +143,22 @@ def _get_policy(session: Session, policy_id: int) -> Policy:
 
 
 def _refresh_group_members(session: Session, group_id: int) -> None:
+    reconciliation_at = current_datetime()
     for employee in list_group_employees(session, group_id):
-        _refresh_employee(session, employee)
+        _refresh_employee(session, employee, reconciliation_at)
 
 
-def _refresh_employee(session: Session, employee: Employee) -> None:
-    evaluation_date = current_date()
+def _refresh_employee(
+    session: Session,
+    employee: Employee,
+    reconciliation_at: datetime | None = None,
+) -> None:
+    reconciliation_at = reconciliation_at or current_datetime()
+    evaluation_date = reconciliation_at.date()
     refresh_employee_policies(session, employee.id, evaluation_date)
-    refresh_employee_assignments(session, employee, evaluation_date)
+    refresh_employee_assignments(
+        session,
+        employee,
+        evaluation_date,
+        reconciliation_at,
+    )

@@ -1,27 +1,39 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import delete, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.dates import current_datetime, ensure_utc, start_of_day
 from app.models import Employee, EmployeeAssignment, EmployeeOverride
-from app.services.overrides import apply_employee_overrides
+from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import resolve_employee_assignments
+
+
+class AssignmentReconciliationOrderError(ValueError):
+    pass
 
 
 def refresh_employee_assignments(
     session: Session,
     employee: Employee,
     evaluation_date: date | None = None,
+    reconciliation_at: datetime | None = None,
 ) -> list[EmployeeAssignment]:
+    effective_at = _reconciliation_timestamp(evaluation_date, reconciliation_at)
+    policy_evaluation_date = evaluation_date or effective_at.date()
+    _reject_out_of_order_reconciliation(session, employee.id, effective_at)
     resolved_assignments = resolve_employee_assignments(
         session,
         employee,
-        evaluation_date,
+        policy_evaluation_date,
     )
     overrides = list(
         session.scalars(
             select(EmployeeOverride)
-            .where(EmployeeOverride.employee_id == employee.id)
+            .where(
+                EmployeeOverride.employee_id == employee.id,
+                EmployeeOverride.retired_at.is_(None),
+            )
             .order_by(
                 EmployeeOverride.field_definition_id,
                 EmployeeOverride.value,
@@ -30,19 +42,81 @@ def refresh_employee_assignments(
         )
     )
     final_assignments = apply_employee_overrides(resolved_assignments, overrides)
-    session.execute(delete(EmployeeAssignment).where(EmployeeAssignment.employee_id == employee.id))
-    session.flush()
-    assignments = [
-        EmployeeAssignment(
+    current_assignments = list(
+        session.scalars(
+            select(EmployeeAssignment)
+            .where(
+                EmployeeAssignment.employee_id == employee.id,
+                EmployeeAssignment.effective_until.is_(None),
+            )
+            .with_for_update()
+        )
+    )
+    desired_by_key = {_assignment_key(item): item for item in final_assignments}
+    active_assignments: list[EmployeeAssignment] = []
+
+    for assignment in current_assignments:
+        if desired_by_key.pop(_assignment_key(assignment), None) is not None:
+            active_assignments.append(assignment)
+            continue
+        if ensure_utc(assignment.effective_from) == effective_at:
+            session.delete(assignment)
+        else:
+            assignment.effective_until = effective_at
+
+    for item in desired_by_key.values():
+        assignment = EmployeeAssignment(
             employee_id=employee.id,
             field_definition_id=item.field_definition_id,
             value=item.value,
             source_policy_version_id=item.source_policy_version_id,
             source_override_id=item.source_override_id,
+            effective_from=effective_at,
         )
-        for item in final_assignments
-    ]
-    session.add_all(assignments)
+        session.add(assignment)
+        active_assignments.append(assignment)
+
     session.flush()
     session.expire(employee, ["assignments"])
-    return assignments
+    return sorted(
+        active_assignments,
+        key=lambda item: (item.field_definition_id, item.value, item.id),
+    )
+
+
+def _reconciliation_timestamp(
+    evaluation_date: date | None,
+    reconciliation_at: datetime | None,
+) -> datetime:
+    if reconciliation_at is not None:
+        return ensure_utc(reconciliation_at)
+    if evaluation_date is not None:
+        return start_of_day(evaluation_date)
+    return current_datetime()
+
+
+def _reject_out_of_order_reconciliation(
+    session: Session,
+    employee_id: int,
+    reconciliation_at: datetime,
+) -> None:
+    latest_start = session.scalar(
+        select(func.max(EmployeeAssignment.effective_from)).where(
+            EmployeeAssignment.employee_id == employee_id
+        )
+    )
+    if latest_start is not None and reconciliation_at < ensure_utc(latest_start):
+        raise AssignmentReconciliationOrderError(
+            "Assignment reconciliation cannot run before existing assignment history"
+        )
+
+
+def _assignment_key(
+    assignment: EmployeeAssignment | FinalAssignment,
+) -> tuple[int, str, int | None, int | None]:
+    return (
+        assignment.field_definition_id,
+        assignment.value,
+        assignment.source_policy_version_id,
+        assignment.source_override_id,
+    )

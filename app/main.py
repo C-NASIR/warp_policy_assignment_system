@@ -15,6 +15,7 @@ from app.services.policy_versions import (
     EffectivePolicyVersionConflictError,
     PolicyVersionOverlapError,
 )
+from app.services.reconciliation import AssignmentReconciliationOrderError
 
 
 @asynccontextmanager
@@ -64,6 +65,14 @@ async def employee_override_conflict_handler(
 async def policy_version_conflict_handler(
     _: Request,
     exc: PolicyVersionOverlapError | EffectivePolicyVersionConflictError,
+) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(AssignmentReconciliationOrderError)
+async def assignment_reconciliation_order_handler(
+    _: Request,
+    exc: AssignmentReconciliationOrderError,
 ) -> JSONResponse:
     return JSONResponse(status_code=409, content={"detail": str(exc)})
 

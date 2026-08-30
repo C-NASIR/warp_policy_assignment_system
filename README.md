@@ -14,7 +14,7 @@ Employee
 → Candidate Field Values
 → Conflict Resolution
 → Employee Overrides
-→ Employee Assignments
+→ Temporal Employee Assignments
 ```
 
 `Policy` is the stable identity referenced by employees and groups. `PolicyVersion` is the executable definition containing priority, effective dates, conditions, compiled clauses, and field values. Policy condition trees are compiled into flat OR-of-AND clauses per version. Employee reconciliation selects the one version effective on the evaluation date, evaluates its clauses, persists stable policy links, and resolves each assignment field independently.
@@ -26,6 +26,10 @@ Groups are explicit collections of employees. A group contributes its attached p
 For cardinality `one`, the highest-priority effective policy version wins. Equal-priority versions producing different values return HTTP 409 instead of selecting arbitrarily. For cardinality `many`, unique values are retained. If several versions produce the same many-valued result, its recorded source is the highest-priority version, breaking remaining ties by lowest version ID.
 
 Manual overrides are field values applied after normal policy resolution. If a field has overrides, all policy-derived values for that field are replaced by its override values. A `one` field accepts one override per employee; a `many` field accepts multiple unique override values. Overrides can also create an assignment when no policy supplies that field. They do not suppress policy conflicts, which remain configuration errors.
+
+Employee assignments are temporal results, not independently versioned definitions. Each row has a UTC `effective_from` and optional `effective_until`, using a half-open `[effective_from, effective_until)` interval. Reconciliation compares the newly resolved result with open assignments: unchanged values and sources retain their rows, removed results are closed, and new or changed results create new rows. This preserves both what an employee had at an instant and the exact policy version or override that supplied it.
+
+Overrides are retained for provenance. Updating an override retires the old immutable row and creates a replacement; deleting one retires it. Only unretired overrides participate in current resolution, while historical assignments can continue referring to the override that produced them.
 
 ## Domain concepts
 
@@ -40,8 +44,8 @@ Manual overrides are field values applied after normal policy resolution. If a f
 - **Employee policy:** a persisted match between an employee and a policy.
 - **Field definition:** a named assignment field with `one` or `many` cardinality.
 - **Policy field value:** one relationally stored consequence of a policy version.
-- **Employee override:** one employee-specific field value that replaces policy results for that field.
-- **Employee assignment:** a final resolved value supplied by exactly one policy or employee override.
+- **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
+- **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override.
 
 ## Install and run
 
@@ -67,7 +71,8 @@ uv run pytest
 | GET | `/` | Health check |
 | POST / GET | `/employees` | Create or list employees |
 | GET / PATCH | `/employees/{id}` | Read or update an employee |
-| GET | `/employees/{id}/assignments` | Read resolved assignments |
+| GET | `/employees/{id}/assignments` | Read current assignments, or assignments at an optional `as_of` UTC timestamp |
+| GET | `/employees/{id}/assignments/history` | Read complete assignment history |
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
 | GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
 | PATCH / DELETE | `/employees/{id}/overrides/{override_id}` | Update or remove an override |
@@ -90,9 +95,9 @@ Adding or removing a group membership recalculates the affected employee immedia
 
 A group policy applies because of the explicit group link, even when its effective version's condition tree does not match the member directly. If a policy applies directly and through one or more groups, it is still considered only once. Policy origin can be derived from the membership and group-policy links; final assignments record the winning `source_policy_version_id`.
 
-Creating, updating, or removing an override recalculates only the employee's assignments; it does not rerun policy matching. Normal assignments have a `source_policy_version_id`, overridden assignments have a `source_override_id`, and a database check constraint requires exactly one of those sources.
+Creating, updating, or removing an override recalculates only the employee's assignments; it does not rerun policy matching. Normal assignments have a `source_policy_version_id`, overridden assignments have a `source_override_id`, and a database check constraint requires exactly one of those sources. Override updates return a new override ID because the previous row is retired for provenance.
 
-Materialized employee assignments represent the current date. Internal matching and resolution services accept an explicit evaluation date for temporal testing and future historical simulation, but the current API does not persist historical snapshots.
+Reconciliation is chronological and persists assignment history. Calls older than the latest stored assignment start are rejected instead of rewriting established history. `GET /employees/{id}/assignments` returns the values effective now by default; `as_of` uses half-open interval boundaries, and the history endpoint returns both open and closed rows.
 
 ## Alice example
 
@@ -108,4 +113,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, PostgreSQL, persisted historical assignments, a historical simulation API, time-bounded overrides, override reasons and authorship, automatic date-boundary reconciliation, automatic company-wide reconciliation after policy-version changes, workers and queues, caching, audit logs, authentication/authorization, and complex explainability.
+Version 1 intentionally excludes a frontend, PostgreSQL, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, automatic date-boundary reconciliation, automatic company-wide reconciliation after policy-version changes, workers and queues, caching, authentication/authorization, and complex explainability beyond persisted source provenance.

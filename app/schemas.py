@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.dates import current_date
+from app.dates import current_date, ensure_utc
 
 
 class ORMModel(BaseModel):
@@ -83,6 +83,7 @@ class EmployeeOverrideRead(ORMModel):
     employee_id: int
     field_definition_id: int
     value: str
+    retired_at: datetime | None
     field_definition: FieldDefinitionRead
 
 
@@ -183,4 +184,11 @@ class AssignmentRead(ORMModel):
     value: str
     source_policy_version_id: int | None
     source_override_id: int | None
+    effective_from: datetime
+    effective_until: datetime | None
     field_definition: FieldDefinitionRead
+
+    @field_validator("effective_from", "effective_until", mode="before")
+    @classmethod
+    def return_utc_timestamps(cls, value: datetime | None) -> datetime | None:
+        return ensure_utc(value) if value is not None else None
