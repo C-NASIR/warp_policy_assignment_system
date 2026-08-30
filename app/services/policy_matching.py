@@ -29,14 +29,21 @@ def find_matching_policy_ids(
         employee_id,
         evaluation_date,
     )
-    group_policy_ids = session.scalars(
-        select(GroupPolicy.policy_id)
-        .join(
-            EmployeeGroupMembership,
-            EmployeeGroupMembership.group_id == GroupPolicy.group_id,
+    group_policy_candidates = set(
+        session.scalars(
+            select(GroupPolicy.policy_id)
+            .join(
+                EmployeeGroupMembership,
+                EmployeeGroupMembership.group_id == GroupPolicy.group_id,
+            )
+            .where(EmployeeGroupMembership.employee_id == employee_id)
+            .distinct()
         )
-        .where(EmployeeGroupMembership.employee_id == employee_id)
-        .distinct()
+    )
+    group_policy_ids = get_effective_policy_versions(
+        session,
+        group_policy_candidates,
+        evaluation_date,
     )
     return sorted(set(direct_policy_ids).union(group_policy_ids))
 

@@ -25,6 +25,7 @@ from app.services.policy_compiler import (
     PolicyCompilationError,
     compile_policy_version_clauses,
 )
+from app.services.policy_reconciliation import refresh_employees_affected_by_policy
 from app.services.policy_versions import create_policy_version
 
 router = APIRouter(prefix="/policies", tags=["policies"])
@@ -121,6 +122,7 @@ def create(data: PolicyCreate, session: DatabaseSession, actor: AuditActor) -> P
         after=snapshot_entity(policy),
     )
     _create_version(session, policy, data, actor)
+    refresh_employees_affected_by_policy(session, policy)
     return session.scalar(_query().where(Policy.id == policy.id))
 
 
@@ -164,6 +166,8 @@ def patch(
             before=before,
             after=after,
         )
+        if before["status"] != after["status"]:
+            refresh_employees_affected_by_policy(session, policy)
     return session.scalar(_query().where(Policy.id == policy.id))
 
 
@@ -192,6 +196,7 @@ def add_version(
 ) -> PolicyVersion:
     policy = _policy_or_404(session, policy_id)
     version = _create_version(session, policy, data, actor)
+    refresh_employees_affected_by_policy(session, policy)
     return session.scalar(_version_query().where(PolicyVersion.id == version.id))
 
 

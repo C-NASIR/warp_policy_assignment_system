@@ -19,7 +19,7 @@ Employee
 
 `Policy` is the stable identity referenced by employees and groups. `PolicyVersion` is the executable definition containing priority, effective dates, conditions, compiled clauses, and field values. Policy condition trees are compiled into flat OR-of-AND clauses per version. Employee reconciliation selects the one version effective on the evaluation date, evaluates its clauses, persists stable policy links, and resolves each assignment field independently.
 
-Effective ranges are inclusive. Versions for one policy may not overlap, and an archived policy has no effective version. Scheduling a later version automatically closes the previous open-ended version on the preceding day. An effective-date gap is valid and means that policy contributes no behavior during the gap.
+Effective ranges are inclusive. Versions for one policy may not overlap, and an archived policy has no effective version. Scheduling a later version automatically closes the previous open-ended version on the preceding day. An effective-date gap is valid and means that policy contributes no behavior during the gap. Creating a future version immediately reconciles current state but does not apply that version early; automatic reconciliation when its effective date arrives remains a separate scheduling concern.
 
 Groups are explicit collections of employees. A group contributes its attached policies as candidates for every member; it does not produce assignments of its own. Direct matches and group-inherited policies are deduplicated and sent through the same policy engine, so priority and conflict behavior is identical regardless of where a policy came from.
 
@@ -95,11 +95,11 @@ uv run pytest
 | GET | `/policies/{id}/versions/{version_id}` | Read one policy version |
 | GET | `/audit-logs` | Read authorized, filterable audit events |
 
-Employee creation and update automatically recalculate that employee. Creating or changing policy configuration intentionally does not reconcile all employees; use the explicit employee reconciliation endpoint.
+Employee creation and update automatically recalculate that employee. Creating a policy, adding a version, or changing its active/archived status synchronously recalculates every employee in the same transaction. A policy rule can make previously unaffected employees start matching, so the current-scale implementation conservatively scans all employees; this candidate set can be optimized later. Name-only policy changes do not reconcile because they cannot affect results.
 
-Adding or removing a group membership recalculates the affected employee immediately. Attaching or removing a group policy recalculates every current member of that group in the same transaction. If resolution finds an equal-priority conflict, the membership or policy-link change is rolled back.
+Adding or removing a group membership recalculates the affected employee immediately. Attaching or removing a group policy recalculates every current member of that group in the same transaction. If resolution finds an equal-priority conflict, the employee, group, or policy mutation and all partial reconciliation and audit changes are rolled back together.
 
-A group policy applies because of the explicit group link, even when its effective version's condition tree does not match the member directly. If a policy applies directly and through one or more groups, it is still considered only once. Policy origin can be derived from the membership and group-policy links; final assignments record the winning `source_policy_version_id`.
+An active group policy with a currently effective version applies because of the explicit group link, even when that version's condition tree does not match the member directly. Archived, expired, and not-yet-effective group policies are excluded from current `EmployeePolicy` links. If a policy applies directly and through one or more groups, it is still considered only once. Policy origin can be derived from the membership and group-policy links; final assignments record the winning `source_policy_version_id`.
 
 Creating, updating, or removing an override recalculates only the employee's assignments; it does not rerun policy matching. Normal assignments have a `source_policy_version_id`, overridden assignments have a `source_override_id`, and a database check constraint requires exactly one of those sources. Override updates return a new override ID because the previous row is retired for provenance.
 
@@ -135,4 +135,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, PostgreSQL, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, automatic date-boundary reconciliation, automatic company-wide reconciliation after policy-version changes, workers and queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
+Version 1 intentionally excludes a frontend, PostgreSQL, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, automatic date-boundary reconciliation, workers and queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
