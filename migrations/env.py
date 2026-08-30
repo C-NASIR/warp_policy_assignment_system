@@ -5,7 +5,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app import models  # noqa: F401
-from app.database import Base
+from app.database import Base, postgresql_url
 
 config = context.config
 if config.config_file_name is not None:
@@ -14,7 +14,8 @@ if config.config_file_name is not None:
 database_url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
 if database_url is None:
     raise RuntimeError("DATABASE_URL or sqlalchemy.url must be configured")
-config.set_main_option("sqlalchemy.url", database_url)
+database_url = postgresql_url(database_url).render_as_string(hide_password=False)
+config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 

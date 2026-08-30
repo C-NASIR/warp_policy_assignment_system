@@ -156,13 +156,13 @@ def test_policy_creation_schedules_future_activation_and_inclusive_expiration(cl
             POLICY_VERSION_ENTITY,
             version_id,
             BECOMES_EFFECTIVE_TRIGGER,
-            start_of_day(starts).replace(tzinfo=None),
+            start_of_day(starts),
         ),
         (
             POLICY_VERSION_ENTITY,
             version_id,
             EXPIRES_TRIGGER,
-            start_of_day(ends + timedelta(days=1)).replace(tzinfo=None),
+            start_of_day(ends + timedelta(days=1)),
         ),
     ]
 
@@ -195,12 +195,12 @@ def test_new_versions_schedule_both_sides_of_each_effective_boundary(client, db)
         (
             first_id,
             EXPIRES_TRIGGER,
-            start_of_day(second_start).replace(tzinfo=None),
+            start_of_day(second_start),
         ),
         (
             second.json()["id"],
             BECOMES_EFFECTIVE_TRIGGER,
-            start_of_day(second_start).replace(tzinfo=None),
+            start_of_day(second_start),
         ),
     ]
 

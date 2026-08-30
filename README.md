@@ -4,7 +4,7 @@ Version 1 is a small FastAPI backend that answers: given an employee's current f
 
 ## Architecture
 
-The application uses FastAPI and Pydantic at the API boundary, explicit application services for domain behavior, SQLAlchemy 2 for persistence, and SQLite as the local database. Alembic is configured for future migrations once persistent environments require them. Database access is kept behind SQLAlchemy sessions, so a later PostgreSQL move primarily requires changing `DATABASE_URL`.
+The application uses FastAPI and Pydantic at the API boundary, explicit application services for domain behavior, SQLAlchemy 2 for persistence, and PostgreSQL through Psycopg 3. PostgreSQL is the only supported database for the API, worker, migrations, and tests. Alembic is configured for future migrations once persistent environments require them.
 
 ```text
 Employee
@@ -59,18 +59,23 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are expected.
 
 ```bash
 uv sync
+export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments
 uv run fastapi dev main.py
 ```
 
-The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. By default, data is stored in `policy_assignments.db`, and missing tables are created on startup. Override it with a SQLAlchemy URL, for example `DATABASE_URL=sqlite:///./other.db`. The development database is disposable: after a model change, remove the old `.db` file and restart. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
+The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created on startup. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
 
 Audit-log reads are protected separately because the application does not yet have user authentication. Set `AUDIT_ADMIN_KEY` and send the same value in `X-Audit-Key`. If the environment variable is absent, audit reads return HTTP 503; a missing or incorrect header returns HTTP 403. In production, inject this value through the deployment secret manager and replace this narrow boundary when application-wide authentication is added.
 
 Run tests with:
 
 ```bash
+createdb -U postgres policy_assignments_test
+TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments_test \
 uv run pytest
 ```
+
+Tests create and drop all application tables, so `TEST_DATABASE_URL` must point to a dedicated disposable PostgreSQL database. It defaults to the local `policy_assignments_test` database shown above.
 
 ## API
 
@@ -157,7 +162,7 @@ Configuration:
 - `RECONCILIATION_ADVISORY_LOCK_KEY`: positive PostgreSQL advisory-lock key
 - `LOG_LEVEL`: standard Python log level; default `INFO`
 
-The command exits successfully without processing when another invocation owns the advisory lock. It is designed to be invoked hourly by an external scheduler; it does not contain an internal timer or sleep loop. There is no SQLite execution path for the worker.
+The command exits successfully without processing when another invocation owns the advisory lock. It is designed to be invoked hourly by an external scheduler; it does not contain an internal timer or sleep loop.
 
 ## Alice example
 
