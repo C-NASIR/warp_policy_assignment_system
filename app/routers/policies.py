@@ -26,8 +26,8 @@ from app.services.policy_compiler import (
     compile_policy_version_clauses,
 )
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
-from app.services.scheduled_reconciliations import sync_policy_version_schedules
 from app.services.policy_versions import create_policy_version
+from app.services.scheduled_reconciliations import sync_policy_version_schedules
 
 router = APIRouter(prefix="/policies", tags=["policies"])
 
