@@ -4,7 +4,7 @@ import pytest
 
 from app.models import (
     Employee,
-    FieldDefinition,
+    AssignmentFieldDefinition,
     Policy,
     PolicyFieldValue,
     PolicyVersion,
@@ -24,24 +24,24 @@ def versioned_policy(name, priority, values):
 
 def test_policy_engine_is_independently_callable(db):
     employee = Employee(name="Alice", state="California", department="Engineering", employee_type="regular")
-    pay = FieldDefinition(name="pay_schedule", cardinality="one")
-    access = FieldDefinition(name="application_access", cardinality="many")
+    pay = AssignmentFieldDefinition(name="pay_schedule", cardinality="one")
+    access = AssignmentFieldDefinition(name="application_access", cardinality="many")
     db.add_all([employee, pay, access])
     db.flush()
     low = versioned_policy(
         "Low",
         5,
         [
-            PolicyFieldValue(field_definition=pay, value="weekly"),
-            PolicyFieldValue(field_definition=access, value="GitHub"),
+            PolicyFieldValue(assignment_field_definition=pay, value="weekly"),
+            PolicyFieldValue(assignment_field_definition=access, value="GitHub"),
         ],
     )
     high = versioned_policy(
         "High",
         20,
         [
-            PolicyFieldValue(field_definition=pay, value="biweekly"),
-            PolicyFieldValue(field_definition=access, value="Slack"),
+            PolicyFieldValue(assignment_field_definition=pay, value="biweekly"),
+            PolicyFieldValue(assignment_field_definition=access, value="Slack"),
         ],
     )
     db.add_all([low, high])
@@ -59,16 +59,16 @@ def test_policy_engine_is_independently_callable(db):
 
 def test_same_priority_same_value_is_not_a_conflict(db):
     employee = Employee(name="A", state="CA", department="Eng", employee_type="regular")
-    field = FieldDefinition(name="schedule", cardinality="one")
+    field = AssignmentFieldDefinition(name="schedule", cardinality="one")
     first = versioned_policy(
         "First",
         10,
-        [PolicyFieldValue(field_definition=field, value="weekly")],
+        [PolicyFieldValue(assignment_field_definition=field, value="weekly")],
     )
     second = versioned_policy(
         "Second",
         10,
-        [PolicyFieldValue(field_definition=field, value="weekly")],
+        [PolicyFieldValue(assignment_field_definition=field, value="weekly")],
     )
     db.add_all([employee, field, first, second])
     db.flush()
@@ -82,16 +82,16 @@ def test_same_priority_same_value_is_not_a_conflict(db):
 
 def test_service_raises_for_equal_priority_different_values(db):
     employee = Employee(name="A", state="CA", department="Eng", employee_type="regular")
-    field = FieldDefinition(name="schedule", cardinality="one")
+    field = AssignmentFieldDefinition(name="schedule", cardinality="one")
     first = versioned_policy(
         "First",
         10,
-        [PolicyFieldValue(field_definition=field, value="weekly")],
+        [PolicyFieldValue(assignment_field_definition=field, value="weekly")],
     )
     second = versioned_policy(
         "Second",
         10,
-        [PolicyFieldValue(field_definition=field, value="monthly")],
+        [PolicyFieldValue(assignment_field_definition=field, value="monthly")],
     )
     db.add_all([employee, field, first, second])
     db.flush()

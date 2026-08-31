@@ -16,7 +16,7 @@ def _condition_group(state: str = "Wisconsin") -> dict:
 
 def _create_field(client, name: str = "pay_schedule") -> dict:
     response = client.post(
-        "/field-definitions",
+        "/assignment-fields",
         json={"name": name, "cardinality": "one"},
     )
     assert response.status_code == 201
@@ -60,7 +60,7 @@ def test_policy_and_version_audits_include_actor_and_version_snapshots(client, m
             "priority": 10,
             "effective_from": today.isoformat(),
             "condition_group": _condition_group("California"),
-            "values": [{"field_definition_id": field["id"], "value": "weekly"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "weekly"}],
         },
     )
     assert first.status_code == 201
@@ -74,7 +74,7 @@ def test_policy_and_version_audits_include_actor_and_version_snapshots(client, m
             "priority": 20,
             "effective_from": second_start.isoformat(),
             "condition_group": _condition_group("California"),
-            "values": [{"field_definition_id": field["id"], "value": "biweekly"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
         },
     )
     assert second.status_code == 201
@@ -106,7 +106,7 @@ def test_policy_and_version_audits_include_actor_and_version_snapshots(client, m
     assert version_events[1]["before"]["effective_until"] is None
     assert version_events[1]["after"]["version_number"] == 2
     assert version_events[1]["after"]["values"] == [
-        {"field_definition_id": field["id"], "value": "biweekly"}
+        {"assignment_field_definition_id": field["id"], "value": "biweekly"}
     ]
 
 
@@ -119,7 +119,7 @@ def test_group_membership_policy_and_assignment_audits_are_material_only(client,
             "name": "Engineering badge",
             "priority": 10,
             "condition_group": _condition_group(),
-            "values": [{"field_definition_id": field["id"], "value": "engineer"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "engineer"}],
         },
     ).json()
     employee = _create_employee(client)
@@ -180,7 +180,7 @@ def test_override_lifecycle_audits_override_and_assignment_replacement(client, m
     created = client.post(
         f"/employees/{employee['id']}/overrides",
         headers=headers,
-        json={"field_definition_id": field["id"], "value": "weekly"},
+        json={"assignment_field_definition_id": field["id"], "value": "weekly"},
     )
     assert created.status_code == 201
     first_override = created.json()
@@ -261,7 +261,7 @@ def test_failed_reconciliation_rolls_back_causal_and_assignment_audits(client, m
                 "priority": 10,
                 "condition_group": _condition_group(),
                 "values": [
-                    {"field_definition_id": field["id"], "value": value}
+                    {"assignment_field_definition_id": field["id"], "value": value}
                 ],
             },
         )

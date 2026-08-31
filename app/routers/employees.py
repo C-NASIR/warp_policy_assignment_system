@@ -104,7 +104,7 @@ def create_override(
     return create_employee_override(
         session,
         employee_id,
-        data.field_definition_id,
+        data.assignment_field_definition_id,
         data.value,
         actor,
     )
@@ -125,7 +125,7 @@ def patch_override(
         session,
         employee_id,
         override_id,
-        data.field_definition_id,
+        data.assignment_field_definition_id,
         data.value,
         actor,
     )

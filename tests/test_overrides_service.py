@@ -8,7 +8,7 @@ from app.models import (
     CompiledPolicyCondition,
     Employee,
     EmployeeOverride,
-    FieldDefinition,
+    AssignmentFieldDefinition,
     Policy,
     PolicyFieldValue,
     PolicyVersion,
@@ -23,24 +23,24 @@ from app.services.condition_fields import get_condition_field_definitions
 def test_apply_employee_overrides_is_a_pure_field_replacement():
     resolved = [
         ResolvedAssignment(
-            field_definition_id=1,
+            assignment_field_definition_id=1,
             value="weekly",
             source_policy_version_id=10,
         ),
         ResolvedAssignment(
-            field_definition_id=2,
+            assignment_field_definition_id=2,
             value="GitHub",
             source_policy_version_id=20,
         ),
         ResolvedAssignment(
-            field_definition_id=2,
+            assignment_field_definition_id=2,
             value="Slack",
             source_policy_version_id=21,
         ),
     ]
     overrides = [
-        EmployeeOverride(id=7, employee_id=1, field_definition_id=1, value="monthly"),
-        EmployeeOverride(id=8, employee_id=1, field_definition_id=3, value="gold"),
+        EmployeeOverride(id=7, employee_id=1, assignment_field_definition_id=1, value="monthly"),
+        EmployeeOverride(id=8, employee_id=1, assignment_field_definition_id=3, value="gold"),
     ]
 
     assert apply_employee_overrides(resolved, overrides) == [
@@ -60,7 +60,7 @@ def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_f
             department="Engineering",
             employee_type="regular",
         )
-        field = FieldDefinition(name="pay_schedule", cardinality="one")
+        field = AssignmentFieldDefinition(name="pay_schedule", cardinality="one")
         weekly = Policy(
             name="Weekly",
             versions=[
@@ -80,7 +80,7 @@ def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_f
                         )
                     ],
                     values=[
-                        PolicyFieldValue(field_definition=field, value="weekly")
+                        PolicyFieldValue(assignment_field_definition=field, value="weekly")
                     ],
                 )
             ],
@@ -104,7 +104,7 @@ def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_f
                         )
                     ],
                     values=[
-                        PolicyFieldValue(field_definition=field, value="monthly")
+                        PolicyFieldValue(assignment_field_definition=field, value="monthly")
                     ],
                 )
             ],

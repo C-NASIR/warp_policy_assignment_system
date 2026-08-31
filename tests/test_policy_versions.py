@@ -9,7 +9,7 @@ from app.models import (
     Employee,
     EmployeeGroupMembership,
     EmployeePolicy,
-    FieldDefinition,
+    AssignmentFieldDefinition,
     Group,
     GroupPolicy,
     Policy,
@@ -53,7 +53,7 @@ def compiled_state_clause(db, state="California"):
 
 def test_policy_api_creates_version_one_and_schedules_later_versions(client):
     field = client.post(
-        "/field-definitions",
+        "/assignment-fields",
         json={"name": "vacation", "cardinality": "one"},
     ).json()
     today = current_date()
@@ -66,7 +66,7 @@ def test_policy_api_creates_version_one_and_schedules_later_versions(client):
             "created_by": "policy-team",
             "condition_group": condition_group(),
             "values": [
-                {"field_definition_id": field["id"], "value": "2 weeks"}
+                {"assignment_field_definition_id": field["id"], "value": "2 weeks"}
             ],
         },
     )
@@ -84,7 +84,7 @@ def test_policy_api_creates_version_one_and_schedules_later_versions(client):
             "effective_from": next_start.isoformat(),
             "condition_group": condition_group(),
             "values": [
-                {"field_definition_id": field["id"], "value": "3 weeks"}
+                {"assignment_field_definition_id": field["id"], "value": "3 weeks"}
             ],
         },
     )
@@ -183,7 +183,7 @@ def test_group_policy_uses_version_for_evaluation_date_and_assignment_source(db)
         department="Engineering",
         employee_type="regular",
     )
-    field = FieldDefinition(name="vacation", cardinality="one")
+    field = AssignmentFieldDefinition(name="vacation", cardinality="one")
     policy = Policy(
         name="Engineering Vacation",
         versions=[
@@ -193,14 +193,14 @@ def test_group_policy_uses_version_for_evaluation_date_and_assignment_source(db)
                 effective_from=date(2025, 1, 1),
                 effective_until=date(2025, 12, 31),
                 compiled_clauses=compiled_state_clause(db, "Wisconsin"),
-                values=[PolicyFieldValue(field_definition=field, value="2 weeks")],
+                values=[PolicyFieldValue(assignment_field_definition=field, value="2 weeks")],
             ),
             PolicyVersion(
                 version_number=2,
                 priority=20,
                 effective_from=date(2026, 1, 1),
                 compiled_clauses=compiled_state_clause(db, "Wisconsin"),
-                values=[PolicyFieldValue(field_definition=field, value="3 weeks")],
+                values=[PolicyFieldValue(assignment_field_definition=field, value="3 weeks")],
             ),
         ],
     )
@@ -270,7 +270,7 @@ def test_version_priority_changes_the_winner_across_evaluation_dates(db):
         department="Engineering",
         employee_type="regular",
     )
-    field = FieldDefinition(name="pay_schedule", cardinality="one")
+    field = AssignmentFieldDefinition(name="pay_schedule", cardinality="one")
     changing = Policy(
         name="Changing priority",
         versions=[
@@ -279,13 +279,13 @@ def test_version_priority_changes_the_winner_across_evaluation_dates(db):
                 priority=5,
                 effective_from=date(2025, 1, 1),
                 effective_until=date(2025, 12, 31),
-                values=[PolicyFieldValue(field_definition=field, value="weekly")],
+                values=[PolicyFieldValue(assignment_field_definition=field, value="weekly")],
             ),
             PolicyVersion(
                 version_number=2,
                 priority=20,
                 effective_from=date(2026, 1, 1),
-                values=[PolicyFieldValue(field_definition=field, value="weekly")],
+                values=[PolicyFieldValue(assignment_field_definition=field, value="weekly")],
             ),
         ],
     )
@@ -297,13 +297,13 @@ def test_version_priority_changes_the_winner_across_evaluation_dates(db):
                 priority=10,
                 effective_from=date(2025, 1, 1),
                 effective_until=date(2025, 12, 31),
-                values=[PolicyFieldValue(field_definition=field, value="monthly")],
+                values=[PolicyFieldValue(assignment_field_definition=field, value="monthly")],
             ),
             PolicyVersion(
                 version_number=2,
                 priority=10,
                 effective_from=date(2026, 1, 1),
-                values=[PolicyFieldValue(field_definition=field, value="monthly")],
+                values=[PolicyFieldValue(assignment_field_definition=field, value="monthly")],
             ),
         ],
     )

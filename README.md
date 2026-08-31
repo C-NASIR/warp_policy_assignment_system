@@ -19,7 +19,7 @@ Employee
 
 `Policy` is the stable identity referenced by employees and groups. `PolicyVersion` is the executable definition containing priority, effective dates, conditions, compiled clauses, and field values. Policy condition trees are compiled into flat OR-of-AND clauses per version. Employee reconciliation selects the one version effective on the evaluation date, evaluates its clauses, persists stable policy links, and resolves each assignment field independently.
 
-Condition inputs are system-controlled `ConditionFieldDefinition` records, separate from assignment-output `FieldDefinition` records. Static fields resolve trusted employee attributes; derived fields invoke allowlisted application resolvers. Definitions declare data types, resolver keys, and dependency metadata, while canonical and compiled conditions retain foreign keys to those definitions. Administrators select catalog fields but cannot define arbitrary formulas or executable resolvers.
+Condition inputs are system-controlled `ConditionFieldDefinition` records, separate from assignment-output `AssignmentFieldDefinition` records. Static fields resolve trusted employee attributes; derived fields invoke allowlisted application resolvers. Definitions declare data types, resolver keys, and dependency metadata, while canonical and compiled conditions retain foreign keys to those definitions. Administrators select catalog fields but cannot define arbitrary formulas or executable resolvers.
 
 `tenure` is a derived calendar-duration field resolved from `Employee.start_date` and the reconciliation evaluation date. Inputs such as `2 years` are normalized to `P2Y`; comparison uses completed calendar anniversaries rather than fixed 365-day intervals. A February 29 start date reaches its anniversary on February 28 in a non-leap year.
 
@@ -51,7 +51,7 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Condition tree:** a version-owned nested `and`/`or` expression over condition fields using `=`, `<`, `<=`, `>`, and `>=` comparisons.
 - **Compiled policy clause:** one version-owned flat set of conditions that must all match.
 - **Employee policy:** a persisted match between an employee and a policy.
-- **Field definition:** a named assignment field with `one` or `many` cardinality.
+- **Assignment field definition:** a named assignment output with `one` or `many` cardinality.
 - **Policy field value:** one relationally stored consequence of a policy version.
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
 - **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override.
@@ -100,8 +100,8 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | POST / DELETE | `/groups/{id}/employees/{employee_id}` | Add or remove a group member |
 | GET | `/groups/{id}/policies` | List policies attached to a group |
 | POST / DELETE | `/groups/{id}/policies/{policy_id}` | Attach or remove a group policy |
-| POST / GET | `/field-definitions` | Create or list field definitions |
-| GET | `/field-definitions/{id}` | Read a field definition |
+| POST / GET | `/assignment-fields` | Create or list assignment field definitions |
+| GET | `/assignment-fields/{id}` | Read an assignment field definition |
 | GET | `/condition-fields` | List system-supported condition fields and dependencies |
 | GET | `/condition-fields/{key}` | Read one system-supported condition field |
 | POST / GET | `/policies` | Create policies with version 1 or list them |

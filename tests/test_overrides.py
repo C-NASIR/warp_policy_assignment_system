@@ -1,6 +1,6 @@
 def create_field(client, name, cardinality="one"):
     response = client.post(
-        "/field-definitions",
+        "/assignment-fields",
         json={"name": name, "cardinality": cardinality},
     )
     assert response.status_code == 201
@@ -50,7 +50,7 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
         client,
         "Weekly schedule",
         10,
-        [{"field_definition_id": schedule["id"], "value": "weekly"}],
+        [{"assignment_field_definition_id": schedule["id"], "value": "weekly"}],
     )
     employee = create_employee(client)
     initial = assignments(client, employee["id"])
@@ -60,7 +60,7 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
 
     response = client.post(
         f"/employees/{employee['id']}/overrides",
-        json={"field_definition_id": schedule["id"], "value": "monthly"},
+        json={"assignment_field_definition_id": schedule["id"], "value": "monthly"},
     )
     assert response.status_code == 201
     override = response.json()
@@ -122,7 +122,7 @@ def test_override_can_create_an_assignment_without_a_policy_value(client):
 
     response = client.post(
         f"/employees/{employee['id']}/overrides",
-        json={"field_definition_id": badge["id"], "value": "gold"},
+        json={"assignment_field_definition_id": badge["id"], "value": "gold"},
     )
 
     assert response.status_code == 201
@@ -139,8 +139,8 @@ def test_many_value_overrides_replace_all_policy_values_until_last_is_removed(cl
         "Default applications",
         10,
         [
-            {"field_definition_id": access["id"], "value": "GitHub"},
-            {"field_definition_id": access["id"], "value": "Slack"},
+            {"assignment_field_definition_id": access["id"], "value": "GitHub"},
+            {"assignment_field_definition_id": access["id"], "value": "Slack"},
         ],
     )
     employee = create_employee(client)
@@ -151,11 +151,11 @@ def test_many_value_overrides_replace_all_policy_values_until_last_is_removed(cl
 
     linear = client.post(
         f"/employees/{employee['id']}/overrides",
-        json={"field_definition_id": access["id"], "value": "Linear"},
+        json={"assignment_field_definition_id": access["id"], "value": "Linear"},
     ).json()
     figma_response = client.post(
         f"/employees/{employee['id']}/overrides",
-        json={"field_definition_id": access["id"], "value": "Figma"},
+        json={"assignment_field_definition_id": access["id"], "value": "Figma"},
     )
     assert figma_response.status_code == 201
     figma = figma_response.json()
@@ -165,7 +165,7 @@ def test_many_value_overrides_replace_all_policy_values_until_last_is_removed(cl
 
     duplicate = client.post(
         f"/employees/{employee['id']}/overrides",
-        json={"field_definition_id": access["id"], "value": "Figma"},
+        json={"assignment_field_definition_id": access["id"], "value": "Figma"},
     )
     assert duplicate.status_code == 409
 
@@ -183,13 +183,13 @@ def test_one_value_field_rejects_a_second_override(client):
     employee = create_employee(client)
     first = client.post(
         f"/employees/{employee['id']}/overrides",
-        json={"field_definition_id": schedule["id"], "value": "weekly"},
+        json={"assignment_field_definition_id": schedule["id"], "value": "weekly"},
     )
     assert first.status_code == 201
 
     second = client.post(
         f"/employees/{employee['id']}/overrides",
-        json={"field_definition_id": schedule["id"], "value": "monthly"},
+        json={"assignment_field_definition_id": schedule["id"], "value": "monthly"},
     )
 
     assert second.status_code == 409
@@ -202,16 +202,16 @@ def test_override_endpoints_validate_references_ownership_and_updates(client):
     bob = create_employee(client, "Bob")
     override = client.post(
         f"/employees/{alice['id']}/overrides",
-        json={"field_definition_id": field["id"], "value": "gold"},
+        json={"assignment_field_definition_id": field["id"], "value": "gold"},
     ).json()
 
     assert client.post(
         "/employees/999999/overrides",
-        json={"field_definition_id": field["id"], "value": "x"},
+        json={"assignment_field_definition_id": field["id"], "value": "x"},
     ).status_code == 404
     assert client.post(
         f"/employees/{alice['id']}/overrides",
-        json={"field_definition_id": 999999, "value": "x"},
+        json={"assignment_field_definition_id": 999999, "value": "x"},
     ).status_code == 404
     assert client.patch(
         f"/employees/{bob['id']}/overrides/{override['id']}",
@@ -232,14 +232,14 @@ def test_override_does_not_hide_an_equal_priority_policy_conflict(client):
         client,
         "Weekly",
         10,
-        [{"field_definition_id": schedule["id"], "value": "weekly"}],
+        [{"assignment_field_definition_id": schedule["id"], "value": "weekly"}],
         state="Wisconsin",
     )
     monthly = create_policy(
         client,
         "Monthly",
         10,
-        [{"field_definition_id": schedule["id"], "value": "monthly"}],
+        [{"assignment_field_definition_id": schedule["id"], "value": "monthly"}],
         state="Wisconsin",
     )
     employee = create_employee(client)
@@ -248,7 +248,7 @@ def test_override_does_not_hide_an_equal_priority_policy_conflict(client):
     client.post(f"/groups/{group['id']}/policies/{weekly['id']}")
     override = client.post(
         f"/employees/{employee['id']}/overrides",
-        json={"field_definition_id": schedule["id"], "value": "quarterly"},
+        json={"assignment_field_definition_id": schedule["id"], "value": "quarterly"},
     )
     assert override.status_code == 201
 

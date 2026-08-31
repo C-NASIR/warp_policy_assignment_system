@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.dates import current_datetime, ensure_utc, start_of_day
-from app.models import Employee, EmployeeAssignment, EmployeeOverride, FieldDefinition
+from app.models import Employee, EmployeeAssignment, EmployeeOverride, AssignmentFieldDefinition
 from app.services.audit import record_audit_log, snapshot_assignment
 from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import resolve_employee_assignments
@@ -37,7 +37,7 @@ def refresh_employee_assignments(
                 EmployeeOverride.retired_at.is_(None),
             )
             .order_by(
-                EmployeeOverride.field_definition_id,
+                EmployeeOverride.assignment_field_definition_id,
                 EmployeeOverride.value,
                 EmployeeOverride.id,
             )
@@ -59,11 +59,11 @@ def refresh_employee_assignments(
     field_names = {
         field.id: field.name
         for field in session.scalars(
-            select(FieldDefinition).where(
-                FieldDefinition.id.in_(
+            select(AssignmentFieldDefinition).where(
+                AssignmentFieldDefinition.id.in_(
                     {
-                        *[item.field_definition_id for item in current_assignments],
-                        *[item.field_definition_id for item in final_assignments],
+                        *[item.assignment_field_definition_id for item in current_assignments],
+                        *[item.assignment_field_definition_id for item in final_assignments],
                     }
                 )
             )
@@ -76,7 +76,7 @@ def refresh_employee_assignments(
             continue
         before = snapshot_assignment(
             assignment,
-            field_name=field_names.get(assignment.field_definition_id),
+            field_name=field_names.get(assignment.assignment_field_definition_id),
         )
         if ensure_utc(assignment.effective_from) == effective_at:
             session.delete(assignment)
@@ -96,7 +96,7 @@ def refresh_employee_assignments(
     for item in desired_by_key.values():
         assignment = EmployeeAssignment(
             employee_id=employee.id,
-            field_definition_id=item.field_definition_id,
+            assignment_field_definition_id=item.assignment_field_definition_id,
             value=item.value,
             source_policy_version_id=item.source_policy_version_id,
             source_override_id=item.source_override_id,
@@ -113,7 +113,7 @@ def refresh_employee_assignments(
             before=None,
             after=snapshot_assignment(
                 assignment,
-                field_name=field_names.get(assignment.field_definition_id),
+                field_name=field_names.get(assignment.assignment_field_definition_id),
             ),
             timestamp=effective_at,
         )
@@ -123,7 +123,7 @@ def refresh_employee_assignments(
     session.expire(employee, ["assignments"])
     return sorted(
         active_assignments,
-        key=lambda item: (item.field_definition_id, item.value, item.id),
+        key=lambda item: (item.assignment_field_definition_id, item.value, item.id),
     )
 
 
@@ -158,7 +158,7 @@ def _assignment_key(
     assignment: EmployeeAssignment | FinalAssignment,
 ) -> tuple[int, str, int | None, int | None]:
     return (
-        assignment.field_definition_id,
+        assignment.assignment_field_definition_id,
         assignment.value,
         assignment.source_policy_version_id,
         assignment.source_override_id,

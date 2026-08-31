@@ -8,7 +8,7 @@ from app.models import (
     ConditionFieldDefinition,
     ConditionGroup,
     ConditionGroupCondition,
-    FieldDefinition,
+    AssignmentFieldDefinition,
     Policy,
     PolicyFieldValue,
     PolicyVersion,
@@ -55,12 +55,15 @@ def _policy_or_404(session: DatabaseSession, policy_id: int) -> Policy:
     return policy
 
 
-def _validate_field_definitions(session: DatabaseSession, values) -> None:
-    field_ids = {item.field_definition_id for item in values}
-    existing_ids = set(session.scalars(select(FieldDefinition.id).where(FieldDefinition.id.in_(field_ids))))
+def _validate_assignment_field_definitions(session: DatabaseSession, values) -> None:
+    field_ids = {item.assignment_field_definition_id for item in values}
+    existing_ids = set(session.scalars(select(AssignmentFieldDefinition.id).where(AssignmentFieldDefinition.id.in_(field_ids))))
     missing_ids = sorted(field_ids - existing_ids)
     if missing_ids:
-        raise HTTPException(status_code=404, detail=f"Field definitions not found: {missing_ids}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Assignment field definitions not found: {missing_ids}",
+        )
 
 
 def _build_canonical_condition_tree(
@@ -114,7 +117,7 @@ def _create_version(
     data: PolicyVersionCreate,
     actor: str,
 ) -> PolicyVersion:
-    _validate_field_definitions(session, data.values)
+    _validate_assignment_field_definitions(session, data.values)
     try:
         definitions = get_condition_field_definitions(
             session,

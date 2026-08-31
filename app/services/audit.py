@@ -48,12 +48,12 @@ def snapshot_policy_version(version: PolicyVersion) -> dict[str, Any]:
     snapshot["values"] = sorted(
         (
             {
-                "field_definition_id": value.field_definition_id,
+                "assignment_field_definition_id": value.assignment_field_definition_id,
                 "value": value.value,
             }
             for value in version.values
         ),
-        key=lambda item: (item["field_definition_id"], item["value"]),
+        key=lambda item: (item["assignment_field_definition_id"], item["value"]),
     )
     snapshot["compiled_clauses"] = [
         [

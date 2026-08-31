@@ -2,7 +2,7 @@ from app.dates import current_date
 
 
 def create_field(client, name, cardinality):
-    response = client.post("/field-definitions", json={"name": name, "cardinality": cardinality})
+    response = client.post("/assignment-fields", json={"name": name, "cardinality": cardinality})
     assert response.status_code == 201
     return response.json()
 
@@ -37,8 +37,8 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
         20,
         condition_group("state", "California"),
         [
-            {"field_definition_id": pay["id"], "value": "biweekly"},
-            {"field_definition_id": access["id"], "value": "payroll_app"},
+            {"assignment_field_definition_id": pay["id"], "value": "biweekly"},
+            {"assignment_field_definition_id": access["id"], "value": "payroll_app"},
         ],
     )
     engineering_policy = create_policy(
@@ -47,8 +47,8 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
         10,
         condition_group("department", "Engineering"),
         [
-            {"field_definition_id": pay["id"], "value": "weekly"},
-            {"field_definition_id": access["id"], "value": "GitHub"},
+            {"assignment_field_definition_id": pay["id"], "value": "weekly"},
+            {"assignment_field_definition_id": access["id"], "value": "GitHub"},
         ],
     )
 
@@ -72,7 +72,7 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
     assert by_value["biweekly"]["source_policy_version_id"] == california_version_id
     assert by_value["payroll_app"]["source_policy_version_id"] == california_version_id
     assert by_value["GitHub"]["source_policy_version_id"] == engineering_version_id
-    assert by_value["biweekly"]["field_definition"]["name"] == "pay_schedule"
+    assert by_value["biweekly"]["assignment_field_definition"]["name"] == "pay_schedule"
 
     response = client.patch(f"/employees/{alice['id']}", json={"state": "Wisconsin"})
     assert response.status_code == 200
@@ -94,7 +94,7 @@ def test_nonmatching_policy_produces_no_assignment_then_employee_update_applies_
         "Regular badge",
         1,
         condition_group("employee_type", "regular"),
-        [{"field_definition_id": field["id"], "value": "blue"}],
+        [{"assignment_field_definition_id": field["id"], "value": "blue"}],
     )
     assert client.post(f"/employees/{employee['id']}/refresh").json() == []
 
@@ -110,14 +110,14 @@ def test_equal_priority_conflict_is_clear_and_employee_creation_rolls_back(clien
         "State policy",
         10,
         condition_group("state", "California"),
-        [{"field_definition_id": field["id"], "value": "weekly"}],
+        [{"assignment_field_definition_id": field["id"], "value": "weekly"}],
     )
     create_policy(
         client,
         "Department policy",
         10,
         condition_group("department", "Engineering"),
-        [{"field_definition_id": field["id"], "value": "monthly"}],
+        [{"assignment_field_definition_id": field["id"], "value": "monthly"}],
     )
 
     response = client.post(
@@ -130,7 +130,7 @@ def test_equal_priority_conflict_is_clear_and_employee_creation_rolls_back(clien
 
 
 def test_validation_and_missing_references(client):
-    assert client.post("/field-definitions", json={"name": "x", "cardinality": "some"}).status_code == 422
+    assert client.post("/assignment-fields", json={"name": "x", "cardinality": "some"}).status_code == 422
     assert client.post("/policies", json={"name": "missing tree", "priority": 1}).status_code == 422
 
     response = client.post(
@@ -139,7 +139,7 @@ def test_validation_and_missing_references(client):
             "name": "bad value",
             "priority": 1,
             "condition_group": condition_group("department", "Engineering"),
-            "values": [{"field_definition_id": 999, "value": "x"}],
+            "values": [{"assignment_field_definition_id": 999, "value": "x"}],
         },
     )
     assert response.status_code == 404
@@ -153,7 +153,7 @@ def test_archiving_policy_removes_it_on_employee_reconciliation(client):
         "State badge",
         10,
         condition_group("state", "California"),
-        [{"field_definition_id": badge["id"], "value": "blue"}],
+        [{"assignment_field_definition_id": badge["id"], "value": "blue"}],
     )
     alice = client.post(
         "/employees",
@@ -182,7 +182,7 @@ def test_policy_update_validates_nested_tree_and_value_references(client):
         "State badge",
         10,
         condition_group("state", "California"),
-        [{"field_definition_id": field["id"], "value": "blue"}],
+        [{"assignment_field_definition_id": field["id"], "value": "blue"}],
     )
 
     empty_tree = client.post(
@@ -199,7 +199,7 @@ def test_policy_update_validates_nested_tree_and_value_references(client):
         json={
             "priority": 10,
             "condition_group": condition_group("state", "California"),
-            "values": [{"field_definition_id": 999, "value": "red"}],
+            "values": [{"assignment_field_definition_id": 999, "value": "red"}],
         },
     )
     assert missing_field.status_code == 404
@@ -222,7 +222,7 @@ def test_employee_date_comparison_policy_is_accepted_and_applied(client):
                 "logical_operator": "and",
                 "conditions": [{"field": "start_date", "operator": "<=", "value": "2024-12-31"}],
             },
-            "values": [{"field_definition_id": badge["id"], "value": "tenured"}],
+            "values": [{"assignment_field_definition_id": badge["id"], "value": "tenured"}],
         },
     )
     assert response.status_code == 201

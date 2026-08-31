@@ -17,7 +17,7 @@ from app.models import (
     EmployeeGroupMembership,
     EmployeeOverride,
     EmployeePolicy,
-    FieldDefinition,
+    AssignmentFieldDefinition,
     Group,
     GroupPolicy,
     Policy,
@@ -118,22 +118,22 @@ def test_policy_domain_models_have_required_columns():
         EmployeeOverride: {
             "id",
             "employee_id",
-            "field_definition_id",
+            "assignment_field_definition_id",
             "value",
             "retired_at",
         },
         EmployeeAssignment: {
             "id",
             "employee_id",
-            "field_definition_id",
+            "assignment_field_definition_id",
             "value",
             "source_policy_version_id",
             "source_override_id",
             "effective_from",
             "effective_until",
         },
-        FieldDefinition: {"id", "field", "cardinality", "conflict_resolution"},
-        PolicyFieldValue: {"policy_version_id", "field_definition_id", "value"},
+        AssignmentFieldDefinition: {"id", "field", "cardinality", "conflict_resolution"},
+        PolicyFieldValue: {"policy_version_id", "assignment_field_definition_id", "value"},
     }
 
     for model, required_columns in expected.items():
@@ -152,7 +152,7 @@ def test_join_models_use_composite_primary_keys():
     assert employee_group_pk == {"employee_id", "group_id"}
     assert group_policy_pk == {"group_id", "policy_id"}
     assert employee_policy_pk == {"employee_id", "policy_id"}
-    assert policy_value_pk == {"policy_version_id", "field_definition_id", "value"}
+    assert policy_value_pk == {"policy_version_id", "assignment_field_definition_id", "value"}
 
 
 def test_legacy_group_columns_are_absent():

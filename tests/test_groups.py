@@ -1,6 +1,6 @@
 def create_field(client, name="badge", cardinality="one"):
     response = client.post(
-        "/field-definitions",
+        "/assignment-fields",
         json={"name": name, "cardinality": cardinality},
     )
     assert response.status_code == 201
@@ -17,7 +17,7 @@ def create_policy(client, name, priority, field_id, value, state="Wisconsin"):
                 "logical_operator": "and",
                 "conditions": [{"field": "state", "operator": "=", "value": state}],
             },
-            "values": [{"field_definition_id": field_id, "value": value}],
+            "values": [{"assignment_field_definition_id": field_id, "value": value}],
         },
     )
     assert response.status_code == 201

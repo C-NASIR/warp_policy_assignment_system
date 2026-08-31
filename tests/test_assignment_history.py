@@ -7,7 +7,7 @@ from app.dates import ensure_utc
 from app.models import (
     Employee,
     EmployeeAssignment,
-    FieldDefinition,
+    AssignmentFieldDefinition,
     Policy,
     PolicyFieldValue,
     PolicyVersion,
@@ -30,7 +30,7 @@ def make_policy(name, field, value, priority=10):
                 version_number=1,
                 priority=priority,
                 effective_from=date(2020, 1, 1),
-                values=[PolicyFieldValue(field_definition=field, value=value)],
+                values=[PolicyFieldValue(assignment_field_definition=field, value=value)],
             )
         ],
     )
@@ -47,7 +47,7 @@ def make_employee():
 
 def test_reconciliation_preserves_unchanged_rows_and_tracks_changes(db):
     employee = make_employee()
-    field = FieldDefinition(name="pay_schedule", cardinality="one")
+    field = AssignmentFieldDefinition(name="pay_schedule", cardinality="one")
     policy = make_policy("Schedule", field, "weekly")
     employee.policies = [policy]
     db.add(employee)
@@ -133,7 +133,7 @@ def test_reconciliation_preserves_unchanged_rows_and_tracks_changes(db):
 
 def test_same_value_from_a_new_source_creates_history(db):
     employee = make_employee()
-    field = FieldDefinition(name="badge", cardinality="one")
+    field = AssignmentFieldDefinition(name="badge", cardinality="one")
     first_policy = make_policy("First", field, "blue", priority=10)
     second_policy = make_policy("Second", field, "blue", priority=20)
     employee.policies = [first_policy]
@@ -162,14 +162,14 @@ def test_same_value_from_a_new_source_creates_history(db):
 
 def test_many_assignments_are_diffed_independently(db):
     employee = make_employee()
-    field = FieldDefinition(name="application_access", cardinality="many")
+    field = AssignmentFieldDefinition(name="application_access", cardinality="many")
     version = PolicyVersion(
         version_number=1,
         priority=10,
         effective_from=date(2020, 1, 1),
         values=[
-            PolicyFieldValue(field_definition=field, value="GitHub"),
-            PolicyFieldValue(field_definition=field, value="Slack"),
+            PolicyFieldValue(assignment_field_definition=field, value="GitHub"),
+            PolicyFieldValue(assignment_field_definition=field, value="Slack"),
         ],
     )
     employee.policies = [Policy(name="Applications", versions=[version])]
@@ -183,7 +183,7 @@ def test_many_assignments_are_diffed_independently(db):
 
     slack = next(item for item in version.values if item.value == "Slack")
     version.values.remove(slack)
-    version.values.append(PolicyFieldValue(field_definition=field, value="Figma"))
+    version.values.append(PolicyFieldValue(assignment_field_definition=field, value="Figma"))
     db.flush()
     changed = refresh_employee_assignments(db, employee, changed_at.date(), changed_at)
 
@@ -202,7 +202,7 @@ def test_many_assignments_are_diffed_independently(db):
 
 def test_same_timestamp_removal_does_not_leave_a_zero_length_row(db):
     employee = make_employee()
-    field = FieldDefinition(name="badge", cardinality="one")
+    field = AssignmentFieldDefinition(name="badge", cardinality="one")
     employee.policies = [make_policy("Badge", field, "blue")]
     db.add(employee)
     db.flush()
@@ -222,7 +222,7 @@ def test_same_timestamp_removal_does_not_leave_a_zero_length_row(db):
 
 def test_reconciliation_rejects_out_of_order_history(db):
     employee = make_employee()
-    field = FieldDefinition(name="badge", cardinality="one")
+    field = AssignmentFieldDefinition(name="badge", cardinality="one")
     employee.policies = [make_policy("Badge", field, "blue")]
     db.add(employee)
     db.flush()

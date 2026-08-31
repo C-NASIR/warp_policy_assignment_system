@@ -25,9 +25,9 @@ def get_employee_assignments_as_of(
                     EmployeeAssignment.effective_until > effective_at,
                 ),
             )
-            .options(joinedload(EmployeeAssignment.field_definition))
+            .options(joinedload(EmployeeAssignment.assignment_field_definition))
             .order_by(
-                EmployeeAssignment.field_definition_id,
+                EmployeeAssignment.assignment_field_definition_id,
                 EmployeeAssignment.value,
                 EmployeeAssignment.id,
             )
@@ -50,9 +50,9 @@ def get_employee_assignment_history(
         session.scalars(
             select(EmployeeAssignment)
             .where(EmployeeAssignment.employee_id == employee_id)
-            .options(joinedload(EmployeeAssignment.field_definition))
+            .options(joinedload(EmployeeAssignment.assignment_field_definition))
             .order_by(
-                EmployeeAssignment.field_definition_id,
+                EmployeeAssignment.assignment_field_definition_id,
                 EmployeeAssignment.effective_from,
                 EmployeeAssignment.id,
             )

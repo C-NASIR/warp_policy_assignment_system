@@ -174,8 +174,8 @@ class Group(Base):
     )
 
 
-class FieldDefinition(Base):
-    __tablename__ = "field_definitions"
+class AssignmentFieldDefinition(Base):
+    __tablename__ = "assignment_field_definitions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     field: Mapped[str] = mapped_column(String(100), unique=True)
@@ -184,7 +184,9 @@ class FieldDefinition(Base):
     name = synonym("field")
     cardinality: Mapped[Literal["one", "many"]] = mapped_column(String(10))
     conflict_resolution: Mapped[str] = mapped_column(String(50), default="priority")
-    overrides: Mapped[list[EmployeeOverride]] = relationship(back_populates="field_definition")
+    overrides: Mapped[list[EmployeeOverride]] = relationship(
+        back_populates="assignment_field_definition"
+    )
 
 
 class Policy(Base):
@@ -416,10 +418,13 @@ class PolicyFieldValue(Base):
         ForeignKey("policy_versions.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    field_definition_id: Mapped[int] = mapped_column(ForeignKey("field_definitions.id"), primary_key=True)
+    assignment_field_definition_id: Mapped[int] = mapped_column(
+        ForeignKey("assignment_field_definitions.id"),
+        primary_key=True,
+    )
     value: Mapped[str] = mapped_column(String(500), primary_key=True)
     policy_version: Mapped[PolicyVersion] = relationship(back_populates="values")
-    field_definition: Mapped[FieldDefinition] = relationship()
+    assignment_field_definition: Mapped[AssignmentFieldDefinition] = relationship()
 
 
 class EmployeeOverride(Base):
@@ -434,14 +439,18 @@ class EmployeeOverride(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"))
-    field_definition_id: Mapped[int] = mapped_column(ForeignKey("field_definitions.id"))
+    assignment_field_definition_id: Mapped[int] = mapped_column(
+        ForeignKey("assignment_field_definitions.id")
+    )
     value: Mapped[str] = mapped_column(String(500))
     retired_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
     employee: Mapped[Employee] = relationship(back_populates="overrides")
-    field_definition: Mapped[FieldDefinition] = relationship(back_populates="overrides")
+    assignment_field_definition: Mapped[AssignmentFieldDefinition] = relationship(
+        back_populates="overrides"
+    )
 
 
 class EmployeeAssignment(Base):
@@ -462,16 +471,18 @@ class EmployeeAssignment(Base):
             "effective_until",
         ),
         Index(
-            "ix_employee_assignments_employee_field_start",
+            "ix_employee_assignments_employee_assignment_field_start",
             "employee_id",
-            "field_definition_id",
+            "assignment_field_definition_id",
             "effective_from",
         ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"))
-    field_definition_id: Mapped[int] = mapped_column(ForeignKey("field_definitions.id"))
+    assignment_field_definition_id: Mapped[int] = mapped_column(
+        ForeignKey("assignment_field_definitions.id")
+    )
     value: Mapped[str] = mapped_column(String(500))
     source_policy_version_id: Mapped[int | None] = mapped_column(
         ForeignKey("policy_versions.id"),
@@ -493,6 +504,6 @@ class EmployeeAssignment(Base):
         nullable=True,
     )
     employee: Mapped[Employee] = relationship(back_populates="assignments")
-    field_definition: Mapped[FieldDefinition] = relationship()
+    assignment_field_definition: Mapped[AssignmentFieldDefinition] = relationship()
     source_policy_version: Mapped[PolicyVersion | None] = relationship()
     source_override: Mapped[EmployeeOverride | None] = relationship()

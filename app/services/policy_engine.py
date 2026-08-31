@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.models import (
     Employee,
     EmployeePolicy,
-    FieldDefinition,
+    AssignmentFieldDefinition,
     PolicyFieldValue,
     PolicyVersion,
 )
@@ -21,7 +21,7 @@ class PolicyConflictError(Exception):
 
 @dataclass(frozen=True)
 class ResolvedAssignment:
-    field_definition_id: int
+    assignment_field_definition_id: int
     value: str
     source_policy_version_id: int
 
@@ -52,27 +52,27 @@ def resolve_employee_assignments(
         .where(PolicyFieldValue.policy_version_id.in_(version_ids))
         .options(
             joinedload(PolicyFieldValue.policy_version),
-            joinedload(PolicyFieldValue.field_definition),
+            joinedload(PolicyFieldValue.assignment_field_definition),
         )
         .order_by(
-            PolicyFieldValue.field_definition_id,
+            PolicyFieldValue.assignment_field_definition_id,
             PolicyVersion.priority.desc(),
             PolicyVersion.id,
         )
     ).all()
 
     resolved: list[ResolvedAssignment] = []
-    for _, field_candidates_iter in groupby(candidates, key=lambda item: item.field_definition_id):
+    for _, field_candidates_iter in groupby(candidates, key=lambda item: item.assignment_field_definition_id):
         field_candidates = list(field_candidates_iter)
-        field_definition: FieldDefinition = field_candidates[0].field_definition
-        if field_definition.cardinality == "one":
-            resolved.append(_resolve_one(field_definition, field_candidates))
+        assignment_field_definition: AssignmentFieldDefinition = field_candidates[0].assignment_field_definition
+        if assignment_field_definition.cardinality == "one":
+            resolved.append(_resolve_one(assignment_field_definition, field_candidates))
         else:
             resolved.extend(_resolve_many(field_candidates))
     return resolved
 
 
-def _resolve_one(field: FieldDefinition, candidates: list[PolicyFieldValue]) -> ResolvedAssignment:
+def _resolve_one(field: AssignmentFieldDefinition, candidates: list[PolicyFieldValue]) -> ResolvedAssignment:
     highest_priority = candidates[0].policy_version.priority
     winners = [
         candidate
@@ -95,7 +95,7 @@ def _resolve_many(candidates: list[PolicyFieldValue]) -> list[ResolvedAssignment
         unique.setdefault(candidate.value, candidate)
     return [
         ResolvedAssignment(
-            item.field_definition_id,
+            item.assignment_field_definition_id,
             item.value,
             item.policy_version_id,
         )

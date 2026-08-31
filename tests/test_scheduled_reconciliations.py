@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 
 from app.dates import current_date, start_of_day
-from app.models import Employee, EmployeeOverride, FieldDefinition, ScheduledReconciliation
+from app.models import Employee, EmployeeOverride, AssignmentFieldDefinition, ScheduledReconciliation
 from app.services.policy_engine import PolicyConflictError
 from app.services.scheduled_reconciliations import (
     BECOMES_EFFECTIVE_TRIGGER,
@@ -29,7 +29,7 @@ def _condition(state="California"):
 
 def _create_field(client, name="pay_schedule"):
     response = client.post(
-        "/field-definitions",
+        "/assignment-fields",
         json={"name": name, "cardinality": "one"},
     )
     assert response.status_code == 201
@@ -64,7 +64,7 @@ def _create_policy(
         "name": f"{state} {value}",
         "priority": priority,
         "condition_group": _condition(state),
-        "values": [{"field_definition_id": field_id, "value": value}],
+        "values": [{"assignment_field_definition_id": field_id, "value": value}],
     }
     if effective_from is not None:
         body["effective_from"] = effective_from.isoformat()
@@ -182,7 +182,7 @@ def test_new_versions_schedule_both_sides_of_each_effective_boundary(client, db)
             "priority": 10,
             "effective_from": second_start.isoformat(),
             "condition_group": _condition(),
-            "values": [{"field_definition_id": field["id"], "value": "biweekly"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
         },
     )
     assert second.status_code == 201
@@ -292,7 +292,7 @@ def test_same_policy_boundary_events_reconcile_policy_once(
             "priority": 20,
             "effective_from": starts.isoformat(),
             "condition_group": _condition(),
-            "values": [{"field_definition_id": field["id"], "value": "biweekly"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
         },
     )
     assert response.status_code == 201
@@ -361,10 +361,10 @@ def test_override_trigger_dispatches_assignment_reconciliation(
             department="Engineering",
             employee_type="regular",
         )
-        field = FieldDefinition(name="pay_schedule", cardinality="one")
+        field = AssignmentFieldDefinition(name="pay_schedule", cardinality="one")
         override = EmployeeOverride(
             employee=employee,
-            field_definition=field,
+            assignment_field_definition=field,
             value="monthly",
         )
         session.add(override)

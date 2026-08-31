@@ -8,7 +8,7 @@ from app.models import EmployeePolicy
 
 def _create_field(client, name="pay_schedule", cardinality="one"):
     response = client.post(
-        "/field-definitions",
+        "/assignment-fields",
         json={"name": name, "cardinality": cardinality},
     )
     assert response.status_code == 201
@@ -51,7 +51,7 @@ def _create_policy(
         "name": name,
         "priority": priority,
         "condition_group": _condition(condition_field, condition_value),
-        "values": [{"field_definition_id": field["id"], "value": value}],
+        "values": [{"assignment_field_definition_id": field["id"], "value": value}],
     }
     if effective_from is not None:
         body["effective_from"] = effective_from.isoformat()
@@ -137,7 +137,7 @@ def test_new_current_version_reconciles_employees_that_enter_and_leave_policy(cl
             "priority": 10,
             "effective_from": current_date().isoformat(),
             "condition_group": _condition("state", "Texas"),
-            "values": [{"field_definition_id": field["id"], "value": "biweekly"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
         },
     )
     assert response.status_code == 201
@@ -175,7 +175,7 @@ def test_future_policy_version_does_not_change_current_assignments(client):
             "priority": 20,
             "effective_from": (current_date() + timedelta(days=1)).isoformat(),
             "condition_group": _condition("state", "California"),
-            "values": [{"field_definition_id": field["id"], "value": "biweekly"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
         },
     )
     assert response.status_code == 201
@@ -239,7 +239,7 @@ def test_group_linked_policy_version_and_archive_reconcile_members_despite_condi
             "priority": 10,
             "effective_from": current_date().isoformat(),
             "condition_group": _condition("state", "Wisconsin"),
-            "values": [{"field_definition_id": field["id"], "value": "senior"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "senior"}],
         },
     )
     assert version.status_code == 201
@@ -299,7 +299,7 @@ def test_conflicting_policy_creation_rolls_back_policy_audits_and_partial_fanout
             "name": "California monthly",
             "priority": 10,
             "condition_group": _condition("state", "California"),
-            "values": [{"field_definition_id": field["id"], "value": "monthly"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "monthly"}],
         },
     )
     assert response.status_code == 409
@@ -350,7 +350,7 @@ def test_conflicting_new_version_rolls_back_version_range_audits_and_partial_fan
             "priority": 10,
             "effective_from": current_date().isoformat(),
             "condition_group": _condition("state", "California"),
-            "values": [{"field_definition_id": field["id"], "value": "monthly"}],
+            "values": [{"assignment_field_definition_id": field["id"], "value": "monthly"}],
         },
     )
     assert response.status_code == 409

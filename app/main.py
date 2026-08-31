@@ -5,10 +5,10 @@ from fastapi.responses import JSONResponse
 
 from app.database import create_tables
 from app.routers import (
+    assignment_fields,
     audit_logs,
     condition_fields,
     employees,
-    field_definitions,
     groups,
     policies,
 )
@@ -33,7 +33,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Policy Assignment System", version="1.0.0", lifespan=lifespan)
 app.include_router(employees.router)
-app.include_router(field_definitions.router)
+app.include_router(assignment_fields.router)
 app.include_router(condition_fields.router)
 app.include_router(policies.router)
 app.include_router(groups.router)

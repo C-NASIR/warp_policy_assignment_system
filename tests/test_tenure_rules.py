@@ -15,7 +15,7 @@ from app.services.scheduled_reconciliations import (
 
 def _create_assignment_field(client):
     response = client.post(
-        "/field-definitions",
+        "/assignment-fields",
         json={"name": "vacation", "cardinality": "one"},
     )
     assert response.status_code == 201
@@ -24,7 +24,7 @@ def _create_assignment_field(client):
 
 def _create_tenure_policy(
     client,
-    field_definition_id: int,
+    assignment_field_definition_id: int,
     *,
     operator: str = ">=",
     value: str = "1 year",
@@ -44,7 +44,7 @@ def _create_tenure_policy(
             },
             "values": [
                 {
-                    "field_definition_id": field_definition_id,
+                    "assignment_field_definition_id": assignment_field_definition_id,
                     "value": "4 weeks",
                 }
             ],
@@ -284,7 +284,7 @@ def test_new_policy_version_replaces_obsolete_employee_tenure_schedule(client, d
             },
             "values": [
                 {
-                    "field_definition_id": field["id"],
+                    "assignment_field_definition_id": field["id"],
                     "value": "5 weeks",
                 }
             ],

@@ -49,13 +49,13 @@ class GroupRead(GroupCreate, ORMModel):
     id: int
 
 
-class FieldDefinitionCreate(BaseModel):
+class AssignmentFieldDefinitionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     cardinality: Literal["one", "many"]
     conflict_resolution: str = Field(default="priority", min_length=1, max_length=50)
 
 
-class FieldDefinitionRead(FieldDefinitionCreate, ORMModel):
+class AssignmentFieldDefinitionRead(AssignmentFieldDefinitionCreate, ORMModel):
     id: int
 
 
@@ -83,20 +83,20 @@ class ConditionFieldDefinitionRead(ORMModel):
 
 
 class EmployeeOverrideCreate(BaseModel):
-    field_definition_id: int
+    assignment_field_definition_id: int
     value: str = Field(min_length=1, max_length=500)
 
 
 class EmployeeOverrideUpdate(BaseModel):
-    field_definition_id: int | None = None
+    assignment_field_definition_id: int | None = None
     value: str | None = Field(default=None, min_length=1, max_length=500)
 
     @model_validator(mode="after")
     def require_a_change(self) -> EmployeeOverrideUpdate:
         if not self.model_fields_set:
             raise ValueError("At least one override field must be provided")
-        if "field_definition_id" in self.model_fields_set and self.field_definition_id is None:
-            raise ValueError("field_definition_id cannot be null")
+        if "assignment_field_definition_id" in self.model_fields_set and self.assignment_field_definition_id is None:
+            raise ValueError("assignment_field_definition_id cannot be null")
         if "value" in self.model_fields_set and self.value is None:
             raise ValueError("value cannot be null")
         return self
@@ -105,14 +105,14 @@ class EmployeeOverrideUpdate(BaseModel):
 class EmployeeOverrideRead(ORMModel):
     id: int
     employee_id: int
-    field_definition_id: int
+    assignment_field_definition_id: int
     value: str
     retired_at: datetime | None
-    field_definition: FieldDefinitionRead
+    assignment_field_definition: AssignmentFieldDefinitionRead
 
 
 class PolicyValueCreate(BaseModel):
-    field_definition_id: int
+    assignment_field_definition_id: int
     value: str = Field(min_length=1, max_length=500)
 
 
@@ -196,13 +196,13 @@ class PolicyRead(ORMModel):
 class AssignmentRead(ORMModel):
     id: int
     employee_id: int
-    field_definition_id: int
+    assignment_field_definition_id: int
     value: str
     source_policy_version_id: int | None
     source_override_id: int | None
     effective_from: datetime
     effective_until: datetime | None
-    field_definition: FieldDefinitionRead
+    assignment_field_definition: AssignmentFieldDefinitionRead
 
     @field_validator("effective_from", "effective_until", mode="before")
     @classmethod
