@@ -26,6 +26,7 @@ from app.services.policy_versions import (
     get_effective_policy_version,
 )
 from app.services.reconciliation import refresh_employee_assignments
+from app.services.condition_fields import get_condition_field_definitions
 
 
 def condition_group(state="California"):
@@ -35,12 +36,13 @@ def condition_group(state="California"):
     }
 
 
-def compiled_state_clause(state="California"):
+def compiled_state_clause(db, state="California"):
+    state_definition = get_condition_field_definitions(db, {"state"})["state"]
     return [
         CompiledPolicyClause(
             conditions=[
                 CompiledPolicyCondition(
-                    field="state",
+                    condition_field_definition=state_definition,
                     operator="=",
                     value=state,
                 )
@@ -190,14 +192,14 @@ def test_group_policy_uses_version_for_evaluation_date_and_assignment_source(db)
                 priority=10,
                 effective_from=date(2025, 1, 1),
                 effective_until=date(2025, 12, 31),
-                compiled_clauses=compiled_state_clause("Wisconsin"),
+                compiled_clauses=compiled_state_clause(db, "Wisconsin"),
                 values=[PolicyFieldValue(field_definition=field, value="2 weeks")],
             ),
             PolicyVersion(
                 version_number=2,
                 priority=20,
                 effective_from=date(2026, 1, 1),
-                compiled_clauses=compiled_state_clause("Wisconsin"),
+                compiled_clauses=compiled_state_clause(db, "Wisconsin"),
                 values=[PolicyFieldValue(field_definition=field, value="3 weeks")],
             ),
         ],
@@ -242,13 +244,13 @@ def test_direct_matching_uses_only_the_effective_versions_conditions(db):
                 priority=10,
                 effective_from=date(2025, 1, 1),
                 effective_until=date(2025, 12, 31),
-                compiled_clauses=compiled_state_clause("California"),
+                compiled_clauses=compiled_state_clause(db, "California"),
             ),
             PolicyVersion(
                 version_number=2,
                 priority=10,
                 effective_from=date(2026, 1, 1),
-                compiled_clauses=compiled_state_clause("Wisconsin"),
+                compiled_clauses=compiled_state_clause(db, "Wisconsin"),
             ),
         ],
     )

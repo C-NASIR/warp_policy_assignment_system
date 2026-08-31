@@ -5,6 +5,7 @@ from typing import Literal
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -246,17 +247,87 @@ class PolicyVersion(Base):
     )
 
 
+class ConditionFieldDefinition(Base):
+    __tablename__ = "condition_field_definitions"
+    __table_args__ = (
+        CheckConstraint(
+            "field_type IN ('static', 'derived')",
+            name="ck_condition_field_definition_type",
+        ),
+        CheckConstraint(
+            "(field_type = 'static' AND source_table IS NOT NULL "
+            "AND source_column IS NOT NULL) OR "
+            "(field_type = 'derived' AND resolver_key IS NOT NULL)",
+            name="ck_condition_field_definition_source",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(100), unique=True)
+    label: Mapped[str] = mapped_column(String(200))
+    field_type: Mapped[Literal["static", "derived"]] = mapped_column(String(20))
+    data_type: Mapped[str] = mapped_column(String(50))
+    resolver_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    source_table: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    source_column: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    dependencies: Mapped[list[ConditionFieldDependency]] = relationship(
+        back_populates="condition_field_definition",
+        cascade="all, delete-orphan",
+    )
+
+
+class ConditionFieldDependency(Base):
+    __tablename__ = "condition_field_dependencies"
+    __table_args__ = (
+        CheckConstraint(
+            "dependency_type IN ('column', 'relationship', 'time')",
+            name="ck_condition_field_dependency_type",
+        ),
+        UniqueConstraint(
+            "condition_field_definition_id",
+            "dependency_key",
+            "role",
+            name="uq_condition_field_dependency",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    condition_field_definition_id: Mapped[int] = mapped_column(
+        ForeignKey("condition_field_definitions.id", ondelete="CASCADE"),
+        index=True,
+    )
+    dependency_type: Mapped[Literal["column", "relationship", "time"]] = mapped_column(
+        String(20)
+    )
+    dependency_key: Mapped[str] = mapped_column(String(200))
+    source_table: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    source_column: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    role: Mapped[str] = mapped_column(String(100), default="value", server_default="value")
+    impact_resolver_key: Mapped[str] = mapped_column(String(200))
+    condition_field_definition: Mapped[ConditionFieldDefinition] = relationship(
+        back_populates="dependencies"
+    )
+
+
 class Condition(Base):
     __tablename__ = "conditions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    field: Mapped[str] = mapped_column(String(100))
+    condition_field_definition_id: Mapped[int] = mapped_column(
+        ForeignKey("condition_field_definitions.id")
+    )
     operator: Mapped[str] = mapped_column(String(50))
     value: Mapped[str] = mapped_column(String(500))
+    condition_field_definition: Mapped[ConditionFieldDefinition] = relationship()
     group_links: Mapped[list[ConditionGroupCondition]] = relationship(
         back_populates="condition",
         cascade="all, delete-orphan",
     )
+
+    @property
+    def field(self) -> str:
+        return self.condition_field_definition.key
 
 
 class ConditionGroup(Base):
@@ -325,10 +396,17 @@ class CompiledPolicyCondition(Base):
         ForeignKey("compiled_policy_clauses.id", ondelete="CASCADE"),
         index=True,
     )
-    field: Mapped[str] = mapped_column(String(100))
+    condition_field_definition_id: Mapped[int] = mapped_column(
+        ForeignKey("condition_field_definitions.id")
+    )
     operator: Mapped[str] = mapped_column(String(50))
     value: Mapped[str] = mapped_column(String(500))
     clause: Mapped[CompiledPolicyClause] = relationship(back_populates="conditions")
+    condition_field_definition: Mapped[ConditionFieldDefinition] = relationship()
+
+    @property
+    def field(self) -> str:
+        return self.condition_field_definition.key
 
 
 class PolicyFieldValue(Base):

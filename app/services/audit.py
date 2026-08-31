@@ -58,7 +58,7 @@ def snapshot_policy_version(version: PolicyVersion) -> dict[str, Any]:
     snapshot["compiled_clauses"] = [
         [
             {
-                "field": condition.field,
+                "field": condition.condition_field_definition.key,
                 "operator": condition.operator,
                 "value": condition.value,
             }

@@ -16,13 +16,17 @@ from app.services.policy_matching import (
     find_matching_policy_ids,
     refresh_employee_policies,
 )
+from app.services.condition_fields import get_condition_field_definitions
 
 
 def compiled_policy(
+    db,
     name: str,
     priority: int,
     clauses: list[list[tuple[str, str] | tuple[str, str, str]]],
 ) -> Policy:
+    field_keys = {condition[0] for clause in clauses for condition in clause}
+    definitions = get_condition_field_definitions(db, field_keys)
     return Policy(
         name=name,
         versions=[
@@ -34,7 +38,7 @@ def compiled_policy(
                     CompiledPolicyClause(
                         conditions=[
                             CompiledPolicyCondition(
-                                field=condition[0],
+                                condition_field_definition=definitions[condition[0]],
                                 operator=condition[1] if len(condition) == 3 else "=",
                                 value=condition[-1],
                             )
@@ -56,6 +60,7 @@ def test_finds_policy_when_any_compiled_clause_fully_matches(db):
         employee_type="regular",
     )
     matching = compiled_policy(
+        db,
         "A AND (B OR C)",
         10,
         [
@@ -64,6 +69,7 @@ def test_finds_policy_when_any_compiled_clause_fully_matches(db):
         ],
     )
     not_matching = compiled_policy(
+        db,
         "Wisconsin contractors",
         5,
         [[("state", "Wisconsin"), ("employee_type", "contractor")]],
@@ -82,6 +88,7 @@ def test_clause_requires_every_condition_to_match(db):
         employee_type="contractor",
     )
     policy = compiled_policy(
+        db,
         "California regular",
         10,
         [[("state", "California"), ("employee_type", "regular")]],
@@ -100,6 +107,7 @@ def test_policy_is_returned_once_when_multiple_clauses_match(db):
         employee_type="regular",
     )
     policy = compiled_policy(
+        db,
         "Multiple matching clauses",
         10,
         [
@@ -120,7 +128,7 @@ def test_matches_employee_columns_without_a_hard_coded_field_list(db):
         department="Engineering",
         employee_type="regular",
     )
-    policy = compiled_policy("Named Alice", 10, [[("name", "Alice")]])
+    policy = compiled_policy(db, "Named Alice", 10, [[("name", "Alice")]])
     db.add_all([alice, policy])
     db.flush()
 
@@ -145,7 +153,9 @@ def test_unknown_employee_or_unsupported_condition_does_not_match(db):
                     CompiledPolicyClause(
                         conditions=[
                             CompiledPolicyCondition(
-                                field="state",
+                                condition_field_definition=get_condition_field_definitions(
+                                    db, {"state"}
+                                )["state"],
                                 operator="contains",
                                 value="Cali",
                             )
@@ -173,11 +183,11 @@ def test_comparison_operators_use_typed_employee_facts(db):
         manager_id=10,
     )
     policies = [
-        compiled_policy("Started before cutoff", 10, [[("start_date", "<", "2025-01-01")]]),
-        compiled_policy("Started by date", 10, [[("start_date", "<=", "2024-01-15")]]),
-        compiled_policy("Low manager ID", 10, [[("manager_id", "<", "100")]]),
-        compiled_policy("Numeric ordering", 10, [[("manager_id", "<", "2")]]),
-        compiled_policy("Location", 10, [[("location", "=", "San Francisco")]]),
+        compiled_policy(db, "Started before cutoff", 10, [[("start_date", "<", "2025-01-01")]]),
+        compiled_policy(db, "Started by date", 10, [[("start_date", "<=", "2024-01-15")]]),
+        compiled_policy(db, "Low manager ID", 10, [[("manager_id", "<", "100")]]),
+        compiled_policy(db, "Numeric ordering", 10, [[("manager_id", "<", "2")]]),
+        compiled_policy(db, "Location", 10, [[("location", "=", "San Francisco")]]),
     ]
     db.add_all([alice, *policies])
     db.flush()
@@ -198,7 +208,7 @@ def test_false_date_comparison_does_not_match(db):
         employee_type="regular",
         start_date=date(2026, 1, 1),
     )
-    policy = compiled_policy("Has early start", 10, [[("start_date", "<", "2025-01-01")]])
+    policy = compiled_policy(db, "Has early start", 10, [[("start_date", "<", "2025-01-01")]])
     db.add_all([alice, policy])
     db.flush()
 
@@ -213,11 +223,13 @@ def test_refresh_employee_policies_replaces_stale_links(db):
         employee_type="regular",
     )
     california = compiled_policy(
+        db,
         "California policy",
         10,
         [[("state", "California")]],
     )
     wisconsin = compiled_policy(
+        db,
         "Wisconsin policy",
         10,
         [[("state", "Wisconsin")]],

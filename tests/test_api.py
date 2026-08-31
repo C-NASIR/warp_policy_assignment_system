@@ -252,7 +252,9 @@ def test_policy_rejects_an_unknown_comparison_operator(client):
             "priority": 1,
             "condition_group": {
                 "logical_operator": "and",
-                "conditions": [{"field": "start_date", "operator": ">", "value": "2024-12-31"}],
+                "conditions": [
+                    {"field": "start_date", "operator": "contains", "value": "2024-12-31"}
+                ],
             },
         },
     )

@@ -1,7 +1,7 @@
 import os
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -41,5 +41,11 @@ def get_db() -> Generator[Session, None, None]:
 
 def create_tables() -> None:
     from app import models  # noqa: F401
+    from app.services.condition_fields import sync_condition_field_definitions
 
     Base.metadata.create_all(bind=engine)
+    with SessionLocal.begin() as session:
+        # Multiple Uvicorn processes may start together. Serialize the small
+        # system-catalog upsert so the unique field keys remain race-free.
+        session.execute(text("SELECT pg_advisory_xact_lock(762341908)"))
+        sync_condition_field_definitions(session)

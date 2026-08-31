@@ -19,6 +19,10 @@ Employee
 
 `Policy` is the stable identity referenced by employees and groups. `PolicyVersion` is the executable definition containing priority, effective dates, conditions, compiled clauses, and field values. Policy condition trees are compiled into flat OR-of-AND clauses per version. Employee reconciliation selects the one version effective on the evaluation date, evaluates its clauses, persists stable policy links, and resolves each assignment field independently.
 
+Condition inputs are system-controlled `ConditionFieldDefinition` records, separate from assignment-output `FieldDefinition` records. Static fields resolve trusted employee attributes; derived fields invoke allowlisted application resolvers. Definitions declare data types, resolver keys, and dependency metadata, while canonical and compiled conditions retain foreign keys to those definitions. Administrators select catalog fields but cannot define arbitrary formulas or executable resolvers.
+
+`tenure` is a derived calendar-duration field resolved from `Employee.start_date` and the reconciliation evaluation date. Inputs such as `2 years` are normalized to `P2Y`; comparison uses completed calendar anniversaries rather than fixed 365-day intervals. A February 29 start date reaches its anniversary on February 28 in a non-leap year.
+
 Effective ranges are inclusive. Versions for one policy may not overlap, and an archived policy has no effective version. Scheduling a later version automatically closes the previous open-ended version on the preceding day. An effective-date gap is valid and means that policy contributes no behavior during the gap. Creating a future version immediately reconciles current state but does not apply that version early; automatic reconciliation when its effective date arrives remains a separate scheduling concern.
 
 Future changes are represented centrally in `ScheduledReconciliation` while their authoritative dates remain on the owning domain records. Policy-version creation immediately synchronizes pending `becomes_effective` and `expires` events. Because `effective_until` is inclusive, expiration is scheduled for midnight UTC on the following day. The scheduling service can query and reconcile due events transactionally, but version 1 does not include a periodic worker that invokes it.
@@ -43,7 +47,8 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Group policy:** the many-to-many link that makes a policy apply to every member of a group.
 - **Policy:** a stable named identity with `active` or `archived` status.
 - **Policy version:** a date-effective, priority-ranked executable definition owned by one policy.
-- **Condition tree:** a version-owned nested `and`/`or` expression over employee fields using `=`, `<`, and `<=` comparisons.
+- **Condition field definition:** a system-controlled static or derived policy input with a trusted resolver, data type, and dependency metadata.
+- **Condition tree:** a version-owned nested `and`/`or` expression over condition fields using `=`, `<`, `<=`, `>`, and `>=` comparisons.
 - **Compiled policy clause:** one version-owned flat set of conditions that must all match.
 - **Employee policy:** a persisted match between an employee and a policy.
 - **Field definition:** a named assignment field with `one` or `many` cardinality.
@@ -97,6 +102,8 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | POST / DELETE | `/groups/{id}/policies/{policy_id}` | Attach or remove a group policy |
 | POST / GET | `/field-definitions` | Create or list field definitions |
 | GET | `/field-definitions/{id}` | Read a field definition |
+| GET | `/condition-fields` | List system-supported condition fields and dependencies |
+| GET | `/condition-fields/{key}` | Read one system-supported condition field |
 | POST / GET | `/policies` | Create policies with version 1 or list them |
 | GET / PATCH | `/policies/{id}` | Read or update stable policy metadata |
 | GET / POST | `/policies/{id}/versions` | List or create policy versions |
@@ -140,9 +147,11 @@ Policy scheduling is maintained immediately whenever a version is created or pol
 - Closing a prior open-ended version creates its expiration event at the new version's boundary.
 - Archiving a policy cancels its pending events; reactivation restores future events without duplicating rows.
 
+Tenure scheduling is also maintained immediately. Employee creation, `start_date` changes, policy creation/versioning, and policy archive/reactivation recompute desired future anniversary events. Stale pending events are cancelled and exact desired events are created or restored idempotently. `>= N years` changes at anniversary `N`; `> N` and `<= N` change at anniversary `N + 1`; equality schedules both its entry and exit anniversaries. Events outside the policy version's effective range are omitted because version-boundary reconciliation already covers those changes.
+
 `reconcile_due_events()` is the callable processing boundary for the worker. It locks and loads one due batch, deduplicates simultaneous events belonging to the same policy, invokes the existing policy or employee reconciliation paths, and marks events processed only after successful reconciliation. Domain mutations, assignments, audit entries, and schedule status share one transaction; a conflict rolls everything back and leaves the event pending for retry.
 
-The service already defines dispatch types for employee tenure thresholds and override activation/expiration. Creating those schedules remains deferred until tenure conditions and time-bounded override fields exist. No timer, cron process, or queue invokes the processor automatically.
+The service creates employee tenure-threshold events and also defines dispatch types for future override activation/expiration. Time-bounded override schedule creation remains deferred. No internal timer invokes the processor automatically; the one-shot worker is intended to be called by an external scheduler.
 
 ## Reconciliation worker
 
@@ -178,4 +187,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, tenure-threshold calculation, an internal worker timer or deployment scheduler, queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
+Version 1 intentionally excludes a frontend, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.

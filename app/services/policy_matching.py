@@ -1,8 +1,9 @@
 from datetime import date
 
-from sqlalchemy import String, and_, case, cast, delete, func, inspect, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session, selectinload
 
+from app.dates import current_date
 from app.models import (
     CompiledPolicyClause,
     CompiledPolicyCondition,
@@ -10,6 +11,10 @@ from app.models import (
     EmployeeGroupMembership,
     EmployeePolicy,
     GroupPolicy,
+)
+from app.services.condition_fields import (
+    ConditionEvaluationContext,
+    evaluate_condition,
 )
 from app.services.policy_versions import get_effective_policy_versions
 
@@ -61,62 +66,44 @@ def find_direct_matching_policy_ids(
     if not effective_versions:
         return []
     versions_by_id = {version.id: version for version in effective_versions.values()}
-    employee_fields = [column for column in inspect(Employee).columns if not column.primary_key]
-    condition_matches = or_(
-        *(_condition_matches_employee_column(column) for column in employee_fields)
+    employee = session.get(Employee, employee_id)
+    if employee is None:
+        return []
+    effective_on = evaluation_date or current_date()
+    context = ConditionEvaluationContext(
+        session=session,
+        employee=employee,
+        evaluation_date=effective_on,
     )
-    matched_count = func.sum(case((condition_matches, 1), else_=0))
-
-    statement = (
-        select(CompiledPolicyClause.policy_version_id)
-        .join(CompiledPolicyClause.conditions)
-        .join(Employee, Employee.id == employee_id)
-        .where(CompiledPolicyClause.policy_version_id.in_(versions_by_id))
-        .group_by(CompiledPolicyClause.id, CompiledPolicyClause.policy_version_id)
-        .having(func.count(CompiledPolicyCondition.id) == matched_count)
-        .distinct()
-        .order_by(CompiledPolicyClause.policy_version_id)
+    clauses = list(
+        session.scalars(
+            select(CompiledPolicyClause)
+            .where(CompiledPolicyClause.policy_version_id.in_(versions_by_id))
+            .options(
+                selectinload(CompiledPolicyClause.conditions).selectinload(
+                    CompiledPolicyCondition.condition_field_definition
+                )
+            )
+            .order_by(CompiledPolicyClause.policy_version_id, CompiledPolicyClause.id)
+        )
     )
+    matched_version_ids = {
+        clause.policy_version_id
+        for clause in clauses
+        if clause.conditions
+        and all(
+            evaluate_condition(
+                context,
+                condition.condition_field_definition,
+                condition.operator,
+                condition.value,
+            )
+            for condition in clause.conditions
+        )
+    }
     return sorted(
-        {
-            versions_by_id[version_id].policy_id
-            for version_id in session.scalars(statement)
-        }
-    )
-
-
-def _condition_matches_employee_column(column):
-    """Build type-aware comparisons for one employee fact column."""
-    employee_value = getattr(Employee, column.key)
-
-    # Dates are persisted as ISO-8601 values, so their string ordering is their
-    # chronological ordering. Integers must remain numeric for < and <=.
-    if column.type.python_type is date:
-        comparable_employee_value = cast(employee_value, String)
-        comparable_condition_value = CompiledPolicyCondition.value
-    elif column.type.python_type is int:
-        comparable_employee_value = employee_value
-        comparable_condition_value = cast(CompiledPolicyCondition.value, column.type)
-    else:
-        comparable_employee_value = employee_value
-        comparable_condition_value = CompiledPolicyCondition.value
-
-    return and_(
-        CompiledPolicyCondition.field == column.key,
-        or_(
-            and_(
-                CompiledPolicyCondition.operator == "=",
-                cast(employee_value, String) == CompiledPolicyCondition.value,
-            ),
-            and_(
-                CompiledPolicyCondition.operator == "<",
-                comparable_employee_value < comparable_condition_value,
-            ),
-            and_(
-                CompiledPolicyCondition.operator == "<=",
-                comparable_employee_value <= comparable_condition_value,
-            ),
-        ),
+        versions_by_id[version_id].policy_id
+        for version_id in matched_version_ids
     )
 
 

@@ -13,15 +13,20 @@ from app.models import (
     PolicyVersion,
 )
 from app.services.policy_compiler import (
-    CompiledCondition,
     PolicyCompilationError,
     compile_condition_tree_to_clauses,
     compile_policy_version_clauses,
 )
+from app.services.condition_fields import get_condition_field_definitions
 
 
-def condition(field: str, value: str) -> Condition:
-    return Condition(field=field, operator="=", value=value)
+def condition(db, field: str, value: str) -> Condition:
+    definition = get_condition_field_definitions(db, {field})[field]
+    return Condition(
+        condition_field_definition=definition,
+        operator="=",
+        value=value,
+    )
 
 
 def group(operator: str, *conditions: Condition, children: tuple[ConditionGroup, ...] = ()) -> ConditionGroup:
@@ -31,27 +36,32 @@ def group(operator: str, *conditions: Condition, children: tuple[ConditionGroup,
     return result
 
 
-def test_compiles_and_over_nested_or_to_flat_clauses():
-    a = condition("state", "California")
-    b = condition("employee_type", "regular")
-    c = condition("department", "Engineering")
+def test_compiles_and_over_nested_or_to_flat_clauses(db):
+    a = condition(db, "state", "California")
+    b = condition(db, "employee_type", "regular")
+    c = condition(db, "department", "Engineering")
     root = group("and", a, children=(group("or", b, c),))
 
-    assert compile_condition_tree_to_clauses(root) == [
-        (
-            CompiledCondition("state", "=", "California"),
-            CompiledCondition("employee_type", "=", "regular"),
-        ),
-        (
-            CompiledCondition("state", "=", "California"),
-            CompiledCondition("department", "=", "Engineering"),
-        ),
+    assert [
+        tuple((item.field, item.operator, item.value) for item in clause)
+        for clause in compile_condition_tree_to_clauses(root)
+    ] == [
+        (("state", "=", "California"), ("employee_type", "=", "regular")),
+        (("state", "=", "California"), ("department", "=", "Engineering")),
     ]
 
 
-def test_compiles_nested_and_groups_using_cartesian_product():
-    left = group("or", condition("state", "California"), condition("state", "Wisconsin"))
-    right = group("or", condition("department", "Engineering"), condition("department", "Sales"))
+def test_compiles_nested_and_groups_using_cartesian_product(db):
+    left = group(
+        "or",
+        condition(db, "state", "California"),
+        condition(db, "state", "Wisconsin"),
+    )
+    right = group(
+        "or",
+        condition(db, "department", "Engineering"),
+        condition(db, "department", "Sales"),
+    )
 
     clauses = compile_condition_tree_to_clauses(group("and", children=(left, right)))
 
@@ -69,9 +79,11 @@ def test_rejects_empty_condition_group():
         compile_condition_tree_to_clauses(group("and"))
 
 
-def test_rejects_unknown_logical_operator():
+def test_rejects_unknown_logical_operator(db):
     with pytest.raises(PolicyCompilationError, match="Unsupported logical operator"):
-        compile_condition_tree_to_clauses(group("xor", condition("state", "California")))
+        compile_condition_tree_to_clauses(
+            group("xor", condition(db, "state", "California"))
+        )
 
 
 def test_compile_policy_version_clauses_builds_replaceable_representation(db):
@@ -82,9 +94,9 @@ def test_compile_policy_version_clauses_builds_replaceable_representation(db):
         priority=10,
         effective_from=date(2020, 1, 1),
     )
-    a = condition("state", "California")
-    b = condition("employee_type", "regular")
-    c = condition("department", "Engineering")
+    a = condition(db, "state", "California")
+    b = condition(db, "employee_type", "regular")
+    c = condition(db, "department", "Engineering")
     nested = group("or", b, c)
     root = group("and", a, children=(nested,))
     root.policy_version = version

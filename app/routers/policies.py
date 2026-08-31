@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from app.dependencies import AuditActor, DatabaseSession
 from app.models import (
     Condition,
+    ConditionFieldDefinition,
     ConditionGroup,
     ConditionGroupCondition,
     FieldDefinition,
@@ -21,6 +22,10 @@ from app.schemas import (
     PolicyVersionRead,
 )
 from app.services.audit import record_audit_log, snapshot_entity
+from app.services.condition_fields import (
+    ConditionFieldError,
+    get_condition_field_definitions,
+)
 from app.services.policy_compiler import (
     PolicyCompilationError,
     compile_policy_version_clauses,
@@ -28,6 +33,7 @@ from app.services.policy_compiler import (
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
 from app.services.policy_versions import create_policy_version
 from app.services.scheduled_reconciliations import sync_policy_version_schedules
+from app.services.tenure_scheduling import sync_all_employee_tenure_schedules
 
 router = APIRouter(prefix="/policies", tags=["policies"])
 
@@ -57,17 +63,38 @@ def _validate_field_definitions(session: DatabaseSession, values) -> None:
         raise HTTPException(status_code=404, detail=f"Field definitions not found: {missing_ids}")
 
 
-def _build_canonical_condition_tree(data: ConditionGroupCreate) -> ConditionGroup:
+def _build_canonical_condition_tree(
+    data: ConditionGroupCreate,
+    definitions: dict[str, ConditionFieldDefinition],
+) -> ConditionGroup:
     return ConditionGroup(
         logical_operator=data.logical_operator,
         condition_links=[
             ConditionGroupCondition(
-                condition=Condition(field=item.field, operator=item.operator, value=item.value)
+                condition=Condition(
+                    condition_field_definition=definitions[item.field],
+                    operator=item.operator,
+                    value=item.value,
+                )
             )
             for item in data.conditions
         ],
-        child_groups=[_build_canonical_condition_tree(child) for child in data.child_groups],
+        child_groups=[
+            _build_canonical_condition_tree(child, definitions)
+            for child in data.child_groups
+        ],
     )
+
+
+def _condition_field_keys(root: ConditionGroupCreate) -> set[str]:
+    return {
+        *(condition.field for condition in root.conditions),
+        *(
+            field_key
+            for child in root.child_groups
+            for field_key in _condition_field_keys(child)
+        ),
+    }
 
 
 def _collect_condition_groups(root: ConditionGroup) -> list[ConditionGroup]:
@@ -88,7 +115,14 @@ def _create_version(
     actor: str,
 ) -> PolicyVersion:
     _validate_field_definitions(session, data.values)
-    canonical_root = _build_canonical_condition_tree(data.condition_group)
+    try:
+        definitions = get_condition_field_definitions(
+            session,
+            _condition_field_keys(data.condition_group),
+        )
+    except ConditionFieldError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    canonical_root = _build_canonical_condition_tree(data.condition_group, definitions)
     try:
         compiled_clauses = compile_policy_version_clauses(canonical_root)
     except PolicyCompilationError as exc:
@@ -107,6 +141,7 @@ def _create_version(
         actor=actor,
     )
     sync_policy_version_schedules(session, policy)
+    sync_all_employee_tenure_schedules(session)
     return version
 
 
@@ -171,6 +206,7 @@ def patch(
         )
         if before["status"] != after["status"]:
             sync_policy_version_schedules(session, policy)
+            sync_all_employee_tenure_schedules(session)
             refresh_employees_affected_by_policy(session, policy)
     return session.scalar(_query().where(Policy.id == policy.id))
 

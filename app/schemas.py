@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.dates import current_date, ensure_utc
+from app.services.condition_fields import ConditionFieldError, normalize_condition
 
 
 class ORMModel(BaseModel):
@@ -58,6 +59,29 @@ class FieldDefinitionRead(FieldDefinitionCreate, ORMModel):
     id: int
 
 
+class ConditionFieldDependencyRead(ORMModel):
+    id: int
+    dependency_type: Literal["column", "relationship", "time"]
+    dependency_key: str
+    source_table: str | None
+    source_column: str | None
+    role: str
+    impact_resolver_key: str
+
+
+class ConditionFieldDefinitionRead(ORMModel):
+    id: int
+    key: str
+    label: str
+    field_type: Literal["static", "derived"]
+    data_type: str
+    resolver_key: str | None
+    source_table: str | None
+    source_column: str | None
+    active: bool
+    dependencies: list[ConditionFieldDependencyRead]
+
+
 class EmployeeOverrideCreate(BaseModel):
     field_definition_id: int
     value: str = Field(min_length=1, max_length=500)
@@ -94,23 +118,15 @@ class PolicyValueCreate(BaseModel):
 
 class ConditionCreate(BaseModel):
     field: str = Field(min_length=1, max_length=100)
-    operator: Literal["=", "<", "<="]
+    operator: Literal["=", "<", "<=", ">", ">="]
     value: str = Field(min_length=1, max_length=500)
 
     @model_validator(mode="after")
     def require_a_typed_fact_value(self) -> ConditionCreate:
-        if self.field == "start_date":
-            try:
-                date.fromisoformat(self.value)
-            except ValueError as exc:
-                raise ValueError("start_date condition values must be ISO dates (YYYY-MM-DD)") from exc
-        elif self.field == "manager_id":
-            try:
-                manager_id = int(self.value)
-            except ValueError as exc:
-                raise ValueError("manager_id condition values must be positive integers") from exc
-            if manager_id <= 0:
-                raise ValueError("manager_id condition values must be positive integers")
+        try:
+            self.value = normalize_condition(self.field, self.operator, self.value)
+        except ConditionFieldError as exc:
+            raise ValueError(str(exc)) from exc
         return self
 
 

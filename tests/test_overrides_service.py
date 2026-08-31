@@ -17,6 +17,7 @@ from app.services.employee_overrides import create_employee_override
 from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import PolicyConflictError, ResolvedAssignment
 from app.services.policy_matching import refresh_employee_policies
+from app.services.condition_fields import get_condition_field_definitions
 
 
 def test_apply_employee_overrides_is_a_pure_field_replacement():
@@ -52,6 +53,7 @@ def test_apply_employee_overrides_is_a_pure_field_replacement():
 
 def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_factory):
     with session_factory.begin() as session:
+        state_definition = get_condition_field_definitions(session, {"state"})["state"]
         employee = Employee(
             name="Alice",
             state="California",
@@ -70,7 +72,7 @@ def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_f
                         CompiledPolicyClause(
                             conditions=[
                                 CompiledPolicyCondition(
-                                    field="state",
+                                    condition_field_definition=state_definition,
                                     operator="=",
                                     value="California",
                                 )
@@ -94,7 +96,7 @@ def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_f
                         CompiledPolicyClause(
                             conditions=[
                                 CompiledPolicyCondition(
-                                    field="state",
+                                    condition_field_definition=state_definition,
                                     operator="=",
                                     value="California",
                                 )

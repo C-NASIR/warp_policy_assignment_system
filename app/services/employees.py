@@ -5,6 +5,7 @@ from app.models import Employee
 from app.schemas import EmployeeCreate, EmployeeUpdate
 from app.services.policy_matching import refresh_employee_policies
 from app.services.reconciliation import refresh_employee_assignments
+from app.services.tenure_scheduling import sync_employee_tenure_schedules
 
 
 def create_employee(session: Session, data: EmployeeCreate) -> Employee:
@@ -20,6 +21,7 @@ def create_employee(session: Session, data: EmployeeCreate) -> Employee:
         evaluation_date,
         reconciliation_at,
     )
+    sync_employee_tenure_schedules(session, employee, as_of=reconciliation_at)
     return employee
 
 
@@ -36,4 +38,6 @@ def update_employee(session: Session, employee: Employee, data: EmployeeUpdate) 
         evaluation_date,
         reconciliation_at,
     )
+    if "start_date" in data.model_fields_set:
+        sync_employee_tenure_schedules(session, employee, as_of=reconciliation_at)
     return employee

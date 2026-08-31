@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from app.models import (
     CompiledPolicyClause,
     CompiledPolicyCondition,
+    ConditionFieldDefinition,
     ConditionGroup,
 )
 
@@ -13,9 +14,13 @@ class PolicyCompilationError(ValueError):
 
 @dataclass(frozen=True)
 class CompiledCondition:
-    field: str
+    condition_field_definition: ConditionFieldDefinition
     operator: str
     value: str
+
+    @property
+    def field(self) -> str:
+        return self.condition_field_definition.key
 
 
 CompiledClause = tuple[CompiledCondition, ...]
@@ -37,7 +42,7 @@ def compile_policy_version_clauses(canonical_root: ConditionGroup) -> list[Compi
         CompiledPolicyClause(
             conditions=[
                 CompiledPolicyCondition(
-                    field=condition.field,
+                    condition_field_definition=condition.condition_field_definition,
                     operator=condition.operator,
                     value=condition.value,
                 )
@@ -55,7 +60,15 @@ def _compile_group(root: ConditionGroup, ancestors: set[int]) -> list[CompiledCl
 
     next_ancestors = ancestors | {identity}
     operands: list[list[CompiledClause]] = [
-        [(CompiledCondition(link.condition.field, link.condition.operator, link.condition.value),)]
+        [
+            (
+                CompiledCondition(
+                    link.condition.condition_field_definition,
+                    link.condition.operator,
+                    link.condition.value,
+                ),
+            )
+        ]
         for link in root.condition_links
     ]
     operands.extend(_compile_group(child, next_ancestors) for child in root.child_groups)

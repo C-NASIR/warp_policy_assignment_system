@@ -26,6 +26,7 @@ os.environ["DATABASE_URL"] = test_database_url.render_as_string(hide_password=Fa
 from app import models  # noqa: F401
 from app.database import Base, get_db
 from app.main import app
+from app.services.condition_fields import sync_condition_field_definitions
 
 
 @pytest.fixture
@@ -34,6 +35,8 @@ def session_factory():
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine, expire_on_commit=False)
+    with factory.begin() as session:
+        sync_condition_field_definitions(session)
     yield factory
     Base.metadata.drop_all(engine)
     engine.dispose()
