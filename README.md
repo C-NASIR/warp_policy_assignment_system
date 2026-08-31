@@ -17,6 +17,14 @@ Employee
 → Temporal Employee Assignments
 ```
 
+Read-only assignment queries distinguish three questions. A past date reads the
+persisted `EmployeeAssignment` history at the start of that UTC date, today reads
+the current persisted rows, and a future date runs stateless policy resolution
+without changing policy links, assignments, schedules, or audit logs. Exact
+historical instants remain available through the existing `as_of` timestamp.
+Reconciliation uses the same stateless resolver for today and then persists its
+calculated policy links and assignment differences.
+
 `Policy` is the stable identity referenced by employees and groups. `PolicyVersion` is the executable definition containing priority, effective dates, conditions, compiled clauses, and field values. Policy condition trees are compiled into flat OR-of-AND clauses per version. Employee reconciliation selects the one version effective on the evaluation date, evaluates its clauses, persists stable policy links, and resolves each assignment field independently.
 
 Condition inputs are system-controlled `ConditionFieldDefinition` records, separate from assignment-output `AssignmentFieldDefinition` records. Static fields resolve trusted employee attributes; derived fields invoke allowlisted application resolvers. Definitions declare data types, resolver keys, and dependency metadata, while canonical and compiled conditions retain foreign keys to those definitions. Administrators select catalog fields but cannot define arbitrary formulas or executable resolvers.
@@ -94,6 +102,7 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | GET | `/employees/{id}/assignments` | Read current assignments, or assignments at an optional `as_of` UTC timestamp |
 | GET | `/employees/{id}/assignments/history` | Read complete assignment history |
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
+| POST | `/assignment-queries` | Query recorded past, persisted present, or calculated future assignments for an employee batch |
 | GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
 | PATCH / DELETE | `/employees/{id}/overrides/{override_id}` | Update or remove an override |
 | POST / GET | `/groups` | Create or list groups |
@@ -121,6 +130,22 @@ An active group policy with a currently effective version applies because of the
 Creating, updating, or removing an override recalculates only the employee's assignments; it does not rerun policy matching. Normal assignments have a `source_policy_version_id`, overridden assignments have a `source_override_id`, and a database check constraint requires exactly one of those sources. Override updates return a new override ID because the previous row is retired for provenance.
 
 Reconciliation is chronological and persists assignment history. Calls older than the latest stored assignment start are rejected instead of rewriting established history. `GET /employees/{id}/assignments` returns the values effective now by default; `as_of` uses half-open interval boundaries, and the history endpoint returns both open and closed rows.
+
+`POST /assignment-queries` accepts `employee_ids` and an `evaluation_date`. It
+deduplicates the batch and returns one of three explicit modes:
+
+- `recorded_history` for a past date, using persisted assignment rows at the
+  start of that UTC date.
+- `current_persisted` for today, using the current assignment projection.
+- `calculated_future` for a future date, rerunning matching, effective policy
+  version selection, conditions, conflict resolution, and active overrides
+  without persistence.
+
+Future calculation uses the employee facts, reporting relationships, group
+links, policy active/archive status, and unretired overrides currently stored.
+Policy-version effective ranges and date-derived facts such as tenure use the
+requested evaluation date. Scheduling future employee facts, group changes,
+policy status changes, or time-bounded overrides remains outside version 1.
 
 ## Auditing contract
 
@@ -190,4 +215,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, retroactive assignment-history rewriting, policy simulation that does not persist results, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
+Version 1 intentionally excludes a frontend, retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.

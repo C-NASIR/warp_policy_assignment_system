@@ -210,6 +210,44 @@ class AssignmentRead(ORMModel):
         return ensure_utc(value) if value is not None else None
 
 
+class AssignmentQueryCreate(BaseModel):
+    employee_ids: list[int] = Field(min_length=1, max_length=1000)
+    evaluation_date: date
+
+    @field_validator("employee_ids")
+    @classmethod
+    def require_positive_employee_ids(cls, value: list[int]) -> list[int]:
+        if any(employee_id <= 0 for employee_id in value):
+            raise ValueError("employee_ids must contain only positive integers")
+        return value
+
+
+class AssignmentQueryValueRead(ORMModel):
+    persisted_assignment_id: int | None
+    assignment_field_definition: AssignmentFieldDefinitionRead
+    value: str
+    source_policy_version_id: int | None
+    source_override_id: int | None
+    effective_from: datetime | None
+    effective_until: datetime | None
+
+    @field_validator("effective_from", "effective_until", mode="before")
+    @classmethod
+    def return_utc_timestamps(cls, value: datetime | None) -> datetime | None:
+        return ensure_utc(value) if value is not None else None
+
+
+class EmployeeAssignmentQueryRead(ORMModel):
+    employee_id: int
+    evaluation_date: date
+    mode: Literal[
+        "recorded_history",
+        "current_persisted",
+        "calculated_future",
+    ]
+    assignments: list[AssignmentQueryValueRead]
+
+
 class AuditLogRead(ORMModel):
     id: int
     actor: str

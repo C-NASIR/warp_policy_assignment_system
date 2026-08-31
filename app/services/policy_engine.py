@@ -31,6 +31,7 @@ def resolve_employee_assignments(
     employee: Employee,
     evaluation_date: date | None = None,
 ) -> list[ResolvedAssignment]:
+    """Resolve values from an employee's persisted policy-link projection."""
     policy_ids = set(
         session.scalars(
             select(EmployeePolicy.policy_id).where(
@@ -38,6 +39,15 @@ def resolve_employee_assignments(
             )
         )
     )
+    return resolve_policy_assignments(session, policy_ids, evaluation_date)
+
+
+def resolve_policy_assignments(
+    session: Session,
+    policy_ids: set[int] | list[int] | tuple[int, ...],
+    evaluation_date: date | None = None,
+) -> list[ResolvedAssignment]:
+    """Resolve values from an explicitly calculated set of policy identities."""
     effective_versions = get_effective_policy_versions(
         session,
         policy_ids,

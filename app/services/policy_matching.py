@@ -118,10 +118,26 @@ def refresh_employee_policies(
         raise EmployeePolicyRefreshError(f"Employee {employee_id} not found")
 
     policy_ids = find_matching_policy_ids(session, employee_id, evaluation_date)
+    return replace_employee_policies(session, employee_id, policy_ids)
+
+
+def replace_employee_policies(
+    session: Session,
+    employee_id: int,
+    policy_ids: list[int] | tuple[int, ...],
+) -> list[EmployeePolicy]:
+    """Persist a previously calculated policy-link projection."""
+    employee = session.get(Employee, employee_id)
+    if employee is None:
+        raise EmployeePolicyRefreshError(f"Employee {employee_id} not found")
+
     session.execute(delete(EmployeePolicy).where(EmployeePolicy.employee_id == employee_id))
     session.flush()
 
-    links = [EmployeePolicy(employee_id=employee_id, policy_id=policy_id) for policy_id in policy_ids]
+    links = [
+        EmployeePolicy(employee_id=employee_id, policy_id=policy_id)
+        for policy_id in policy_ids
+    ]
     session.add_all(links)
     session.flush()
     session.expire(employee, ["policies"])

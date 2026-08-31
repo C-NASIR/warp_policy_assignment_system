@@ -11,10 +11,13 @@ from app.models import (
     EmployeeAssignment,
     EmployeeOverride,
 )
+from app.services.assignment_resolution import (
+    resolve_employees_assignments_for_date,
+)
 from app.services.audit import record_audit_log, snapshot_assignment
 from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import resolve_employee_assignments
-from app.services.policy_matching import refresh_employee_policies
+from app.services.policy_matching import replace_employee_policies
 
 
 class AssignmentReconciliationOrderError(ValueError):
@@ -41,18 +44,29 @@ def reconcile_employees(
             select(Employee).where(Employee.id.in_(ids)).order_by(Employee.id)
         )
     }
+    resolutions = resolve_employees_assignments_for_date(
+        session,
+        ids,
+        evaluation_date,
+    )
     reconciled: dict[int, list[EmployeeAssignment]] = {}
     for employee_id in ids:
         employee = employees.get(employee_id)
         if employee is None:
             continue
-        refresh_employee_policies(session, employee.id, evaluation_date)
+        resolution = resolutions[employee.id]
+        replace_employee_policies(
+            session,
+            employee.id,
+            resolution.policy_ids,
+        )
         reconciled[employee.id] = refresh_employee_assignments(
             session,
             employee,
             evaluation_date,
             effective_at,
             actor,
+            desired_assignments=resolution.assignments,
         )
     return reconciled
 
@@ -63,30 +77,35 @@ def refresh_employee_assignments(
     evaluation_date: date | None = None,
     reconciliation_at: datetime | None = None,
     actor: str = "system",
+    *,
+    desired_assignments: Collection[FinalAssignment] | None = None,
 ) -> list[EmployeeAssignment]:
     effective_at = _reconciliation_timestamp(evaluation_date, reconciliation_at)
     policy_evaluation_date = evaluation_date or effective_at.date()
     _reject_out_of_order_reconciliation(session, employee.id, effective_at)
-    resolved_assignments = resolve_employee_assignments(
-        session,
-        employee,
-        policy_evaluation_date,
-    )
-    overrides = list(
-        session.scalars(
-            select(EmployeeOverride)
-            .where(
-                EmployeeOverride.employee_id == employee.id,
-                EmployeeOverride.retired_at.is_(None),
-            )
-            .order_by(
-                EmployeeOverride.assignment_field_definition_id,
-                EmployeeOverride.value,
-                EmployeeOverride.id,
+    if desired_assignments is None:
+        resolved_assignments = resolve_employee_assignments(
+            session,
+            employee,
+            policy_evaluation_date,
+        )
+        overrides = list(
+            session.scalars(
+                select(EmployeeOverride)
+                .where(
+                    EmployeeOverride.employee_id == employee.id,
+                    EmployeeOverride.retired_at.is_(None),
+                )
+                .order_by(
+                    EmployeeOverride.assignment_field_definition_id,
+                    EmployeeOverride.value,
+                    EmployeeOverride.id,
+                )
             )
         )
-    )
-    final_assignments = apply_employee_overrides(resolved_assignments, overrides)
+        final_assignments = apply_employee_overrides(resolved_assignments, overrides)
+    else:
+        final_assignments = list(desired_assignments)
     current_assignments = list(
         session.scalars(
             select(EmployeeAssignment)

@@ -28,8 +28,7 @@ from app.services.employee_overrides import (
     update_employee_override,
 )
 from app.services.employees import create_employee, delete_employee, update_employee
-from app.services.policy_matching import refresh_employee_policies
-from app.services.reconciliation import refresh_employee_assignments
+from app.services.reconciliation import reconcile_employees
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -167,14 +166,11 @@ def delete_override(
 
 @router.post("/{employee_id}/refresh", response_model=list[AssignmentRead])
 def refresh(employee_id: int, session: DatabaseSession) -> list[EmployeeAssignment]:
-    employee = _employee_or_404(session, employee_id)
+    _employee_or_404(session, employee_id)
     reconciliation_at = current_datetime()
-    evaluation_date = reconciliation_at.date()
-    refresh_employee_policies(session, employee.id, evaluation_date)
-    refresh_employee_assignments(
+    reconciled = reconcile_employees(
         session,
-        employee,
-        evaluation_date,
+        [employee_id],
         reconciliation_at,
     )
-    return assignments(employee_id, session)
+    return reconciled[employee_id]
