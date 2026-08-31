@@ -4,11 +4,12 @@ from sqlalchemy.orm import selectinload
 
 from app.dependencies import AuditActor, DatabaseSession
 from app.models import (
+    AssignmentFieldDefinition,
     Condition,
     ConditionFieldDefinition,
     ConditionGroup,
     ConditionGroupCondition,
-    AssignmentFieldDefinition,
+    Employee,
     Policy,
     PolicyFieldValue,
     PolicyVersion,
@@ -100,6 +101,35 @@ def _condition_field_keys(root: ConditionGroupCreate) -> set[str]:
     }
 
 
+def _condition_items(root: ConditionGroupCreate):
+    yield from root.conditions
+    for child in root.child_groups:
+        yield from _condition_items(child)
+
+
+def _validate_employee_condition_references(
+    session: DatabaseSession,
+    root: ConditionGroupCreate,
+    definitions: dict[str, ConditionFieldDefinition],
+) -> None:
+    employee_ids = {
+        int(condition.value)
+        for condition in _condition_items(root)
+        if definitions[condition.field].data_type == "employee_reference"
+    }
+    if not employee_ids:
+        return
+    existing_ids = set(
+        session.scalars(select(Employee.id).where(Employee.id.in_(employee_ids)))
+    )
+    missing_ids = sorted(employee_ids - existing_ids)
+    if missing_ids:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Condition employee references not found: {missing_ids}",
+        )
+
+
 def _collect_condition_groups(root: ConditionGroup) -> list[ConditionGroup]:
     return [
         root,
@@ -125,6 +155,11 @@ def _create_version(
         )
     except ConditionFieldError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    _validate_employee_condition_references(
+        session,
+        data.condition_group,
+        definitions,
+    )
     canonical_root = _build_canonical_condition_tree(data.condition_group, definitions)
     try:
         compiled_clauses = compile_policy_version_clauses(canonical_root)

@@ -5,9 +5,9 @@ from sqlalchemy import select
 
 from app.dates import ensure_utc
 from app.models import (
+    AssignmentFieldDefinition,
     Employee,
     EmployeeAssignment,
-    AssignmentFieldDefinition,
     Policy,
     PolicyFieldValue,
     PolicyVersion,

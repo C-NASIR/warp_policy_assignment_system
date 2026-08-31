@@ -3,8 +3,8 @@ from datetime import date
 import pytest
 
 from app.models import (
-    Employee,
     AssignmentFieldDefinition,
+    Employee,
     Policy,
     PolicyFieldValue,
     PolicyVersion,

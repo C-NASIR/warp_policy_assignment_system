@@ -27,7 +27,7 @@ from app.services.employee_overrides import (
     list_employee_overrides,
     update_employee_override,
 )
-from app.services.employees import create_employee, update_employee
+from app.services.employees import create_employee, delete_employee, update_employee
 from app.services.policy_matching import refresh_employee_policies
 from app.services.reconciliation import refresh_employee_assignments
 
@@ -42,8 +42,8 @@ def _employee_or_404(session: Session, employee_id: int) -> Employee:
 
 
 @router.post("", response_model=EmployeeRead, status_code=status.HTTP_201_CREATED)
-def create(data: EmployeeCreate, session: DatabaseSession) -> Employee:
-    return create_employee(session, data)
+def create(data: EmployeeCreate, session: DatabaseSession, actor: AuditActor) -> Employee:
+    return create_employee(session, data, actor)
 
 
 @router.get("", response_model=list[EmployeeRead])
@@ -57,8 +57,28 @@ def get(employee_id: int, session: DatabaseSession) -> Employee:
 
 
 @router.patch("/{employee_id}", response_model=EmployeeRead)
-def patch(employee_id: int, data: EmployeeUpdate, session: DatabaseSession) -> Employee:
-    return update_employee(session, _employee_or_404(session, employee_id), data)
+def patch(
+    employee_id: int,
+    data: EmployeeUpdate,
+    session: DatabaseSession,
+    actor: AuditActor,
+) -> Employee:
+    return update_employee(
+        session,
+        _employee_or_404(session, employee_id),
+        data,
+        actor,
+    )
+
+
+@router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete(
+    employee_id: int,
+    session: DatabaseSession,
+    actor: AuditActor,
+) -> Response:
+    delete_employee(session, _employee_or_404(session, employee_id), actor)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{employee_id}/assignments", response_model=list[AssignmentRead])

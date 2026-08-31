@@ -5,8 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.dates import current_datetime, ensure_utc
 from app.models import Employee, Policy
-from app.services.policy_matching import refresh_employee_policies
-from app.services.reconciliation import refresh_employee_assignments
+from app.services.reconciliation import reconcile_employees
 
 
 def refresh_employees_affected_by_policy(
@@ -25,14 +24,5 @@ def refresh_employees_affected_by_policy(
     # queries before beginning the fan-out.
     session.flush()
     reconciliation_at = ensure_utc(reconciliation_at or current_datetime())
-    evaluation_date = reconciliation_at.date()
-    employees = list(session.scalars(select(Employee).order_by(Employee.id)))
-
-    for employee in employees:
-        refresh_employee_policies(session, employee.id, evaluation_date)
-        refresh_employee_assignments(
-            session,
-            employee,
-            evaluation_date,
-            reconciliation_at,
-        )
+    employee_ids = list(session.scalars(select(Employee.id).order_by(Employee.id)))
+    reconcile_employees(session, employee_ids, reconciliation_at)

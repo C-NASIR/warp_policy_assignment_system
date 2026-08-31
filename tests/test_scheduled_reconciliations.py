@@ -4,7 +4,12 @@ import pytest
 from sqlalchemy import select
 
 from app.dates import current_date, start_of_day
-from app.models import Employee, EmployeeOverride, AssignmentFieldDefinition, ScheduledReconciliation
+from app.models import (
+    AssignmentFieldDefinition,
+    Employee,
+    EmployeeOverride,
+    ScheduledReconciliation,
+)
 from app.services.policy_engine import PolicyConflictError
 from app.services.scheduled_reconciliations import (
     BECOMES_EFFECTIVE_TRIGGER,
@@ -412,12 +417,14 @@ def test_failed_due_reconciliation_rolls_back_and_leaves_event_pending(
         effective_from=starts,
     )
 
-    with pytest.raises(PolicyConflictError, match="Conflicting values"):
-        with session_factory.begin() as session:
-            reconcile_due_events(
-                session,
-                as_of=start_of_day(starts) + timedelta(hours=1),
-            )
+    with (
+        pytest.raises(PolicyConflictError, match="Conflicting values"),
+        session_factory.begin() as session,
+    ):
+        reconcile_due_events(
+            session,
+            as_of=start_of_day(starts) + timedelta(hours=1),
+        )
 
     with session_factory() as session:
         events = list(session.scalars(select(ScheduledReconciliation)))

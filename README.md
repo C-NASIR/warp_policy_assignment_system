@@ -23,6 +23,8 @@ Condition inputs are system-controlled `ConditionFieldDefinition` records, separ
 
 `tenure` is a derived calendar-duration field resolved from `Employee.start_date` and the reconciliation evaluation date. Inputs such as `2 years` are normalized to `P2Y`; comparison uses completed calendar anniversaries rather than fixed 365-day intervals. A February 29 start date reaches its anniversary on February 28 in a non-leap year.
 
+The employee reporting graph is a self-referencing `manager_id` relationship with database-enforced referential integrity. Policies can use the static `manager_id` reference or the derived `is_manager`, `direct_report_count`, `reports_under`, and `management_level` fields. `reports_under = N` matches any direct or indirect report beneath employee `N`; management level is the number of reporting hops from a root employee, so a root has level zero. Manager changes reject missing managers, self-management, and cycles. Dependency impact resolvers synchronously reconcile the moved employee and descendants plus the old and new managers in the same transaction.
+
 Effective ranges are inclusive. Versions for one policy may not overlap, and an archived policy has no effective version. Scheduling a later version automatically closes the previous open-ended version on the preceding day. An effective-date gap is valid and means that policy contributes no behavior during the gap. Creating a future version immediately reconciles current state but does not apply that version early; automatic reconciliation when its effective date arrives remains a separate scheduling concern.
 
 Future changes are represented centrally in `ScheduledReconciliation` while their authoritative dates remain on the owning domain records. Policy-version creation immediately synchronizes pending `becomes_effective` and `expires` events. Because `effective_until` is inclusive, expiration is scheduled for midnight UTC on the following day. The scheduling service can query and reconcile due events transactionally, but version 1 does not include a periodic worker that invokes it.
@@ -41,7 +43,7 @@ Overrides are retained for provenance. Updating an override retires the old immu
 
 ## Domain concepts
 
-- **Employee:** current name, state, department, employee type, location, start date, and manager ID.
+- **Employee:** current name, state, department, employee type, location, start date, and an optional self-referencing manager relationship.
 - **Group:** a named collection of employees that can supply policies to its members.
 - **Employee group membership:** the many-to-many link between employees and groups.
 - **Group policy:** the many-to-many link that makes a policy apply to every member of a group.
@@ -88,7 +90,7 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 |---|---|---|
 | GET | `/` | Health check |
 | POST / GET | `/employees` | Create or list employees |
-| GET / PATCH | `/employees/{id}` | Read or update an employee |
+| GET / PATCH / DELETE | `/employees/{id}` | Read, update, or delete an employee |
 | GET | `/employees/{id}/assignments` | Read current assignments, or assignments at an optional `as_of` UTC timestamp |
 | GET | `/employees/{id}/assignments/history` | Read complete assignment history |
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
@@ -110,7 +112,7 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | GET | `/policies/{id}/versions/{version_id}` | Read one policy version |
 | GET | `/audit-logs` | Read authorized, filterable audit events |
 
-Employee creation and update automatically recalculate that employee. Creating a policy, adding a version, or changing its active/archived status synchronously recalculates every employee in the same transaction. A policy rule can make previously unaffected employees start matching, so the current-scale implementation conservatively scans all employees; this candidate set can be optimized later. Name-only policy changes do not reconcile because they cannot affect results.
+Employee creation and ordinary scalar updates automatically recalculate that employee. A reporting change additionally recalculates the old and new managers and the moved employee's complete subtree, deduplicating all affected IDs at one reconciliation timestamp. Deleting an employee clears direct reports' manager references, cancels that employee's pending reconciliation events, and recalculates the affected reporting subtree. Creating a policy, adding a version, or changing its active/archived status synchronously recalculates every employee in the same transaction. A policy rule can make previously unaffected employees start matching, so the current-scale implementation conservatively scans all employees; this candidate set can be optimized later. Name-only policy changes do not reconcile because they cannot affect results.
 
 Adding or removing a group membership recalculates the affected employee immediately. Attaching or removing a group policy recalculates every current member of that group in the same transaction. If resolution finds an equal-priority conflict, the employee, group, or policy mutation and all partial reconciliation and audit changes are rolled back together.
 
@@ -127,6 +129,7 @@ The current action vocabulary is:
 - `Policy`: `created`, `changed`, `archived`
 - `PolicyVersion`: `created`; `before` is the preceding version snapshot when one exists
 - `Group`: `created`, `changed`, `employee_added`, `employee_removed`, `policy_attached`, `policy_detached`
+- `Employee`: `created`, `changed`, `manager_changed`, `deleted`
 - `EmployeeOverride`: `created`, `changed`, `removed`
 - `EmployeeAssignment`: `created`, `ended`
 

@@ -14,9 +14,11 @@ from app.models import (
     PolicyVersion,
     ScheduledReconciliation,
 )
-from app.services.policy_matching import refresh_employee_policies
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
-from app.services.reconciliation import refresh_employee_assignments
+from app.services.reconciliation import (
+    reconcile_employees,
+    refresh_employee_assignments,
+)
 
 POLICY_VERSION_ENTITY = "PolicyVersion"
 EMPLOYEE_ENTITY = "Employee"
@@ -263,14 +265,7 @@ def _refresh_employee(
     employee: Employee,
     reconciliation_at: datetime,
 ) -> None:
-    evaluation_date = reconciliation_at.date()
-    refresh_employee_policies(session, employee.id, evaluation_date)
-    refresh_employee_assignments(
-        session,
-        employee,
-        evaluation_date,
-        reconciliation_at,
-    )
+    reconcile_employees(session, [employee.id], reconciliation_at)
 
 
 def _validate_event(entity_type: str, entity_id: int, trigger_type: str) -> None:

@@ -1,17 +1,60 @@
+from collections.abc import Collection
 from datetime import date, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.dates import current_datetime, ensure_utc, start_of_day
-from app.models import Employee, EmployeeAssignment, EmployeeOverride, AssignmentFieldDefinition
+from app.models import (
+    AssignmentFieldDefinition,
+    Employee,
+    EmployeeAssignment,
+    EmployeeOverride,
+)
 from app.services.audit import record_audit_log, snapshot_assignment
 from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import resolve_employee_assignments
+from app.services.policy_matching import refresh_employee_policies
 
 
 class AssignmentReconciliationOrderError(ValueError):
     pass
+
+
+def reconcile_employees(
+    session: Session,
+    employee_ids: Collection[int],
+    reconciliation_at: datetime | None = None,
+    *,
+    actor: str = "system",
+) -> dict[int, list[EmployeeAssignment]]:
+    """Reconcile a deduplicated employee batch at one consistent instant."""
+    ids = sorted(set(employee_ids))
+    if not ids:
+        return {}
+    session.flush()
+    effective_at = ensure_utc(reconciliation_at or current_datetime())
+    evaluation_date = effective_at.date()
+    employees = {
+        employee.id: employee
+        for employee in session.scalars(
+            select(Employee).where(Employee.id.in_(ids)).order_by(Employee.id)
+        )
+    }
+    reconciled: dict[int, list[EmployeeAssignment]] = {}
+    for employee_id in ids:
+        employee = employees.get(employee_id)
+        if employee is None:
+            continue
+        refresh_employee_policies(session, employee.id, evaluation_date)
+        reconciled[employee.id] = refresh_employee_assignments(
+            session,
+            employee,
+            evaluation_date,
+            effective_at,
+            actor,
+        )
+    return reconciled
 
 
 def refresh_employee_assignments(
@@ -62,8 +105,14 @@ def refresh_employee_assignments(
             select(AssignmentFieldDefinition).where(
                 AssignmentFieldDefinition.id.in_(
                     {
-                        *[item.assignment_field_definition_id for item in current_assignments],
-                        *[item.assignment_field_definition_id for item in final_assignments],
+                        *[
+                            item.assignment_field_definition_id
+                            for item in current_assignments
+                        ],
+                        *[
+                            item.assignment_field_definition_id
+                            for item in final_assignments
+                        ],
                     }
                 )
             )

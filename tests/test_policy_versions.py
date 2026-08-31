@@ -4,18 +4,19 @@ import pytest
 
 from app.dates import current_date
 from app.models import (
+    AssignmentFieldDefinition,
     CompiledPolicyClause,
     CompiledPolicyCondition,
     Employee,
     EmployeeGroupMembership,
     EmployeePolicy,
-    AssignmentFieldDefinition,
     Group,
     GroupPolicy,
     Policy,
     PolicyFieldValue,
     PolicyVersion,
 )
+from app.services.condition_fields import get_condition_field_definitions
 from app.services.policy_engine import resolve_employee_assignments
 from app.services.policy_matching import (
     find_matching_policy_ids,
@@ -26,7 +27,6 @@ from app.services.policy_versions import (
     get_effective_policy_version,
 )
 from app.services.reconciliation import refresh_employee_assignments
-from app.services.condition_fields import get_condition_field_definitions
 
 
 def condition_group(state="California"):

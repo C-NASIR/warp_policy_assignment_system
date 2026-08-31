@@ -294,6 +294,24 @@ def test_employee_start_date_defaults_to_current_date(client):
 
 
 def test_employee_manager_id_can_be_created_and_updated(client):
+    first_manager = client.post(
+        "/employees",
+        json={
+            "name": "First manager",
+            "state": "California",
+            "department": "Engineering",
+            "employee_type": "regular",
+        },
+    ).json()
+    second_manager = client.post(
+        "/employees",
+        json={
+            "name": "Second manager",
+            "state": "California",
+            "department": "Engineering",
+            "employee_type": "regular",
+        },
+    ).json()
     response = client.post(
         "/employees",
         json={
@@ -301,15 +319,15 @@ def test_employee_manager_id_can_be_created_and_updated(client):
             "state": "California",
             "department": "Engineering",
             "employee_type": "regular",
-            "manager_id": 42,
+            "manager_id": first_manager["id"],
         },
     )
     assert response.status_code == 201
-    assert response.json()["manager_id"] == 42
+    assert response.json()["manager_id"] == first_manager["id"]
 
     updated = client.patch(
         f"/employees/{response.json()['id']}",
-        json={"manager_id": 99},
+        json={"manager_id": second_manager["id"]},
     )
     assert updated.status_code == 200
-    assert updated.json()["manager_id"] == 99
+    assert updated.json()["manager_id"] == second_manager["id"]

@@ -4,20 +4,20 @@ import pytest
 from sqlalchemy import select
 
 from app.models import (
+    AssignmentFieldDefinition,
     CompiledPolicyClause,
     CompiledPolicyCondition,
     Employee,
     EmployeeOverride,
-    AssignmentFieldDefinition,
     Policy,
     PolicyFieldValue,
     PolicyVersion,
 )
+from app.services.condition_fields import get_condition_field_definitions
 from app.services.employee_overrides import create_employee_override
 from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import PolicyConflictError, ResolvedAssignment
 from app.services.policy_matching import refresh_employee_policies
-from app.services.condition_fields import get_condition_field_definitions
 
 
 def test_apply_employee_overrides_is_a_pure_field_replacement():

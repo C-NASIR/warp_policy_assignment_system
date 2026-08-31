@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Collection, Mapping
 from datetime import date, datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Mapper, Session
 
 from app.models import (
     AuditLog,
@@ -34,7 +34,8 @@ def snapshot_entity(
     excluded = set(exclude)
     redacted = _SENSITIVE_FIELD_NAMES | set(redact)
     snapshot: dict[str, Any] = {}
-    for column in inspect(type(entity)).columns:
+    mapper = cast(Mapper[Any], inspect(type(entity)))
+    for column in mapper.columns:
         key = column.key
         if key in excluded:
             continue

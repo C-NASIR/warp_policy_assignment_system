@@ -14,6 +14,12 @@ from app.models import (
     ConditionFieldDependency,
     Employee,
 )
+from app.services.org_chart import (
+    employee_direct_report_count,
+    employee_is_manager,
+    employee_management_level,
+    get_ancestor_ids,
+)
 
 
 class ConditionFieldError(ValueError):
@@ -43,6 +49,7 @@ class ConditionFieldDependencySpec:
 
 Resolver = Callable[["ConditionEvaluationContext"], Any]
 Parser = Callable[[str], tuple[str, Any]]
+Comparator = Callable[[Any, str, Any], bool]
 
 
 @dataclass(frozen=True)
@@ -55,6 +62,7 @@ class ConditionFieldSpec:
     allowed_operators: frozenset[str]
     resolver: Resolver
     parser: Parser
+    comparator: Comparator | None = None
     source_table: str | None = None
     source_column: str | None = None
     dependencies: tuple[ConditionFieldDependencySpec, ...] = ()
@@ -74,7 +82,10 @@ class ConditionEvaluationContext:
 
 
 _COMPARABLE_OPERATORS = frozenset({"=", "<", "<=", ">", ">="})
-_DURATION_PATTERN = re.compile(r"^(?:P(?P<iso>\d+)Y|(?P<human>\d+)\s+years?)$", re.IGNORECASE)
+_EQUALITY_OPERATORS = frozenset({"="})
+_DURATION_PATTERN = re.compile(
+    r"^(?:P(?P<iso>\d+)Y|(?P<human>\d+)\s+years?)$", re.IGNORECASE
+)
 
 
 def _string_parser(value: str) -> tuple[str, str]:
@@ -85,7 +96,9 @@ def _date_parser(value: str) -> tuple[str, date]:
     try:
         parsed = date.fromisoformat(value)
     except ValueError as exc:
-        raise ConditionFieldError("condition value must be an ISO date (YYYY-MM-DD)") from exc
+        raise ConditionFieldError(
+            "condition value must be an ISO date (YYYY-MM-DD)"
+        ) from exc
     return parsed.isoformat(), parsed
 
 
@@ -97,6 +110,27 @@ def _positive_integer_parser(value: str) -> tuple[str, int]:
     if parsed <= 0:
         raise ConditionFieldError("condition value must be a positive integer")
     return str(parsed), parsed
+
+
+def _nonnegative_integer_parser(value: str) -> tuple[str, int]:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ConditionFieldError(
+            "condition value must be a nonnegative integer"
+        ) from exc
+    if parsed < 0:
+        raise ConditionFieldError("condition value must be a nonnegative integer")
+    return str(parsed), parsed
+
+
+def _boolean_parser(value: str) -> tuple[str, bool]:
+    normalized = value.strip().lower()
+    if normalized == "true":
+        return normalized, True
+    if normalized == "false":
+        return normalized, False
+    raise ConditionFieldError("condition value must be 'true' or 'false'")
 
 
 def _calendar_duration_parser(value: str) -> tuple[str, CalendarDuration]:
@@ -125,7 +159,29 @@ def _resolve_tenure(context: ConditionEvaluationContext) -> TenureValue:
     )
 
 
-def _employee_column_dependency(column: str) -> tuple[ConditionFieldDependencySpec, ...]:
+def _resolve_is_manager(context: ConditionEvaluationContext) -> bool:
+    return employee_is_manager(context.session, context.employee.id)
+
+
+def _resolve_direct_report_count(context: ConditionEvaluationContext) -> int:
+    return employee_direct_report_count(context.session, context.employee.id)
+
+
+def _resolve_reports_under(context: ConditionEvaluationContext) -> frozenset[int]:
+    return frozenset(get_ancestor_ids(context.session, context.employee.id))
+
+
+def _resolve_management_level(context: ConditionEvaluationContext) -> int:
+    return employee_management_level(context.session, context.employee.id)
+
+
+def _contains_reference(actual: Any, operator: str, expected: Any) -> bool:
+    return operator == "=" and expected in actual
+
+
+def _employee_column_dependency(
+    column: str,
+) -> tuple[ConditionFieldDependencySpec, ...]:
     return (
         ConditionFieldDependencySpec(
             dependency_type="column",
@@ -134,6 +190,22 @@ def _employee_column_dependency(column: str) -> tuple[ConditionFieldDependencySp
             source_column=column,
             role="value",
             impact_resolver_key="changed_employee",
+        ),
+    )
+
+
+def _manager_relationship_dependency(
+    impact_resolver_key: str,
+    role: str,
+) -> tuple[ConditionFieldDependencySpec, ...]:
+    return (
+        ConditionFieldDependencySpec(
+            dependency_type="relationship",
+            dependency_key="employee.manager_id",
+            source_table="employees",
+            source_column="manager_id",
+            role=role,
+            impact_resolver_key=impact_resolver_key,
         ),
     )
 
@@ -168,7 +240,76 @@ CONDITION_FIELD_SPECS = {
         _static_spec("employee_type", "Employee type", "string", _string_parser),
         _static_spec("location", "Location", "string", _string_parser),
         _static_spec("start_date", "Start date", "date", _date_parser),
-        _static_spec("manager_id", "Manager ID", "integer", _positive_integer_parser),
+        ConditionFieldSpec(
+            key="manager_id",
+            label="Manager",
+            field_type="static",
+            data_type="employee_reference",
+            resolver_key="employee_attribute_manager_id_v1",
+            allowed_operators=_EQUALITY_OPERATORS,
+            resolver=_static_resolver("manager_id"),
+            parser=_positive_integer_parser,
+            source_table="employees",
+            source_column="manager_id",
+            dependencies=_employee_column_dependency("manager_id"),
+        ),
+        ConditionFieldSpec(
+            key="is_manager",
+            label="Is manager",
+            field_type="derived",
+            data_type="boolean",
+            resolver_key="employee_is_manager_v1",
+            allowed_operators=_EQUALITY_OPERATORS,
+            resolver=_resolve_is_manager,
+            parser=_boolean_parser,
+            dependencies=_manager_relationship_dependency(
+                "old_and_new_managers",
+                "direct_reports",
+            ),
+        ),
+        ConditionFieldSpec(
+            key="direct_report_count",
+            label="Direct report count",
+            field_type="derived",
+            data_type="integer",
+            resolver_key="employee_direct_report_count_v1",
+            allowed_operators=_COMPARABLE_OPERATORS,
+            resolver=_resolve_direct_report_count,
+            parser=_nonnegative_integer_parser,
+            dependencies=_manager_relationship_dependency(
+                "old_and_new_managers",
+                "direct_report_count",
+            ),
+        ),
+        ConditionFieldSpec(
+            key="reports_under",
+            label="Reports under",
+            field_type="derived",
+            data_type="employee_reference",
+            resolver_key="employee_manager_chain_v1",
+            allowed_operators=_EQUALITY_OPERATORS,
+            resolver=_resolve_reports_under,
+            parser=_positive_integer_parser,
+            comparator=_contains_reference,
+            dependencies=_manager_relationship_dependency(
+                "moved_subtree",
+                "ancestor_chain",
+            ),
+        ),
+        ConditionFieldSpec(
+            key="management_level",
+            label="Management level",
+            field_type="derived",
+            data_type="integer",
+            resolver_key="employee_management_level_v1",
+            allowed_operators=_COMPARABLE_OPERATORS,
+            resolver=_resolve_management_level,
+            parser=_nonnegative_integer_parser,
+            dependencies=_manager_relationship_dependency(
+                "moved_subtree",
+                "ancestor_depth",
+            ),
+        ),
         ConditionFieldSpec(
             key="tenure",
             label="Tenure",
@@ -220,7 +361,11 @@ def evaluate_condition(
     value: str,
 ) -> bool:
     spec = CONDITION_FIELD_SPECS.get(definition.key)
-    if spec is None or not definition.active or definition.resolver_key != spec.resolver_key:
+    if (
+        spec is None
+        or not definition.active
+        or definition.resolver_key != spec.resolver_key
+    ):
         return False
     if operator not in spec.allowed_operators:
         return False
@@ -231,6 +376,8 @@ def evaluate_condition(
     actual = context.resolve(spec)
     if actual is None:
         return False
+    if spec.comparator is not None:
+        return spec.comparator(actual, operator, expected)
     if isinstance(actual, TenureValue) and isinstance(expected, CalendarDuration):
         return _compare_tenure(actual, operator, expected)
     return _compare(actual, operator, expected)
@@ -261,7 +408,9 @@ def tenure_transition_dates(
     return tuple(add_calendar_years(start_date, item) for item in transition_years)
 
 
-def sync_condition_field_definitions(session: Session) -> list[ConditionFieldDefinition]:
+def sync_condition_field_definitions(
+    session: Session,
+) -> list[ConditionFieldDefinition]:
     existing = {
         item.key: item
         for item in session.scalars(
@@ -288,8 +437,7 @@ def sync_condition_field_definitions(session: Session) -> list[ConditionFieldDef
         definition.source_column = spec.source_column
         definition.active = True
         existing_dependencies = {
-            (item.dependency_key, item.role): item
-            for item in definition.dependencies
+            (item.dependency_key, item.role): item for item in definition.dependencies
         }
         desired_dependency_keys: set[tuple[str, str]] = set()
         for item in spec.dependencies:

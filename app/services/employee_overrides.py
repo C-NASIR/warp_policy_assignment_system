@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.dates import current_datetime
-from app.models import Employee, EmployeeOverride, AssignmentFieldDefinition
+from app.models import AssignmentFieldDefinition, Employee, EmployeeOverride
 from app.services.audit import record_audit_log, snapshot_override
 from app.services.reconciliation import refresh_employee_assignments
 

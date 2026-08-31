@@ -143,7 +143,21 @@ class Employee(Base):
         default=current_date,
         server_default=func.current_date(),
     )
-    manager_id: Mapped[int | None] = mapped_column(nullable=True)
+    manager_id: Mapped[int | None] = mapped_column(
+        ForeignKey("employees.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    manager: Mapped[Employee | None] = relationship(
+        back_populates="direct_reports",
+        foreign_keys=[manager_id],
+        remote_side=[id],
+    )
+    direct_reports: Mapped[list[Employee]] = relationship(
+        back_populates="manager",
+        foreign_keys=[manager_id],
+        passive_deletes=True,
+    )
     policies: Mapped[list[Policy]] = relationship(secondary="employee_policies", back_populates="employees")
     groups: Mapped[list[Group]] = relationship(
         secondary="employee_group_memberships",

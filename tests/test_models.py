@@ -1,9 +1,16 @@
 from typing import cast
 
-from sqlalchemy import CheckConstraint, Table, UniqueConstraint, inspect
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKeyConstraint,
+    Table,
+    UniqueConstraint,
+    inspect,
+)
 
 from app.database import Base
 from app.models import (
+    AssignmentFieldDefinition,
     AuditLog,
     CompiledPolicyClause,
     CompiledPolicyCondition,
@@ -17,7 +24,6 @@ from app.models import (
     EmployeeGroupMembership,
     EmployeeOverride,
     EmployeePolicy,
-    AssignmentFieldDefinition,
     Group,
     GroupPolicy,
     Policy,
@@ -153,6 +159,21 @@ def test_join_models_use_composite_primary_keys():
     assert group_policy_pk == {"group_id", "policy_id"}
     assert employee_policy_pk == {"employee_id", "policy_id"}
     assert policy_value_pk == {"policy_version_id", "assignment_field_definition_id", "value"}
+
+
+def test_employee_manager_is_self_referencing_and_indexed():
+    table = cast(Table, Employee.__table__)
+    foreign_keys = {
+        (tuple(column.key for column in constraint.columns), tuple(element.target_fullname for element in constraint.elements))
+        for constraint in table.constraints
+        if isinstance(constraint, ForeignKeyConstraint)
+    }
+
+    assert (("manager_id",), ("employees.id",)) in foreign_keys
+    assert any(
+        tuple(column.key for column in index.columns) == ("manager_id",)
+        for index in table.indexes
+    )
 
 
 def test_legacy_group_columns_are_absent():

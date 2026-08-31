@@ -12,12 +12,12 @@ from app.models import (
     Policy,
     PolicyVersion,
 )
+from app.services.condition_fields import get_condition_field_definitions
 from app.services.policy_compiler import (
     PolicyCompilationError,
     compile_condition_tree_to_clauses,
     compile_policy_version_clauses,
 )
-from app.services.condition_fields import get_condition_field_definitions
 
 
 def condition(db, field: str, value: str) -> Condition:

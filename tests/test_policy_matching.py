@@ -11,12 +11,12 @@ from app.models import (
     Policy,
     PolicyVersion,
 )
+from app.services.condition_fields import get_condition_field_definitions
 from app.services.policy_matching import (
     EmployeePolicyRefreshError,
     find_matching_policy_ids,
     refresh_employee_policies,
 )
-from app.services.condition_fields import get_condition_field_definitions
 
 
 def compiled_policy(
@@ -173,6 +173,14 @@ def test_unknown_employee_or_unsupported_condition_does_not_match(db):
 
 
 def test_comparison_operators_use_typed_employee_facts(db):
+    manager = Employee(
+        name="Manager",
+        state="California",
+        department="Engineering",
+        employee_type="regular",
+    )
+    db.add(manager)
+    db.flush()
     alice = Employee(
         name="Alice",
         state="California",
@@ -180,13 +188,13 @@ def test_comparison_operators_use_typed_employee_facts(db):
         employee_type="regular",
         location="San Francisco",
         start_date=date(2024, 1, 15),
-        manager_id=10,
+        manager_id=manager.id,
     )
     policies = [
         compiled_policy(db, "Started before cutoff", 10, [[("start_date", "<", "2025-01-01")]]),
         compiled_policy(db, "Started by date", 10, [[("start_date", "<=", "2024-01-15")]]),
-        compiled_policy(db, "Low manager ID", 10, [[("manager_id", "<", "100")]]),
-        compiled_policy(db, "Numeric ordering", 10, [[("manager_id", "<", "2")]]),
+        compiled_policy(db, "Reports to manager", 10, [[("manager_id", "=", str(manager.id))]]),
+        compiled_policy(db, "Reports elsewhere", 10, [[("manager_id", "=", "999")]]),
         compiled_policy(db, "Location", 10, [[("location", "=", "San Francisco")]]),
     ]
     db.add_all([alice, *policies])

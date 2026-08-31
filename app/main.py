@@ -17,6 +17,10 @@ from app.services.employee_overrides import (
     EmployeeOverrideResourceNotFoundError,
 )
 from app.services.groups import GroupResourceNotFoundError
+from app.services.org_chart import (
+    EmployeeHierarchyConflictError,
+    EmployeeManagerNotFoundError,
+)
 from app.services.policy_engine import PolicyConflictError
 from app.services.policy_versions import (
     EffectivePolicyVersionConflictError,
@@ -51,6 +55,22 @@ async def group_resource_not_found_handler(
     exc: GroupResourceNotFoundError,
 ) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(EmployeeManagerNotFoundError)
+async def employee_manager_not_found_handler(
+    _: Request,
+    exc: EmployeeManagerNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(EmployeeHierarchyConflictError)
+async def employee_hierarchy_conflict_handler(
+    _: Request,
+    exc: EmployeeHierarchyConflictError,
+) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
 @app.exception_handler(EmployeeOverrideResourceNotFoundError)
