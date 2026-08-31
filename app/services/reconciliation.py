@@ -1,5 +1,7 @@
+import json
 from collections.abc import Collection
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -168,6 +170,7 @@ def refresh_employee_assignments(
             value=item.value,
             source_policy_version_id=item.source_policy_version_id,
             source_override_id=item.source_override_id,
+            explanation=item.explanation or {},
             effective_from=effective_at,
         )
         session.add(assignment)
@@ -224,10 +227,28 @@ def _reject_out_of_order_reconciliation(
 
 def _assignment_key(
     assignment: EmployeeAssignment | FinalAssignment,
-) -> tuple[int, str, int | None, int | None]:
+) -> tuple[int, str, int | None, int | None, str]:
     return (
         assignment.assignment_field_definition_id,
         assignment.value,
         assignment.source_policy_version_id,
         assignment.source_override_id,
+        json.dumps(
+            _stable_explanation(assignment.explanation or {}),
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
     )
+
+
+def _stable_explanation(value: Any) -> Any:
+    """Remove clock-only evidence that should not create assignment churn."""
+    if isinstance(value, dict):
+        return {
+            key: _stable_explanation(item)
+            for key, item in value.items()
+            if key != "evaluation_date"
+        }
+    if isinstance(value, list):
+        return [_stable_explanation(item) for item in value]
+    return value

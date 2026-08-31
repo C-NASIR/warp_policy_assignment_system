@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.dates import current_datetime
 from app.models import AssignmentFieldDefinition, Employee, EmployeeOverride
 from app.services.audit import record_audit_log, snapshot_override
-from app.services.reconciliation import refresh_employee_assignments
+from app.services.reconciliation import reconcile_employees
 
 
 class EmployeeOverrideResourceNotFoundError(ValueError):
@@ -71,11 +71,7 @@ def create_employee_override(
         after=snapshot_override(override),
         timestamp=reconciliation_at,
     )
-    refresh_employee_assignments(
-        session,
-        employee,
-        reconciliation_at=reconciliation_at,
-    )
+    reconcile_employees(session, [employee.id], reconciliation_at)
     return override
 
 
@@ -128,11 +124,7 @@ def update_employee_override(
         after=snapshot_override(replacement),
         timestamp=reconciliation_at,
     )
-    refresh_employee_assignments(
-        session,
-        employee,
-        reconciliation_at=reconciliation_at,
-    )
+    reconcile_employees(session, [employee.id], reconciliation_at)
     return replacement
 
 
@@ -158,11 +150,7 @@ def delete_employee_override(
         after=None,
         timestamp=reconciliation_at,
     )
-    refresh_employee_assignments(
-        session,
-        employee,
-        reconciliation_at=reconciliation_at,
-    )
+    reconcile_employees(session, [employee.id], reconciliation_at)
 
 
 def _validate_override_cardinality(

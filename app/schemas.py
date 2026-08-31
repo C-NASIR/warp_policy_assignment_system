@@ -200,6 +200,7 @@ class AssignmentRead(ORMModel):
     value: str
     source_policy_version_id: int | None
     source_override_id: int | None
+    explanation: dict[str, Any]
     effective_from: datetime
     effective_until: datetime | None
     assignment_field_definition: AssignmentFieldDefinitionRead
@@ -228,6 +229,7 @@ class AssignmentQueryValueRead(ORMModel):
     value: str
     source_policy_version_id: int | None
     source_override_id: int | None
+    explanation: dict[str, Any]
     effective_from: datetime | None
     effective_until: datetime | None
 

@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from datetime import date
+from typing import Any, Literal
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
@@ -10,11 +12,12 @@ from app.models import (
     Employee,
     EmployeeGroupMembership,
     EmployeePolicy,
+    Group,
     GroupPolicy,
 )
 from app.services.condition_fields import (
     ConditionEvaluationContext,
-    evaluate_condition,
+    evaluate_condition_with_evidence,
 )
 from app.services.policy_versions import get_effective_policy_versions
 
@@ -23,58 +26,71 @@ class EmployeePolicyRefreshError(ValueError):
     pass
 
 
+@dataclass(frozen=True)
+class ConditionMatchEvidence:
+    field: str
+    operator: str
+    expected: Any
+    actual: Any
+    result: bool
+
+
+@dataclass(frozen=True)
+class ClauseMatchEvidence:
+    clause_id: int
+    conditions: tuple[ConditionMatchEvidence, ...]
+
+
+@dataclass(frozen=True)
+class PolicyMatchOrigin:
+    type: Literal["condition_match", "group"]
+    matched_clauses: tuple[ClauseMatchEvidence, ...] = ()
+    group_id: int | None = None
+    group_name: str | None = None
+
+
+@dataclass(frozen=True)
+class PolicyMatch:
+    policy_id: int
+    policy_version_id: int
+    policy_name: str
+    version_number: int
+    priority: int
+    origins: tuple[PolicyMatchOrigin, ...]
+
+
 def find_matching_policy_ids(
     session: Session,
     employee_id: int,
     evaluation_date: date | None = None,
 ) -> list[int]:
     """Return deduplicated direct and group-inherited policy IDs."""
-    direct_policy_ids = find_direct_matching_policy_ids(
-        session,
-        employee_id,
-        evaluation_date,
-    )
-    group_policy_candidates = set(
-        session.scalars(
-            select(GroupPolicy.policy_id)
-            .join(
-                EmployeeGroupMembership,
-                EmployeeGroupMembership.group_id == GroupPolicy.group_id,
-            )
-            .where(EmployeeGroupMembership.employee_id == employee_id)
-            .distinct()
-        )
-    )
-    group_policy_ids = get_effective_policy_versions(
-        session,
-        group_policy_candidates,
-        evaluation_date,
-    )
-    return sorted(set(direct_policy_ids).union(group_policy_ids))
+    return sorted(find_policy_matches(session, employee_id, evaluation_date))
 
 
-def find_direct_matching_policy_ids(
+def find_policy_matches(
     session: Session,
     employee_id: int,
     evaluation_date: date | None = None,
-) -> list[int]:
-    """Return policies whose effective version has a satisfied compiled clause."""
+) -> dict[int, PolicyMatch]:
+    """Return date-effective policy matches with condition and group evidence."""
+    employee = session.get(Employee, employee_id)
+    if employee is None:
+        return {}
     effective_versions = get_effective_policy_versions(
         session,
         evaluation_date=evaluation_date,
     )
     if not effective_versions:
-        return []
+        return {}
     versions_by_id = {version.id: version for version in effective_versions.values()}
-    employee = session.get(Employee, employee_id)
-    if employee is None:
-        return []
     effective_on = evaluation_date or current_date()
     context = ConditionEvaluationContext(
         session=session,
         employee=employee,
         evaluation_date=effective_on,
     )
+    matched_clauses: dict[int, list[ClauseMatchEvidence]] = {}
     clauses = list(
         session.scalars(
             select(CompiledPolicyClause)
@@ -87,23 +103,92 @@ def find_direct_matching_policy_ids(
             .order_by(CompiledPolicyClause.policy_version_id, CompiledPolicyClause.id)
         )
     )
-    matched_version_ids = {
-        clause.policy_version_id
-        for clause in clauses
-        if clause.conditions
-        and all(
-            evaluate_condition(
+    for clause in clauses:
+        if not clause.conditions:
+            continue
+        condition_evidence: list[ConditionMatchEvidence] = []
+        for condition in clause.conditions:
+            evaluation = evaluate_condition_with_evidence(
                 context,
                 condition.condition_field_definition,
                 condition.operator,
                 condition.value,
             )
-            for condition in clause.conditions
+            condition_evidence.append(
+                ConditionMatchEvidence(
+                    field=condition.field,
+                    operator=condition.operator,
+                    expected=evaluation.expected,
+                    actual=evaluation.actual,
+                    result=evaluation.result,
+                )
+            )
+        if all(item.result for item in condition_evidence):
+            matched_clauses.setdefault(clause.policy_version_id, []).append(
+                ClauseMatchEvidence(
+                    clause_id=clause.id,
+                    conditions=tuple(condition_evidence),
+                )
+            )
+
+    origins_by_policy: dict[int, list[PolicyMatchOrigin]] = {}
+    for version_id, version_clauses in matched_clauses.items():
+        version = versions_by_id[version_id]
+        origins_by_policy.setdefault(version.policy_id, []).append(
+            PolicyMatchOrigin(
+                type="condition_match",
+                matched_clauses=tuple(version_clauses),
+            )
         )
+
+    group_rows = session.execute(
+        select(Group.id, Group.name, GroupPolicy.policy_id)
+        .join(
+            EmployeeGroupMembership,
+            EmployeeGroupMembership.group_id == Group.id,
+        )
+        .join(GroupPolicy, GroupPolicy.group_id == Group.id)
+        .where(EmployeeGroupMembership.employee_id == employee_id)
+        .order_by(Group.id, GroupPolicy.policy_id)
+    )
+    for group_id, group_name, policy_id in group_rows:
+        if policy_id not in effective_versions:
+            continue
+        origins_by_policy.setdefault(policy_id, []).append(
+            PolicyMatchOrigin(
+                type="group",
+                group_id=group_id,
+                group_name=group_name,
+            )
+        )
+
+    return {
+        policy_id: PolicyMatch(
+            policy_id=policy_id,
+            policy_version_id=effective_versions[policy_id].id,
+            policy_name=effective_versions[policy_id].policy.name,
+            version_number=effective_versions[policy_id].version_number,
+            priority=effective_versions[policy_id].priority,
+            origins=tuple(origins),
+        )
+        for policy_id, origins in sorted(origins_by_policy.items())
     }
+
+
+def find_direct_matching_policy_ids(
+    session: Session,
+    employee_id: int,
+    evaluation_date: date | None = None,
+) -> list[int]:
+    """Return policies whose effective version has a satisfied compiled clause."""
     return sorted(
-        versions_by_id[version_id].policy_id
-        for version_id in matched_version_ids
+        policy_id
+        for policy_id, match in find_policy_matches(
+            session,
+            employee_id,
+            evaluation_date,
+        ).items()
+        if any(origin.type == "condition_match" for origin in match.origins)
     )
 
 

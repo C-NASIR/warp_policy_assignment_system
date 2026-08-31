@@ -81,6 +81,13 @@ class ConditionEvaluationContext:
         return self._cache[spec.key]
 
 
+@dataclass(frozen=True)
+class ConditionEvaluation:
+    result: bool
+    actual: Any
+    expected: Any
+
+
 _COMPARABLE_OPERATORS = frozenset({"=", "<", "<=", ">", ">="})
 _EQUALITY_OPERATORS = frozenset({"="})
 _DURATION_PATTERN = re.compile(
@@ -360,27 +367,62 @@ def evaluate_condition(
     operator: str,
     value: str,
 ) -> bool:
+    return evaluate_condition_with_evidence(
+        context,
+        definition,
+        operator,
+        value,
+    ).result
+
+
+def evaluate_condition_with_evidence(
+    context: ConditionEvaluationContext,
+    definition: ConditionFieldDefinition,
+    operator: str,
+    value: str,
+) -> ConditionEvaluation:
     spec = CONDITION_FIELD_SPECS.get(definition.key)
     if (
         spec is None
         or not definition.active
         or definition.resolver_key != spec.resolver_key
     ):
-        return False
+        return ConditionEvaluation(False, None, value)
     if operator not in spec.allowed_operators:
-        return False
+        return ConditionEvaluation(False, None, value)
     try:
         _, expected = spec.parser(value)
     except ConditionFieldError:
-        return False
+        return ConditionEvaluation(False, None, value)
     actual = context.resolve(spec)
     if actual is None:
-        return False
+        return ConditionEvaluation(False, None, _explanation_value(expected))
     if spec.comparator is not None:
-        return spec.comparator(actual, operator, expected)
-    if isinstance(actual, TenureValue) and isinstance(expected, CalendarDuration):
-        return _compare_tenure(actual, operator, expected)
-    return _compare(actual, operator, expected)
+        result = spec.comparator(actual, operator, expected)
+    elif isinstance(actual, TenureValue) and isinstance(expected, CalendarDuration):
+        result = _compare_tenure(actual, operator, expected)
+    else:
+        result = _compare(actual, operator, expected)
+    return ConditionEvaluation(
+        result,
+        _explanation_value(actual),
+        _explanation_value(expected),
+    )
+
+
+def _explanation_value(value: Any) -> Any:
+    if isinstance(value, TenureValue):
+        return {
+            "start_date": value.start_date.isoformat(),
+            "evaluation_date": value.evaluation_date.isoformat(),
+        }
+    if isinstance(value, CalendarDuration):
+        return f"P{value.years}Y"
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, (set, frozenset, tuple)):
+        return sorted(value)
+    return value
 
 
 def add_calendar_years(day: date, years: int) -> date:

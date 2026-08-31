@@ -1,6 +1,6 @@
 # Warp Policy Assignment System
 
-Version 1 is a small FastAPI backend that answers: given an employee's current facts, which field values should be assigned to them now?
+Version 1 is a FastAPI backend that records past assignments, serves current assignments, and calculates future assignments from date-effective policies.
 
 ## Architecture
 
@@ -45,6 +45,16 @@ Manual overrides are field values applied after normal policy resolution. If a f
 
 Employee assignments are temporal results, not independently versioned definitions. Each row has a UTC `effective_from` and optional `effective_until`, using a half-open `[effective_from, effective_until)` interval. Reconciliation compares the newly resolved result with open assignments: unchanged values and sources retain their rows, removed results are closed, and new or changed results create new rows. This preserves both what an employee had at an instant and the exact policy version or override that supplied it.
 
+Every assignment also stores an immutable JSON explanation snapshot built during
+resolution. Policy explanations record the winning policy and version, direct
+condition evidence or group origins, the field's cardinality and selection
+strategy, and competing candidates with their priorities and outcomes. Override
+explanations identify the override and the policy values it replaced. A material
+explanation change closes the old assignment and creates a new historical row
+even when the final value and winning source remain unchanged. Past and current
+reads return the stored explanation; future projections build the same shape in
+memory without persisting it.
+
 `AuditLog` is the system-wide mutation journal. Assignment history answers what was true at a point in time; audit logs answer what changed, when, and which actor caused it. Audit entries are written through one service in the same database transaction as the domain mutation, so both the mutation and its audit entries commit or roll back together. API mutations accept an optional `X-Actor` header and use `api` when it is omitted. Automated reconciliation always records assignment mutations as `system`.
 
 Overrides are retained for provenance. Updating an override retires the old immutable row and creates a replacement; deleting one retires it. Only unretired overrides participate in current resolution, while historical assignments can continue referring to the override that produced them.
@@ -64,7 +74,7 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Assignment field definition:** a named assignment output with `one` or `many` cardinality.
 - **Policy field value:** one relationally stored consequence of a policy version.
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
-- **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override.
+- **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override, with an immutable explanation of the decision.
 - **Audit log:** an append-only actor, entity, action, before/after snapshot, and timestamp for an important domain mutation.
 - **Scheduled reconciliation:** a centralized pending, processed, or cancelled future trigger referencing the domain entity whose date caused it.
 
@@ -146,6 +156,9 @@ links, policy active/archive status, and unretired overrides currently stored.
 Policy-version effective ranges and date-derived facts such as tenure use the
 requested evaluation date. Scheduling future employee facts, group changes,
 policy status changes, or time-bounded overrides remains outside version 1.
+Assignment values in every mode include an `explanation`: recorded history and
+current state load the saved snapshot, while calculated future results return a
+new, unpersisted snapshot for the requested evaluation date.
 
 ## Auditing contract
 
@@ -215,4 +228,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, caching, application-wide authentication/authorization beyond the audit-read key, and complex explainability beyond persisted source provenance and audit snapshots.
+Version 1 intentionally excludes a frontend, retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, caching, and application-wide authentication/authorization beyond the audit-read key.

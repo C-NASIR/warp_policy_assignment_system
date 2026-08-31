@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -32,6 +32,7 @@ class AssignmentQueryValue:
     value: str
     source_policy_version_id: int | None
     source_override_id: int | None
+    explanation: dict[str, Any]
     persisted_assignment_id: int | None = None
     effective_from: datetime | None = None
     effective_until: datetime | None = None
@@ -132,6 +133,7 @@ def query_employee_assignments(
                     value=assignment.value,
                     source_policy_version_id=assignment.source_policy_version_id,
                     source_override_id=assignment.source_override_id,
+                    explanation=assignment.explanation or {},
                 )
                 for assignment in resolutions[employee_id].assignments
             ),
@@ -147,6 +149,7 @@ def _persisted_value(assignment: EmployeeAssignment) -> AssignmentQueryValue:
         value=assignment.value,
         source_policy_version_id=assignment.source_policy_version_id,
         source_override_id=assignment.source_override_id,
+        explanation=assignment.explanation or {},
         effective_from=assignment.effective_from,
         effective_until=assignment.effective_until,
     )

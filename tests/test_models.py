@@ -135,6 +135,7 @@ def test_policy_domain_models_have_required_columns():
             "value",
             "source_policy_version_id",
             "source_override_id",
+            "explanation",
             "effective_from",
             "effective_until",
         },

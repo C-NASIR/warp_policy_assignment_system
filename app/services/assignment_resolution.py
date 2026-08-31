@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 
 from sqlalchemy import select
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import Employee, EmployeeOverride
 from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import resolve_policy_assignments
-from app.services.policy_matching import find_matching_policy_ids
+from app.services.policy_matching import find_policy_matches
 
 
 @dataclass(frozen=True)
@@ -24,13 +24,13 @@ def resolve_employee_assignments_for_date(
     evaluation_date: date,
 ) -> EmployeeAssignmentResolution:
     """Calculate one employee's desired assignments without persisting projections."""
-    policy_ids = tuple(
-        find_matching_policy_ids(session, employee.id, evaluation_date)
-    )
+    policy_matches = find_policy_matches(session, employee.id, evaluation_date)
+    policy_ids = tuple(policy_matches)
     policy_assignments = resolve_policy_assignments(
         session,
         policy_ids,
         evaluation_date,
+        policy_matches,
     )
     overrides = list(
         session.scalars(
@@ -46,7 +46,16 @@ def resolve_employee_assignments_for_date(
             )
         )
     )
-    assignments = tuple(apply_employee_overrides(policy_assignments, overrides))
+    assignments = tuple(
+        replace(
+            assignment,
+            explanation={
+                "evaluation_date": evaluation_date.isoformat(),
+                **(assignment.explanation or {}),
+            },
+        )
+        for assignment in apply_employee_overrides(policy_assignments, overrides)
+    )
     return EmployeeAssignmentResolution(
         employee_id=employee.id,
         evaluation_date=evaluation_date,

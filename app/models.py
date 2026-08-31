@@ -509,6 +509,11 @@ class EmployeeAssignment(Base):
         ),
         nullable=True,
     )
+    explanation: Mapped[dict] = mapped_column(
+        JSON,
+        default=dict,
+        server_default="{}",
+    )
     effective_from: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=current_datetime,
