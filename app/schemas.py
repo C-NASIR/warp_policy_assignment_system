@@ -173,6 +173,18 @@ class PolicyValueRead(PolicyValueCreate, ORMModel):
     pass
 
 
+class ConditionRead(ORMModel):
+    field: str
+    operator: Literal["=", "<", "<=", ">", ">="]
+    value: str
+
+
+class ConditionGroupRead(ORMModel):
+    logical_operator: Literal["and", "or"]
+    conditions: list[ConditionRead]
+    child_groups: list[ConditionGroupRead]
+
+
 class PolicyVersionRead(ORMModel):
     id: int
     policy_id: int
@@ -182,6 +194,7 @@ class PolicyVersionRead(ORMModel):
     effective_until: date | None
     created_at: datetime
     created_by: str | None
+    condition_group: ConditionGroupRead
     values: list[PolicyValueRead]
 
 

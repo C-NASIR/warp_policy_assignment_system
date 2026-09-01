@@ -36,6 +36,13 @@ def condition_group(state="California"):
     }
 
 
+def serialized_condition_group(state="California"):
+    return {
+        **condition_group(state),
+        "child_groups": [],
+    }
+
+
 def compiled_state_clause(db, state="California"):
     state_definition = get_condition_field_definitions(db, {"state"})["state"]
     return [
@@ -75,6 +82,15 @@ def test_policy_api_creates_version_one_and_schedules_later_versions(client):
     assert policy["status"] == "active"
     assert policy["versions"][0]["version_number"] == 1
     assert policy["versions"][0]["created_by"] == "policy-team"
+    assert policy["versions"][0]["condition_group"] == (
+        serialized_condition_group()
+    )
+    assert client.get(f"/policies/{policy['id']}").json()["versions"][0][
+        "condition_group"
+    ] == serialized_condition_group()
+    assert client.get("/policies").json()[0]["versions"][0][
+        "condition_group"
+    ] == serialized_condition_group()
 
     next_start = today + timedelta(days=365)
     second = client.post(
@@ -90,6 +106,7 @@ def test_policy_api_creates_version_one_and_schedules_later_versions(client):
     )
     assert second.status_code == 201
     assert second.json()["version_number"] == 2
+    assert second.json()["condition_group"] == serialized_condition_group()
 
     versions = client.get(f"/policies/{policy['id']}/versions").json()
     assert [version["version_number"] for version in versions] == [1, 2]
@@ -110,6 +127,62 @@ def test_policy_api_creates_version_one_and_schedules_later_versions(client):
         },
     )
     assert overlap.status_code == 409
+
+
+def test_policy_version_reads_return_the_complete_nested_condition_tree(client):
+    field = client.post(
+        "/assignment-fields",
+        json={"name": "application_access", "cardinality": "many"},
+    ).json()
+    condition_tree = {
+        "logical_operator": "and",
+        "conditions": [
+            {"field": "employee_type", "operator": "=", "value": "regular"}
+        ],
+        "child_groups": [
+            {
+                "logical_operator": "or",
+                "conditions": [
+                    {
+                        "field": "state",
+                        "operator": "=",
+                        "value": "California",
+                    },
+                    {
+                        "field": "department",
+                        "operator": "=",
+                        "value": "Engineering",
+                    },
+                ],
+                "child_groups": [],
+            }
+        ],
+    }
+    response = client.post(
+        "/policies",
+        json={
+            "name": "Engineering access",
+            "priority": 20,
+            "condition_group": condition_tree,
+            "values": [
+                {
+                    "assignment_field_definition_id": field["id"],
+                    "value": "GitHub",
+                }
+            ],
+        },
+    )
+    assert response.status_code == 201
+    policy = response.json()
+    version = policy["versions"][0]
+    assert version["condition_group"] == condition_tree
+
+    assert client.get(
+        f"/policies/{policy['id']}/versions/{version['id']}"
+    ).json()["condition_group"] == condition_tree
+    assert client.get(f"/policies/{policy['id']}/versions").json()[0][
+        "condition_group"
+    ] == condition_tree
 
 
 def test_effective_version_selection_handles_boundaries_gaps_and_archiving(db):

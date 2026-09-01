@@ -41,12 +41,29 @@ router = APIRouter(prefix="/policies", tags=["policies"])
 
 def _query():
     return select(Policy).options(
-        selectinload(Policy.versions).selectinload(PolicyVersion.values)
+        selectinload(Policy.versions).selectinload(PolicyVersion.values),
+        selectinload(Policy.versions)
+        .selectinload(PolicyVersion.condition_groups)
+        .selectinload(ConditionGroup.child_groups),
+        selectinload(Policy.versions)
+        .selectinload(PolicyVersion.condition_groups)
+        .selectinload(ConditionGroup.condition_links)
+        .selectinload(ConditionGroupCondition.condition)
+        .selectinload(Condition.condition_field_definition),
     )
 
 
 def _version_query():
-    return select(PolicyVersion).options(selectinload(PolicyVersion.values))
+    return select(PolicyVersion).options(
+        selectinload(PolicyVersion.values),
+        selectinload(PolicyVersion.condition_groups).selectinload(
+            ConditionGroup.child_groups
+        ),
+        selectinload(PolicyVersion.condition_groups)
+        .selectinload(ConditionGroup.condition_links)
+        .selectinload(ConditionGroupCondition.condition)
+        .selectinload(Condition.condition_field_definition),
+    )
 
 
 def _policy_or_404(session: DatabaseSession, policy_id: int) -> Policy:

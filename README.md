@@ -27,6 +27,11 @@ calculated policy links and assignment differences.
 
 `Policy` is the stable identity referenced by employees and groups. `PolicyVersion` is the executable definition containing priority, effective dates, conditions, compiled clauses, and field values. Policy condition trees are compiled into flat OR-of-AND clauses per version. Employee reconciliation selects the one version effective on the evaluation date, evaluates its clauses, persists stable policy links, and resolves each assignment field independently.
 
+Policy-version API responses include the complete canonical condition tree using
+the same nested `logical_operator`, `conditions`, and `child_groups` structure
+accepted when creating a version. This lets clients inspect and round-trip a
+stored rule without depending on its internal compiled representation.
+
 Condition inputs are system-controlled `ConditionFieldDefinition` records, separate from assignment-output `AssignmentFieldDefinition` records. Static fields resolve trusted employee attributes; derived fields invoke allowlisted application resolvers. Definitions declare data types, resolver keys, and dependency metadata, while canonical and compiled conditions retain foreign keys to those definitions. Administrators select catalog fields but cannot define arbitrary formulas or executable resolvers.
 
 `tenure` is a derived calendar-duration field resolved from `Employee.start_date` and the reconciliation evaluation date. Inputs such as `2 years` are normalized to `P2Y`; comparison uses completed calendar anniversaries rather than fixed 365-day intervals. A February 29 start date reaches its anniversary on February 28 in a non-leap year.

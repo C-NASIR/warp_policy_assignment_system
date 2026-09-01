@@ -256,11 +256,24 @@ class PolicyVersion(Base):
     condition_groups: Mapped[list[ConditionGroup]] = relationship(
         back_populates="policy_version",
         cascade="all, delete-orphan",
+        order_by="ConditionGroup.id",
     )
     compiled_clauses: Mapped[list[CompiledPolicyClause]] = relationship(
         back_populates="policy_version",
         cascade="all, delete-orphan",
     )
+
+    @property
+    def condition_group(self) -> ConditionGroup:
+        """Return the canonical root condition group for API serialization."""
+        roots = [
+            group for group in self.condition_groups if group.parent_group_id is None
+        ]
+        if len(roots) != 1:
+            raise ValueError(
+                f"PolicyVersion {self.id} must have exactly one root condition group"
+            )
+        return roots[0]
 
 
 class ConditionFieldDefinition(Base):
@@ -367,11 +380,18 @@ class ConditionGroup(Base):
         back_populates="parent_group",
         cascade="all, delete-orphan",
         single_parent=True,
+        order_by="ConditionGroup.id",
     )
     condition_links: Mapped[list[ConditionGroupCondition]] = relationship(
         back_populates="group",
         cascade="all, delete-orphan",
+        order_by="ConditionGroupCondition.condition_id",
     )
+
+    @property
+    def conditions(self) -> list[Condition]:
+        """Expose canonical conditions without leaking association rows."""
+        return [link.condition for link in self.condition_links]
 
 
 class ConditionGroupCondition(Base):
