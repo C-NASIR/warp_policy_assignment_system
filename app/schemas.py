@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -294,3 +294,111 @@ class AuditLogRead(ORMModel):
     @classmethod
     def return_utc_timestamp(cls, value: datetime) -> datetime:
         return ensure_utc(value)
+
+
+class _ChangePreviewBase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class EmployeeCreateChangePreview(_ChangePreviewBase):
+    type: Literal["employee_create"]
+    employee: EmployeeCreate
+
+
+class EmployeeUpdateChangePreview(_ChangePreviewBase):
+    type: Literal["employee_update"]
+    employee_id: int = Field(gt=0)
+    changes: EmployeeUpdate
+
+
+class PolicyVersionCreateChangePreview(_ChangePreviewBase):
+    type: Literal["policy_version_create"]
+    policy_id: int = Field(gt=0)
+    version: PolicyVersionCreate
+
+
+class GroupMembershipChangePreview(_ChangePreviewBase):
+    type: Literal["group_membership_change"]
+    action: Literal["add", "remove"]
+    group_id: int = Field(gt=0)
+    employee_id: int = Field(gt=0)
+
+
+class EmployeeOverrideChangePreview(_ChangePreviewBase):
+    type: Literal["employee_override_change"]
+    action: Literal["create", "update", "delete"]
+    employee_id: int = Field(gt=0)
+    override_id: int | None = Field(default=None, gt=0)
+    assignment_field_definition_id: int | None = Field(default=None, gt=0)
+    value: str | None = Field(default=None, min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def require_fields_for_override_action(self) -> EmployeeOverrideChangePreview:
+        if self.action == "create":
+            if self.override_id is not None:
+                raise ValueError("override_id is not accepted when creating an override")
+            if self.assignment_field_definition_id is None or self.value is None:
+                raise ValueError(
+                    "Creating an override requires assignment_field_definition_id and value"
+                )
+        elif self.action == "update":
+            if self.override_id is None:
+                raise ValueError("Updating an override requires override_id")
+            if self.assignment_field_definition_id is None and self.value is None:
+                raise ValueError(
+                    "Updating an override requires assignment_field_definition_id or value"
+                )
+        elif self.override_id is None:
+            raise ValueError("Deleting an override requires override_id")
+        return self
+
+
+ChangePreviewCreate = Annotated[
+    EmployeeCreateChangePreview
+    | EmployeeUpdateChangePreview
+    | PolicyVersionCreateChangePreview
+    | GroupMembershipChangePreview
+    | EmployeeOverrideChangePreview,
+    Field(discriminator="type"),
+]
+
+
+class AssignmentPreviewRead(BaseModel):
+    assignment_field_definition_id: int
+    assignment_field_name: str
+    value: str
+    source_type: Literal["policy_version", "override"]
+    source_id: int | None
+    source_is_proposed: bool
+    explanation: dict[str, Any]
+
+
+class AssignmentFieldPreviewChangeRead(BaseModel):
+    assignment_field_definition_id: int
+    assignment_field_name: str
+    before: list[AssignmentPreviewRead]
+    after: list[AssignmentPreviewRead]
+
+
+class EmployeeAssignmentPreviewChangeRead(BaseModel):
+    employee_id: int | None
+    employee_name: str
+    before: list[AssignmentPreviewRead]
+    after: list[AssignmentPreviewRead]
+    added: list[AssignmentPreviewRead]
+    removed: list[AssignmentPreviewRead]
+    changed: list[AssignmentFieldPreviewChangeRead]
+
+
+class ChangePreviewConflictRead(BaseModel):
+    code: str
+    message: str
+
+
+class ChangePreviewRead(BaseModel):
+    change_type: str
+    valid: bool
+    affected_employee_count: int
+    changes: list[EmployeeAssignmentPreviewChangeRead]
+    conflicts: list[ChangePreviewConflictRead]
+    warnings: list[str]

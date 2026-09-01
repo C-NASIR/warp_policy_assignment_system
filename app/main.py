@@ -8,6 +8,7 @@ from app.routers import (
     assignment_fields,
     assignment_queries,
     audit_logs,
+    change_previews,
     condition_fields,
     employees,
     groups,
@@ -44,6 +45,7 @@ app.include_router(condition_fields.router)
 app.include_router(policies.router)
 app.include_router(groups.router)
 app.include_router(audit_logs.router)
+app.include_router(change_previews.router)
 
 
 @app.exception_handler(PolicyConflictError)

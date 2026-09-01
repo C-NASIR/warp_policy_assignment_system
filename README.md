@@ -118,6 +118,7 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | GET | `/employees/{id}/assignments/history` | Read complete assignment history |
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
 | POST | `/assignment-queries` | Query recorded past, persisted present, or calculated future assignments for an employee batch |
+| POST | `/change-previews` | Simulate a supported mutation and return assignment differences without persisting it |
 | GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
 | PATCH / DELETE | `/employees/{id}/overrides/{override_id}` | Update or remove an override |
 | POST / GET | `/groups` | Create or list groups |
@@ -164,6 +165,19 @@ policy status changes, or time-bounded overrides remains outside version 1.
 Assignment values in every mode include an `explanation`: recorded history and
 current state load the saved snapshot, while calculated future results return a
 new, unpersisted snapshot for the requested evaluation date.
+
+## Change preview contract
+
+`POST /change-previews` accepts a discriminated change request and runs the same
+domain mutation and reconciliation services used by real writes inside a
+database savepoint that is always rolled back. It supports employee creation and
+updates, policy-version creation, group membership changes, and override
+creation, updates, and deletion. The response contains per-employee before and
+after assignments, added and removed assignments, field-level changes, warnings,
+and conflicts. Proposed employees have a null employee ID; assignments supplied
+by a proposed policy version or override have a null source ID and
+`source_is_proposed: true`. Domain rows, policy links, assignment history, audit
+logs, and scheduled reconciliation records are not retained after a preview.
 
 ## Auditing contract
 
