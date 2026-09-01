@@ -69,12 +69,29 @@ class ConditionFieldDependencyRead(ORMModel):
     impact_resolver_key: str
 
 
+class ConditionFieldInputOptionRead(BaseModel):
+    value: str
+    label: str
+
+
+class ConditionFieldInputRead(BaseModel):
+    type: Literal["text", "date", "number", "select", "duration", "resource"]
+    allows_null: bool
+    placeholder: str | None
+    options: list[ConditionFieldInputOptionRead]
+    reference_resource: str | None
+    minimum: int | None
+
+
 class ConditionFieldDefinitionRead(ORMModel):
     id: int
     key: str
     label: str
+    description: str
     field_type: Literal["static", "derived"]
     data_type: str
+    allowed_operators: list[Literal["=", "<", "<=", ">", ">="]]
+    input: ConditionFieldInputRead
     resolver_key: str | None
     source_table: str | None
     source_column: str | None

@@ -164,8 +164,18 @@ def test_condition_catalog_declares_org_fields_and_dependencies(client):
 
     assert fields["manager_id"]["field_type"] == "static"
     assert fields["manager_id"]["data_type"] == "employee_reference"
+    assert fields["manager_id"]["allowed_operators"] == ["="]
+    assert fields["manager_id"]["input"]["type"] == "resource"
+    assert fields["manager_id"]["input"]["reference_resource"] == "employees"
     assert fields["is_manager"]["resolver_key"] == "employee_is_manager_v1"
+    assert fields["is_manager"]["allowed_operators"] == ["="]
+    assert fields["is_manager"]["input"]["type"] == "select"
+    assert fields["is_manager"]["input"]["options"] == [
+        {"value": "true", "label": "True"},
+        {"value": "false", "label": "False"},
+    ]
     assert fields["direct_report_count"]["data_type"] == "integer"
+    assert fields["direct_report_count"]["input"]["minimum"] == 0
     assert fields["reports_under"]["resolver_key"] == "employee_manager_chain_v1"
     assert fields["management_level"]["resolver_key"] == "employee_management_level_v1"
     assert {

@@ -47,6 +47,22 @@ class ConditionFieldDependencySpec:
     impact_resolver_key: str
 
 
+@dataclass(frozen=True)
+class ConditionFieldInputOptionSpec:
+    value: str
+    label: str
+
+
+@dataclass(frozen=True)
+class ConditionFieldInputSpec:
+    type: Literal["text", "date", "number", "select", "duration", "resource"]
+    allows_null: bool = False
+    placeholder: str | None = None
+    options: tuple[ConditionFieldInputOptionSpec, ...] = ()
+    reference_resource: str | None = None
+    minimum: int | None = None
+
+
 Resolver = Callable[["ConditionEvaluationContext"], Any]
 Parser = Callable[[str], tuple[str, Any]]
 Comparator = Callable[[Any, str, Any], bool]
@@ -56,10 +72,12 @@ Comparator = Callable[[Any, str, Any], bool]
 class ConditionFieldSpec:
     key: str
     label: str
+    description: str
     field_type: Literal["static", "derived"]
     data_type: str
     resolver_key: str
-    allowed_operators: frozenset[str]
+    allowed_operators: tuple[str, ...]
+    input: ConditionFieldInputSpec
     resolver: Resolver
     parser: Parser
     comparator: Comparator | None = None
@@ -88,8 +106,8 @@ class ConditionEvaluation:
     expected: Any
 
 
-_COMPARABLE_OPERATORS = frozenset({"=", "<", "<=", ">", ">="})
-_EQUALITY_OPERATORS = frozenset({"="})
+_COMPARABLE_OPERATORS = ("=", "<", "<=", ">", ">=")
+_EQUALITY_OPERATORS = ("=",)
 _DURATION_PATTERN = re.compile(
     r"^(?:P(?P<iso>\d+)Y|(?P<human>\d+)\s+years?)$", re.IGNORECASE
 )
@@ -220,16 +238,20 @@ def _manager_relationship_dependency(
 def _static_spec(
     key: str,
     label: str,
+    description: str,
     data_type: str,
     parser: Parser,
+    input: ConditionFieldInputSpec,
 ) -> ConditionFieldSpec:
     return ConditionFieldSpec(
         key=key,
         label=label,
+        description=description,
         field_type="static",
         data_type=data_type,
         resolver_key=f"employee_attribute_{key}_v1",
         allowed_operators=_COMPARABLE_OPERATORS,
+        input=input,
         resolver=_static_resolver(key),
         parser=parser,
         source_table="employees",
@@ -241,19 +263,66 @@ def _static_spec(
 CONDITION_FIELD_SPECS = {
     spec.key: spec
     for spec in (
-        _static_spec("name", "Name", "string", _string_parser),
-        _static_spec("state", "State", "string", _string_parser),
-        _static_spec("department", "Department", "string", _string_parser),
-        _static_spec("employee_type", "Employee type", "string", _string_parser),
-        _static_spec("location", "Location", "string", _string_parser),
-        _static_spec("start_date", "Start date", "date", _date_parser),
+        _static_spec(
+            "name",
+            "Name",
+            "The employee's full name.",
+            "string",
+            _string_parser,
+            ConditionFieldInputSpec(type="text", placeholder="Alice Johnson"),
+        ),
+        _static_spec(
+            "state",
+            "State",
+            "The employee's state or region of employment.",
+            "string",
+            _string_parser,
+            ConditionFieldInputSpec(type="text", placeholder="California"),
+        ),
+        _static_spec(
+            "department",
+            "Department",
+            "The employee's current department.",
+            "string",
+            _string_parser,
+            ConditionFieldInputSpec(type="text", placeholder="Engineering"),
+        ),
+        _static_spec(
+            "employee_type",
+            "Employee type",
+            "The employee's employment classification.",
+            "string",
+            _string_parser,
+            ConditionFieldInputSpec(type="text", placeholder="regular"),
+        ),
+        _static_spec(
+            "location",
+            "Location",
+            "The employee's work location.",
+            "string",
+            _string_parser,
+            ConditionFieldInputSpec(type="text", placeholder="New York Office"),
+        ),
+        _static_spec(
+            "start_date",
+            "Start date",
+            "The employee's employment start date.",
+            "date",
+            _date_parser,
+            ConditionFieldInputSpec(type="date", placeholder="2026-01-15"),
+        ),
         ConditionFieldSpec(
             key="manager_id",
             label="Manager",
+            description="The employee's direct manager.",
             field_type="static",
             data_type="employee_reference",
             resolver_key="employee_attribute_manager_id_v1",
             allowed_operators=_EQUALITY_OPERATORS,
+            input=ConditionFieldInputSpec(
+                type="resource",
+                reference_resource="employees",
+            ),
             resolver=_static_resolver("manager_id"),
             parser=_positive_integer_parser,
             source_table="employees",
@@ -263,10 +332,18 @@ CONDITION_FIELD_SPECS = {
         ConditionFieldSpec(
             key="is_manager",
             label="Is manager",
+            description="Whether the employee currently has direct reports.",
             field_type="derived",
             data_type="boolean",
             resolver_key="employee_is_manager_v1",
             allowed_operators=_EQUALITY_OPERATORS,
+            input=ConditionFieldInputSpec(
+                type="select",
+                options=(
+                    ConditionFieldInputOptionSpec(value="true", label="True"),
+                    ConditionFieldInputOptionSpec(value="false", label="False"),
+                ),
+            ),
             resolver=_resolve_is_manager,
             parser=_boolean_parser,
             dependencies=_manager_relationship_dependency(
@@ -277,10 +354,16 @@ CONDITION_FIELD_SPECS = {
         ConditionFieldSpec(
             key="direct_report_count",
             label="Direct report count",
+            description="The employee's current number of direct reports.",
             field_type="derived",
             data_type="integer",
             resolver_key="employee_direct_report_count_v1",
             allowed_operators=_COMPARABLE_OPERATORS,
+            input=ConditionFieldInputSpec(
+                type="number",
+                placeholder="5",
+                minimum=0,
+            ),
             resolver=_resolve_direct_report_count,
             parser=_nonnegative_integer_parser,
             dependencies=_manager_relationship_dependency(
@@ -291,10 +374,18 @@ CONDITION_FIELD_SPECS = {
         ConditionFieldSpec(
             key="reports_under",
             label="Reports under",
+            description=(
+                "Whether the employee reports directly or indirectly to the "
+                "selected manager."
+            ),
             field_type="derived",
             data_type="employee_reference",
             resolver_key="employee_manager_chain_v1",
             allowed_operators=_EQUALITY_OPERATORS,
+            input=ConditionFieldInputSpec(
+                type="resource",
+                reference_resource="employees",
+            ),
             resolver=_resolve_reports_under,
             parser=_positive_integer_parser,
             comparator=_contains_reference,
@@ -306,10 +397,19 @@ CONDITION_FIELD_SPECS = {
         ConditionFieldSpec(
             key="management_level",
             label="Management level",
+            description=(
+                "The employee's number of reporting hops from the root of the "
+                "org chart."
+            ),
             field_type="derived",
             data_type="integer",
             resolver_key="employee_management_level_v1",
             allowed_operators=_COMPARABLE_OPERATORS,
+            input=ConditionFieldInputSpec(
+                type="number",
+                placeholder="2",
+                minimum=0,
+            ),
             resolver=_resolve_management_level,
             parser=_nonnegative_integer_parser,
             dependencies=_manager_relationship_dependency(
@@ -320,10 +420,16 @@ CONDITION_FIELD_SPECS = {
         ConditionFieldSpec(
             key="tenure",
             label="Tenure",
+            description="The employee's completed whole calendar years of tenure.",
             field_type="derived",
             data_type="calendar_duration",
             resolver_key="employee_tenure_v1",
             allowed_operators=_COMPARABLE_OPERATORS,
+            input=ConditionFieldInputSpec(
+                type="duration",
+                placeholder="2 years",
+                minimum=1,
+            ),
             resolver=_resolve_tenure,
             parser=_calendar_duration_parser,
             dependencies=(
@@ -472,8 +578,21 @@ def sync_condition_field_definitions(
             definition = ConditionFieldDefinition(key=spec.key)
             session.add(definition)
         definition.label = spec.label
+        definition.description = spec.description
         definition.field_type = spec.field_type
         definition.data_type = spec.data_type
+        definition.allowed_operators = list(spec.allowed_operators)
+        definition.input = {
+            "type": spec.input.type,
+            "allows_null": spec.input.allows_null,
+            "placeholder": spec.input.placeholder,
+            "options": [
+                {"value": option.value, "label": option.label}
+                for option in spec.input.options
+            ],
+            "reference_resource": spec.input.reference_resource,
+            "minimum": spec.input.minimum,
+        }
         definition.resolver_key = spec.resolver_key
         definition.source_table = spec.source_table
         definition.source_column = spec.source_column

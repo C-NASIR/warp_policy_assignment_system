@@ -90,9 +90,30 @@ def test_condition_field_catalog_exposes_static_derived_and_dependency_metadata(
     fields = {item["key"]: item for item in response.json()}
     assert fields["state"]["field_type"] == "static"
     assert fields["state"]["source_column"] == "state"
+    assert fields["state"]["description"] == (
+        "The employee's state or region of employment."
+    )
+    assert fields["state"]["allowed_operators"] == ["=", "<", "<=", ">", ">="]
+    assert fields["state"]["input"] == {
+        "type": "text",
+        "allows_null": False,
+        "placeholder": "California",
+        "options": [],
+        "reference_resource": None,
+        "minimum": None,
+    }
     assert fields["tenure"]["field_type"] == "derived"
     assert fields["tenure"]["data_type"] == "calendar_duration"
     assert fields["tenure"]["resolver_key"] == "employee_tenure_v1"
+    assert fields["tenure"]["allowed_operators"] == ["=", "<", "<=", ">", ">="]
+    assert fields["tenure"]["input"] == {
+        "type": "duration",
+        "allows_null": False,
+        "placeholder": "2 years",
+        "options": [],
+        "reference_resource": None,
+        "minimum": 1,
+    }
     assert {
         (item["dependency_type"], item["dependency_key"], item["impact_resolver_key"])
         for item in fields["tenure"]["dependencies"]
@@ -100,6 +121,8 @@ def test_condition_field_catalog_exposes_static_derived_and_dependency_metadata(
         ("column", "employee.start_date", "changed_employee"),
         ("time", "evaluation_date", "tenure_threshold_schedule"),
     }
+
+    assert client.get("/condition-fields/tenure").json() == fields["tenure"]
 
 
 def test_tenure_input_is_typed_normalized_and_rejects_unknown_fields(client, db):
