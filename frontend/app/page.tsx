@@ -1,69 +1,60 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, BookOpenCheck, CircleCheckBig, Network, Plus, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { getAssignmentSummary, getPolicies } from "@/lib/backend";
 
-export default function Home() {
+const activity = [
+  { title: "California Leave Policy", copy: "was updated by Priya Shah", time: "12 minutes ago" },
+  { title: "Jordan Lee", copy: "moved from Design to Product", time: "1 hour ago" },
+  { title: "Engineering Access", copy: "assigned GitHub to 4 new employees", time: "Yesterday at 4:18 PM" },
+  { title: "Monthly Pay override", copy: "was added for Devon Moore", time: "Yesterday at 11:42 AM" },
+];
+
+export default async function OverviewPage() {
+  const [summary, policies] = await Promise.all([getAssignmentSummary(), getPolicies()]);
+  const coverage = summary.fields.slice(0, 4).map((item) => ({ name: item.assignment_field_definition.name, caption: `${item.assigned_employee_count} of ${summary.employee_count} employees`, value: summary.employee_count ? Math.round((item.assigned_employee_count / summary.employee_count) * 100) : 0 }));
+  const metrics = [
+    { label: "Employees", value: summary.employee_count.toLocaleString(), delta: `${summary.employees_with_assignments} covered`, icon: Users },
+    { label: "Active policies", value: policies.filter((item) => item.status === "active").length.toLocaleString(), delta: `${policies.filter((item) => item.status === "archived").length} archived`, icon: BookOpenCheck },
+    { label: "Current assignments", value: summary.assignment_count.toLocaleString(), delta: `${summary.employee_count ? Math.round(summary.employees_with_assignments / summary.employee_count * 100) : 0}% covered`, icon: CircleCheckBig },
+    { label: "Manual overrides", value: summary.override_assignment_count.toLocaleString(), delta: `${summary.policy_assignment_count.toLocaleString()} policy-derived`, icon: ShieldCheck },
+  ];
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <>
+      <div className="page-heading">
+        <div><p className="eyebrow">Wednesday, September 2</p><h1>Good morning, Priya</h1><p className="page-subtitle">Your policy assignments are healthy. Three future changes are scheduled and no conflicts need attention.</p></div>
+        <Link className="button" href="/policies/new"><Plus size={15} /> Create policy</Link>
+      </div>
+      <section className="metric-grid" aria-label="Assignment system metrics">
+        {metrics.map((metric) => { const Icon = metric.icon; return (
+          <article className="metric-card" key={metric.label}>
+            <div className="metric-icon"><Icon size={16} strokeWidth={1.8} /></div><div className="metric-delta">{metric.delta}</div>
+            <div className="metric-value">{metric.value}</div><div className="metric-label">{metric.label}</div>
+          </article>
+        ); })}
+      </section>
+      <section className="dashboard-grid">
+        <article className="panel">
+          <div className="panel-header"><h2 className="panel-title">Assignment coverage</h2><Link className="panel-link" href="/employees">View employees <ArrowRight size={13} /></Link></div>
+          <div className="coverage-list">{coverage.map((item) => (
+            <div className="coverage-row" key={item.name}>
+              <div><div className="coverage-name">{item.name}</div><div className="coverage-caption">{item.caption}</div></div>
+              <div className="progress-track" aria-label={`${item.value}% covered`}><div className="progress-bar" style={{ width: `${item.value}%` }} /></div>
+              <div className="coverage-value">{item.value}%</div>
+            </div>
+          ))}</div>
+        </article>
+        <article className="panel">
+          <div className="panel-header"><h2 className="panel-title">Recent changes</h2><Link className="panel-link" href="/audit">Audit log <ArrowRight size={13} /></Link></div>
+          <div className="activity-list">{activity.map((item) => (
+            <div className="activity-item" key={`${item.title}-${item.time}`}><div className="activity-icon"><CircleCheckBig size={13} /></div><div><div className="activity-copy"><strong>{item.title}</strong> {item.copy}</div><div className="activity-time">{item.time}</div></div></div>
+          ))}</div>
+        </article>
+      </section>
+      <section className="quick-actions" aria-label="Quick actions">
+        <Link className="quick-action" href="/employees/new"><span className="quick-action-icon"><UserPlus size={16} /></span><span><span className="quick-action-title">Onboard an employee</span><span className="quick-action-caption">Preview assignments before saving</span></span></Link>
+        <Link className="quick-action" href="/policies/new"><span className="quick-action-icon"><BookOpenCheck size={16} /></span><span><span className="quick-action-title">Define a policy</span><span className="quick-action-caption">Build rules with guided conditions</span></span></Link>
+        <Link className="quick-action" href="/groups"><span className="quick-action-icon"><Network size={16} /></span><span><span className="quick-action-title">Review a group</span><span className="quick-action-caption">See inherited policy coverage</span></span></Link>
+      </section>
+    </>
   );
 }
