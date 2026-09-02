@@ -23,7 +23,20 @@ from app.services.policy_matching import replace_employee_policies
 
 
 class AssignmentReconciliationOrderError(ValueError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        employee_id: int,
+        requested_at: datetime,
+        latest_assignment_start: datetime,
+    ) -> None:
+        super().__init__(message)
+        self.metadata = {
+            "employee_id": employee_id,
+            "requested_at": requested_at,
+            "latest_assignment_start": latest_assignment_start,
+        }
 
 
 def reconcile_employees(
@@ -221,7 +234,10 @@ def _reject_out_of_order_reconciliation(
     )
     if latest_start is not None and reconciliation_at < ensure_utc(latest_start):
         raise AssignmentReconciliationOrderError(
-            "Assignment reconciliation cannot run before existing assignment history"
+            "Assignment reconciliation cannot run before existing assignment history",
+            employee_id=employee_id,
+            requested_at=reconciliation_at,
+            latest_assignment_start=ensure_utc(latest_start),
         )
 
 

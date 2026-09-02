@@ -18,7 +18,23 @@ from app.services.policy_matching import PolicyMatch, PolicyMatchOrigin
 
 
 class PolicyConflictError(Exception):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        assignment_field_definition_id: int | None = None,
+        assignment_field_name: str | None = None,
+        priority: int | None = None,
+        candidates: list[dict[str, Any]] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.assignment_field_name = assignment_field_name
+        self.metadata = {
+            "assignment_field_definition_id": assignment_field_definition_id,
+            "assignment_field_name": assignment_field_name,
+            "priority": priority,
+            "candidates": candidates or [],
+        }
 
 
 @dataclass(frozen=True)
@@ -114,7 +130,22 @@ def _resolve_one(
     values = {candidate.value for candidate in winners}
     if len(values) > 1:
         raise PolicyConflictError(
-            f"Conflicting values for field '{field.name}' at priority {highest_priority}: {sorted(values)}"
+            f"Conflicting values for field '{field.name}' at priority "
+            f"{highest_priority}: {sorted(values)}",
+            assignment_field_definition_id=field.id,
+            assignment_field_name=field.name,
+            priority=highest_priority,
+            candidates=[
+                {
+                    "policy_id": candidate.policy_version.policy_id,
+                    "policy_name": candidate.policy_version.policy.name,
+                    "policy_version_id": candidate.policy_version_id,
+                    "version_number": candidate.policy_version.version_number,
+                    "value": candidate.value,
+                    "priority": candidate.policy_version.priority,
+                }
+                for candidate in winners
+            ],
         )
     winner = winners[0]
     return ResolvedAssignment(

@@ -179,6 +179,21 @@ by a proposed policy version or override have a null source ID and
 `source_is_proposed: true`. Domain rows, policy links, assignment history, audit
 logs, and scheduled reconciliation records are not retained after a preview.
 
+## Error contract
+
+Conflict (`409`) and validation (`422`) responses include a stable `error`
+object for the UI and MCP clients. It contains a category, application-level
+code, human-readable message, and one or more issues with a machine-readable
+code, request or domain path, and structured metadata. Request validation issues
+preserve Pydantic's error code and exact input location. Policy-assignment
+conflicts additionally identify the assignment field, winning priority, and all
+conflicting policy/version/value candidates. Change previews return the same
+conflict issue shape in their `conflicts` collection.
+
+The original FastAPI `detail` member remains in `409` and `422` responses for
+backward compatibility. New clients should consume `error`; `detail` is a
+transition field and should not be parsed for business logic.
+
 ## Auditing contract
 
 The current action vocabulary is:

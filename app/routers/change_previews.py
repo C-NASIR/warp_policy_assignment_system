@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from app.dependencies import AuditActor, DatabaseSession
+from app.error_contract import conflict_issue
 from app.models import Employee, EmployeeAssignment, Policy
 from app.schemas import (
     AssignmentFieldPreviewChangeRead,
@@ -60,8 +61,9 @@ def preview(
     savepoint = session.begin_nested()
     try:
         before = _current_assignments(session)
+        context = _MutationContext()
         try:
-            context = _apply_change(session, data, actor)
+            _apply_change(session, data, actor, context)
             session.flush()
             after = _current_assignments(
                 session,
@@ -98,10 +100,7 @@ def preview(
                 affected_employee_count=0,
                 changes=[],
                 conflicts=[
-                    {
-                        "code": _conflict_code(exc),
-                        "message": str(exc),
-                    }
+                    _preview_conflict_issue(exc, context)
                 ],
                 warnings=[],
             )
@@ -112,34 +111,23 @@ def preview(
     return response
 
 
-def _conflict_code(exc: ValueError | PolicyConflictError) -> str:
-    if isinstance(exc, PolicyVersionOverlapError):
-        return "policy_version_overlap"
-    if isinstance(exc, EffectivePolicyVersionConflictError):
-        return "effective_policy_version_conflict"
-    if isinstance(exc, EmployeeOverrideConflictError):
-        return "employee_override_conflict"
-    if isinstance(exc, EmployeeHierarchyConflictError):
-        return "employee_hierarchy_conflict"
-    return "policy_conflict"
-
-
 def _apply_change(
     session: DatabaseSession,
     data: ChangePreviewCreate,
     actor: str,
-) -> _MutationContext:
+    context: _MutationContext,
+) -> None:
     if isinstance(data, EmployeeCreateChangePreview):
         employee = create_employee(session, data.employee, actor)
-        return _MutationContext(
-            included_employee_ids={employee.id},
-            proposed_employee_ids={employee.id},
-        )
+        context.included_employee_ids.add(employee.id)
+        context.proposed_employee_ids.add(employee.id)
+        return
 
     if isinstance(data, EmployeeUpdateChangePreview):
         employee = _employee_or_404(session, data.employee_id)
         update_employee(session, employee, data.changes, actor)
-        return _MutationContext(included_employee_ids={employee.id})
+        context.included_employee_ids.add(employee.id)
+        return
 
     if isinstance(data, PolicyVersionCreateChangePreview):
         policy = session.get(Policy, data.policy_id)
@@ -154,8 +142,9 @@ def _apply_change(
             data.version,
             actor,
         )
+        context.proposed_policy_version_ids.add(version.id)
         refresh_employees_affected_by_policy(session, policy)
-        return _MutationContext(proposed_policy_version_ids={version.id})
+        return
 
     if isinstance(data, GroupMembershipChangePreview):
         if data.action == "add":
@@ -172,10 +161,11 @@ def _apply_change(
                 data.employee_id,
                 actor,
             )
-        return _MutationContext(included_employee_ids={data.employee_id})
+        context.included_employee_ids.add(data.employee_id)
+        return
 
     if isinstance(data, EmployeeOverrideChangePreview):
-        context = _MutationContext(included_employee_ids={data.employee_id})
+        context.included_employee_ids.add(data.employee_id)
         if data.action == "create":
             assignment_field_definition_id = data.assignment_field_definition_id
             value = data.value
@@ -211,9 +201,23 @@ def _apply_change(
                 override_id,
                 actor,
             )
-        return context
+        return
 
     raise ValueError(f"Unsupported change preview type: {data.type}")
+
+
+def _preview_conflict_issue(
+    exc: Exception,
+    context: _MutationContext,
+) -> dict[str, Any]:
+    issue = conflict_issue(exc).model_dump(mode="json")
+    candidates = issue["metadata"].get("candidates", [])
+    for candidate in candidates:
+        policy_version_id = candidate.get("policy_version_id")
+        if policy_version_id in context.proposed_policy_version_ids:
+            candidate["policy_version_id"] = None
+            candidate["source_is_proposed"] = True
+    return issue
 
 
 def _employee_or_404(session: DatabaseSession, employee_id: int) -> Employee:

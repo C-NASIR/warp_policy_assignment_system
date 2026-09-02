@@ -110,64 +110,6 @@ def test_employee_create_and_update_previews_do_not_persist(client):
         for item in client.get(f"/employees/{alice['id']}/assignments").json()
     ] == ["weekly"]
 
-    override_response = client.post(
-        f"/employees/{alice['id']}/overrides",
-        json={
-            "assignment_field_definition_id": pay_field["id"],
-            "value": "monthly",
-        },
-    )
-    assert override_response.status_code == 201
-    override = override_response.json()
-
-    update_preview = _preview(
-        client,
-        {
-            "type": "employee_override_change",
-            "action": "update",
-            "employee_id": alice["id"],
-            "override_id": override["id"],
-            "value": "semi-monthly",
-        },
-    )
-    update_change = update_preview["changes"][0]
-    assert [item["value"] for item in update_change["before"]] == ["monthly"]
-    assert [item["value"] for item in update_change["after"]] == ["semi-monthly"]
-    assert update_change["after"][0]["source_id"] is None
-    assert update_change["after"][0]["source_is_proposed"] is True
-
-    delete_preview = _preview(
-        client,
-        {
-            "type": "employee_override_change",
-            "action": "delete",
-            "employee_id": alice["id"],
-            "override_id": override["id"],
-        },
-    )
-    delete_change = delete_preview["changes"][0]
-    assert [item["value"] for item in delete_change["before"]] == ["monthly"]
-    assert [item["value"] for item in delete_change["after"]] == ["weekly"]
-    assert [
-        item["value"]
-        for item in client.get(f"/employees/{alice['id']}/assignments").json()
-    ] == ["monthly"]
-
-    no_op_preview = _preview(
-        client,
-        {
-            "type": "employee_override_change",
-            "action": "update",
-            "employee_id": alice["id"],
-            "override_id": override["id"],
-            "value": "monthly",
-        },
-    )
-    assert no_op_preview["affected_employee_count"] == 0
-    assert no_op_preview["changes"][0]["added"] == []
-    assert no_op_preview["changes"][0]["removed"] == []
-    assert no_op_preview["changes"][0]["changed"] == []
-
 
 def test_policy_version_preview_reconciles_population_without_persisting(client):
     field = _assignment_field(client)
@@ -272,6 +214,64 @@ def test_group_membership_and_override_previews_do_not_persist(client):
         for item in client.get(f"/employees/{alice['id']}/assignments").json()
     ] == ["weekly"]
 
+    override_response = client.post(
+        f"/employees/{alice['id']}/overrides",
+        json={
+            "assignment_field_definition_id": pay_field["id"],
+            "value": "monthly",
+        },
+    )
+    assert override_response.status_code == 201
+    override = override_response.json()
+
+    update_preview = _preview(
+        client,
+        {
+            "type": "employee_override_change",
+            "action": "update",
+            "employee_id": alice["id"],
+            "override_id": override["id"],
+            "value": "semi-monthly",
+        },
+    )
+    update_change = update_preview["changes"][0]
+    assert [item["value"] for item in update_change["before"]] == ["monthly"]
+    assert [item["value"] for item in update_change["after"]] == ["semi-monthly"]
+    assert update_change["after"][0]["source_id"] is None
+    assert update_change["after"][0]["source_is_proposed"] is True
+
+    delete_preview = _preview(
+        client,
+        {
+            "type": "employee_override_change",
+            "action": "delete",
+            "employee_id": alice["id"],
+            "override_id": override["id"],
+        },
+    )
+    delete_change = delete_preview["changes"][0]
+    assert [item["value"] for item in delete_change["before"]] == ["monthly"]
+    assert [item["value"] for item in delete_change["after"]] == ["weekly"]
+    assert [
+        item["value"]
+        for item in client.get(f"/employees/{alice['id']}/assignments").json()
+    ] == ["monthly"]
+
+    no_op_preview = _preview(
+        client,
+        {
+            "type": "employee_override_change",
+            "action": "update",
+            "employee_id": alice["id"],
+            "override_id": override["id"],
+            "value": "monthly",
+        },
+    )
+    assert no_op_preview["affected_employee_count"] == 0
+    assert no_op_preview["changes"][0]["added"] == []
+    assert no_op_preview["changes"][0]["removed"] == []
+    assert no_op_preview["changes"][0]["changed"] == []
+
 
 def test_preview_returns_policy_conflicts_without_persisting(client):
     field = _assignment_field(client)
@@ -292,7 +292,56 @@ def test_preview_returns_policy_conflicts_without_persisting(client):
     assert conflict["valid"] is False
     assert conflict["affected_employee_count"] == 0
     assert conflict["conflicts"][0]["code"] == "policy_conflict"
+    assert conflict["conflicts"][0]["path"] == [
+        "assignments",
+        "pay_schedule",
+    ]
+    assert conflict["conflicts"][0]["metadata"]["priority"] == 10
+    assert {
+        item["value"]
+        for item in conflict["conflicts"][0]["metadata"]["candidates"]
+    } == {"weekly", "monthly"}
     assert "Conflicting values for field 'pay_schedule'" in conflict["conflicts"][0][
         "message"
     ]
     assert client.get("/employees").json() == []
+
+
+def test_preview_conflict_hides_rolled_back_policy_version_id(client):
+    field = _assignment_field(client)
+    _policy(client, field["id"], value="weekly", priority=10)
+    editable = _policy(
+        client,
+        field["id"],
+        condition_value="Texas",
+        value="monthly",
+        effective_from=current_date() - timedelta(days=1),
+        priority=10,
+    )
+    _employee(client)
+
+    conflict = _preview(
+        client,
+        {
+            "type": "policy_version_create",
+            "policy_id": editable["id"],
+            "version": {
+                "priority": 10,
+                "effective_from": current_date().isoformat(),
+                "condition_group": _condition(),
+                "values": [
+                    {
+                        "assignment_field_definition_id": field["id"],
+                        "value": "monthly",
+                    }
+                ],
+            },
+        },
+    )
+
+    assert conflict["valid"] is False
+    candidates = conflict["conflicts"][0]["metadata"]["candidates"]
+    proposed = next(item for item in candidates if item["value"] == "monthly")
+    assert proposed["policy_version_id"] is None
+    assert proposed["source_is_proposed"] is True
+    assert len(client.get(f"/policies/{editable['id']}/versions").json()) == 1

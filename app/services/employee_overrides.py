@@ -12,7 +12,22 @@ class EmployeeOverrideResourceNotFoundError(ValueError):
 
 
 class EmployeeOverrideConflictError(ValueError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        employee_id: int | None = None,
+        assignment_field_definition_id: int | None = None,
+        assignment_field_name: str | None = None,
+        value: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.metadata = {
+            "employee_id": employee_id,
+            "assignment_field_definition_id": assignment_field_definition_id,
+            "assignment_field_name": assignment_field_name,
+            "value": value,
+        }
 
 
 def list_employee_overrides(session: Session, employee_id: int) -> list[EmployeeOverride]:
@@ -171,11 +186,21 @@ def _validate_override_cardinality(
 
     if assignment_field_definition.cardinality == "one" and existing:
         raise EmployeeOverrideConflictError(
-            f"Field '{assignment_field_definition.name}' accepts only one override value per employee"
+            f"Field '{assignment_field_definition.name}' accepts only one "
+            "override value per employee",
+            employee_id=employee_id,
+            assignment_field_definition_id=assignment_field_definition.id,
+            assignment_field_name=assignment_field_definition.name,
+            value=value,
         )
     if any(item.value == value for item in existing):
         raise EmployeeOverrideConflictError(
-            f"Override value '{value}' already exists for field '{assignment_field_definition.name}'"
+            f"Override value '{value}' already exists for field "
+            f"'{assignment_field_definition.name}'",
+            employee_id=employee_id,
+            assignment_field_definition_id=assignment_field_definition.id,
+            assignment_field_name=assignment_field_definition.name,
+            value=value,
         )
 
 

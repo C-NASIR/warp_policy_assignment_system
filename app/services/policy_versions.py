@@ -16,11 +16,37 @@ from app.services.audit import record_audit_log, snapshot_policy_version
 
 
 class PolicyVersionOverlapError(ValueError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        policy_id: int | None = None,
+        effective_from: date | None = None,
+        effective_until: date | None = None,
+        overlapping_policy_version_id: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.metadata = {
+            "policy_id": policy_id,
+            "effective_from": effective_from,
+            "effective_until": effective_until,
+            "overlapping_policy_version_id": overlapping_policy_version_id,
+        }
 
 
 class EffectivePolicyVersionConflictError(ValueError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        policy_id: int,
+        evaluation_date: date,
+    ) -> None:
+        super().__init__(message)
+        self.metadata = {
+            "policy_id": policy_id,
+            "evaluation_date": evaluation_date,
+        }
 
 
 def create_policy_version(
@@ -37,7 +63,12 @@ def create_policy_version(
     actor: str = "system",
 ) -> PolicyVersion:
     if effective_until is not None and effective_until < effective_from:
-        raise PolicyVersionOverlapError("effective_until cannot be before effective_from")
+        raise PolicyVersionOverlapError(
+            "effective_until cannot be before effective_from",
+            policy_id=policy.id,
+            effective_from=effective_from,
+            effective_until=effective_until,
+        )
     session.scalar(
         select(Policy.id)
         .where(Policy.id == policy.id)
@@ -130,7 +161,10 @@ def get_effective_policy_versions(
     for version in session.scalars(statement):
         if version.policy_id in effective_versions:
             raise EffectivePolicyVersionConflictError(
-                f"Policy {version.policy_id} has multiple versions effective on {effective_on}"
+                f"Policy {version.policy_id} has multiple versions effective on "
+                f"{effective_on}",
+                policy_id=version.policy_id,
+                evaluation_date=effective_on,
             )
         effective_versions[version.policy_id] = version
     return effective_versions
@@ -158,7 +192,11 @@ def _reject_overlapping_range(
         end = effective_until.isoformat() if effective_until else "open-ended"
         raise PolicyVersionOverlapError(
             f"Policy {policy_id} already has a version overlapping "
-            f"{effective_from.isoformat()} through {end}"
+            f"{effective_from.isoformat()} through {end}",
+            policy_id=policy_id,
+            effective_from=effective_from,
+            effective_until=effective_until,
+            overlapping_policy_version_id=overlap,
         )
 
 

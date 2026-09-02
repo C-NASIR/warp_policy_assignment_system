@@ -1,9 +1,17 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.database import create_tables
+from app.error_contract import (
+    conflict_response,
+    error_response,
+    validation_issue,
+    validation_response,
+)
 from app.routers import (
     assignment_fields,
     assignment_queries,
@@ -14,6 +22,7 @@ from app.routers import (
     groups,
     policies,
 )
+from app.schemas import APIErrorResponseRead
 from app.services.employee_overrides import (
     EmployeeOverrideConflictError,
     EmployeeOverrideResourceNotFoundError,
@@ -37,7 +46,21 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Policy Assignment System", version="1.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="Policy Assignment System",
+    version="1.0.0",
+    lifespan=lifespan,
+    responses={
+        409: {
+            "model": APIErrorResponseRead,
+            "description": "A deterministic domain conflict prevented the change",
+        },
+        422: {
+            "model": APIErrorResponseRead,
+            "description": "The request failed structural or domain validation",
+        },
+    },
+)
 app.include_router(employees.router)
 app.include_router(assignment_queries.router)
 app.include_router(assignment_fields.router)
@@ -50,7 +73,7 @@ app.include_router(change_previews.router)
 
 @app.exception_handler(PolicyConflictError)
 async def policy_conflict_handler(_: Request, exc: PolicyConflictError) -> JSONResponse:
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
+    return JSONResponse(status_code=409, content=conflict_response(exc))
 
 
 @app.exception_handler(GroupResourceNotFoundError)
@@ -74,7 +97,7 @@ async def employee_hierarchy_conflict_handler(
     _: Request,
     exc: EmployeeHierarchyConflictError,
 ) -> JSONResponse:
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
+    return JSONResponse(status_code=409, content=conflict_response(exc))
 
 
 @app.exception_handler(EmployeeOverrideResourceNotFoundError)
@@ -90,7 +113,7 @@ async def employee_override_conflict_handler(
     _: Request,
     exc: EmployeeOverrideConflictError,
 ) -> JSONResponse:
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
+    return JSONResponse(status_code=409, content=conflict_response(exc))
 
 
 @app.exception_handler(PolicyVersionOverlapError)
@@ -99,7 +122,7 @@ async def policy_version_conflict_handler(
     _: Request,
     exc: PolicyVersionOverlapError | EffectivePolicyVersionConflictError,
 ) -> JSONResponse:
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
+    return JSONResponse(status_code=409, content=conflict_response(exc))
 
 
 @app.exception_handler(AssignmentReconciliationOrderError)
@@ -107,7 +130,68 @@ async def assignment_reconciliation_order_handler(
     _: Request,
     exc: AssignmentReconciliationOrderError,
 ) -> JSONResponse:
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
+    return JSONResponse(status_code=409, content=conflict_response(exc))
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_handler(
+    _: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    raw_errors = exc.errors()
+    issues = [
+        validation_issue(
+            code=error["type"],
+            message=error["msg"],
+            path=[
+                item if isinstance(item, (str, int)) else str(item)
+                for item in error.get("loc", ())
+            ],
+            metadata=error.get("ctx"),
+        )
+        for error in raw_errors
+    ]
+    return JSONResponse(
+        status_code=422,
+        content=validation_response(
+            issues=issues,
+            legacy_detail=jsonable_encoder(raw_errors),
+        ),
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse:
+    if exc.status_code == 409:
+        message = _http_error_message(exc.detail)
+        content = error_response(
+            category="conflict",
+            code="conflict",
+            message=message,
+            issues=[validation_issue(code="conflict", message=message)],
+            legacy_detail=exc.detail,
+        )
+    elif exc.status_code == 422:
+        message = _http_error_message(exc.detail)
+        content = validation_response(
+            issues=[validation_issue(code="invalid_request", message=message)],
+            legacy_detail=exc.detail,
+        )
+    else:
+        content = {"detail": jsonable_encoder(exc.detail)}
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=content,
+        headers=exc.headers,
+    )
+
+
+def _http_error_message(detail) -> str:
+    if isinstance(detail, dict) and isinstance(detail.get("message"), str):
+        return detail["message"]
+    if isinstance(detail, str):
+        return detail
+    return "Request could not be processed"
 
 
 @app.get("/")

@@ -11,7 +11,20 @@ class EmployeeManagerNotFoundError(ValueError):
 
 
 class EmployeeHierarchyConflictError(ValueError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        employee_id: int | None = None,
+        manager_id: int | None = None,
+        reason: str,
+    ) -> None:
+        super().__init__(message)
+        self.metadata = {
+            "employee_id": employee_id,
+            "manager_id": manager_id,
+            "reason": reason,
+        }
 
 
 def validate_manager_assignment(
@@ -23,12 +36,21 @@ def validate_manager_assignment(
     if manager_id is None:
         return
     if employee_id is not None and manager_id == employee_id:
-        raise EmployeeHierarchyConflictError("An employee cannot manage themselves")
+        raise EmployeeHierarchyConflictError(
+            "An employee cannot manage themselves",
+            employee_id=employee_id,
+            manager_id=manager_id,
+            reason="self_management",
+        )
     if session.get(Employee, manager_id) is None:
         raise EmployeeManagerNotFoundError(f"Manager employee {manager_id} not found")
     if employee_id is not None and employee_id in get_ancestor_ids(session, manager_id):
         raise EmployeeHierarchyConflictError(
-            f"Assigning manager {manager_id} to employee {employee_id} would create a reporting cycle"
+            f"Assigning manager {manager_id} to employee {employee_id} would "
+            "create a reporting cycle",
+            employee_id=employee_id,
+            manager_id=manager_id,
+            reason="reporting_cycle",
         )
 
 

@@ -296,6 +296,26 @@ class AuditLogRead(ORMModel):
         return ensure_utc(value)
 
 
+class APIErrorIssueRead(BaseModel):
+    code: str
+    message: str
+    path: list[str | int] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class APIErrorRead(BaseModel):
+    category: Literal["validation", "conflict"]
+    code: str
+    message: str
+    issues: list[APIErrorIssueRead]
+
+
+class APIErrorResponseRead(BaseModel):
+    # Kept during the transition from FastAPI's legacy error response shape.
+    detail: Any
+    error: APIErrorRead
+
+
 class _ChangePreviewBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -393,6 +413,8 @@ class EmployeeAssignmentPreviewChangeRead(BaseModel):
 class ChangePreviewConflictRead(BaseModel):
     code: str
     message: str
+    path: list[str | int] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ChangePreviewRead(BaseModel):
