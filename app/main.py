@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
+from app.browser_access import configure_browser_access
 from app.database import create_tables
 from app.dependencies import authorize_operation
 from app.error_contract import (
@@ -146,6 +147,8 @@ app = PolicyAssignmentAPI(
         },
     },
 )
+configure_browser_access(app)
+
 for protected_router in (
     employees.router,
     assignment_queries.router,

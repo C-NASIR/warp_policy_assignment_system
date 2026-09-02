@@ -95,6 +95,7 @@ export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy
 export CHANGE_APPROVAL_SECRET="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_TOKEN="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_SUBJECT=local-admin
+export CORS_ALLOWED_ORIGINS=http://localhost:5173
 uv run fastapi dev main.py
 ```
 
@@ -120,6 +121,30 @@ uv run pytest
 ```
 
 Tests create and drop all application tables, so `TEST_DATABASE_URL` must point to a dedicated disposable PostgreSQL database. It defaults to the local `policy_assignments_test` database shown above.
+
+## Browser access
+
+The API accepts cross-origin requests only from exact origins in the
+comma-separated `CORS_ALLOWED_ORIGINS` environment variable. When it is not
+set, local React development servers at `localhost` and `127.0.0.1` on ports
+`5173` and `3000` are allowed. Set the deployment's exact HTTPS frontend
+origin explicitly in production. Set the variable to an empty string to
+disable cross-origin browser access; wildcard origins and values containing a
+path, query, fragment, or user information are rejected at startup.
+
+Browser preflight supports the API's `GET`, `POST`, `PATCH`, `DELETE`, and
+`OPTIONS` methods plus `Authorization`, `Content-Type`, `Accept`, and the
+scope-controlled `X-Actor` request header. JavaScript can read
+`X-Total-Count`, `X-Limit`, `X-Offset`, and `WWW-Authenticate` response headers.
+Preflight itself is unauthenticated, while every protected API operation still
+requires its bearer credential and operation scope.
+
+Cookie credentials are deliberately disabled. CORS is a browser boundary, not
+authentication, and the allowlist does not grant API access. The React app
+should use a user-specific, short-lived bearer credential supplied by a secure
+identity flow; it should not ship the bootstrap token or a shared MCP token in
+its JavaScript bundle. If browser authentication later moves to cookies, add a
+CSRF design before enabling credentialed cross-origin requests.
 
 ## API
 
