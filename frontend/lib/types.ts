@@ -105,6 +105,15 @@ export type AssignmentSummary = {
 
 export type Group = { id: number; name: string };
 
+export type EmployeeOverride = {
+  id: number;
+  employee_id: number;
+  assignment_field_definition_id: number;
+  value: string;
+  retired_at: string | null;
+  assignment_field_definition: AssignmentField;
+};
+
 export type AuditLog = {
   id: number;
   actor: string;

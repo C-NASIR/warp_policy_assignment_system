@@ -4,7 +4,8 @@ import { ChevronRight, Info, Pencil, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { AssignmentCard } from "@/components/assignment-card";
 import { EmployeeEditor } from "@/components/employee-form";
-import { apiConfigured, getAssignmentFields, getEmployee, getEmployeeAssignments, getEmployees } from "@/lib/backend";
+import { OverrideManager } from "@/components/override-manager";
+import { apiConfigured, getAssignmentFields, getEmployee, getEmployeeAssignmentHistory, getEmployeeAssignments, getEmployeeOverrides, getEmployees } from "@/lib/backend";
 import { formatDate, initials } from "@/lib/format";
 
 export async function generateMetadata({ params }: PageProps<"/employees/[id]">): Promise<Metadata> {
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: PageProps<"/employees/[id]">)
 
 export default async function EmployeeDetailPage({ params }: PageProps<"/employees/[id]">) {
   const { id } = await params;
-  const [employee, assignments, allEmployees, fields] = await Promise.all([getEmployee(Number(id)), getEmployeeAssignments(Number(id)), getEmployees(), getAssignmentFields()]);
+  const [employee, assignments, allEmployees, fields, overrides, history] = await Promise.all([getEmployee(Number(id)), getEmployeeAssignments(Number(id)), getEmployees(), getAssignmentFields(), getEmployeeOverrides(Number(id)), getEmployeeAssignmentHistory(Number(id))]);
   if (!employee) notFound();
   const manager = allEmployees.find((item) => item.id === employee.manager_id);
   const policyCount = new Set(assignments.map((item) => item.source_policy_version_id).filter(Boolean)).size;
@@ -39,6 +40,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
             <div><span className="label">Manager</span><div className="profile-value">{manager?.name ?? "No manager"}</div></div>
             <div><span className="label">Employee ID</span><div className="profile-value">#{String(employee.id).padStart(4, "0")}</div></div>
           </div></div></section>
+          <OverrideManager employee={employee} fields={fields} initialOverrides={overrides} history={history} apiConfigured={apiConfigured} />
         </div>
         <aside className="section-stack">
           <section className="panel"><div className="panel-header"><h2 className="panel-title">Assignment health</h2></div><div className="panel-body"><div className="side-stat"><div className="side-stat-value">{assignments.length}</div><div className="side-stat-label">Current assignment values</div></div><div className="side-stat"><div className="side-stat-value">{policyCount}</div><div className="side-stat-label">Source policies</div></div><div className="side-stat"><div className="side-stat-value">{overrideCount}</div><div className="side-stat-label">Manual overrides</div></div></div></section>

@@ -1,5 +1,5 @@
-import { assignmentFields, assignmentSummary, assignmentsByEmployee, auditLogs, conditionFields, employees, groups, policies, policyImpacts } from "./demo-data";
-import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, Employee, Group, Policy, PolicyImpact } from "./types";
+import { assignmentFields, assignmentSummary, assignmentsByEmployee, auditLogs, conditionFields, employees, groupEmployeeIds, groupPolicyIds, groups, overridesByEmployee, policies, policyImpacts } from "./demo-data";
+import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, Employee, EmployeeOverride, Group, Policy, PolicyImpact } from "./types";
 
 const apiUrl = process.env.POLICY_API_URL ?? "http://127.0.0.1:8000";
 const apiToken = process.env.POLICY_API_TOKEN;
@@ -39,4 +39,24 @@ export async function getPolicy(id: number) {
 
 export async function getPolicyImpact(id: number) {
   return read<PolicyImpact | null>(`/policies/${id}/impact-summary`, policyImpacts[id] ?? null);
+}
+
+export async function getGroup(id: number) {
+  return read<Group | null>(`/groups/${id}`, groups.find((item) => item.id === id) ?? null);
+}
+
+export async function getGroupEmployees(id: number) {
+  return read<Employee[]>(`/groups/${id}/employees?limit=500`, employees.filter((item) => groupEmployeeIds[id]?.includes(item.id)));
+}
+
+export async function getGroupPolicies(id: number) {
+  return read<Policy[]>(`/groups/${id}/policies?limit=500`, policies.filter((item) => groupPolicyIds[id]?.includes(item.id)));
+}
+
+export async function getEmployeeOverrides(id: number) {
+  return read<EmployeeOverride[]>(`/employees/${id}/overrides?limit=500`, overridesByEmployee[id] ?? []);
+}
+
+export async function getEmployeeAssignmentHistory(id: number) {
+  return read<Assignment[]>(`/employees/${id}/assignments/history?limit=500`, assignmentsByEmployee[id] ?? []);
 }

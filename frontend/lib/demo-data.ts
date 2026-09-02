@@ -1,4 +1,4 @@
-import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, Employee, Group, Policy, PolicyImpact } from "./types";
+import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, Employee, EmployeeOverride, Group, Policy, PolicyImpact } from "./types";
 
 export const employees: Employee[] = [
   { id: 1, name: "Alice Johnson", state: "California", department: "Engineering", employee_type: "Full-time", location: "San Francisco", start_date: "2021-04-12", manager_id: 4 },
@@ -124,6 +124,24 @@ export const assignmentSummary: AssignmentSummary = {
 export const groups: Group[] = [
   { id: 1, name: "Engineering" }, { id: 2, name: "People managers" }, { id: 3, name: "US employees" }, { id: 4, name: "New York office" },
 ];
+
+export const groupEmployeeIds: Record<number, number[]> = {
+  1: [1, 4],
+  2: [4, 5, 6],
+  3: [1, 2, 4, 5, 6, 7, 8],
+  4: [2],
+};
+
+export const groupPolicyIds: Record<number, number[]> = {
+  1: [2],
+  2: [5],
+  3: [1, 3],
+  4: [],
+};
+
+export const overridesByEmployee: Record<number, EmployeeOverride[]> = {
+  3: [{ id: 41, employee_id: 3, assignment_field_definition_id: 1, value: "Monthly", retired_at: null, assignment_field_definition: assignmentFields[0] }],
+};
 
 export const auditLogs: AuditLog[] = [
   { id: 1, actor: "Priya Shah", entity_type: "PolicyVersion", entity_id: 12, action: "created", before: null, after: { name: "California Leave Policy", priority: 30 }, timestamp: "2026-09-02T14:18:00Z" },

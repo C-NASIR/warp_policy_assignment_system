@@ -1,6 +1,6 @@
 # PolicyOS frontend
 
-PolicyOS is the Phase 1 admin interface for the policy assignment engine in this repository. It gives company admins a dashboard, employee directory, assignment explanations, employee onboarding and editing with impact previews, policy browsing, and a policy rule builder with effective dates and deterministic priorities.
+PolicyOS is the admin interface for the policy assignment engine in this repository. It gives company admins a dashboard, employee directory, assignment explanations, employee onboarding and editing with impact previews, policy authoring with effective dates and deterministic priorities, group management, manual overrides, assignment history, policy lifecycle controls, assignment-field setup, and an inspectable audit log.
 
 ## Run locally
 

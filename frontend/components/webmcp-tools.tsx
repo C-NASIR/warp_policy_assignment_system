@@ -64,6 +64,31 @@ export function WebMcpTools() {
           return { status: "opened", route, employeeId };
         },
       },
+      {
+        name: "open_group_management",
+        title: "Open group management",
+        description: "Open a group to manage its employees and attached policies with assignment impact previews.",
+        inputSchema: { type: "object", properties: { groupId: { type: "integer", minimum: 1 } }, required: ["groupId"], additionalProperties: false },
+        annotations: { readOnlyHint: true, untrustedContentHint: false },
+        async execute(input) {
+          const groupId = typeof input === "object" && input !== null && "groupId" in input ? Number(input.groupId) : Number.NaN;
+          if (!Number.isInteger(groupId) || groupId < 1) throw new Error("groupId must be a positive integer");
+          const route = `/groups/${groupId}`;
+          router.push(route);
+          return { status: "opened", route, groupId };
+        },
+      },
+      {
+        name: "open_assignment_field_setup",
+        title: "Open assignment field setup",
+        description: "Open the assignment field catalog to create a one-value or many-value policy category.",
+        inputSchema: { type: "object", properties: {}, additionalProperties: false },
+        annotations: { readOnlyHint: true, untrustedContentHint: false },
+        async execute() {
+          router.push("/settings");
+          return { status: "opened", route: "/settings" };
+        },
+      },
     ];
 
     for (const tool of tools) {
