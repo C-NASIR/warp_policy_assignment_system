@@ -133,8 +133,10 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | GET / PATCH / DELETE | `/employees/{id}` | Read, update, or delete an employee |
 | GET | `/employees/{id}/assignments` | Read current assignments, or assignments at an optional `as_of` UTC timestamp |
 | GET | `/employees/{id}/assignments/history` | Read complete assignment history |
+| GET | `/employees/{id}/assignment-summary` | Summarize one employee's assignments for a date |
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
 | POST | `/assignment-queries` | Query recorded past, persisted present, or calculated future assignments for an employee batch |
+| GET | `/assignment-summary` | Summarize assignment coverage across the employee population |
 | POST | `/change-previews` | Simulate a supported mutation and return assignment differences without persisting it |
 | POST | `/change-executions` | Execute an unchanged, signed preview exactly once |
 | GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
@@ -153,6 +155,7 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | GET / PATCH | `/policies/{id}` | Read or update stable policy metadata |
 | GET / POST | `/policies/{id}/versions` | List or create policy versions |
 | GET | `/policies/{id}/versions/{version_id}` | Read one policy version |
+| GET | `/policies/{id}/impact-summary` | Explain a policy's matching and selected-assignment impact |
 | GET | `/audit-logs` | Read authorized, filterable audit events |
 
 ### Collection filtering and pagination
@@ -186,6 +189,46 @@ columns. Exact filters compose with one another using AND semantics. Batch and
 mutation results such as `POST /assignment-queries`, refresh, preview, and
 execution are explicitly bounded by their request contracts and are not treated
 as pageable resource collections.
+
+## Assignment and policy impact summaries
+
+`GET /assignment-summary` aggregates assignment coverage across the employee
+population. `GET /employees/{id}/assignment-summary` returns the same contract
+for one employee. The response separates policy-derived and override-derived
+assignment counts and groups results by assignment field, including assigned
+employee counts, distinct-value counts, and a bounded sample of values.
+
+Assignment summaries use recorded assignment history for a past date, current
+persisted assignments for today, and stateless resolution for a future date.
+Future conflicts do not fail the complete summary: affected employees are
+reported in a bounded `conflicts` sample, `conflicted_employee_count` contains
+the complete count, and `complete: false` makes the partial nature explicit.
+Conflicted employees are excluded from both the assigned and unassigned counts
+because their result is unresolved.
+
+`GET /policies/{id}/impact-summary` answers several distinct questions:
+
+- how many employees match the policy directly, through a group, or through
+  both origins
+- how many employees and assignment values actually select this policy after
+  priority and cardinality resolution
+- how many selected policy assignments are suppressed by manual overrides
+- how many matched employees receive no assignment from the policy because a
+  competing policy wins
+- which output fields and configured values the effective version contributes
+- whether conflicts prevent a complete impact calculation
+
+Policy impact is available for today and future dates. It runs live resolution
+against current employee facts, current group membership, and the policy version
+effective on the requested date; the response identifies this explicitly as
+`live_resolution_current_employee_facts`. Historical employee attributes are not
+versioned, so past policy-impact requests return `422` rather than presenting an
+inaccurate reconstruction. An archived policy or effective-date gap returns an
+explicit `effective: false` summary with zero reach.
+
+Value samples are capped at 20 per field and conflict details at 100 employees;
+the corresponding total counts and truncation flags remain exact. These bounds
+keep UI and MCP responses predictable even for large populations.
 
 Employee creation and ordinary scalar updates automatically recalculate that employee. A reporting change additionally recalculates the old and new managers and the moved employee's complete subtree, deduplicating all affected IDs at one reconciliation timestamp. Deleting an employee clears direct reports' manager references, cancels that employee's pending reconciliation events, and recalculates the affected reporting subtree. Creating a policy, adding a version, or changing its active/archived status synchronously recalculates every employee in the same transaction. A policy rule can make previously unaffected employees start matching, so the current-scale implementation conservatively scans all employees; this candidate set can be optimized later. Name-only policy changes do not reconcile because they cannot affect results.
 

@@ -24,6 +24,7 @@ from app.routers import (
     condition_fields,
     employees,
     groups,
+    impact_summaries,
     policies,
 )
 from app.schemas import APIErrorResponseRead
@@ -152,6 +153,7 @@ for protected_router in (
     condition_fields.router,
     policies.router,
     groups.router,
+    impact_summaries.router,
     audit_logs.router,
     change_previews.router,
     change_previews.execution_router,

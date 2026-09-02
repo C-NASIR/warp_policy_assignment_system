@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
+from app.dates import current_date
 from app.dependencies import AuditActor, DatabaseSession
 from app.models import (
     Condition,
@@ -16,12 +17,14 @@ from app.models import (
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
     PolicyCreate,
+    PolicyImpactSummaryRead,
     PolicyRead,
     PolicyUpdate,
     PolicyVersionCreate,
     PolicyVersionRead,
 )
 from app.services.audit import record_audit_log, snapshot_entity
+from app.services.impact_summaries import build_policy_impact_summary
 from app.services.policy_authoring import create_policy_version_from_input
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
 from app.services.scheduled_reconciliations import sync_policy_version_schedules
@@ -116,6 +119,31 @@ def list_all(
 @router.get("/{policy_id}", response_model=PolicyRead)
 def get(policy_id: int, session: DatabaseSession) -> Policy:
     return _policy_or_404(session, policy_id)
+
+
+@router.get(
+    "/{policy_id}/impact-summary",
+    response_model=PolicyImpactSummaryRead,
+)
+def impact_summary(
+    policy_id: int,
+    session: DatabaseSession,
+    evaluation_date: date | None = None,
+) -> PolicyImpactSummaryRead:
+    effective_on = evaluation_date or current_date()
+    if effective_on < current_date():
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Policy impact summaries cannot reconstruct historical employee "
+                "facts; evaluation_date must be today or later"
+            ),
+        )
+    return build_policy_impact_summary(
+        session,
+        _policy_or_404(session, policy_id),
+        effective_on,
+    )
 
 
 @router.patch("/{policy_id}", response_model=PolicyRead)

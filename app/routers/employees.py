@@ -5,12 +5,13 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.dates import current_datetime
+from app.dates import current_date, current_datetime
 from app.dependencies import AuditActor, DatabaseSession
 from app.models import Employee, EmployeeAssignment, EmployeeOverride
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
     AssignmentRead,
+    AssignmentSummaryRead,
     EmployeeCreate,
     EmployeeOverrideCreate,
     EmployeeOverrideRead,
@@ -29,6 +30,7 @@ from app.services.employee_overrides import (
     update_employee_override,
 )
 from app.services.employees import create_employee, delete_employee, update_employee
+from app.services.impact_summaries import build_assignment_summary
 from app.services.reconciliation import reconcile_employees
 
 router = APIRouter(prefix="/employees", tags=["employees"])
@@ -104,6 +106,23 @@ def list_all(
 @router.get("/{employee_id}", response_model=EmployeeRead)
 def get(employee_id: int, session: DatabaseSession) -> Employee:
     return _employee_or_404(session, employee_id)
+
+
+@router.get(
+    "/{employee_id}/assignment-summary",
+    response_model=AssignmentSummaryRead,
+)
+def assignment_summary(
+    employee_id: int,
+    session: DatabaseSession,
+    evaluation_date: date | None = None,
+) -> AssignmentSummaryRead:
+    _employee_or_404(session, employee_id)
+    return build_assignment_summary(
+        session,
+        evaluation_date or current_date(),
+        employee_id=employee_id,
+    )
 
 
 @router.patch("/{employee_id}", response_model=EmployeeRead)

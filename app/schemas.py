@@ -280,6 +280,87 @@ class EmployeeAssignmentQueryRead(ORMModel):
     assignments: list[AssignmentQueryValueRead]
 
 
+class ImpactSummaryConflictRead(BaseModel):
+    employee_id: int
+    code: str
+    message: str
+    assignment_field_definition_id: int | None = None
+    assignment_field_name: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AssignmentFieldSummaryRead(BaseModel):
+    assignment_field_definition: AssignmentFieldDefinitionRead
+    assigned_employee_count: int
+    assignment_count: int
+    policy_assignment_count: int
+    override_assignment_count: int
+    distinct_value_count: int
+    value_samples: list[str]
+    values_truncated: bool
+
+
+class AssignmentSummaryRead(BaseModel):
+    scope: Literal["population", "employee"]
+    employee_id: int | None = None
+    evaluation_date: date
+    mode: Literal[
+        "recorded_history",
+        "current_persisted",
+        "calculated_future",
+    ]
+    complete: bool
+    employee_count: int
+    employees_with_assignments: int
+    employees_without_assignments: int
+    assignment_count: int
+    policy_assignment_count: int
+    override_assignment_count: int
+    field_count: int
+    fields: list[AssignmentFieldSummaryRead]
+    conflicted_employee_count: int
+    conflicts: list[ImpactSummaryConflictRead]
+    conflicts_truncated: bool
+
+
+class PolicyFieldImpactSummaryRead(BaseModel):
+    assignment_field_definition: AssignmentFieldDefinitionRead
+    configured_value_count: int
+    configured_value_samples: list[str]
+    configured_values_truncated: bool
+    selected_employee_count: int
+    selected_assignment_count: int
+    suppressed_by_override_employee_count: int
+    suppressed_by_override_assignment_count: int
+
+
+class PolicyImpactSummaryRead(BaseModel):
+    policy_id: int
+    policy_name: str
+    policy_status: Literal["active", "archived"]
+    evaluation_date: date
+    mode: Literal["current", "calculated_future"]
+    calculation_basis: Literal["live_resolution_current_employee_facts"]
+    complete: bool
+    effective: bool
+    effective_policy_version_id: int | None
+    effective_version_number: int | None
+    total_employee_count: int
+    matched_employee_count: int
+    direct_match_employee_count: int
+    group_match_employee_count: int
+    direct_and_group_match_employee_count: int
+    selected_employee_count: int
+    selected_assignment_count: int
+    matched_without_selected_assignment_count: int
+    suppressed_by_override_employee_count: int
+    suppressed_by_override_assignment_count: int
+    fields: list[PolicyFieldImpactSummaryRead]
+    conflicted_employee_count: int
+    conflicts: list[ImpactSummaryConflictRead]
+    conflicts_truncated: bool
+
+
 class AuditLogRead(ORMModel):
     id: int
     actor: str
