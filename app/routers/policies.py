@@ -1,5 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from datetime import date, datetime
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, HTTPException, Query, Response, status
+from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import AuditActor, DatabaseSession
@@ -10,6 +13,7 @@ from app.models import (
     Policy,
     PolicyVersion,
 )
+from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
     PolicyCreate,
     PolicyRead,
@@ -80,8 +84,33 @@ def create(data: PolicyCreate, session: DatabaseSession, actor: AuditActor) -> P
 
 
 @router.get("", response_model=list[PolicyRead])
-def list_all(session: DatabaseSession) -> list[Policy]:
-    return list(session.scalars(_query().order_by(Policy.id)))
+def list_all(
+    session: DatabaseSession,
+    response: Response,
+    pagination: Pagination,
+    search: Annotated[str | None, Query(max_length=200)] = None,
+    status_filter: Annotated[
+        Literal["active", "archived"] | None,
+        Query(alias="status"),
+    ] = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
+) -> list[Policy]:
+    statement = _query()
+    if search:
+        statement = statement.where(Policy.name.ilike(f"%{search.strip()}%"))
+    if status_filter is not None:
+        statement = statement.where(Policy.status == status_filter)
+    if created_from is not None:
+        statement = statement.where(Policy.created_at >= created_from)
+    if created_to is not None:
+        statement = statement.where(Policy.created_at <= created_to)
+    return paginate_scalars(
+        session,
+        statement.order_by(Policy.id),
+        pagination,
+        response,
+    )
 
 
 @router.get("/{policy_id}", response_model=PolicyRead)
@@ -127,14 +156,34 @@ def patch(
 
 
 @router.get("/{policy_id}/versions", response_model=list[PolicyVersionRead])
-def list_versions(policy_id: int, session: DatabaseSession) -> list[PolicyVersion]:
+def list_versions(
+    policy_id: int,
+    session: DatabaseSession,
+    response: Response,
+    pagination: Pagination,
+    effective_on: date | None = None,
+    priority: int | None = None,
+    created_by: Annotated[str | None, Query(max_length=200)] = None,
+) -> list[PolicyVersion]:
     _policy_or_404(session, policy_id)
-    return list(
-        session.scalars(
-            _version_query()
-            .where(PolicyVersion.policy_id == policy_id)
-            .order_by(PolicyVersion.version_number)
+    statement = _version_query().where(PolicyVersion.policy_id == policy_id)
+    if effective_on is not None:
+        statement = statement.where(
+            PolicyVersion.effective_from <= effective_on,
+            or_(
+                PolicyVersion.effective_until.is_(None),
+                PolicyVersion.effective_until >= effective_on,
+            ),
         )
+    if priority is not None:
+        statement = statement.where(PolicyVersion.priority == priority)
+    if created_by is not None:
+        statement = statement.where(PolicyVersion.created_by == created_by)
+    return paginate_scalars(
+        session,
+        statement.order_by(PolicyVersion.version_number),
+        pagination,
+        response,
     )
 
 

@@ -26,6 +26,7 @@ class AuditLog(Base):
     __table_args__ = (
         Index("ix_audit_logs_entity", "entity_type", "entity_id"),
         Index("ix_audit_logs_actor", "actor"),
+        Index("ix_audit_logs_action", "action"),
         Index("ix_audit_logs_timestamp", "timestamp"),
     )
 
@@ -45,6 +46,14 @@ class AuditLog(Base):
 
 class APICredential(Base):
     __tablename__ = "api_credentials"
+    __table_args__ = (
+        Index("ix_api_credentials_subject", "subject"),
+        Index(
+            "ix_api_credentials_lifecycle",
+            "revoked_at",
+            "expires_at",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200), unique=True)
@@ -173,6 +182,15 @@ class GroupPolicy(Base):
 
 class Employee(Base):
     __tablename__ = "employees"
+    __table_args__ = (
+        Index(
+            "ix_employees_population_filters",
+            "state",
+            "department",
+            "employee_type",
+        ),
+        Index("ix_employees_start_date", "start_date"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
@@ -247,6 +265,7 @@ class AssignmentFieldDefinition(Base):
 
 class Policy(Base):
     __tablename__ = "policies"
+    __table_args__ = (Index("ix_policies_status_created", "status", "created_at"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
@@ -330,6 +349,12 @@ class ConditionFieldDefinition(Base):
             "AND source_column IS NOT NULL) OR "
             "(field_type = 'derived' AND resolver_key IS NOT NULL)",
             name="ck_condition_field_definition_source",
+        ),
+        Index(
+            "ix_condition_field_definitions_catalog_filters",
+            "active",
+            "field_type",
+            "data_type",
         ),
     )
 

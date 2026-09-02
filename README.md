@@ -155,6 +155,38 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | GET | `/policies/{id}/versions/{version_id}` | Read one policy version |
 | GET | `/audit-logs` | Read authorized, filterable audit events |
 
+### Collection filtering and pagination
+
+Every `GET` collection endpoint accepts `limit` (default `100`, maximum `500`)
+and `offset` (default `0`). Response bodies remain arrays for backward
+compatibility. Pagination metadata is returned in `X-Total-Count`, `X-Limit`,
+and `X-Offset`; the total is calculated after filters and before pagination.
+All collections use a stable ID-based order, with domain-specific secondary
+ordering for versions, assignments, and audit events. OpenAPI documents both
+the query parameters and response headers.
+
+Available filters include:
+
+- employees: `search`, `state`, `department`, `employee_type`, `location`,
+  `manager_id`, `has_manager`, `start_date_from`, and `start_date_to`
+- policies: `search`, `status`, `created_from`, and `created_to`; versions also
+  support `effective_on`, `priority`, and `created_by`
+- groups: `search`; group members support employee population filters and group
+  policies support `search` and `status`
+- assignment and condition-field catalogs: `search` plus their type,
+  cardinality, data type, or active-state fields
+- employee assignments and history: assignment field, value, source, and
+  effective-time filters; overrides support assignment field and value
+- audit events: entity, actor, action, timestamp range, and `search`
+- credentials: `search`, `subject`, `scope`, and `status`; operation scopes
+  support `search`
+
+`search` is case-insensitive and matches the endpoint's user-facing text
+columns. Exact filters compose with one another using AND semantics. Batch and
+mutation results such as `POST /assignment-queries`, refresh, preview, and
+execution are explicitly bounded by their request contracts and are not treated
+as pageable resource collections.
+
 Employee creation and ordinary scalar updates automatically recalculate that employee. A reporting change additionally recalculates the old and new managers and the moved employee's complete subtree, deduplicating all affected IDs at one reconciliation timestamp. Deleting an employee clears direct reports' manager references, cancels that employee's pending reconciliation events, and recalculates the affected reporting subtree. Creating a policy, adding a version, or changing its active/archived status synchronously recalculates every employee in the same transaction. A policy rule can make previously unaffected employees start matching, so the current-scale implementation conservatively scans all employees; this candidate set can be optimized later. Name-only policy changes do not reconcile because they cannot affect results.
 
 Adding or removing a group membership recalculates the affected employee immediately. Attaching or removing a group policy recalculates every current member of that group in the same transaction. If resolution finds an equal-priority conflict, the employee, group, or policy mutation and all partial reconciliation and audit changes are rolled back together.
@@ -276,7 +308,7 @@ An assignment replacement is intentionally two events: `ended` for the old assig
 
 Snapshots contain JSON-safe mapped scalar values for the affected entity. Policy-version snapshots additionally contain field values and compiled clauses; assignment snapshots include the field name. Scalar dates and timestamps use ISO 8601 strings. The shared snapshot helper automatically replaces columns named `password`, `token`, `access_token`, `api_key`, or `secret` with `[REDACTED]`, and callers must explicitly redact any other sensitive fields introduced later. Audit payloads must never contain credentials or unnecessary employee data.
 
-`GET /audit-logs` supports `entity_type`, `entity_id`, `actor`, `action`, `from_timestamp`, and `to_timestamp` filters, plus bounded `limit` and `offset` pagination. Results are chronological. There is no mutation or deletion endpoint: audit records are append-only and retained indefinitely in version 1. Any future retention process must be explicitly approved, documented, and run outside ordinary domain mutation paths.
+`GET /audit-logs` supports `entity_type`, `entity_id`, `actor`, `action`, `from_timestamp`, `to_timestamp`, and cross-field `search` filters, plus the shared bounded pagination contract. Results are chronological. There is no mutation or deletion endpoint: audit records are append-only and retained indefinitely in version 1. Any future retention process must be explicitly approved, documented, and run outside ordinary domain mutation paths.
 
 ## Scheduled reconciliation contract
 

@@ -1,16 +1,25 @@
-from fastapi import APIRouter, Response, status
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, Query, Response, status
+from sqlalchemy import or_, select
+from sqlalchemy.orm import selectinload
 
 from app.dependencies import AuditActor, DatabaseSession
-from app.models import Employee, Group, Policy
+from app.models import (
+    Employee,
+    EmployeeGroupMembership,
+    Group,
+    GroupPolicy,
+    Policy,
+    PolicyVersion,
+)
+from app.pagination import Pagination, paginate_scalars
 from app.schemas import EmployeeRead, GroupCreate, GroupRead, GroupUpdate, PolicyRead
 from app.services.groups import (
     add_employee_to_group,
     add_policy_to_group,
     create_group,
     get_group,
-    list_group_employees,
-    list_group_policies,
-    list_groups,
     remove_employee_from_group,
     remove_policy_from_group,
     update_group,
@@ -25,8 +34,21 @@ def create(data: GroupCreate, session: DatabaseSession, actor: AuditActor) -> Gr
 
 
 @router.get("", response_model=list[GroupRead])
-def list_all(session: DatabaseSession) -> list[Group]:
-    return list_groups(session)
+def list_all(
+    session: DatabaseSession,
+    response: Response,
+    pagination: Pagination,
+    search: Annotated[str | None, Query(max_length=200)] = None,
+) -> list[Group]:
+    statement = select(Group)
+    if search:
+        statement = statement.where(Group.name.ilike(f"%{search.strip()}%"))
+    return paginate_scalars(
+        session,
+        statement.order_by(Group.id),
+        pagination,
+        response,
+    )
 
 
 @router.get("/{group_id}", response_model=GroupRead)
@@ -45,8 +67,47 @@ def patch(
 
 
 @router.get("/{group_id}/employees", response_model=list[EmployeeRead])
-def employees(group_id: int, session: DatabaseSession) -> list[Employee]:
-    return list_group_employees(session, group_id)
+def employees(
+    group_id: int,
+    session: DatabaseSession,
+    response: Response,
+    pagination: Pagination,
+    search: Annotated[str | None, Query(max_length=200)] = None,
+    state: Annotated[str | None, Query(max_length=100)] = None,
+    department: Annotated[str | None, Query(max_length=100)] = None,
+    employee_type: Annotated[str | None, Query(max_length=100)] = None,
+) -> list[Employee]:
+    get_group(session, group_id)
+    statement = (
+        select(Employee)
+        .join(
+            EmployeeGroupMembership,
+            EmployeeGroupMembership.employee_id == Employee.id,
+        )
+        .where(EmployeeGroupMembership.group_id == group_id)
+    )
+    if search:
+        pattern = f"%{search.strip()}%"
+        statement = statement.where(
+            or_(
+                Employee.name.ilike(pattern),
+                Employee.state.ilike(pattern),
+                Employee.department.ilike(pattern),
+                Employee.employee_type.ilike(pattern),
+            )
+        )
+    if state is not None:
+        statement = statement.where(Employee.state == state)
+    if department is not None:
+        statement = statement.where(Employee.department == department)
+    if employee_type is not None:
+        statement = statement.where(Employee.employee_type == employee_type)
+    return paginate_scalars(
+        session,
+        statement.order_by(Employee.id),
+        pagination,
+        response,
+    )
 
 
 @router.post(
@@ -78,8 +139,34 @@ def remove_employee(
 
 
 @router.get("/{group_id}/policies", response_model=list[PolicyRead])
-def policies(group_id: int, session: DatabaseSession) -> list[Policy]:
-    return list_group_policies(session, group_id)
+def policies(
+    group_id: int,
+    session: DatabaseSession,
+    response: Response,
+    pagination: Pagination,
+    search: Annotated[str | None, Query(max_length=200)] = None,
+    status_filter: Annotated[
+        Literal["active", "archived"] | None,
+        Query(alias="status"),
+    ] = None,
+) -> list[Policy]:
+    get_group(session, group_id)
+    statement = (
+        select(Policy)
+        .join(GroupPolicy, GroupPolicy.policy_id == Policy.id)
+        .where(GroupPolicy.group_id == group_id)
+        .options(selectinload(Policy.versions).selectinload(PolicyVersion.values))
+    )
+    if search:
+        statement = statement.where(Policy.name.ilike(f"%{search.strip()}%"))
+    if status_filter is not None:
+        statement = statement.where(Policy.status == status_filter)
+    return paginate_scalars(
+        session,
+        statement.order_by(Policy.id),
+        pagination,
+        response,
+    )
 
 
 @router.post(

@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.sql import Select
 
 from app.dates import current_datetime
 from app.models import AssignmentFieldDefinition, Employee, EmployeeOverride
@@ -32,19 +33,23 @@ class EmployeeOverrideConflictError(ValueError):
 
 def list_employee_overrides(session: Session, employee_id: int) -> list[EmployeeOverride]:
     _get_employee(session, employee_id)
-    return list(
-        session.scalars(
-            select(EmployeeOverride)
-            .where(
-                EmployeeOverride.employee_id == employee_id,
-                EmployeeOverride.retired_at.is_(None),
-            )
-            .options(joinedload(EmployeeOverride.assignment_field_definition))
-            .order_by(
-                EmployeeOverride.assignment_field_definition_id,
-                EmployeeOverride.value,
-                EmployeeOverride.id,
-            )
+    return list(session.scalars(employee_overrides_statement(employee_id)))
+
+
+def employee_overrides_statement(
+    employee_id: int,
+) -> Select[tuple[EmployeeOverride]]:
+    return (
+        select(EmployeeOverride)
+        .where(
+            EmployeeOverride.employee_id == employee_id,
+            EmployeeOverride.retired_at.is_(None),
+        )
+        .options(joinedload(EmployeeOverride.assignment_field_definition))
+        .order_by(
+            EmployeeOverride.assignment_field_definition_id,
+            EmployeeOverride.value,
+            EmployeeOverride.id,
         )
     )
 

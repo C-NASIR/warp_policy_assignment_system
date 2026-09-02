@@ -204,6 +204,37 @@ def test_employee_manager_is_self_referencing_and_indexed():
     )
 
 
+def test_collection_filter_columns_have_supporting_indexes():
+    expected_indexes = {
+        APICredential: {
+            ("subject",),
+            ("revoked_at", "expires_at"),
+        },
+        AuditLog: {
+            ("actor",),
+            ("action",),
+            ("timestamp",),
+            ("entity_type", "entity_id"),
+        },
+        Employee: {
+            ("state", "department", "employee_type"),
+            ("start_date",),
+            ("manager_id",),
+        },
+        Policy: {("status", "created_at")},
+        ConditionFieldDefinition: {
+            ("active", "field_type", "data_type"),
+        },
+    }
+    for model, required_indexes in expected_indexes.items():
+        table = cast(Table, model.__table__)
+        actual_indexes = {
+            tuple(column.key for column in index.columns)
+            for index in table.indexes
+        }
+        assert required_indexes <= actual_indexes
+
+
 def test_legacy_group_columns_are_absent():
     assert "groups" in Base.metadata.tables
     assert "employee_group_memberships" in Base.metadata.tables

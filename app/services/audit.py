@@ -4,7 +4,8 @@ from collections.abc import Collection, Mapping
 from datetime import date, datetime
 from typing import Any, cast
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
+from sqlalchemy.sql import Select
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Mapper, Session
 
@@ -132,6 +133,31 @@ def list_audit_logs(
     limit: int = 100,
     offset: int = 0,
 ) -> list[AuditLog]:
+    statement = audit_log_statement(
+        entity_type=entity_type,
+        entity_id=entity_id,
+        actor=actor,
+        action=action,
+        from_timestamp=from_timestamp,
+        to_timestamp=to_timestamp,
+    )
+    return list(
+        session.scalars(
+            statement.order_by(AuditLog.timestamp, AuditLog.id).offset(offset).limit(limit)
+        )
+    )
+
+
+def audit_log_statement(
+    *,
+    entity_type: str | None = None,
+    entity_id: int | None = None,
+    actor: str | None = None,
+    action: str | None = None,
+    from_timestamp: datetime | None = None,
+    to_timestamp: datetime | None = None,
+    search: str | None = None,
+) -> Select[tuple[AuditLog]]:
     statement = select(AuditLog)
     if entity_type is not None:
         statement = statement.where(AuditLog.entity_type == entity_type)
@@ -145,11 +171,16 @@ def list_audit_logs(
         statement = statement.where(AuditLog.timestamp >= from_timestamp)
     if to_timestamp is not None:
         statement = statement.where(AuditLog.timestamp <= to_timestamp)
-    return list(
-        session.scalars(
-            statement.order_by(AuditLog.timestamp, AuditLog.id).offset(offset).limit(limit)
+    if search:
+        pattern = f"%{search.strip()}%"
+        statement = statement.where(
+            or_(
+                AuditLog.actor.ilike(pattern),
+                AuditLog.entity_type.ilike(pattern),
+                AuditLog.action.ilike(pattern),
+            )
         )
-    )
+    return statement
 
 
 def _json_value(value: Any) -> Any:

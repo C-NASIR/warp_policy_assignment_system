@@ -81,6 +81,37 @@ class PolicyAssignmentAPI(FastAPI):
                 }:
                     continue
                 operation["x-required-scopes"] = [required_scope(method, path)]
+                success_response = operation.get("responses", {}).get("200", {})
+                response_schema = (
+                    success_response.get("content", {})
+                    .get("application/json", {})
+                    .get("schema", {})
+                )
+                query_parameter_names = {
+                    parameter.get("name")
+                    for parameter in operation.get("parameters", [])
+                    if parameter.get("in") == "query"
+                }
+                if response_schema.get("type") == "array" and {
+                    "limit",
+                    "offset",
+                } <= query_parameter_names:
+                    success_response.setdefault("headers", {}).update(
+                        {
+                            "X-Total-Count": {
+                                "description": "Total items matching the filters",
+                                "schema": {"type": "integer", "minimum": 0},
+                            },
+                            "X-Limit": {
+                                "description": "Maximum items requested",
+                                "schema": {"type": "integer", "minimum": 1},
+                            },
+                            "X-Offset": {
+                                "description": "Matching items skipped",
+                                "schema": {"type": "integer", "minimum": 0},
+                            },
+                        }
+                    )
         self.openapi_schema = schema
         return schema
 

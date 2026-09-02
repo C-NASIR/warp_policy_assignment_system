@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, HTTPException, Query, Response, status
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.dependencies import DatabaseSession
 from app.models import AssignmentFieldDefinition
+from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
     AssignmentFieldDefinitionCreate,
     AssignmentFieldDefinitionRead,
@@ -34,11 +37,31 @@ def create(
 
 
 @router.get("", response_model=list[AssignmentFieldDefinitionRead])
-def list_all(session: DatabaseSession) -> list[AssignmentFieldDefinition]:
-    return list(
-        session.scalars(
-            select(AssignmentFieldDefinition).order_by(AssignmentFieldDefinition.id)
+def list_all(
+    session: DatabaseSession,
+    response: Response,
+    pagination: Pagination,
+    search: Annotated[str | None, Query(max_length=100)] = None,
+    cardinality: Literal["one", "many"] | None = None,
+) -> list[AssignmentFieldDefinition]:
+    statement = select(AssignmentFieldDefinition)
+    if search:
+        pattern = f"%{search.strip()}%"
+        statement = statement.where(
+            or_(
+                AssignmentFieldDefinition.field.ilike(pattern),
+                AssignmentFieldDefinition.conflict_resolution.ilike(pattern),
+            )
         )
+    if cardinality is not None:
+        statement = statement.where(
+            AssignmentFieldDefinition.cardinality == cardinality
+        )
+    return paginate_scalars(
+        session,
+        statement.order_by(AssignmentFieldDefinition.id),
+        pagination,
+        response,
     )
 
 
