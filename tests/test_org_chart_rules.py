@@ -348,8 +348,7 @@ def test_manager_change_reconciles_old_new_managers_and_moved_subtree(client):
     assert _assignments(client, sarah["id"])["deep_org"] == "true"
 
 
-def test_manager_change_is_audited(client, monkeypatch):
-    monkeypatch.setenv("AUDIT_ADMIN_KEY", "test-audit-key")
+def test_manager_change_is_audited(client):
     alice = _employee(client, "Alice")
     david = _employee(client, "David")
     bob = _employee(client, "Bob", manager_id=alice["id"])
@@ -363,7 +362,6 @@ def test_manager_change_is_audited(client, monkeypatch):
 
     events = client.get(
         "/audit-logs",
-        headers={"X-Audit-Key": "test-audit-key"},
         params={"entity_type": "Employee", "entity_id": bob["id"]},
     ).json()
     assert events[-1]["actor"] == "admin_42"

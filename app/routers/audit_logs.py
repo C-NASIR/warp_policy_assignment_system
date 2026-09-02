@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Query
 
-from app.dependencies import AuditReader, DatabaseSession
+from app.dependencies import DatabaseSession
 from app.models import AuditLog
 from app.schemas import AuditLogRead
 from app.services.audit import list_audit_logs
@@ -13,7 +13,6 @@ router = APIRouter(prefix="/audit-logs", tags=["audit logs"])
 @router.get("", response_model=list[AuditLogRead])
 def list_all(
     session: DatabaseSession,
-    _authorization: AuditReader,
     entity_type: str | None = None,
     entity_id: int | None = None,
     actor: str | None = None,

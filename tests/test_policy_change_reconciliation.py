@@ -73,10 +73,7 @@ def _assignment_history(client, employee):
 
 
 def _audit_logs(client):
-    response = client.get(
-        "/audit-logs",
-        headers={"X-Audit-Key": "test-audit-key"},
-    )
+    response = client.get("/audit-logs")
     assert response.status_code == 200
     return response.json()
 
@@ -275,9 +272,8 @@ def test_future_group_policy_is_not_a_current_employee_policy_or_assignment(clie
 
 
 def test_conflicting_policy_creation_rolls_back_policy_audits_and_partial_fanout(
-    client, monkeypatch
+    client,
 ):
-    monkeypatch.setenv("AUDIT_ADMIN_KEY", "test-audit-key")
     field = _create_field(client)
     existing = _create_policy(
         client,
@@ -316,9 +312,8 @@ def test_conflicting_policy_creation_rolls_back_policy_audits_and_partial_fanout
 
 
 def test_conflicting_new_version_rolls_back_version_range_audits_and_partial_fanout(
-    client, monkeypatch
+    client,
 ):
-    monkeypatch.setenv("AUDIT_ADMIN_KEY", "test-audit-key")
     field = _create_field(client)
     changing = _create_policy(
         client,

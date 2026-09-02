@@ -10,6 +10,7 @@ from sqlalchemy import (
 
 from app.database import Base
 from app.models import (
+    APICredential,
     ApprovedChangeExecution,
     AssignmentFieldDefinition,
     AuditLog,
@@ -36,6 +37,18 @@ from app.models import (
 
 def test_policy_domain_models_have_required_columns():
     expected = {
+        APICredential: {
+            "id",
+            "name",
+            "subject",
+            "token_prefix",
+            "token_hash",
+            "scopes",
+            "created_by",
+            "created_at",
+            "expires_at",
+            "revoked_at",
+        },
         ApprovedChangeExecution: {
             "approval_id",
             "change_type",

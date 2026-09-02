@@ -296,6 +296,69 @@ class AuditLogRead(ORMModel):
         return ensure_utc(value)
 
 
+class OperationScopeRead(BaseModel):
+    name: str
+    description: str
+
+
+class APICredentialCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    subject: str = Field(min_length=1, max_length=200)
+    scopes: list[str] = Field(min_length=1)
+    expires_at: datetime | None = None
+
+    @field_validator("name", "subject")
+    @classmethod
+    def strip_required_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+    @field_validator("scopes")
+    @classmethod
+    def normalize_scopes(cls, value: list[str]) -> list[str]:
+        normalized = [scope.strip() for scope in value]
+        if any(not scope for scope in normalized):
+            raise ValueError("scope names must not be blank")
+        return normalized
+
+    @field_validator("expires_at", mode="before")
+    @classmethod
+    def normalize_expiry(cls, value: datetime | str | None) -> datetime | None:
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        return ensure_utc(value) if value is not None else None
+
+
+class APICredentialRead(ORMModel):
+    id: int
+    name: str
+    subject: str
+    token_prefix: str
+    scopes: list[str]
+    created_by: str
+    created_at: datetime
+    expires_at: datetime | None
+    revoked_at: datetime | None
+
+    @field_validator("created_at", "expires_at", "revoked_at", mode="before")
+    @classmethod
+    def normalize_timestamps(
+        cls,
+        value: datetime | str | None,
+    ) -> datetime | None:
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        return ensure_utc(value) if value is not None else None
+
+
+class APICredentialCreatedRead(APICredentialRead):
+    token: str
+
+
 class APIErrorIssueRead(BaseModel):
     code: str
     message: str
@@ -304,7 +367,12 @@ class APIErrorIssueRead(BaseModel):
 
 
 class APIErrorRead(BaseModel):
-    category: Literal["validation", "conflict"]
+    category: Literal[
+        "validation",
+        "conflict",
+        "authentication",
+        "authorization",
+    ]
     code: str
     message: str
     issues: list[APIErrorIssueRead]

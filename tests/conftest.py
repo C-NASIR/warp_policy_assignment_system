@@ -22,6 +22,9 @@ if test_database_url.drivername == "postgresql":
 # The application engine is initialized at import time. Point it at the same
 # dedicated database used by the test fixtures before importing the app.
 os.environ["DATABASE_URL"] = test_database_url.render_as_string(hide_password=False)
+TEST_BOOTSTRAP_TOKEN = "test-bootstrap-token-with-at-least-32-bytes"
+os.environ["AUTH_BOOTSTRAP_TOKEN"] = TEST_BOOTSTRAP_TOKEN
+os.environ["AUTH_BOOTSTRAP_SUBJECT"] = "api"
 
 from app import models  # noqa: F401
 from app.database import Base, get_db
@@ -55,6 +58,9 @@ def client(session_factory):
 
     app.dependency_overrides[get_db] = override_db
     with TestClient(app) as test_client:
+        test_client.headers.update(
+            {"Authorization": f"Bearer {TEST_BOOTSTRAP_TOKEN}"}
+        )
         yield test_client
     app.dependency_overrides.clear()
 

@@ -60,7 +60,7 @@ even when the final value and winning source remain unchanged. Past and current
 reads return the stored explanation; future projections build the same shape in
 memory without persisting it.
 
-`AuditLog` is the system-wide mutation journal. Assignment history answers what was true at a point in time; audit logs answer what changed, when, and which actor caused it. Audit entries are written through one service in the same database transaction as the domain mutation, so both the mutation and its audit entries commit or roll back together. API mutations accept an optional `X-Actor` header and use `api` when it is omitted. Automated reconciliation always records assignment mutations as `system`.
+`AuditLog` is the system-wide mutation journal. Assignment history answers what was true at a point in time; audit logs answer what changed, when, and which actor caused it. Audit entries are written through one service in the same database transaction as the domain mutation, so both the mutation and its audit entries commit or roll back together. API mutations use the authenticated credential's subject as their actor. `X-Actor` is accepted only from a credential with `actor:override`; this makes delegated attribution explicit instead of allowing callers to spoof it. Automated reconciliation always records assignment mutations as `system`.
 
 Overrides are retained for provenance. Updating an override retires the old immutable row and creates a replacement; deleting one retires it. Only unretired overrides participate in current resolution, while historical assignments can continue referring to the override that produced them.
 
@@ -81,6 +81,7 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
 - **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override, with an immutable explanation of the decision.
 - **Audit log:** an append-only actor, entity, action, before/after snapshot, and timestamp for an important domain mutation.
+- **API credential:** a revocable, optionally expiring bearer credential whose opaque token is stored only as a SHA-256 hash and grants named operation scopes.
 - **Approved change execution:** an idempotency record tying one signed preview approval to its committed response and actor.
 - **Scheduled reconciliation:** a centralized pending, processed, or cancelled future trigger referencing the domain entity whose date caused it.
 
@@ -92,12 +93,16 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are expected.
 uv sync
 export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments
 export CHANGE_APPROVAL_SECRET="$(openssl rand -hex 32)"
+export AUTH_BOOTSTRAP_TOKEN="$(openssl rand -hex 32)"
+export AUTH_BOOTSTRAP_SUBJECT=local-admin
 uv run fastapi dev main.py
 ```
 
 The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created on startup. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
 
-Audit-log reads are protected separately because the application does not yet have user authentication. Set `AUDIT_ADMIN_KEY` and send the same value in `X-Audit-Key`. If the environment variable is absent, audit reads return HTTP 503; a missing or incorrect header returns HTTP 403. In production, inject this value through the deployment secret manager and replace this narrow boundary when application-wide authentication is added.
+Every business API endpoint except `GET /` requires `Authorization: Bearer <credential>`. The bootstrap token grants all operations and exists only to issue the first persistent credential. It must contain at least 32 bytes, must be stored in the deployment secret manager, and should be removed after administrative credentials have been issued. `AUTH_BOOTSTRAP_SUBJECT` controls its audit identity and defaults to `bootstrap`.
+
+Create separate least-privilege credentials for the MCP server, frontend gateway, and administrators. A newly issued `wpa_...` token is returned exactly once; list responses contain only its non-secret prefix and metadata. The database stores a SHA-256 token hash, expiry, revocation time, subject, and scopes. Treat the returned token as a secret. A browser bundle must never contain a shared static credential; the frontend should call through an authenticated server/session boundary or exchange an external identity for a short-lived credential when end-user login is added.
 
 Approved execution requires `CHANGE_APPROVAL_SECRET` containing at least 32
 bytes of secret material. Store it in the deployment secret manager and use the
@@ -121,6 +126,9 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/` | Health check |
+| GET | `/auth/scopes` | List supported operation scopes |
+| POST / GET | `/auth/credentials` | Issue a credential once or list safe credential metadata |
+| DELETE | `/auth/credentials/{id}` | Revoke a credential |
 | POST / GET | `/employees` | Create or list employees |
 | GET / PATCH / DELETE | `/employees/{id}` | Read, update, or delete an employee |
 | GET | `/employees/{id}/assignments` | Read current assignments, or assignments at an optional `as_of` UTC timestamp |
@@ -211,13 +219,35 @@ changes.
 The approval ID is persisted with the successful response. Retrying the same
 token and change returns that response with `replayed: true` instead of applying
 the mutation again, including after token expiry. PostgreSQL advisory transaction
-locking serializes concurrent executions of the same approval. Tokens are
-bearer capabilities until application-wide authentication is added and must not
-be logged or exposed to unrelated users.
+locking serializes concurrent executions of the same approval. Approval tokens
+remain bearer capabilities in addition to the API credential required for
+execution, and must not be logged or exposed to unrelated users.
+
+## Authentication and operation scopes
+
+Authorization is deliberately capability-oriented so the React interface and
+MCP server share one backend contract while receiving different permissions.
+The supported scopes are:
+
+- `read`: employees, policies, groups, rule-builder catalogs, and assignments
+- `preview`: non-persisting change simulations
+- `execute`: ordinary mutations and approved-change execution
+- `audit`: audit-log reads
+- `credentials:manage`: credential creation, listing, and revocation
+- `actor:override`: approved use of `X-Actor` for delegated attribution
+
+`POST /assignment-queries` is a read despite using POST. Change preview and
+execution are intentionally separate capabilities. Credential administration
+and audit access are also isolated from ordinary reads and writes. Missing,
+invalid, expired, or revoked credentials return a structured `401`; insufficient
+scope returns a structured `403` containing the required and granted scopes.
+OpenAPI exposes the bearer scheme and an `x-required-scopes` value on every
+protected operation, so generated clients and MCP tooling can explain and
+enforce the same boundary.
 
 ## Error contract
 
-Conflict (`409`) and validation (`422`) responses include a stable `error`
+Authentication (`401`), authorization (`403`), conflict (`409`), and validation (`422`) responses include a stable `error`
 object for the UI and MCP clients. It contains a category, application-level
 code, human-readable message, and one or more issues with a machine-readable
 code, request or domain path, and structured metadata. Request validation issues
@@ -240,6 +270,7 @@ The current action vocabulary is:
 - `Employee`: `created`, `changed`, `manager_changed`, `deleted`
 - `EmployeeOverride`: `created`, `changed`, `removed`
 - `EmployeeAssignment`: `created`, `ended`
+- `APICredential`: `created`, `revoked`; token hashes are excluded from snapshots
 
 An assignment replacement is intentionally two events: `ended` for the old assignment followed by `created` for the replacement. Unchanged reconciliation results and idempotent group operations produce no events.
 
@@ -298,4 +329,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, caching, and application-wide authentication/authorization beyond the audit-read key.
+Version 1 intentionally excludes a frontend, end-user login and external identity-provider integration, retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. The API credential system is intended for the MCP server, trusted frontend gateway, automation, and administrative access; it is not a substitute for browser user sessions.

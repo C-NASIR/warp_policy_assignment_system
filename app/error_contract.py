@@ -67,7 +67,12 @@ def validation_response(
 
 def error_response(
     *,
-    category: Literal["validation", "conflict"],
+    category: Literal[
+        "validation",
+        "conflict",
+        "authentication",
+        "authorization",
+    ],
     code: str,
     message: str,
     issues: list[APIErrorIssueRead],

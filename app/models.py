@@ -43,6 +43,31 @@ class AuditLog(Base):
     )
 
 
+class APICredential(Base):
+    __tablename__ = "api_credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), unique=True)
+    subject: Mapped[str] = mapped_column(String(200))
+    token_prefix: Mapped[str] = mapped_column(String(20))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    scopes: Mapped[list[str]] = mapped_column(JSON)
+    created_by: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
 class ApprovedChangeExecution(Base):
     __tablename__ = "approved_change_executions"
 

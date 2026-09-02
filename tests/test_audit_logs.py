@@ -40,15 +40,13 @@ def _create_employee(client) -> dict:
 def _audit_logs(client, **params) -> list[dict]:
     response = client.get(
         "/audit-logs",
-        headers={"X-Audit-Key": "test-audit-key"},
         params=params,
     )
     assert response.status_code == 200
     return response.json()
 
 
-def test_policy_and_version_audits_include_actor_and_version_snapshots(client, monkeypatch):
-    monkeypatch.setenv("AUDIT_ADMIN_KEY", "test-audit-key")
+def test_policy_and_version_audits_include_actor_and_version_snapshots(client):
     field = _create_field(client)
     headers = {"X-Actor": "admin_42"}
     today = current_date()
@@ -110,8 +108,7 @@ def test_policy_and_version_audits_include_actor_and_version_snapshots(client, m
     ]
 
 
-def test_group_membership_policy_and_assignment_audits_are_material_only(client, monkeypatch):
-    monkeypatch.setenv("AUDIT_ADMIN_KEY", "test-audit-key")
+def test_group_membership_policy_and_assignment_audits_are_material_only(client):
     field = _create_field(client, "badge")
     policy = client.post(
         "/policies",
@@ -171,8 +168,7 @@ def test_group_membership_policy_and_assignment_audits_are_material_only(client,
     assert assignment_events[1]["after"] is None
 
 
-def test_override_lifecycle_audits_override_and_assignment_replacement(client, monkeypatch):
-    monkeypatch.setenv("AUDIT_ADMIN_KEY", "test-audit-key")
+def test_override_lifecycle_audits_override_and_assignment_replacement(client):
     field = _create_field(client)
     employee = _create_employee(client)
     headers = {"X-Actor": "admin_9"}
@@ -218,13 +214,21 @@ def test_override_lifecycle_audits_override_and_assignment_replacement(client, m
     assert all(event["actor"] == "system" for event in assignment_events)
 
 
-def test_audit_read_endpoint_requires_configured_admin_key(client, monkeypatch):
-    monkeypatch.delenv("AUDIT_ADMIN_KEY", raising=False)
-    assert client.get("/audit-logs").status_code == 503
-
-    monkeypatch.setenv("AUDIT_ADMIN_KEY", "right-key")
-    assert client.get("/audit-logs", headers={"X-Audit-Key": "wrong-key"}).status_code == 403
-    assert client.get("/audit-logs", headers={"X-Audit-Key": "right-key"}).status_code == 200
+def test_audit_read_endpoint_requires_audit_scope(client):
+    credential = client.post(
+        "/auth/credentials",
+        json={
+            "name": "read-only-audit-test",
+            "subject": "reader",
+            "scopes": ["read"],
+        },
+    ).json()
+    denied = client.get(
+        "/audit-logs",
+        headers={"Authorization": f"Bearer {credential['token']}"},
+    )
+    assert denied.status_code == 403
+    assert denied.json()["error"]["code"] == "insufficient_scope"
 
 
 def test_audit_rows_share_the_domain_transaction(session_factory):
@@ -249,8 +253,7 @@ def test_audit_rows_share_the_domain_transaction(session_factory):
         assert session.scalars(select(AuditLog)).all() == []
 
 
-def test_failed_reconciliation_rolls_back_causal_and_assignment_audits(client, monkeypatch):
-    monkeypatch.setenv("AUDIT_ADMIN_KEY", "test-audit-key")
+def test_failed_reconciliation_rolls_back_causal_and_assignment_audits(client):
     field = _create_field(client)
 
     def create_policy(name: str, value: str) -> dict:
