@@ -5,9 +5,9 @@ from datetime import date, datetime
 from typing import Any, cast
 
 from sqlalchemy import or_, select
-from sqlalchemy.sql import Select
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Mapper, Session
+from sqlalchemy.sql import Select
 
 from app.models import (
     AuditLog,

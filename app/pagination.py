@@ -36,7 +36,7 @@ def get_page_parameters(
 Pagination = Annotated[PageParameters, Depends(get_page_parameters)]
 
 
-def paginate_scalars(
+def paginate_scalars[T](
     session: Session,
     statement: Select[tuple[T]],
     pagination: PageParameters,
@@ -57,7 +57,7 @@ def paginate_scalars(
     )
 
 
-def paginate_sequence(
+def paginate_sequence[T](
     items: list[T],
     pagination: PageParameters,
     response: Response,
