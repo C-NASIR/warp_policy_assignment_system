@@ -417,6 +417,21 @@ class ChangePreviewConflictRead(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class ChangeApprovalRead(BaseModel):
+    approval_id: str
+    token: str
+    issued_at: datetime
+    expires_at: datetime
+    change_digest: str
+    precondition_digest: str
+    preview_digest: str
+
+    @field_validator("issued_at", "expires_at", mode="before")
+    @classmethod
+    def return_utc_timestamps(cls, value: datetime) -> datetime:
+        return ensure_utc(value)
+
+
 class ChangePreviewRead(BaseModel):
     change_type: str
     valid: bool
@@ -424,3 +439,30 @@ class ChangePreviewRead(BaseModel):
     changes: list[EmployeeAssignmentPreviewChangeRead]
     conflicts: list[ChangePreviewConflictRead]
     warnings: list[str]
+    approval: ChangeApprovalRead | None = None
+
+
+class ApprovedChangeExecutionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    approval_token: str = Field(min_length=1, max_length=4000)
+    change: ChangePreviewCreate
+
+
+class ApprovedChangeExecutionRead(BaseModel):
+    approval_id: str
+    status: Literal["executed"]
+    replayed: bool
+    change_type: str
+    executed_at: datetime
+    executed_by: str
+    affected_employee_count: int
+    changes: list[EmployeeAssignmentPreviewChangeRead]
+    resources: dict[str, int]
+
+    @field_validator("executed_at", mode="before")
+    @classmethod
+    def return_utc_timestamp(cls, value: datetime | str) -> datetime:
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        return ensure_utc(value)

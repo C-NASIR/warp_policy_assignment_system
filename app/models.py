@@ -43,6 +43,23 @@ class AuditLog(Base):
     )
 
 
+class ApprovedChangeExecution(Base):
+    __tablename__ = "approved_change_executions"
+
+    approval_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    change_type: Mapped[str] = mapped_column(String(100))
+    change_digest: Mapped[str] = mapped_column(String(64))
+    precondition_digest: Mapped[str] = mapped_column(String(64))
+    preview_digest: Mapped[str] = mapped_column(String(64))
+    executed_by: Mapped[str] = mapped_column(String(200))
+    executed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    response: Mapped[dict] = mapped_column(JSON)
+
+
 class ScheduledReconciliation(Base):
     __tablename__ = "scheduled_reconciliations"
     __table_args__ = (

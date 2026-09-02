@@ -8,10 +8,18 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from app.dates import current_datetime
 from app.dependencies import AuditActor, DatabaseSession
 from app.error_contract import conflict_issue
-from app.models import Employee, EmployeeAssignment, Policy
+from app.models import (
+    ApprovedChangeExecution,
+    Employee,
+    EmployeeAssignment,
+    Policy,
+)
 from app.schemas import (
+    ApprovedChangeExecutionCreate,
+    ApprovedChangeExecutionRead,
     AssignmentFieldPreviewChangeRead,
     AssignmentPreviewRead,
     ChangePreviewCreate,
@@ -22,6 +30,16 @@ from app.schemas import (
     EmployeeUpdateChangePreview,
     GroupMembershipChangePreview,
     PolicyVersionCreateChangePreview,
+)
+from app.services.change_approvals import (
+    ChangeApprovalConflictError,
+    change_precondition_digest,
+    issue_change_approval,
+    lock_approval_execution,
+    preview_digest,
+    validate_approval_not_expired,
+    validate_approved_change,
+    verify_change_approval,
 )
 from app.services.employee_overrides import (
     EmployeeOverrideConflictError,
@@ -41,6 +59,15 @@ from app.services.policy_versions import (
 )
 
 router = APIRouter(prefix="/change-previews", tags=["change previews"])
+execution_router = APIRouter(
+    prefix="/change-executions",
+    tags=["change executions"],
+)
+
+_APPROVAL_UNAVAILABLE_WARNING = (
+    "Approved execution is unavailable because CHANGE_APPROVAL_SECRET is not "
+    "configured"
+)
 
 
 @dataclass
@@ -49,6 +76,7 @@ class _MutationContext:
     proposed_employee_ids: set[int] = field(default_factory=set)
     proposed_policy_version_ids: set[int] = field(default_factory=set)
     proposed_override_ids: set[int] = field(default_factory=set)
+    resources: dict[str, int] = field(default_factory=dict)
 
 
 @router.post("", response_model=ChangePreviewRead)
@@ -60,6 +88,11 @@ def preview(
     """Simulate one supported mutation and roll back every resulting write."""
     savepoint = session.begin_nested()
     try:
+        approved_precondition_digest = change_precondition_digest(
+            session,
+            data,
+            lock=False,
+        )
         before = _current_assignments(session)
         context = _MutationContext()
         try:
@@ -87,6 +120,13 @@ def preview(
                 conflicts=[],
                 warnings=[],
             )
+            response.approval = issue_change_approval(
+                data,
+                response,
+                approved_precondition_digest,
+            )
+            if response.approval is None:
+                response.warnings.append(_APPROVAL_UNAVAILABLE_WARNING)
         except (
             EffectivePolicyVersionConflictError,
             EmployeeHierarchyConflictError,
@@ -111,6 +151,130 @@ def preview(
     return response
 
 
+@execution_router.post("", response_model=ApprovedChangeExecutionRead)
+def execute_approved_change(
+    data: ApprovedChangeExecutionCreate,
+    session: DatabaseSession,
+    actor: AuditActor,
+) -> ApprovedChangeExecutionRead:
+    """Execute exactly one signed preview, once, if its impact is unchanged."""
+    claims = verify_change_approval(
+        data.approval_token,
+        check_expiration=False,
+    )
+    validate_approved_change(claims, data.change)
+    lock_approval_execution(session, claims.approval_id)
+    existing = session.get(ApprovedChangeExecution, claims.approval_id)
+    if existing is not None:
+        if (
+            existing.change_digest != claims.change_digest
+            or existing.precondition_digest != claims.precondition_digest
+            or existing.preview_digest != claims.preview_digest
+        ):
+            raise ChangeApprovalConflictError(
+                "The approval ID is already associated with a different change",
+                code="change_approval_identity_conflict",
+                metadata={"approval_id": claims.approval_id},
+            )
+        replay = dict(existing.response)
+        replay["replayed"] = True
+        return ApprovedChangeExecutionRead.model_validate(replay)
+    validate_approval_not_expired(claims)
+    actual_precondition_digest = change_precondition_digest(
+        session,
+        data.change,
+        lock=True,
+    )
+    if actual_precondition_digest != claims.precondition_digest:
+        raise ChangeApprovalConflictError(
+            "The target state has changed since approval; create and approve a "
+            "new preview",
+            code="change_approval_stale",
+            metadata={
+                "approval_id": claims.approval_id,
+                "stage": "target_precondition",
+                "approved_precondition_digest": claims.precondition_digest,
+                "actual_precondition_digest": actual_precondition_digest,
+            },
+        )
+
+    before = _current_assignments(session)
+    context = _MutationContext()
+    _apply_change(session, data.change, actor, context)
+    session.flush()
+
+    comparable_after = _current_assignments(
+        session,
+        proposed_policy_version_ids=context.proposed_policy_version_ids,
+        proposed_override_ids=context.proposed_override_ids,
+    )
+    comparable_changes = _assignment_changes(
+        session,
+        before,
+        comparable_after,
+        context,
+    )
+    comparable_preview = ChangePreviewRead(
+        change_type=data.change.type,
+        valid=True,
+        affected_employee_count=_affected_employee_count(comparable_changes),
+        changes=comparable_changes,
+        conflicts=[],
+        warnings=[],
+    )
+    actual_preview_digest = preview_digest(comparable_preview)
+    if actual_preview_digest != claims.preview_digest:
+        raise ChangeApprovalConflictError(
+            "The assignment impact has changed since approval; create and approve "
+            "a new preview",
+            code="change_approval_stale",
+            metadata={
+                "approval_id": claims.approval_id,
+                "approved_preview_digest": claims.preview_digest,
+                "actual_preview_digest": actual_preview_digest,
+                "current_preview": comparable_preview.model_dump(mode="json"),
+            },
+        )
+
+    actual_after = _current_assignments(session)
+    actual_context = _MutationContext(
+        included_employee_ids=set(context.included_employee_ids),
+        resources=dict(context.resources),
+    )
+    actual_changes = _assignment_changes(
+        session,
+        before,
+        actual_after,
+        actual_context,
+    )
+    executed_at = current_datetime()
+    response = ApprovedChangeExecutionRead(
+        approval_id=claims.approval_id,
+        status="executed",
+        replayed=False,
+        change_type=data.change.type,
+        executed_at=executed_at,
+        executed_by=actor,
+        affected_employee_count=_affected_employee_count(actual_changes),
+        changes=actual_changes,
+        resources=context.resources,
+    )
+    session.add(
+        ApprovedChangeExecution(
+            approval_id=claims.approval_id,
+            change_type=data.change.type,
+            change_digest=claims.change_digest,
+            precondition_digest=claims.precondition_digest,
+            preview_digest=claims.preview_digest,
+            executed_by=actor,
+            executed_at=executed_at,
+            response=response.model_dump(mode="json"),
+        )
+    )
+    session.flush()
+    return response
+
+
 def _apply_change(
     session: DatabaseSession,
     data: ChangePreviewCreate,
@@ -121,12 +285,14 @@ def _apply_change(
         employee = create_employee(session, data.employee, actor)
         context.included_employee_ids.add(employee.id)
         context.proposed_employee_ids.add(employee.id)
+        context.resources["employee_id"] = employee.id
         return
 
     if isinstance(data, EmployeeUpdateChangePreview):
         employee = _employee_or_404(session, data.employee_id)
         update_employee(session, employee, data.changes, actor)
         context.included_employee_ids.add(employee.id)
+        context.resources["employee_id"] = employee.id
         return
 
     if isinstance(data, PolicyVersionCreateChangePreview):
@@ -143,6 +309,8 @@ def _apply_change(
             actor,
         )
         context.proposed_policy_version_ids.add(version.id)
+        context.resources["policy_id"] = policy.id
+        context.resources["policy_version_id"] = version.id
         refresh_employees_affected_by_policy(session, policy)
         return
 
@@ -162,6 +330,8 @@ def _apply_change(
                 actor,
             )
         context.included_employee_ids.add(data.employee_id)
+        context.resources["employee_id"] = data.employee_id
+        context.resources["group_id"] = data.group_id
         return
 
     if isinstance(data, EmployeeOverrideChangePreview):
@@ -179,6 +349,7 @@ def _apply_change(
                 actor,
             )
             context.proposed_override_ids.add(override.id)
+            context.resources["override_id"] = override.id
         elif data.action == "update":
             override_id = data.override_id
             assert override_id is not None
@@ -192,6 +363,7 @@ def _apply_change(
             )
             if override.id != override_id:
                 context.proposed_override_ids.add(override.id)
+            context.resources["override_id"] = override.id
         else:
             override_id = data.override_id
             assert override_id is not None
@@ -201,6 +373,8 @@ def _apply_change(
                 override_id,
                 actor,
             )
+            context.resources["override_id"] = override_id
+        context.resources["employee_id"] = data.employee_id
         return
 
     raise ValueError(f"Unsupported change preview type: {data.type}")
@@ -218,6 +392,12 @@ def _preview_conflict_issue(
             candidate["policy_version_id"] = None
             candidate["source_is_proposed"] = True
     return issue
+
+
+def _affected_employee_count(
+    changes: list[EmployeeAssignmentPreviewChangeRead],
+) -> int:
+    return sum(bool(item.added or item.removed or item.changed) for item in changes)
 
 
 def _employee_or_404(session: DatabaseSession, employee_id: int) -> Employee:

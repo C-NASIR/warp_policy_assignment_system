@@ -23,6 +23,10 @@ from app.routers import (
     policies,
 )
 from app.schemas import APIErrorResponseRead
+from app.services.change_approvals import (
+    ChangeApprovalConflictError,
+    ChangeApprovalValidationError,
+)
 from app.services.employee_overrides import (
     EmployeeOverrideConflictError,
     EmployeeOverrideResourceNotFoundError,
@@ -69,6 +73,7 @@ app.include_router(policies.router)
 app.include_router(groups.router)
 app.include_router(audit_logs.router)
 app.include_router(change_previews.router)
+app.include_router(change_previews.execution_router)
 
 
 @app.exception_handler(PolicyConflictError)
@@ -131,6 +136,54 @@ async def assignment_reconciliation_order_handler(
     exc: AssignmentReconciliationOrderError,
 ) -> JSONResponse:
     return JSONResponse(status_code=409, content=conflict_response(exc))
+
+
+@app.exception_handler(ChangeApprovalConflictError)
+async def change_approval_conflict_handler(
+    _: Request,
+    exc: ChangeApprovalConflictError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=409,
+        content=error_response(
+            category="conflict",
+            code=exc.code,
+            message=str(exc),
+            issues=[
+                validation_issue(
+                    code=exc.code,
+                    message=str(exc),
+                    path=["change_approval"],
+                    metadata=exc.metadata,
+                )
+            ],
+            legacy_detail=str(exc),
+        ),
+    )
+
+
+@app.exception_handler(ChangeApprovalValidationError)
+async def change_approval_validation_handler(
+    _: Request,
+    exc: ChangeApprovalValidationError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content=error_response(
+            category="validation",
+            code=exc.code,
+            message=str(exc),
+            issues=[
+                validation_issue(
+                    code=exc.code,
+                    message=str(exc),
+                    path=["approval_token"],
+                    metadata=exc.metadata,
+                )
+            ],
+            legacy_detail=str(exc),
+        ),
+    )
 
 
 @app.exception_handler(RequestValidationError)

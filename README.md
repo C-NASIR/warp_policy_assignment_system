@@ -81,6 +81,7 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
 - **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override, with an immutable explanation of the decision.
 - **Audit log:** an append-only actor, entity, action, before/after snapshot, and timestamp for an important domain mutation.
+- **Approved change execution:** an idempotency record tying one signed preview approval to its committed response and actor.
 - **Scheduled reconciliation:** a centralized pending, processed, or cancelled future trigger referencing the domain entity whose date caused it.
 
 ## Install and run
@@ -90,12 +91,20 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are expected.
 ```bash
 uv sync
 export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments
+export CHANGE_APPROVAL_SECRET="$(openssl rand -hex 32)"
 uv run fastapi dev main.py
 ```
 
 The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created on startup. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
 
 Audit-log reads are protected separately because the application does not yet have user authentication. Set `AUDIT_ADMIN_KEY` and send the same value in `X-Audit-Key`. If the environment variable is absent, audit reads return HTTP 503; a missing or incorrect header returns HTTP 403. In production, inject this value through the deployment secret manager and replace this narrow boundary when application-wide authentication is added.
+
+Approved execution requires `CHANGE_APPROVAL_SECRET` containing at least 32
+bytes of secret material. Store it in the deployment secret manager and use the
+same value for every API process. `CHANGE_APPROVAL_TTL_SECONDS` controls token
+lifetime and defaults to 900 seconds; values are constrained to 60–3600 seconds.
+Without a valid secret, previews still work but return no approval token and
+include a warning, while execution requests are rejected.
 
 Run tests with:
 
@@ -119,6 +128,7 @@ Tests create and drop all application tables, so `TEST_DATABASE_URL` must point 
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
 | POST | `/assignment-queries` | Query recorded past, persisted present, or calculated future assignments for an employee batch |
 | POST | `/change-previews` | Simulate a supported mutation and return assignment differences without persisting it |
+| POST | `/change-executions` | Execute an unchanged, signed preview exactly once |
 | GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
 | PATCH / DELETE | `/employees/{id}/overrides/{override_id}` | Update or remove an override |
 | POST / GET | `/groups` | Create or list groups |
@@ -178,6 +188,32 @@ and conflicts. Proposed employees have a null employee ID; assignments supplied
 by a proposed policy version or override have a null source ID and
 `source_is_proposed: true`. Domain rows, policy links, assignment history, audit
 logs, and scheduled reconciliation records are not retained after a preview.
+
+## Approved-change execution contract
+
+A successful preview includes a signed, expiring `approval` containing an
+approval ID, token, exact-change digest, preview-impact digest, and expiry time.
+It also signs a digest of the target employee, policy versions, membership, or
+override state relevant to that mutation. The token contains only identifiers,
+timestamps, and digests—the submitted employee or policy data is not embedded
+in it. Call `POST /change-executions` with that token and the exact same
+discriminated `change` object.
+
+Execution verifies the signature and expiry, rejects altered input, locks and
+checks the target-state precondition, applies the change and reconciliation in
+one transaction, and recomputes the comparable before/after impact. A changed
+target or changed impact rolls the whole transaction back with
+`change_approval_stale`; impact-drift errors include the current uncommitted
+preview so the client can show what changed and request new approval. A
+successful response returns real created resource IDs and actual assignment
+changes.
+
+The approval ID is persisted with the successful response. Retrying the same
+token and change returns that response with `replayed: true` instead of applying
+the mutation again, including after token expiry. PostgreSQL advisory transaction
+locking serializes concurrent executions of the same approval. Tokens are
+bearer capabilities until application-wide authentication is added and must not
+be logged or exposed to unrelated users.
 
 ## Error contract
 

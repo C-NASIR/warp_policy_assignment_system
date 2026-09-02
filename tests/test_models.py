@@ -10,6 +10,7 @@ from sqlalchemy import (
 
 from app.database import Base
 from app.models import (
+    ApprovedChangeExecution,
     AssignmentFieldDefinition,
     AuditLog,
     CompiledPolicyClause,
@@ -35,6 +36,16 @@ from app.models import (
 
 def test_policy_domain_models_have_required_columns():
     expected = {
+        ApprovedChangeExecution: {
+            "approval_id",
+            "change_type",
+            "change_digest",
+            "precondition_digest",
+            "preview_digest",
+            "executed_by",
+            "executed_at",
+            "response",
+        },
         AuditLog: {
             "id",
             "actor",
