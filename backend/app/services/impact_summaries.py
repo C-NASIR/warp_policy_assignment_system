@@ -65,6 +65,7 @@ def build_assignment_summary(
     *,
     employee_id: int | None = None,
     visible_employee_ids: set[int] | None = None,
+    visible_assignment_field_ids: set[int] | None = None,
 ) -> AssignmentSummaryRead:
     employee_statement = select(Employee.id).order_by(Employee.id)
     if employee_id is not None:
@@ -82,13 +83,19 @@ def build_assignment_summary(
     if evaluation_date < today:
         mode = "recorded_history"
         effective_at = start_of_day(evaluation_date)
-        assignments = _persisted_assignments(session, employee_ids, effective_at)
+        assignments = _persisted_assignments(
+            session,
+            employee_ids,
+            effective_at,
+            visible_assignment_field_ids,
+        )
     elif evaluation_date == today:
         mode = "current_persisted"
         assignments = _persisted_assignments(
             session,
             employee_ids,
             current_datetime(),
+            visible_assignment_field_ids,
         )
     else:
         mode = "calculated_future"
@@ -122,12 +129,20 @@ def build_assignment_summary(
                     source_override_id=assignment.source_override_id,
                 )
                 for assignment in resolution.assignments
+                if visible_assignment_field_ids is None
+                or assignment.assignment_field_definition_id
+                in visible_assignment_field_ids
             )
 
+    field_statement = select(AssignmentFieldDefinition)
+    if visible_assignment_field_ids is not None:
+        field_statement = field_statement.where(
+            AssignmentFieldDefinition.id.in_(visible_assignment_field_ids)
+        )
     fields_by_id = {
         definition.id: definition
         for definition in session.scalars(
-            select(AssignmentFieldDefinition).order_by(AssignmentFieldDefinition.id)
+            field_statement.order_by(AssignmentFieldDefinition.id)
         )
     }
     field_accumulators: dict[int, _AssignmentFieldAccumulator] = {}
@@ -371,10 +386,11 @@ def _persisted_assignments(
     session: Session,
     employee_ids: list[int],
     effective_at: datetime,
+    visible_assignment_field_ids: set[int] | None,
 ) -> list[_SummaryAssignment]:
     if not employee_ids:
         return []
-    rows = session.scalars(
+    statement = (
         select(EmployeeAssignment)
         .where(
             EmployeeAssignment.employee_id.in_(employee_ids),
@@ -387,6 +403,13 @@ def _persisted_assignments(
         .options(joinedload(EmployeeAssignment.assignment_field_definition))
         .order_by(EmployeeAssignment.employee_id, EmployeeAssignment.id)
     )
+    if visible_assignment_field_ids is not None:
+        statement = statement.where(
+            EmployeeAssignment.assignment_field_definition_id.in_(
+                visible_assignment_field_ids
+            )
+        )
+    rows = session.scalars(statement)
     return [
         _SummaryAssignment(
             employee_id=row.employee_id,

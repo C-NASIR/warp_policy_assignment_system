@@ -154,6 +154,8 @@ export type RoleSummary = { id: number; name: string };
 export type Role = RoleSummary & {
   description: string | null;
   employee_scope: "all" | "reporting_tree" | "self" | "none";
+  assignment_field_scope: "all" | "selected" | "none";
+  assignment_field_ids: number[];
   permissions: string[];
   user_count: number;
   created_by: string;

@@ -4,7 +4,12 @@ from fastapi import APIRouter, Query, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import AuditActor, DatabaseSession, EmployeeScope
+from app.dependencies import (
+    AssignmentFieldScope,
+    AuditActor,
+    DatabaseSession,
+    EmployeeScope,
+)
 from app.models import (
     Employee,
     EmployeeGroupMembership,
@@ -15,6 +20,10 @@ from app.models import (
 )
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import EmployeeRead, GroupCreate, GroupRead, GroupUpdate, PolicyRead
+from app.services.assignment_field_visibility import (
+    require_visible_policy,
+    visible_policy_condition,
+)
 from app.services.employee_visibility import visible_employee_or_404
 from app.services.groups import (
     add_employee_to_group,
@@ -151,6 +160,7 @@ def policies(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    field_visibility: AssignmentFieldScope,
     search: Annotated[str | None, Query(max_length=200)] = None,
     status_filter: Annotated[
         Literal["active", "archived"] | None,
@@ -162,6 +172,7 @@ def policies(
         select(Policy)
         .join(GroupPolicy, GroupPolicy.policy_id == Policy.id)
         .where(GroupPolicy.group_id == group_id)
+        .where(visible_policy_condition(field_visibility))
         .options(selectinload(Policy.versions).selectinload(PolicyVersion.values))
     )
     if search:
@@ -186,7 +197,9 @@ def add_policy(
     policy_id: int,
     session: DatabaseSession,
     actor: AuditActor,
+    field_visibility: AssignmentFieldScope,
 ) -> Policy:
+    require_visible_policy(session, field_visibility, policy_id)
     return add_policy_to_group(session, group_id, policy_id, actor)
 
 
@@ -199,6 +212,8 @@ def remove_policy(
     policy_id: int,
     session: DatabaseSession,
     actor: AuditActor,
+    field_visibility: AssignmentFieldScope,
 ) -> Response:
+    require_visible_policy(session, field_visibility, policy_id)
     remove_policy_from_group(session, group_id, policy_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

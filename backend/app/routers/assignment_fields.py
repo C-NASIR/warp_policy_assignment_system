@@ -4,12 +4,16 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 
-from app.dependencies import DatabaseSession
+from app.dependencies import AssignmentFieldScope, DatabaseSession
 from app.models import AssignmentFieldDefinition
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
     AssignmentFieldDefinitionCreate,
     AssignmentFieldDefinitionRead,
+)
+from app.services.assignment_field_visibility import (
+    require_unrestricted_assignment_fields,
+    visible_assignment_field_or_404,
 )
 
 router = APIRouter(prefix="/assignment-fields", tags=["assignment fields"])
@@ -23,7 +27,9 @@ router = APIRouter(prefix="/assignment-fields", tags=["assignment fields"])
 def create(
     data: AssignmentFieldDefinitionCreate,
     session: DatabaseSession,
+    visibility: AssignmentFieldScope,
 ) -> AssignmentFieldDefinition:
+    require_unrestricted_assignment_fields(visibility)
     assignment_field = AssignmentFieldDefinition(**data.model_dump())
     session.add(assignment_field)
     try:
@@ -41,10 +47,14 @@ def list_all(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: AssignmentFieldScope,
     search: Annotated[str | None, Query(max_length=100)] = None,
     cardinality: Literal["one", "many"] | None = None,
 ) -> list[AssignmentFieldDefinition]:
-    statement = select(AssignmentFieldDefinition)
+    statement = visibility.apply(
+        select(AssignmentFieldDefinition),
+        AssignmentFieldDefinition.id,
+    )
     if search:
         pattern = f"%{search.strip()}%"
         statement = statement.where(
@@ -72,17 +82,10 @@ def list_all(
 def get(
     assignment_field_definition_id: int,
     session: DatabaseSession,
+    visibility: AssignmentFieldScope,
 ) -> AssignmentFieldDefinition:
-    assignment_field = session.get(
-        AssignmentFieldDefinition,
+    return visible_assignment_field_or_404(
+        session,
+        visibility,
         assignment_field_definition_id,
     )
-    if assignment_field is None:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                "Assignment field definition "
-                f"{assignment_field_definition_id} not found"
-            ),
-        )
-    return assignment_field

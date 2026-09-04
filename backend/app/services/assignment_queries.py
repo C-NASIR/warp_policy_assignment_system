@@ -50,6 +50,8 @@ def query_employee_assignments(
     session: Session,
     employee_ids: list[int] | tuple[int, ...] | set[int],
     evaluation_date: date,
+    *,
+    visible_assignment_field_ids: set[int] | None = None,
 ) -> list[EmployeeAssignmentQueryResult]:
     """Answer recorded-past, current, and calculated-future assignment questions."""
     ids = sorted(set(employee_ids))
@@ -80,6 +82,9 @@ def query_employee_assignments(
                         employee_id,
                         start_of_day(evaluation_date),
                     )
+                    if visible_assignment_field_ids is None
+                    or assignment.assignment_field_definition_id
+                    in visible_assignment_field_ids
                 ),
             )
             for employee_id in ids
@@ -97,6 +102,9 @@ def query_employee_assignments(
                         session,
                         employee_id,
                     )
+                    if visible_assignment_field_ids is None
+                    or assignment.assignment_field_definition_id
+                    in visible_assignment_field_ids
                 ),
             )
             for employee_id in ids
@@ -111,6 +119,9 @@ def query_employee_assignments(
         assignment.assignment_field_definition_id
         for resolution in resolutions.values()
         for assignment in resolution.assignments
+        if visible_assignment_field_ids is None
+        or assignment.assignment_field_definition_id
+        in visible_assignment_field_ids
     }
     fields = {
         field.id: field
@@ -136,6 +147,9 @@ def query_employee_assignments(
                     explanation=assignment.explanation or {},
                 )
                 for assignment in resolutions[employee_id].assignments
+                if visible_assignment_field_ids is None
+                or assignment.assignment_field_definition_id
+                in visible_assignment_field_ids
             ),
         )
         for employee_id in ids

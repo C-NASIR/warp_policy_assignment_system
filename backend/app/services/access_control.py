@@ -6,7 +6,16 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.dates import current_datetime
-from app.models import AuthSession, Employee, Role, RolePermission, User, UserRole
+from app.models import (
+    AssignmentFieldDefinition,
+    AuthSession,
+    Employee,
+    Role,
+    RoleAssignmentFieldScope,
+    RolePermission,
+    User,
+    UserRole,
+)
 from app.services.audit import record_audit_log, snapshot_entity
 from app.services.human_auth import hash_password, normalize_email
 
@@ -106,7 +115,11 @@ def effective_permissions(session: Session, user: User) -> frozenset[str]:
 def role_by_id(session: Session, role_id: int) -> Role:
     role = session.scalar(
         select(Role)
-        .options(selectinload(Role.permission_links), selectinload(Role.users))
+        .options(
+            selectinload(Role.permission_links),
+            selectinload(Role.assignment_field_links),
+            selectinload(Role.users),
+        )
         .where(Role.id == role_id)
     )
     if role is None:
@@ -129,6 +142,8 @@ def create_role(
     description: str | None,
     permissions: Iterable[str],
     employee_scope: str,
+    assignment_field_scope: str,
+    assignment_field_ids: Iterable[int],
     actor: str,
 ) -> Role:
     normalized_name = name.strip()
@@ -140,12 +155,18 @@ def create_role(
         name=normalized_name,
         description=description.strip() if description else None,
         employee_scope=employee_scope,
+        assignment_field_scope=assignment_field_scope,
         created_by=actor,
     )
     role.permission_links = [
         RolePermission(permission=permission)
         for permission in validate_permissions(permissions)
     ]
+    role.assignment_field_links = _assignment_field_links(
+        session,
+        assignment_field_scope,
+        assignment_field_ids,
+    )
     session.add(role)
     session.flush()
     record_audit_log(
@@ -168,6 +189,8 @@ def update_role(
     description: str | None,
     permissions: Iterable[str] | None,
     employee_scope: str | None,
+    assignment_field_scope: str | None,
+    assignment_field_ids: Iterable[int] | None,
     description_supplied: bool,
     actor: str,
 ) -> Role:
@@ -194,6 +217,24 @@ def update_role(
         ]
     if employee_scope is not None:
         role.employee_scope = employee_scope
+    resulting_field_scope = assignment_field_scope or role.assignment_field_scope
+    if assignment_field_scope is not None:
+        role.assignment_field_scope = assignment_field_scope
+    if assignment_field_scope is not None or assignment_field_ids is not None:
+        if assignment_field_ids is not None:
+            selected_ids = assignment_field_ids
+        elif resulting_field_scope == "selected":
+            selected_ids = [
+                link.assignment_field_definition_id
+                for link in role.assignment_field_links
+            ]
+        else:
+            selected_ids = []
+        role.assignment_field_links = _assignment_field_links(
+            session,
+            resulting_field_scope,
+            selected_ids,
+        )
     session.flush()
     record_audit_log(
         session,
@@ -392,8 +433,39 @@ def role_snapshot(role: Role) -> dict:
         "name": role.name,
         "description": role.description,
         "employee_scope": role.employee_scope,
+        "assignment_field_scope": role.assignment_field_scope,
+        "assignment_field_ids": sorted(
+            link.assignment_field_definition_id
+            for link in role.assignment_field_links
+        ),
         "permissions": sorted(link.permission for link in role.permission_links),
     }
+
+
+def _assignment_field_links(
+    session: Session,
+    scope: str,
+    assignment_field_ids: Iterable[int],
+) -> list[RoleAssignmentFieldScope]:
+    unique_ids = sorted(set(assignment_field_ids))
+    if scope == "selected" and not unique_ids:
+        raise ValueError("Selected assignment fields must include at least one field")
+    if scope != "selected" and unique_ids:
+        raise ValueError("Assignment field IDs are only valid for selected scope")
+    found_ids = set(
+        session.scalars(
+            select(AssignmentFieldDefinition.id).where(
+                AssignmentFieldDefinition.id.in_(unique_ids)
+            )
+        )
+    )
+    missing = [str(field_id) for field_id in unique_ids if field_id not in found_ids]
+    if missing:
+        raise ValueError(f"Unknown assignment field IDs: {', '.join(missing)}")
+    return [
+        RoleAssignmentFieldScope(assignment_field_definition_id=field_id)
+        for field_id in unique_ids
+    ]
 
 
 def user_snapshot(user: User) -> dict:

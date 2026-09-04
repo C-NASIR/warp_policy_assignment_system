@@ -62,6 +62,19 @@ def create_tables() -> None:
                 "ALTER TABLE roles ALTER COLUMN employee_scope SET DEFAULT 'none'"
             )
         )
+        # Existing roles previously had access to every assignment domain.
+        session.execute(
+            text(
+                "ALTER TABLE roles ADD COLUMN IF NOT EXISTS assignment_field_scope "
+                "VARCHAR(20) NOT NULL DEFAULT 'all'"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE roles ALTER COLUMN assignment_field_scope "
+                "SET DEFAULT 'none'"
+            )
+        )
         session.execute(
             text(
                 "DO $$ BEGIN "
@@ -71,6 +84,17 @@ def create_tables() -> None:
                 "ALTER TABLE roles ADD CONSTRAINT ck_role_employee_scope "
                 "CHECK (employee_scope IN "
                 "('all', 'reporting_tree', 'self', 'none')); "
+                "END IF; END $$"
+            )
+        )
+        session.execute(
+            text(
+                "DO $$ BEGIN "
+                "IF NOT EXISTS (SELECT 1 FROM pg_constraint "
+                "WHERE conname = 'ck_role_assignment_field_scope' "
+                "AND conrelid = 'roles'::regclass) THEN "
+                "ALTER TABLE roles ADD CONSTRAINT ck_role_assignment_field_scope "
+                "CHECK (assignment_field_scope IN ('all', 'selected', 'none')); "
                 "END IF; END $$"
             )
         )

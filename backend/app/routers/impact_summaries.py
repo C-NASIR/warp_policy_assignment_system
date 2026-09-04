@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter
 
 from app.dates import current_date
-from app.dependencies import DatabaseSession, EmployeeScope
+from app.dependencies import AssignmentFieldScope, DatabaseSession, EmployeeScope
 from app.schemas import AssignmentSummaryRead
 from app.services.impact_summaries import build_assignment_summary
 
@@ -14,6 +14,7 @@ router = APIRouter(tags=["impact summaries"])
 def assignment_summary(
     session: DatabaseSession,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
     evaluation_date: date | None = None,
 ) -> AssignmentSummaryRead:
     return build_assignment_summary(
@@ -21,5 +22,10 @@ def assignment_summary(
         evaluation_date or current_date(),
         visible_employee_ids=(
             None if visibility.unrestricted else set(visibility.employee_ids)
+        ),
+        visible_assignment_field_ids=(
+            None
+            if field_visibility.unrestricted
+            else set(field_visibility.assignment_field_ids)
         ),
     )

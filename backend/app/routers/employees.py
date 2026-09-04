@@ -1,11 +1,16 @@
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import or_, select
 
 from app.dates import current_date, current_datetime
-from app.dependencies import AuditActor, DatabaseSession, EmployeeScope
+from app.dependencies import (
+    AssignmentFieldScope,
+    AuditActor,
+    DatabaseSession,
+    EmployeeScope,
+)
 from app.models import Employee, EmployeeAssignment, EmployeeOverride
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
@@ -17,6 +22,10 @@ from app.schemas import (
     EmployeeOverrideUpdate,
     EmployeeRead,
     EmployeeUpdate,
+)
+from app.services.assignment_field_visibility import (
+    AssignmentFieldVisibility,
+    visible_assignment_field_or_404,
 )
 from app.services.employee_assignments import (
     employee_assignment_history_statement,
@@ -123,6 +132,7 @@ def assignment_summary(
     employee_id: int,
     session: DatabaseSession,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
     evaluation_date: date | None = None,
 ) -> AssignmentSummaryRead:
     visible_employee_or_404(session, visibility, employee_id)
@@ -130,6 +140,11 @@ def assignment_summary(
         session,
         evaluation_date or current_date(),
         employee_id=employee_id,
+        visible_assignment_field_ids=(
+            None
+            if field_visibility.unrestricted
+            else set(field_visibility.assignment_field_ids)
+        ),
     )
 
 
@@ -178,6 +193,7 @@ def assignments(
     response: Response,
     pagination: Pagination,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
     as_of: datetime | None = None,
     assignment_field_definition_id: Annotated[int | None, Query(gt=0)] = None,
     value: Annotated[str | None, Query(max_length=500)] = None,
@@ -185,6 +201,10 @@ def assignments(
 ) -> list[EmployeeAssignment]:
     visible_employee_or_404(session, visibility, employee_id)
     statement = employee_assignments_as_of_statement(employee_id, as_of)
+    statement = field_visibility.apply(
+        statement,
+        EmployeeAssignment.assignment_field_definition_id,
+    )
     if assignment_field_definition_id is not None:
         statement = statement.where(
             EmployeeAssignment.assignment_field_definition_id
@@ -211,6 +231,7 @@ def assignment_history(
     response: Response,
     pagination: Pagination,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
     assignment_field_definition_id: Annotated[int | None, Query(gt=0)] = None,
     value: Annotated[str | None, Query(max_length=500)] = None,
     source: Literal["policy", "override"] | None = None,
@@ -219,6 +240,10 @@ def assignment_history(
 ) -> list[EmployeeAssignment]:
     visible_employee_or_404(session, visibility, employee_id)
     statement = employee_assignment_history_statement(employee_id)
+    statement = field_visibility.apply(
+        statement,
+        EmployeeAssignment.assignment_field_definition_id,
+    )
     if assignment_field_definition_id is not None:
         statement = statement.where(
             EmployeeAssignment.assignment_field_definition_id
@@ -248,11 +273,16 @@ def overrides(
     response: Response,
     pagination: Pagination,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
     assignment_field_definition_id: Annotated[int | None, Query(gt=0)] = None,
     value: Annotated[str | None, Query(max_length=500)] = None,
 ) -> list[EmployeeOverride]:
     visible_employee_or_404(session, visibility, employee_id)
     statement = employee_overrides_statement(employee_id)
+    statement = field_visibility.apply(
+        statement,
+        EmployeeOverride.assignment_field_definition_id,
+    )
     if assignment_field_definition_id is not None:
         statement = statement.where(
             EmployeeOverride.assignment_field_definition_id
@@ -274,8 +304,14 @@ def create_override(
     session: DatabaseSession,
     actor: AuditActor,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
 ) -> EmployeeOverride:
     visible_employee_or_404(session, visibility, employee_id)
+    visible_assignment_field_or_404(
+        session,
+        field_visibility,
+        data.assignment_field_definition_id,
+    )
     return create_employee_override(
         session,
         employee_id,
@@ -296,8 +332,21 @@ def patch_override(
     session: DatabaseSession,
     actor: AuditActor,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
 ) -> EmployeeOverride:
     visible_employee_or_404(session, visibility, employee_id)
+    _visible_override_or_404(
+        session,
+        field_visibility,
+        employee_id,
+        override_id,
+    )
+    if data.assignment_field_definition_id is not None:
+        visible_assignment_field_or_404(
+            session,
+            field_visibility,
+            data.assignment_field_definition_id,
+        )
     return update_employee_override(
         session,
         employee_id,
@@ -318,8 +367,15 @@ def delete_override(
     session: DatabaseSession,
     actor: AuditActor,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
 ) -> Response:
     visible_employee_or_404(session, visibility, employee_id)
+    _visible_override_or_404(
+        session,
+        field_visibility,
+        employee_id,
+        override_id,
+    )
     delete_employee_override(session, employee_id, override_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -329,6 +385,7 @@ def refresh(
     employee_id: int,
     session: DatabaseSession,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
 ) -> list[EmployeeAssignment]:
     visible_employee_or_404(session, visibility, employee_id)
     reconciliation_at = current_datetime()
@@ -337,4 +394,34 @@ def refresh(
         [employee_id],
         reconciliation_at,
     )
-    return reconciled[employee_id]
+    return [
+        assignment
+        for assignment in reconciled[employee_id]
+        if field_visibility.can_access(
+            assignment.assignment_field_definition_id
+        )
+    ]
+
+
+def _visible_override_or_404(
+    session: DatabaseSession,
+    visibility: AssignmentFieldVisibility,
+    employee_id: int,
+    override_id: int,
+) -> EmployeeOverride:
+    override = session.scalar(
+        visibility.apply(
+            select(EmployeeOverride).where(
+                EmployeeOverride.id == override_id,
+                EmployeeOverride.employee_id == employee_id,
+                EmployeeOverride.retired_at.is_(None),
+            ),
+            EmployeeOverride.assignment_field_definition_id,
+        )
+    )
+    if override is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Override {override_id} not found for employee {employee_id}",
+        )
+    return override

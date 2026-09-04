@@ -75,6 +75,18 @@ class RoleCreate(BaseModel):
     # Preserve the pre-Phase-3 behavior for older API clients that do not send
     # this newly introduced field. The first-party UI always chooses explicitly.
     employee_scope: Literal["all", "reporting_tree", "self", "none"] = "all"
+    # Older clients retain their pre-Phase-4 access. The first-party UI sends
+    # an explicit least-privilege choice for every new role.
+    assignment_field_scope: Literal["all", "selected", "none"] = "all"
+    assignment_field_ids: list[int] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_assignment_field_scope(self) -> RoleCreate:
+        if self.assignment_field_scope == "selected" and not self.assignment_field_ids:
+            raise ValueError("Selected assignment fields must include at least one field")
+        if self.assignment_field_scope != "selected" and self.assignment_field_ids:
+            raise ValueError("Assignment field IDs are only valid for selected scope")
+        return self
 
 
 class RoleUpdate(BaseModel):
@@ -84,6 +96,8 @@ class RoleUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=500)
     permissions: list[str] | None = None
     employee_scope: Literal["all", "reporting_tree", "self", "none"] | None = None
+    assignment_field_scope: Literal["all", "selected", "none"] | None = None
+    assignment_field_ids: list[int] | None = None
 
 
 class RoleRead(ORMModel):
@@ -91,6 +105,8 @@ class RoleRead(ORMModel):
     name: str
     description: str | None
     employee_scope: Literal["all", "reporting_tree", "self", "none"]
+    assignment_field_scope: Literal["all", "selected", "none"]
+    assignment_field_ids: list[int]
     permissions: list[str]
     user_count: int
     created_by: str

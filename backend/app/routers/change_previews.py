@@ -9,12 +9,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from app.dates import current_datetime
-from app.dependencies import AuditActor, DatabaseSession, EmployeeScope
+from app.dependencies import (
+    AssignmentFieldScope,
+    AuditActor,
+    DatabaseSession,
+    EmployeeScope,
+)
 from app.error_contract import conflict_issue
 from app.models import (
     ApprovedChangeExecution,
     Employee,
     EmployeeAssignment,
+    EmployeeOverride,
     Policy,
 )
 from app.schemas import (
@@ -30,6 +36,12 @@ from app.schemas import (
     EmployeeUpdateChangePreview,
     GroupMembershipChangePreview,
     PolicyVersionCreateChangePreview,
+)
+from app.services.assignment_field_visibility import (
+    AssignmentFieldVisibility,
+    require_visible_policy,
+    validate_assignment_field_ids,
+    visible_assignment_field_or_404,
 )
 from app.services.change_approvals import (
     ChangeApprovalConflictError,
@@ -90,8 +102,10 @@ def preview(
     session: DatabaseSession,
     actor: AuditActor,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
 ) -> ChangePreviewRead:
     """Simulate one supported mutation and roll back every resulting write."""
+    _validate_change_scope(session, data, field_visibility)
     savepoint = session.begin_nested()
     try:
         approved_precondition_digest = change_precondition_digest(
@@ -99,16 +113,27 @@ def preview(
             data,
             lock=False,
         )
-        before = _current_assignments(session, visibility=visibility)
+        before = _current_assignments(
+            session,
+            visibility=visibility,
+            field_visibility=field_visibility,
+        )
         context = _MutationContext()
         try:
-            _apply_change(session, data, actor, context, visibility)
+            _apply_change(
+                session,
+                data,
+                actor,
+                context,
+                visibility,
+            )
             session.flush()
             after = _current_assignments(
                 session,
                 proposed_policy_version_ids=context.proposed_policy_version_ids,
                 proposed_override_ids=context.proposed_override_ids,
                 visibility=visibility,
+                field_visibility=field_visibility,
                 proposed_employee_ids=context.proposed_employee_ids,
             )
             changes = _assignment_changes(
@@ -165,6 +190,7 @@ def execute_approved_change(
     session: DatabaseSession,
     actor: AuditActor,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
 ) -> ApprovedChangeExecutionRead:
     """Execute exactly one signed preview, once, if its impact is unchanged."""
     claims = verify_change_approval(
@@ -172,6 +198,7 @@ def execute_approved_change(
         check_expiration=False,
     )
     validate_approved_change(claims, data.change)
+    _validate_change_scope(session, data.change, field_visibility)
     lock_approval_execution(session, claims.approval_id)
     existing = session.get(ApprovedChangeExecution, claims.approval_id)
     if existing is not None:
@@ -207,9 +234,19 @@ def execute_approved_change(
             },
         )
 
-    before = _current_assignments(session, visibility=visibility)
+    before = _current_assignments(
+        session,
+        visibility=visibility,
+        field_visibility=field_visibility,
+    )
     context = _MutationContext()
-    _apply_change(session, data.change, actor, context, visibility)
+    _apply_change(
+        session,
+        data.change,
+        actor,
+        context,
+        visibility,
+    )
     session.flush()
 
     comparable_after = _current_assignments(
@@ -217,6 +254,7 @@ def execute_approved_change(
         proposed_policy_version_ids=context.proposed_policy_version_ids,
         proposed_override_ids=context.proposed_override_ids,
         visibility=visibility,
+        field_visibility=field_visibility,
         proposed_employee_ids=context.proposed_employee_ids,
     )
     comparable_changes = _assignment_changes(
@@ -250,6 +288,7 @@ def execute_approved_change(
     actual_after = _current_assignments(
         session,
         visibility=visibility,
+        field_visibility=field_visibility,
         proposed_employee_ids=context.proposed_employee_ids,
     )
     actual_context = _MutationContext(
@@ -328,11 +367,7 @@ def _apply_change(
 
     if isinstance(data, PolicyVersionCreateChangePreview):
         policy = session.get(Policy, data.policy_id)
-        if policy is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Policy {data.policy_id} not found",
-            )
+        assert policy is not None
         version = create_policy_version_from_input(
             session,
             policy,
@@ -413,6 +448,37 @@ def _apply_change(
     raise ValueError(f"Unsupported change preview type: {data.type}")
 
 
+def _validate_change_scope(
+    session: DatabaseSession,
+    data: ChangePreviewCreate,
+    visibility: AssignmentFieldVisibility,
+) -> None:
+    if isinstance(data, PolicyVersionCreateChangePreview):
+        require_visible_policy(session, visibility, data.policy_id)
+        validate_assignment_field_ids(
+            session,
+            visibility,
+            (
+                value.assignment_field_definition_id
+                for value in data.version.values
+            ),
+        )
+    elif isinstance(data, EmployeeOverrideChangePreview):
+        if data.override_id is not None:
+            _require_visible_override(
+                session,
+                visibility,
+                data.employee_id,
+                data.override_id,
+            )
+        if data.assignment_field_definition_id is not None:
+            visible_assignment_field_or_404(
+                session,
+                visibility,
+                data.assignment_field_definition_id,
+            )
+
+
 def _preview_conflict_issue(
     exc: Exception,
     context: _MutationContext,
@@ -439,6 +505,7 @@ def _current_assignments(
     proposed_policy_version_ids: set[int] | None = None,
     proposed_override_ids: set[int] | None = None,
     visibility: EmployeeVisibility,
+    field_visibility: AssignmentFieldVisibility,
     proposed_employee_ids: set[int] | None = None,
 ) -> dict[int, list[AssignmentPreviewRead]]:
     proposed_policy_version_ids = proposed_policy_version_ids or set()
@@ -458,6 +525,10 @@ def _current_assignments(
         visible_ids = set(visibility.employee_ids)
         visible_ids.update(proposed_employee_ids or set())
         statement = statement.where(EmployeeAssignment.employee_id.in_(visible_ids))
+    statement = field_visibility.apply(
+        statement,
+        EmployeeAssignment.assignment_field_definition_id,
+    )
     assignments = list(
         session.scalars(
             statement
@@ -493,6 +564,29 @@ def _current_assignments(
             )
         )
     return result
+
+
+def _require_visible_override(
+    session: DatabaseSession,
+    visibility: AssignmentFieldVisibility,
+    employee_id: int,
+    override_id: int,
+) -> None:
+    override = session.scalar(
+        visibility.apply(
+            select(EmployeeOverride).where(
+                EmployeeOverride.id == override_id,
+                EmployeeOverride.employee_id == employee_id,
+                EmployeeOverride.retired_at.is_(None),
+            ),
+            EmployeeOverride.assignment_field_definition_id,
+        )
+    )
+    if override is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Override {override_id} not found for employee {employee_id}",
+        )
 
 
 def _assignment_changes(

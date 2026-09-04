@@ -84,6 +84,10 @@ class Role(Base):
             "employee_scope IN ('all', 'reporting_tree', 'self', 'none')",
             name="ck_role_employee_scope",
         ),
+        CheckConstraint(
+            "assignment_field_scope IN ('all', 'selected', 'none')",
+            name="ck_role_assignment_field_scope",
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -92,6 +96,9 @@ class Role(Base):
     employee_scope: Mapped[
         Literal["all", "reporting_tree", "self", "none"]
     ] = mapped_column(String(30), default="none", server_default="none")
+    assignment_field_scope: Mapped[
+        Literal["all", "selected", "none"]
+    ] = mapped_column(String(20), default="none", server_default="none")
     created_by: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -105,6 +112,10 @@ class Role(Base):
         onupdate=current_datetime,
     )
     permission_links: Mapped[list[RolePermission]] = relationship(
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
+    assignment_field_links: Mapped[list[RoleAssignmentFieldScope]] = relationship(
         back_populates="role",
         cascade="all, delete-orphan",
     )
@@ -123,6 +134,21 @@ class RolePermission(Base):
     )
     permission: Mapped[str] = mapped_column(String(100), primary_key=True)
     role: Mapped[Role] = relationship(back_populates="permission_links")
+
+
+class RoleAssignmentFieldScope(Base):
+    __tablename__ = "role_assignment_field_scopes"
+
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("roles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    assignment_field_definition_id: Mapped[int] = mapped_column(
+        ForeignKey("assignment_field_definitions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role: Mapped[Role] = relationship(back_populates="assignment_field_links")
+    assignment_field_definition: Mapped[AssignmentFieldDefinition] = relationship()
 
 
 class User(Base):

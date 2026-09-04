@@ -59,6 +59,7 @@ export const getAssignmentSummary = () => read<AssignmentSummary>("/assignment-s
 export const getGroups = () => read<Group[]>("/groups?limit=500", groups);
 export const getAuditLogs = () => read<AuditLog[]>("/audit-logs?limit=100", auditLogs);
 export const getPermissions = () => read<Permission[]>("/authorization/permissions?limit=500", []);
+export const getAuthorizationAssignmentFields = () => read<AssignmentField[]>("/authorization/assignment-fields", assignmentFields);
 export const getRoles = () => read<Role[]>("/roles?limit=500", []);
 export const getUsers = () => read<User[]>("/users?limit=500", []);
 

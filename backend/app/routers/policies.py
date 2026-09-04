@@ -6,7 +6,12 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
 from app.dates import current_date
-from app.dependencies import AuditActor, DatabaseSession, EmployeeScope
+from app.dependencies import (
+    AssignmentFieldScope,
+    AuditActor,
+    DatabaseSession,
+    EmployeeScope,
+)
 from app.models import (
     Condition,
     ConditionGroup,
@@ -22,6 +27,11 @@ from app.schemas import (
     PolicyUpdate,
     PolicyVersionCreate,
     PolicyVersionRead,
+)
+from app.services.assignment_field_visibility import (
+    AssignmentFieldVisibility,
+    validate_assignment_field_ids,
+    visible_policy_condition,
 )
 from app.services.audit import record_audit_log, snapshot_entity
 from app.services.impact_summaries import build_policy_impact_summary
@@ -60,15 +70,34 @@ def _version_query():
     )
 
 
-def _policy_or_404(session: DatabaseSession, policy_id: int) -> Policy:
-    policy = session.scalar(_query().where(Policy.id == policy_id))
+def _policy_or_404(
+    session: DatabaseSession,
+    policy_id: int,
+    visibility: AssignmentFieldVisibility,
+) -> Policy:
+    policy = session.scalar(
+        _query().where(
+            Policy.id == policy_id,
+            visible_policy_condition(visibility),
+        )
+    )
     if policy is None:
         raise HTTPException(status_code=404, detail=f"Policy {policy_id} not found")
     return policy
 
 
 @router.post("", response_model=PolicyRead, status_code=status.HTTP_201_CREATED)
-def create(data: PolicyCreate, session: DatabaseSession, actor: AuditActor) -> Policy:
+def create(
+    data: PolicyCreate,
+    session: DatabaseSession,
+    actor: AuditActor,
+    field_visibility: AssignmentFieldScope,
+) -> Policy:
+    validate_assignment_field_ids(
+        session,
+        field_visibility,
+        (value.assignment_field_definition_id for value in data.values),
+    )
     policy = Policy(name=data.name, status=data.status)
     session.add(policy)
     session.flush()
@@ -91,6 +120,7 @@ def list_all(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    field_visibility: AssignmentFieldScope,
     search: Annotated[str | None, Query(max_length=200)] = None,
     status_filter: Annotated[
         Literal["active", "archived"] | None,
@@ -99,7 +129,7 @@ def list_all(
     created_from: datetime | None = None,
     created_to: datetime | None = None,
 ) -> list[Policy]:
-    statement = _query()
+    statement = _query().where(visible_policy_condition(field_visibility))
     if search:
         statement = statement.where(Policy.name.ilike(f"%{search.strip()}%"))
     if status_filter is not None:
@@ -117,8 +147,12 @@ def list_all(
 
 
 @router.get("/{policy_id}", response_model=PolicyRead)
-def get(policy_id: int, session: DatabaseSession) -> Policy:
-    return _policy_or_404(session, policy_id)
+def get(
+    policy_id: int,
+    session: DatabaseSession,
+    field_visibility: AssignmentFieldScope,
+) -> Policy:
+    return _policy_or_404(session, policy_id, field_visibility)
 
 
 @router.get(
@@ -129,6 +163,7 @@ def impact_summary(
     policy_id: int,
     session: DatabaseSession,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
     evaluation_date: date | None = None,
 ) -> PolicyImpactSummaryRead:
     effective_on = evaluation_date or current_date()
@@ -142,7 +177,7 @@ def impact_summary(
         )
     return build_policy_impact_summary(
         session,
-        _policy_or_404(session, policy_id),
+        _policy_or_404(session, policy_id, field_visibility),
         effective_on,
         visible_employee_ids=(
             None if visibility.unrestricted else set(visibility.employee_ids)
@@ -156,8 +191,9 @@ def patch(
     data: PolicyUpdate,
     session: DatabaseSession,
     actor: AuditActor,
+    field_visibility: AssignmentFieldScope,
 ) -> Policy:
-    policy = _policy_or_404(session, policy_id)
+    policy = _policy_or_404(session, policy_id, field_visibility)
     before = snapshot_entity(policy)
     if data.name is not None:
         policy.name = data.name
@@ -193,11 +229,12 @@ def list_versions(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    field_visibility: AssignmentFieldScope,
     effective_on: date | None = None,
     priority: int | None = None,
     created_by: Annotated[str | None, Query(max_length=200)] = None,
 ) -> list[PolicyVersion]:
-    _policy_or_404(session, policy_id)
+    _policy_or_404(session, policy_id, field_visibility)
     statement = _version_query().where(PolicyVersion.policy_id == policy_id)
     if effective_on is not None:
         statement = statement.where(
@@ -229,8 +266,14 @@ def add_version(
     data: PolicyVersionCreate,
     session: DatabaseSession,
     actor: AuditActor,
+    field_visibility: AssignmentFieldScope,
 ) -> PolicyVersion:
-    policy = _policy_or_404(session, policy_id)
+    policy = _policy_or_404(session, policy_id, field_visibility)
+    validate_assignment_field_ids(
+        session,
+        field_visibility,
+        (value.assignment_field_definition_id for value in data.values),
+    )
     version = create_policy_version_from_input(session, policy, data, actor)
     refresh_employees_affected_by_policy(session, policy)
     return session.scalar(_version_query().where(PolicyVersion.id == version.id))
@@ -244,8 +287,9 @@ def get_version(
     policy_id: int,
     version_id: int,
     session: DatabaseSession,
+    field_visibility: AssignmentFieldScope,
 ) -> PolicyVersion:
-    _policy_or_404(session, policy_id)
+    _policy_or_404(session, policy_id, field_visibility)
     version = session.scalar(
         _version_query().where(
             PolicyVersion.id == version_id,

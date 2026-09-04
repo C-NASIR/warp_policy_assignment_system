@@ -5,9 +5,10 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import Authenticated, DatabaseSession, EmployeeScope
-from app.models import Role, User
+from app.models import AssignmentFieldDefinition, Role, User
 from app.pagination import Pagination, paginate_scalars, paginate_sequence
 from app.schemas import (
+    AssignmentFieldDefinitionRead,
     PermissionRead,
     RoleCreate,
     RoleRead,
@@ -50,6 +51,24 @@ def list_permissions(
     return paginate_sequence(values, pagination, response)
 
 
+@authorization_router.get(
+    "/assignment-fields",
+    response_model=list[AssignmentFieldDefinitionRead],
+)
+def list_authorization_assignment_fields(
+    session: DatabaseSession,
+) -> list[AssignmentFieldDefinition]:
+    """Expose the field catalog needed to configure role data scopes."""
+    return list(
+        session.scalars(
+            select(AssignmentFieldDefinition).order_by(
+                AssignmentFieldDefinition.name,
+                AssignmentFieldDefinition.id,
+            )
+        )
+    )
+
+
 @roles_router.get("", response_model=list[RoleRead])
 def list_roles(
     session: DatabaseSession,
@@ -59,6 +78,7 @@ def list_roles(
 ) -> list[RoleRead]:
     statement = select(Role).options(
         selectinload(Role.permission_links),
+        selectinload(Role.assignment_field_links),
         selectinload(Role.users),
     )
     if search:
@@ -83,6 +103,8 @@ def add_role(
             description=data.description,
             permissions=data.permissions,
             employee_scope=data.employee_scope,
+            assignment_field_scope=data.assignment_field_scope,
+            assignment_field_ids=data.assignment_field_ids,
             actor=principal.subject,
         )
     except ValueError as exc:
@@ -111,6 +133,8 @@ def change_role(
             description=data.description if "description" in data.model_fields_set else None,
             permissions=data.permissions,
             employee_scope=data.employee_scope,
+            assignment_field_scope=data.assignment_field_scope,
+            assignment_field_ids=data.assignment_field_ids,
             description_supplied="description" in data.model_fields_set,
             actor=principal.subject,
         )
@@ -272,6 +296,11 @@ def _role_read(role: Role) -> RoleRead:
         name=role.name,
         description=role.description,
         employee_scope=role.employee_scope,
+        assignment_field_scope=role.assignment_field_scope,
+        assignment_field_ids=sorted(
+            link.assignment_field_definition_id
+            for link in role.assignment_field_links
+        ),
         permissions=sorted(link.permission for link in role.permission_links),
         user_count=len(role.users),
         created_by=role.created_by,

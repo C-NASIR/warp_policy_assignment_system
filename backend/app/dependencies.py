@@ -12,6 +12,10 @@ from app.services.access_control import (
     effective_permissions,
     required_permissions,
 )
+from app.services.assignment_field_visibility import (
+    AssignmentFieldVisibility,
+    assignment_field_visibility,
+)
 from app.services.auth import (
     ACTOR_OVERRIDE_SCOPE,
     AuthenticatedPrincipal,
@@ -129,6 +133,19 @@ def get_employee_visibility(
 
 
 EmployeeScope = Annotated[EmployeeVisibility, Depends(get_employee_visibility)]
+
+
+def get_assignment_field_visibility(
+    session: DatabaseSession,
+    principal: Authenticated,
+) -> AssignmentFieldVisibility:
+    return assignment_field_visibility(session, principal)
+
+
+AssignmentFieldScope = Annotated[
+    AssignmentFieldVisibility,
+    Depends(get_assignment_field_visibility),
+]
 
 HumanSession = Annotated[
     AuthenticatedHumanSession,
