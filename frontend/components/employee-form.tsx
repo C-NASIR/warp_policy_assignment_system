@@ -4,6 +4,7 @@ import { Check, Eye, Info, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReactNode, useMemo, useState } from "react";
 import type { Assignment, AssignmentField, Employee } from "@/lib/types";
+import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
 type EmployeeInput = Omit<Employee, "id">;
 type PreviewItem = { field: string; value: string; source: string; change: "added" | "changed" | "unchanged" };
@@ -35,6 +36,7 @@ export function EmployeeEditor({
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  useModalAccessibility(compact && open, () => setOpen(false));
 
   const managers = employees.filter((item) => item.id !== employee?.id);
   const departments = [...new Set([...employees.map((item) => item.department), "Engineering", "Product", "Sales", "Design", "Support", "People"])] .sort();

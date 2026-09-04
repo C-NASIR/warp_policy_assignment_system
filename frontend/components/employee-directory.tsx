@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, Users, X } from "lucide-react";
 import { useState } from "react";
 import { initials } from "@/lib/format";
 import type { Employee } from "@/lib/types";
@@ -10,12 +10,24 @@ export function EmployeeDirectory({ employees }: { employees: Employee[] }) {
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("all");
   const [type, setType] = useState("all");
+  const [sort, setSort] = useState<{ key: "name" | "department" | "location" | "employee_type"; direction: "asc" | "desc" }>({ key: "name", direction: "asc" });
   const departments = [...new Set(employees.map((item) => item.department))].sort();
   const types = [...new Set(employees.map((item) => item.employee_type))].sort();
   const filtered = employees.filter((employee) => {
     const haystack = `${employee.name} ${employee.department} ${employee.location} ${employee.state}`.toLowerCase();
     return haystack.includes(search.toLowerCase()) && (department === "all" || employee.department === department) && (type === "all" || employee.employee_type === type);
   });
+  const sorted = [...filtered].sort((left, right) => {
+    const leftValue = sort.key === "location" ? left.location ?? left.state : left[sort.key];
+    const rightValue = sort.key === "location" ? right.location ?? right.state : right[sort.key];
+    return String(leftValue).localeCompare(String(rightValue)) * (sort.direction === "asc" ? 1 : -1);
+  });
+
+  function toggleSort(key: typeof sort.key) {
+    setSort((current) => current.key === key ? { key, direction: current.direction === "asc" ? "desc" : "asc" } : { key, direction: "asc" });
+  }
+
+  function resetFilters() { setSearch(""); setDepartment("all"); setType("all"); }
 
   return (
     <>
@@ -32,14 +44,14 @@ export function EmployeeDirectory({ employees }: { employees: Employee[] }) {
             <option value="all">All worker types</option>{types.map((item) => <option key={item}>{item}</option>)}
           </select>
         </div>
-        <div className="results-count">{filtered.length} employees</div>
+        <div className="results-count">{sorted.length} employees</div>
       </div>
 
       <div className="data-panel">
         {filtered.length ? (
           <table className="data-table">
-            <thead><tr><th>Employee</th><th>Department</th><th>Location</th><th>Worker type</th><th>Assignments</th><th>Status</th></tr></thead>
-            <tbody>{filtered.map((employee) => (
+            <thead><tr><SortHeader label="Employee" column="name" sort={sort} onSort={toggleSort} /><SortHeader label="Department" column="department" sort={sort} onSort={toggleSort} /><SortHeader label="Location" column="location" sort={sort} onSort={toggleSort} /><SortHeader label="Worker type" column="employee_type" sort={sort} onSort={toggleSort} /><th>Assignments</th><th>Status</th></tr></thead>
+            <tbody>{sorted.map((employee) => (
               <tr key={employee.id}>
                 <td><Link className="person-cell" href={`/employees/${employee.id}`}><span className="avatar">{initials(employee.name)}</span><span><span className="primary-cell">{employee.name}</span><span className="secondary-cell">Employee #{String(employee.id).padStart(4, "0")}</span></span></Link></td>
                 <td>{employee.department}</td><td>{employee.location ?? employee.state}</td><td>{employee.employee_type}</td>
@@ -48,9 +60,15 @@ export function EmployeeDirectory({ employees }: { employees: Employee[] }) {
               </tr>
             ))}</tbody>
           </table>
-        ) : <div className="empty-state"><div className="empty-icon"><Users size={18} /></div>No employees match those filters.</div>}
-        <div className="pagination-footer"><span>Showing {filtered.length} of {employees.length}</span><span>Updated just now</span></div>
+        ) : <div className="empty-state"><div className="empty-icon"><Users size={18} /></div><strong>No employees match</strong><span>Try a different search or clear the current filters.</span><button className="text-button" onClick={resetFilters}><X size={13} /> Clear filters</button></div>}
+        <div className="pagination-footer"><span>Showing {sorted.length} of {employees.length}</span><span>Updated just now</span></div>
       </div>
     </>
   );
+}
+
+function SortHeader({ label, column, sort, onSort }: { label: string; column: "name" | "department" | "location" | "employee_type"; sort: { key: string; direction: "asc" | "desc" }; onSort(column: "name" | "department" | "location" | "employee_type"): void }) {
+  const active = sort.key === column;
+  const Icon = !active ? ArrowUpDown : sort.direction === "asc" ? ArrowUp : ArrowDown;
+  return <th aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}><button className="sort-button" onClick={() => onSort(column)}>{label}<Icon size={11} /></button></th>;
 }

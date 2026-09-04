@@ -4,6 +4,7 @@ import { Archive, Check, CircleAlert, RotateCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Policy } from "@/lib/types";
+import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
 export function PolicyLifecycle({ policy, apiConfigured }: { policy: Policy; apiConfigured: boolean }) {
   const router = useRouter();
@@ -12,6 +13,7 @@ export function PolicyLifecycle({ policy, apiConfigured }: { policy: Policy; api
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  useModalAccessibility(confirming, () => setConfirming(false));
   const nextStatus = status === "active" ? "archived" : "active";
 
   async function updateStatus() {
@@ -27,5 +29,5 @@ export function PolicyLifecycle({ policy, apiConfigured }: { policy: Policy; api
     finally { setBusy(false); }
   }
 
-  return <><div className="heading-actions"><span className={`badge ${status === "active" ? "success" : ""}`}>{status}</span><button className="button secondary" onClick={() => { setConfirming(true); setNotice(""); }} disabled={busy}>{status === "active" ? <Archive size={14} /> : <RotateCcw size={14} />}{status === "active" ? "Archive" : "Reactivate"}</button></div>{(error || notice) && <div className={error ? "floating-message error-banner" : "floating-message success-banner"}>{error ? <CircleAlert size={13} /> : <Check size={13} />}{error || notice}</div>}{confirming && <div className="modal-backdrop" role="presentation"><section className="confirm-card" role="dialog" aria-modal="true" aria-label={`${nextStatus} policy`}><button className="confirm-close" onClick={() => setConfirming(false)} aria-label="Close"><X size={15} /></button><div className="confirm-icon">{status === "active" ? <Archive size={18} /> : <RotateCcw size={18} />}</div><h2>{status === "active" ? "Archive" : "Reactivate"} {policy.name}?</h2><p>{status === "active" ? "This policy will stop participating in resolution. Employees will immediately fall back to other matching policies or no assignment." : "This policy will participate in resolution again using its current version, and affected employees will be reconciled."}</p><div className="heading-actions"><button className="button secondary" onClick={() => setConfirming(false)}>Cancel</button><button className="button" disabled={busy} onClick={updateStatus}>{busy ? "Applying…" : `${status === "active" ? "Archive" : "Reactivate"} and reconcile`}</button></div></section></div>}</>;
+  return <><div className="heading-actions"><span className={`badge ${status === "active" ? "success" : ""}`}>{status}</span><button className="button secondary" onClick={() => { setConfirming(true); setNotice(""); }} disabled={busy}>{status === "active" ? <Archive size={14} /> : <RotateCcw size={14} />}{status === "active" ? "Archive" : "Reactivate"}</button></div>{(error || notice) && <div className={error ? "floating-message error-banner" : "floating-message success-banner"} role={error ? "alert" : "status"}>{error ? <CircleAlert size={13} /> : <Check size={13} />}{error || notice}</div>}{confirming && <div className="modal-backdrop" role="presentation"><section className="confirm-card" role="dialog" aria-modal="true" aria-label={`${nextStatus} policy`}><button className="confirm-close" onClick={() => setConfirming(false)} aria-label="Close"><X size={15} /></button><div className="confirm-icon">{status === "active" ? <Archive size={18} /> : <RotateCcw size={18} />}</div><h2>{status === "active" ? "Archive" : "Reactivate"} {policy.name}?</h2><p>{status === "active" ? "This policy will stop participating in resolution. Employees will immediately fall back to other matching policies or no assignment." : "This policy will participate in resolution again using its current version, and affected employees will be reconciled."}</p><div className="heading-actions"><button className="button secondary" onClick={() => setConfirming(false)}>Cancel</button><button className="button" disabled={busy} onClick={updateStatus}>{busy ? "Applying…" : `${status === "active" ? "Archive" : "Reactivate"} and reconcile`}</button></div></section></div>}</>;
 }

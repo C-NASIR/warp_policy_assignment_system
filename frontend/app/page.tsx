@@ -1,16 +1,12 @@
 import Link from "next/link";
 import { ArrowRight, BookOpenCheck, CircleCheckBig, Network, Plus, ShieldCheck, UserPlus, Users } from "lucide-react";
-import { getAssignmentSummary, getPolicies } from "@/lib/backend";
-
-const activity = [
-  { title: "California Leave Policy", copy: "was updated by Priya Shah", time: "12 minutes ago" },
-  { title: "Jordan Lee", copy: "moved from Design to Product", time: "1 hour ago" },
-  { title: "Engineering Access", copy: "assigned GitHub to 4 new employees", time: "Yesterday at 4:18 PM" },
-  { title: "Monthly Pay override", copy: "was added for Devon Moore", time: "Yesterday at 11:42 AM" },
-];
+import { getAssignmentSummary, getAuditLogs, getPolicies } from "@/lib/backend";
+import { titleCase } from "@/lib/format";
 
 export default async function OverviewPage() {
-  const [summary, policies] = await Promise.all([getAssignmentSummary(), getPolicies()]);
+  const [summary, policies, auditLogs] = await Promise.all([getAssignmentSummary(), getPolicies(), getAuditLogs()]);
+  const activity = [...auditLogs].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()).slice(0, 4).map((event) => ({ title: `${titleCase(event.entity_type)} #${event.entity_id}`, copy: `${titleCase(event.action)} by ${event.actor}`, time: relativeTime(event.timestamp) }));
+  const today = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
   const coverage = summary.fields.slice(0, 4).map((item) => ({ name: item.assignment_field_definition.name, caption: `${item.assigned_employee_count} of ${summary.employee_count} employees`, value: summary.employee_count ? Math.round((item.assigned_employee_count / summary.employee_count) * 100) : 0 }));
   const metrics = [
     { label: "Employees", value: summary.employee_count.toLocaleString(), delta: `${summary.employees_with_assignments} covered`, icon: Users },
@@ -21,7 +17,7 @@ export default async function OverviewPage() {
   return (
     <>
       <div className="page-heading">
-        <div><p className="eyebrow">Wednesday, September 2</p><h1>Good morning, Priya</h1><p className="page-subtitle">Your policy assignments are healthy. Three future changes are scheduled and no conflicts need attention.</p></div>
+        <div><p className="eyebrow">{today}</p><h1>Good morning, Priya</h1><p className="page-subtitle">Your policy assignments are healthy. Three future changes are scheduled and no conflicts need attention.</p></div>
         <Link className="button" href="/policies/new"><Plus size={15} /> Create policy</Link>
       </div>
       <section className="metric-grid" aria-label="Assignment system metrics">
@@ -47,7 +43,7 @@ export default async function OverviewPage() {
           <div className="panel-header"><h2 className="panel-title">Recent changes</h2><Link className="panel-link" href="/audit">Audit log <ArrowRight size={13} /></Link></div>
           <div className="activity-list">{activity.map((item) => (
             <div className="activity-item" key={`${item.title}-${item.time}`}><div className="activity-icon"><CircleCheckBig size={13} /></div><div><div className="activity-copy"><strong>{item.title}</strong> {item.copy}</div><div className="activity-time">{item.time}</div></div></div>
-          ))}</div>
+          ))}{activity.length === 0 && <div className="empty-state compact">No changes have been recorded yet.</div>}</div>
         </article>
       </section>
       <section className="quick-actions" aria-label="Quick actions">
@@ -57,4 +53,13 @@ export default async function OverviewPage() {
       </section>
     </>
   );
+}
+
+function relativeTime(timestamp: string) {
+  const elapsedMinutes = Math.max(0, Math.round((Date.now() - new Date(timestamp).getTime()) / 60_000));
+  if (elapsedMinutes < 1) return "Just now";
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+  const hours = Math.round(elapsedMinutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
 }
