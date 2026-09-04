@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { assignmentFields, assignmentSummary, assignmentsByEmployee, auditLogs, conditionFields, employees, groupEmployeeIds, groupPolicyIds, groups, overridesByEmployee, policies, policyImpacts } from "./demo-data";
-import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, CurrentUser, Employee, EmployeeOverride, Group, Permission, Policy, PolicyImpact, Role, RootSetupStatus, User } from "./types";
+import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ChangeApprovalRequest, ConditionField, CurrentUser, Employee, EmployeeOverride, Group, Permission, Policy, PolicyImpact, Role, RoleSummary, RootSetupStatus, User } from "./types";
 
 const configuredApiUrl = process.env.POLICY_API_URL?.replace(/\/$/, "");
 const sessionCookieName = "policyos_session";
@@ -62,6 +62,8 @@ export const getPermissions = () => read<Permission[]>("/authorization/permissio
 export const getAuthorizationAssignmentFields = () => read<AssignmentField[]>("/authorization/assignment-fields", assignmentFields);
 export const getRoles = () => read<Role[]>("/roles?limit=500", []);
 export const getUsers = () => read<User[]>("/users?limit=500", []);
+export const getAutomatableRoles = () => read<RoleSummary[]>("/policies/automatable-roles", []);
+export const getApprovalRequests = () => read<ChangeApprovalRequest[]>("/approval-requests", []);
 
 export async function getEmployee(id: number) {
   return read<Employee | null>(`/employees/${id}`, employees.find((item) => item.id === id) ?? null);

@@ -5,7 +5,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import Authenticated, DatabaseSession, EmployeeScope
-from app.models import AssignmentFieldDefinition, Role, User
+from app.models import AssignmentFieldDefinition, AutomatedUserRole, Role, User
 from app.pagination import Pagination, paginate_scalars, paginate_sequence
 from app.schemas import (
     AssignmentFieldDefinitionRead,
@@ -79,6 +79,7 @@ def list_roles(
     statement = select(Role).options(
         selectinload(Role.permission_links),
         selectinload(Role.assignment_field_links),
+        selectinload(Role.automated_user_links),
         selectinload(Role.users),
     )
     if search:
@@ -105,6 +106,7 @@ def add_role(
             employee_scope=data.employee_scope,
             assignment_field_scope=data.assignment_field_scope,
             assignment_field_ids=data.assignment_field_ids,
+            automation_eligible=data.automation_eligible,
             actor=principal.subject,
         )
     except ValueError as exc:
@@ -135,6 +137,7 @@ def change_role(
             employee_scope=data.employee_scope,
             assignment_field_scope=data.assignment_field_scope,
             assignment_field_ids=data.assignment_field_ids,
+            automation_eligible=data.automation_eligible,
             description_supplied="description" in data.model_fields_set,
             actor=principal.subject,
         )
@@ -301,8 +304,12 @@ def _role_read(role: Role) -> RoleRead:
             link.assignment_field_definition_id
             for link in role.assignment_field_links
         ),
+        automation_eligible=role.automation_eligible,
         permissions=sorted(link.permission for link in role.permission_links),
-        user_count=len(role.users),
+        user_count=len(
+            {user.id for user in role.users}
+            | {link.user_id for link in role.automated_user_links}
+        ),
         created_by=role.created_by,
         created_at=role.created_at,
         updated_at=role.updated_at,
@@ -314,6 +321,15 @@ def _user_read(
     user: User,
     visibility: EmployeeVisibility,
 ) -> UserRead:
+    automated_roles = list(
+        session.scalars(
+            select(Role)
+            .join(AutomatedUserRole, AutomatedUserRole.role_id == Role.id)
+            .where(AutomatedUserRole.user_id == user.id)
+            .distinct()
+            .order_by(Role.name)
+        )
+    )
     return UserRead(
         id=user.id,
         email=user.email,
@@ -333,6 +349,9 @@ def _user_read(
         created_at=user.created_at,
         last_login_at=user.last_login_at,
         roles=[RoleSummaryRead.model_validate(role) for role in sorted(user.roles, key=lambda item: item.name)],
+        automated_roles=[
+            RoleSummaryRead.model_validate(role) for role in automated_roles
+        ],
         permissions=sorted(effective_permissions(session, user)),
     )
 

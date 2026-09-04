@@ -102,7 +102,7 @@ export const policies: Policy[] = [
 
 function policy(id: number, name: string, status: Policy["status"], priority: number, conditions: Policy["versions"][number]["condition_group"]["conditions"], values: Policy["versions"][number]["values"], matches: number): Policy {
   const createdAt = `2026-0${Math.min(id + 1, 9)}-12T10:00:00`;
-  return { id, name, status, created_at: createdAt, capabilities: { can_update: true, can_create_version: status !== "archived", can_activate: status !== "active", can_archive: status !== "archived" }, versions: [{ id: id + 10, policy_id: id, version_number: id === 1 ? 2 : 1, priority, effective_from: "2026-01-01", effective_until: null, created_at: createdAt, created_by: "Priya Shah", condition_group: { logical_operator: "and", conditions, child_groups: [] }, values: values.map((value) => ({ ...value, value: matches === 0 ? value.value : value.value })) }] };
+  return { id, name, status, created_at: createdAt, created_by: "Priya Shah", capabilities: { can_update: true, can_create_version: status !== "archived", can_activate: status !== "active", can_archive: status !== "archived" }, versions: [{ id: id + 10, policy_id: id, version_number: id === 1 ? 2 : 1, priority, effective_from: "2026-01-01", effective_until: null, created_at: createdAt, created_by: "Priya Shah", condition_group: { logical_operator: "and", conditions, child_groups: [] }, values: values.map((value) => ({ ...value, value: matches === 0 ? value.value : value.value })), automated_role_ids: [] }] };
 }
 
 export const policyImpacts: Record<number, PolicyImpact> = Object.fromEntries(

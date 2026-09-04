@@ -77,6 +77,24 @@ def create_tables() -> None:
         )
         session.execute(
             text(
+                "ALTER TABLE roles ADD COLUMN IF NOT EXISTS automation_eligible "
+                "BOOLEAN NOT NULL DEFAULT false"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE user_roles ADD COLUMN IF NOT EXISTS protected "
+                "BOOLEAN NOT NULL DEFAULT true"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE policies ADD COLUMN IF NOT EXISTS created_by "
+                "VARCHAR(200)"
+            )
+        )
+        session.execute(
+            text(
                 "DO $$ BEGIN "
                 "IF NOT EXISTS (SELECT 1 FROM pg_constraint "
                 "WHERE conname = 'ck_role_employee_scope' "

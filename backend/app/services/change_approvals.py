@@ -32,6 +32,7 @@ from app.schemas import (
     EmployeeOverrideChangePreview,
     EmployeeUpdateChangePreview,
     GroupMembershipChangePreview,
+    PolicyStatusChangePreview,
     PolicyVersionCreateChangePreview,
 )
 from app.services.audit import (
@@ -84,6 +85,8 @@ def issue_change_approval(
     change: ChangePreviewCreate,
     preview: ChangePreviewRead,
     precondition_digest: str,
+    *,
+    approval_id: str | None = None,
 ) -> ChangeApprovalRead | None:
     secret = _approval_secret()
     if secret is None:
@@ -92,7 +95,7 @@ def issue_change_approval(
     expires_at = issued_at + timedelta(seconds=_approval_ttl_seconds())
     payload = {
         "version": _TOKEN_VERSION,
-        "approval_id": str(uuid4()),
+        "approval_id": approval_id or str(uuid4()),
         "issued_at": int(issued_at.timestamp()),
         "expires_at": int(expires_at.timestamp()),
         "change_digest": change_digest(change),
@@ -237,7 +240,10 @@ def change_precondition_digest(
         state = {
             "employee": snapshot_entity(employee) if employee is not None else None
         }
-    elif isinstance(change, PolicyVersionCreateChangePreview):
+    elif isinstance(
+        change,
+        (PolicyVersionCreateChangePreview, PolicyStatusChangePreview),
+    ):
         policy_statement = select(Policy).where(Policy.id == change.policy_id)
         versions_statement = (
             select(PolicyVersion)
@@ -302,7 +308,7 @@ def change_precondition_digest(
             ],
         }
     else:
-        raise ValueError(f"Unsupported approved change type: {change.type}")
+        raise TypeError(f"Unsupported approved change type: {change.type}")
     return precondition_digest(state)
 
 

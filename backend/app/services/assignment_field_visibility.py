@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.models import (
     AssignmentFieldDefinition,
     AuditLog,
+    AutomatedUserRole,
     Policy,
     PolicyFieldValue,
     PolicyVersion,
@@ -66,10 +67,17 @@ def assignment_field_visibility(
             .where(UserRole.user_id == user.id)
         )
     )
+    scopes.update(
+        session.scalars(
+            select(Role.assignment_field_scope)
+            .join(AutomatedUserRole, AutomatedUserRole.role_id == Role.id)
+            .where(AutomatedUserRole.user_id == user.id)
+        )
+    )
     if "all" in scopes:
         return AssignmentFieldVisibility(unrestricted=True)
 
-    field_ids = frozenset(
+    field_ids = set(
         session.scalars(
             select(RoleAssignmentFieldScope.assignment_field_definition_id)
             .join(Role, Role.id == RoleAssignmentFieldScope.role_id)
@@ -80,9 +88,23 @@ def assignment_field_visibility(
             )
         )
     )
+    field_ids.update(
+        session.scalars(
+            select(RoleAssignmentFieldScope.assignment_field_definition_id)
+            .join(Role, Role.id == RoleAssignmentFieldScope.role_id)
+            .join(
+                AutomatedUserRole,
+                AutomatedUserRole.role_id == RoleAssignmentFieldScope.role_id,
+            )
+            .where(
+                AutomatedUserRole.user_id == user.id,
+                Role.assignment_field_scope == "selected",
+            )
+        )
+    )
     return AssignmentFieldVisibility(
         unrestricted=False,
-        assignment_field_ids=field_ids,
+        assignment_field_ids=frozenset(field_ids),
     )
 
 

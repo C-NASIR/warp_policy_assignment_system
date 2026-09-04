@@ -4,7 +4,8 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
+from pydantic import TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -19,16 +20,21 @@ from app.dependencies import (
 from app.error_contract import conflict_issue
 from app.models import (
     ApprovedChangeExecution,
+    AutomatedUserRole,
+    ChangeApprovalRequest,
     Employee,
     EmployeeAssignment,
     EmployeeOverride,
     Policy,
+    Role,
+    User,
 )
 from app.schemas import (
     ApprovedChangeExecutionCreate,
     ApprovedChangeExecutionRead,
     AssignmentFieldPreviewChangeRead,
     AssignmentPreviewRead,
+    AutomatedRolePreviewChangeRead,
     ChangePreviewCreate,
     ChangePreviewRead,
     EmployeeAssignmentPreviewChangeRead,
@@ -36,7 +42,14 @@ from app.schemas import (
     EmployeeOverrideChangePreview,
     EmployeeUpdateChangePreview,
     GroupMembershipChangePreview,
+    PolicyStatusChangePreview,
     PolicyVersionCreateChangePreview,
+)
+from app.services.access_control import WILDCARD_PERMISSION
+from app.services.approval_requests import (
+    create_approval_request,
+    mark_request_executed,
+    require_approved_executor,
 )
 from app.services.assignment_field_visibility import (
     AssignmentFieldVisibility,
@@ -44,6 +57,7 @@ from app.services.assignment_field_visibility import (
     validate_assignment_field_ids,
     visible_assignment_field_or_404,
 )
+from app.services.audit import record_audit_log, snapshot_entity
 from app.services.change_approvals import (
     ChangeApprovalConflictError,
     change_precondition_digest,
@@ -68,7 +82,10 @@ from app.services.employee_visibility import (
 from app.services.employees import create_employee, update_employee
 from app.services.groups import add_employee_to_group, remove_employee_from_group
 from app.services.org_chart import EmployeeHierarchyConflictError
-from app.services.policy_access import require_policy_version_create
+from app.services.policy_access import (
+    require_policy_permission,
+    require_policy_version_create,
+)
 from app.services.policy_authoring import create_policy_version_from_input
 from app.services.policy_engine import PolicyConflictError
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
@@ -76,6 +93,8 @@ from app.services.policy_versions import (
     EffectivePolicyVersionConflictError,
     PolicyVersionOverlapError,
 )
+from app.services.scheduled_reconciliations import sync_policy_version_schedules
+from app.services.tenure_scheduling import sync_all_employee_tenure_schedules
 
 router = APIRouter(prefix="/change-previews", tags=["change previews"])
 execution_router = APIRouter(
@@ -108,7 +127,19 @@ def preview(
     principal: Authenticated,
 ) -> ChangePreviewRead:
     """Simulate one supported mutation and roll back every resulting write."""
-    _validate_change_scope(session, data, field_visibility, principal)
+    requires_human_approval = _requires_human_approval(data, principal)
+    if (
+        requires_human_approval
+        and isinstance(data, PolicyVersionCreateChangePreview)
+    ):
+        data.version.created_by = principal.subject
+    _validate_change_scope(
+        session,
+        data,
+        field_visibility,
+        visibility,
+        principal,
+    )
     savepoint = session.begin_nested()
     try:
         approved_precondition_digest = change_precondition_digest(
@@ -121,6 +152,7 @@ def preview(
             visibility=visibility,
             field_visibility=field_visibility,
         )
+        before_access = _current_automated_roles(session, visibility)
         context = _MutationContext()
         try:
             _apply_change(
@@ -145,6 +177,12 @@ def preview(
                 after,
                 context,
             )
+            after_access = _current_automated_roles(session, visibility)
+            access_changes = _automated_role_changes(
+                before_access,
+                after_access,
+                context.proposed_policy_version_ids,
+            )
             response = ChangePreviewRead(
                 change_type=data.type,
                 valid=True,
@@ -153,16 +191,21 @@ def preview(
                     for item in changes
                 ),
                 changes=changes,
+                affected_user_count=len(
+                    {item.user_id for item in access_changes}
+                ),
+                access_changes=access_changes,
                 conflicts=[],
                 warnings=[],
             )
-            response.approval = issue_change_approval(
-                data,
-                response,
-                approved_precondition_digest,
-            )
-            if response.approval is None:
-                response.warnings.append(_APPROVAL_UNAVAILABLE_WARNING)
+            if not requires_human_approval:
+                response.approval = issue_change_approval(
+                    data,
+                    response,
+                    approved_precondition_digest,
+                )
+                if response.approval is None:
+                    response.warnings.append(_APPROVAL_UNAVAILABLE_WARNING)
         except (
             EffectivePolicyVersionConflictError,
             EmployeeHierarchyConflictError,
@@ -184,7 +227,36 @@ def preview(
         if savepoint.is_active:
             savepoint.rollback()
         session.expire_all()
+    if response.valid and requires_human_approval:
+        try:
+            request = create_approval_request(
+                session,
+                change=data,
+                preview=response,
+                precondition_digest=approved_precondition_digest,
+                principal=principal,
+            )
+        except HTTPException as exc:
+            if exc.status_code != status.HTTP_503_SERVICE_UNAVAILABLE:
+                raise
+            response.warnings.append(_APPROVAL_UNAVAILABLE_WARNING)
+        else:
+            response.approval_request_id = request.id
     return response
+
+
+def _requires_human_approval(
+    data: ChangePreviewCreate,
+    principal: Authenticated,
+) -> bool:
+    return (
+        principal.authentication_method == "human_session"
+        and WILDCARD_PERMISSION not in principal.permissions
+        and isinstance(
+            data,
+            (PolicyVersionCreateChangePreview, PolicyStatusChangePreview),
+        )
+    )
 
 
 @execution_router.post("", response_model=ApprovedChangeExecutionRead)
@@ -197,15 +269,34 @@ def execute_approved_change(
     principal: Authenticated,
 ) -> ApprovedChangeExecutionRead:
     """Execute exactly one signed preview, once, if its impact is unchanged."""
+    approval_request: ChangeApprovalRequest | None = None
+    if data.approval_request_id is not None:
+        approval_request = session.get(
+            ChangeApprovalRequest,
+            data.approval_request_id,
+        )
+        if approval_request is None:
+            raise HTTPException(status_code=404, detail="Approval request not found")
+        require_approved_executor(approval_request, principal)
+        approval_token = approval_request.approval_token
+        change = TypeAdapter(ChangePreviewCreate).validate_python(
+            approval_request.change
+        )
+        assert approval_token is not None
+    else:
+        approval_token = data.approval_token
+        change = data.change
+        assert approval_token is not None and change is not None
     claims = verify_change_approval(
-        data.approval_token,
+        approval_token,
         check_expiration=False,
     )
-    validate_approved_change(claims, data.change)
+    validate_approved_change(claims, change)
     _validate_change_scope(
         session,
-        data.change,
+        change,
         field_visibility,
+        visibility,
         principal,
     )
     lock_approval_execution(session, claims.approval_id)
@@ -227,7 +318,7 @@ def execute_approved_change(
     validate_approval_not_expired(claims)
     actual_precondition_digest = change_precondition_digest(
         session,
-        data.change,
+        change,
         lock=True,
     )
     if actual_precondition_digest != claims.precondition_digest:
@@ -248,10 +339,11 @@ def execute_approved_change(
         visibility=visibility,
         field_visibility=field_visibility,
     )
+    before_access = _current_automated_roles(session, visibility)
     context = _MutationContext()
     _apply_change(
         session,
-        data.change,
+        change,
         actor,
         context,
         visibility,
@@ -272,11 +364,18 @@ def execute_approved_change(
         comparable_after,
         context,
     )
+    comparable_access = _automated_role_changes(
+        before_access,
+        _current_automated_roles(session, visibility),
+        context.proposed_policy_version_ids,
+    )
     comparable_preview = ChangePreviewRead(
-        change_type=data.change.type,
+        change_type=change.type,
         valid=True,
         affected_employee_count=_affected_employee_count(comparable_changes),
         changes=comparable_changes,
+        affected_user_count=len({item.user_id for item in comparable_access}),
+        access_changes=comparable_access,
         conflicts=[],
         warnings=[],
     )
@@ -310,22 +409,29 @@ def execute_approved_change(
         actual_after,
         actual_context,
     )
+    actual_access = _automated_role_changes(
+        before_access,
+        _current_automated_roles(session, visibility),
+        set(),
+    )
     executed_at = current_datetime()
     response = ApprovedChangeExecutionRead(
         approval_id=claims.approval_id,
         status="executed",
         replayed=False,
-        change_type=data.change.type,
+        change_type=change.type,
         executed_at=executed_at,
         executed_by=actor,
         affected_employee_count=_affected_employee_count(actual_changes),
+        affected_user_count=len({item.user_id for item in actual_access}),
         changes=actual_changes,
+        access_changes=actual_access,
         resources=context.resources,
     )
     session.add(
         ApprovedChangeExecution(
             approval_id=claims.approval_id,
-            change_type=data.change.type,
+            change_type=change.type,
             change_digest=claims.change_digest,
             precondition_digest=claims.precondition_digest,
             preview_digest=claims.preview_digest,
@@ -334,6 +440,12 @@ def execute_approved_change(
             response=response.model_dump(mode="json"),
         )
     )
+    if approval_request is not None:
+        mark_request_executed(
+            session,
+            approval_request,
+            actor=actor,
+        )
     session.flush()
     return response
 
@@ -387,6 +499,29 @@ def _apply_change(
         context.resources["policy_id"] = policy.id
         context.resources["policy_version_id"] = version.id
         refresh_employees_affected_by_policy(session, policy)
+        return
+
+    if isinstance(data, PolicyStatusChangePreview):
+        policy = session.get(Policy, data.policy_id)
+        assert policy is not None
+        before = snapshot_entity(policy)
+        policy.status = data.status
+        session.flush()
+        after = snapshot_entity(policy)
+        if before != after:
+            record_audit_log(
+                session,
+                actor=actor,
+                entity_type="Policy",
+                entity_id=policy.id,
+                action="archived" if data.status == "archived" else "changed",
+                before=before,
+                after=after,
+            )
+            sync_policy_version_schedules(session, policy)
+            sync_all_employee_tenure_schedules(session)
+            refresh_employees_affected_by_policy(session, policy)
+        context.resources["policy_id"] = policy.id
         return
 
     if isinstance(data, GroupMembershipChangePreview):
@@ -460,34 +595,68 @@ def _apply_change(
 def _validate_change_scope(
     session: DatabaseSession,
     data: ChangePreviewCreate,
-    visibility: AssignmentFieldVisibility,
+    field_visibility: AssignmentFieldVisibility,
+    employee_visibility: EmployeeVisibility,
     principal: Authenticated,
 ) -> None:
     if isinstance(data, PolicyVersionCreateChangePreview):
-        require_visible_policy(session, visibility, data.policy_id)
+        require_visible_policy(session, field_visibility, data.policy_id)
         policy = session.get(Policy, data.policy_id)
         assert policy is not None
         require_policy_version_create(principal, policy)
+        if data.version.automated_role_ids and not employee_visibility.unrestricted:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Automated access changes require organization-wide employee "
+                    "visibility so the complete impact can be reviewed"
+                ),
+            )
         validate_assignment_field_ids(
             session,
-            visibility,
+            field_visibility,
             (
                 value.assignment_field_definition_id
                 for value in data.version.values
+            ),
+        )
+    elif isinstance(data, PolicyStatusChangePreview):
+        require_visible_policy(session, field_visibility, data.policy_id)
+        policy = session.get(Policy, data.policy_id)
+        assert policy is not None
+        if (
+            any(version.role_grants for version in policy.versions)
+            and not employee_visibility.unrestricted
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Automated access changes require organization-wide employee "
+                    "visibility so the complete impact can be reviewed"
+                ),
+            )
+        require_policy_permission(
+            principal,
+            (
+                "policies:activate"
+                if data.status == "active"
+                else "policies:archive"
+                if data.status == "archived"
+                else "policies:update"
             ),
         )
     elif isinstance(data, EmployeeOverrideChangePreview):
         if data.override_id is not None:
             _require_visible_override(
                 session,
-                visibility,
+                field_visibility,
                 data.employee_id,
                 data.override_id,
             )
         if data.assignment_field_definition_id is not None:
             visible_assignment_field_or_404(
                 session,
-                visibility,
+                field_visibility,
                 data.assignment_field_definition_id,
             )
 
@@ -510,6 +679,75 @@ def _affected_employee_count(
     changes: list[EmployeeAssignmentPreviewChangeRead],
 ) -> int:
     return sum(bool(item.added or item.removed or item.changed) for item in changes)
+
+
+def _current_automated_roles(
+    session: DatabaseSession,
+    visibility: EmployeeVisibility,
+) -> dict[tuple[int, int, int], tuple[int, str, str]]:
+    statement = (
+        select(
+            AutomatedUserRole.user_id,
+            AutomatedUserRole.role_id,
+            AutomatedUserRole.source_policy_version_id,
+            Employee.id,
+            Employee.name,
+            Role.name,
+        )
+        .join(User, User.id == AutomatedUserRole.user_id)
+        .join(Employee, Employee.id == User.employee_id)
+        .join(Role, Role.id == AutomatedUserRole.role_id)
+    )
+    statement = visibility.apply(statement, Employee.id)
+    return {
+        (user_id, role_id, source_policy_version_id): (
+            employee_id,
+            employee_name,
+            role_name,
+        )
+        for (
+            user_id,
+            role_id,
+            source_policy_version_id,
+            employee_id,
+            employee_name,
+            role_name,
+        ) in session.execute(statement)
+    }
+
+
+def _automated_role_changes(
+    before: dict[tuple[int, int, int], tuple[int, str, str]],
+    after: dict[tuple[int, int, int], tuple[int, str, str]],
+    proposed_policy_version_ids: set[int],
+) -> list[AutomatedRolePreviewChangeRead]:
+    changes: list[AutomatedRolePreviewChangeRead] = []
+    for action, keys, state in (
+        ("revoke", sorted(before.keys() - after.keys()), before),
+        ("grant", sorted(after.keys() - before.keys()), after),
+    ):
+        for user_id, role_id, source_policy_version_id in keys:
+            employee_id, employee_name, role_name = state[
+                (user_id, role_id, source_policy_version_id)
+            ]
+            source_is_proposed = (
+                source_policy_version_id in proposed_policy_version_ids
+            )
+            changes.append(
+                AutomatedRolePreviewChangeRead(
+                    user_id=user_id,
+                    employee_id=employee_id,
+                    employee_name=employee_name,
+                    role_id=role_id,
+                    role_name=role_name,
+                    action=action,
+                    source_policy_version_id=(
+                        None if source_is_proposed else source_policy_version_id
+                    ),
+                    source_is_proposed=source_is_proposed,
+                )
+            )
+    return changes
 
 
 def _current_assignments(

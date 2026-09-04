@@ -7,7 +7,7 @@ from sqlalchemy import Integer, Select, and_, cast, func, not_, or_, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
-from app.models import AuditLog, Employee, Role, User, UserRole
+from app.models import AuditLog, AutomatedUserRole, Employee, Role, User, UserRole
 from app.services.auth import AuthenticatedPrincipal
 from app.services.org_chart import get_descendant_ids
 
@@ -50,6 +50,13 @@ def employee_visibility(
             select(Role.employee_scope)
             .join(UserRole, UserRole.role_id == Role.id)
             .where(UserRole.user_id == user.id)
+        )
+    )
+    scopes.update(
+        session.scalars(
+            select(Role.employee_scope)
+            .join(AutomatedUserRole, AutomatedUserRole.role_id == Role.id)
+            .where(AutomatedUserRole.user_id == user.id)
         )
     )
     if "all" in scopes:

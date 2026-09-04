@@ -52,6 +52,7 @@ export type PolicyVersion = {
   created_by: string | null;
   condition_group: ConditionGroup;
   values: { assignment_field_definition_id: number; value: string }[];
+  automated_role_ids: number[];
 };
 
 export type Policy = {
@@ -59,6 +60,7 @@ export type Policy = {
   name: string;
   status: "draft" | "active" | "archived";
   created_at: string;
+  created_by: string | null;
   versions: PolicyVersion[];
   capabilities: {
     can_update: boolean;
@@ -143,6 +145,7 @@ export type CurrentUser = {
   created_at: string;
   last_login_at: string | null;
   roles: RoleSummary[];
+  automated_roles: RoleSummary[];
   permissions: string[];
 };
 
@@ -162,6 +165,7 @@ export type Role = RoleSummary & {
   employee_scope: "all" | "reporting_tree" | "self" | "none";
   assignment_field_scope: "all" | "selected" | "none";
   assignment_field_ids: number[];
+  automation_eligible: boolean;
   permissions: string[];
   user_count: number;
   created_by: string;
@@ -170,3 +174,40 @@ export type Role = RoleSummary & {
 };
 
 export type User = CurrentUser;
+
+export type AutomatedRolePreviewChange = {
+  user_id: number;
+  employee_id: number;
+  employee_name: string;
+  role_id: number;
+  role_name: string;
+  action: "grant" | "revoke";
+  source_policy_version_id: number | null;
+  source_is_proposed: boolean;
+};
+
+export type ChangeApprovalRequest = {
+  id: string;
+  status: "pending" | "approved" | "rejected" | "executed" | "expired";
+  change_type: string;
+  change: Record<string, unknown>;
+  preview: {
+    affected_employee_count?: number;
+    affected_user_count?: number;
+    access_changes?: AutomatedRolePreviewChange[];
+    warnings?: string[];
+  };
+  requested_by: string;
+  requested_by_user_id: number | null;
+  created_at: string;
+  expires_at: string;
+  approved_by: string | null;
+  approved_by_user_id: number | null;
+  approved_at: string | null;
+  rejected_by: string | null;
+  rejected_at: string | null;
+  executed_at: string | null;
+  can_approve: boolean;
+  can_reject: boolean;
+  can_execute: boolean;
+};

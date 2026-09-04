@@ -15,6 +15,7 @@ Employee
 → Conflict Resolution
 → Employee Overrides
 → Temporal Employee Assignments
+→ Policy-derived User Roles
 ```
 
 Read-only assignment queries distinguish three questions. A past date reads the
@@ -84,6 +85,8 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **User:** a human account with a normalized email, Argon2id password hash, lifecycle status, one or more assigned roles, and an optional employee link. Administratively reset passwords are temporary and must be changed at the next login.
 - **Role:** a reusable, named bundle of application permissions plus an employee-data scope, assigned many-to-many to non-Root users.
 - **Role permission:** one allow-only capability such as `employees:read`, `policies:version:create`, `policies:activate`, or `access:manage`. Effective permissions are the union of every assigned role. `policies:update` remains a combined legacy grant for roles created before fine-grained policy actions were introduced.
+- **Automated role grant:** a policy-version consequence that grants an automation-eligible, non-administrative role to a linked user while that employee matches. These grants are stored separately from protected explicit role assignments, reconciled with employee changes, and audited on grant and revocation.
+- **Change approval request:** a persisted human workflow containing the exact proposed change and preview, its requester, expiry, decision, approving user, and execution status. The author cannot approve their own request, and the approving user must execute it.
 - **Employee-data scope:** a role-level visibility boundary of `all`, `reporting_tree`, `self`, or `none`. A user's effective employee visibility is the union of every assigned role; reporting-tree access starts from the employee linked to that user and includes every direct and indirect report.
 - **Assignment-field scope:** a separate role-level data boundary of `all`, `selected`, or `none`. Selected roles name the assignment domains they can access, such as Application Access or Pay Schedule. Effective access is the union across roles, while any `all` role grants every assignment field.
 - **Authentication session:** a revocable, expiring human login session whose opaque browser token is stored only as a SHA-256 hash.
@@ -183,6 +186,10 @@ state-changing cookie-authenticated requests.
 | GET | `/assignment-summary` | Summarize assignment coverage across the employee population |
 | POST | `/change-previews` | Simulate a supported mutation and return assignment differences without persisting it |
 | POST | `/change-executions` | Execute an unchanged, signed preview exactly once |
+| GET | `/approval-requests` | List persisted human change requests for approval review |
+| GET | `/approval-requests/{id}` | Read one request and its available approval actions |
+| POST | `/approval-requests/{id}/approve` | Approve another human author's pending request |
+| POST | `/approval-requests/{id}/reject` | Reject another human author's pending request |
 | GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
 | PATCH / DELETE | `/employees/{id}/overrides/{override_id}` | Update or remove an override |
 | POST / GET | `/groups` | Create or list groups |
@@ -196,6 +203,7 @@ state-changing cookie-authenticated requests.
 | GET | `/condition-fields` | List system-supported condition fields and dependencies |
 | GET | `/condition-fields/{key}` | Read one system-supported condition field |
 | POST / GET | `/policies` | Create policies with version 1 or list them |
+| GET | `/policies/automatable-roles` | List roles eligible for policy-derived assignment |
 | GET / PATCH | `/policies/{id}` | Read or update stable policy metadata |
 | GET / POST | `/policies/{id}/versions` | List or create policy versions |
 | GET | `/policies/{id}/versions/{version_id}` | Read one policy version |
@@ -308,23 +316,34 @@ new, unpersisted snapshot for the requested evaluation date.
 `POST /change-previews` accepts a discriminated change request and runs the same
 domain mutation and reconciliation services used by real writes inside a
 database savepoint that is always rolled back. It supports employee creation and
-updates, policy-version creation, group membership changes, and override
+updates, policy-version creation, policy lifecycle changes, group membership changes, and override
 creation, updates, and deletion. The response contains per-employee before and
-after assignments, added and removed assignments, field-level changes, warnings,
-and conflicts. Proposed employees have a null employee ID; assignments supplied
+after assignments, added and removed assignments, field-level changes, automated
+role grants and revocations, warnings, and conflicts. Proposed employees have a null employee ID; assignments supplied
 by a proposed policy version or override have a null source ID and
 `source_is_proposed: true`. Domain rows, policy links, assignment history, audit
 logs, and scheduled reconciliation records are not retained after a preview.
 
 ## Approved-change execution contract
 
-A successful preview includes a signed, expiring `approval` containing an
+A successful machine-authenticated preview includes a signed, expiring `approval` containing an
 approval ID, token, exact-change digest, preview-impact digest, and expiry time.
 It also signs a digest of the target employee, policy versions, membership, or
 override state relevant to that mutation. The token contains only identifiers,
 timestamps, and digests—the submitted employee or policy data is not embedded
 in it. Call `POST /change-executions` with that token and the exact same
 discriminated `change` object.
+
+A successful non-Root human preview of a policy version or automated-access
+lifecycle change instead creates a persisted pending request and returns
+`approval_request_id`. A user with `changes:approve` can review and
+approve or reject it through `/approval-requests`; the author cannot decide
+their own request. Approval creates the signed capability internally, and the
+same approving user submits `/change-executions` with only the request ID.
+Active policy versions and automated-access policy lifecycle changes use this
+workflow. Roles must explicitly opt into policy automation, and roles named Root
+or containing wildcard, access-administration, or credential-administration
+permissions are ineligible.
 
 Execution verifies the signature and expiry, rejects altered input, locks and
 checks the target-state precondition, applies the change and reconciliation in

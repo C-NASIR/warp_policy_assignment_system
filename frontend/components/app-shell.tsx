@@ -11,6 +11,7 @@ const navigation = [
   { label: "Overview", href: "/", icon: LayoutDashboard, permission: "*" },
   { label: "Employees", href: "/employees", icon: Users, permission: "employees:read" },
   { label: "Policies", href: "/policies", icon: BookOpenCheck, permission: "policies:read" },
+  { label: "Approvals", href: "/approvals", icon: CheckCircle2, permission: "changes:approve" },
   { label: "Groups", href: "/groups", icon: Network, permission: "groups:read" },
   { label: "Audit log", href: "/audit", icon: ScrollText, permission: "audit:read" },
 ];
@@ -21,6 +22,7 @@ const commands = [
   { label: "Add an employee", description: "Preview policies during onboarding", href: "/employees/new", keywords: "onboard hire create", icon: UserPlus, permission: "employees:create" },
   { label: "Browse policies", description: "Rules, versions, priorities, and impact", href: "/policies", keywords: "rules assignments", icon: BookOpenCheck, permission: "policies:read" },
   { label: "Create a policy", description: "Build and preview a new assignment rule", href: "/policies/new", keywords: "new rule", icon: FilePlus2, permission: "policies:create" },
+  { label: "Review approvals", description: "Approve and execute sensitive changes", href: "/approvals", keywords: "review requests changes", icon: CheckCircle2, permission: "changes:approve" },
   { label: "Manage groups", description: "Membership and inherited policies", href: "/groups", keywords: "collections teams", icon: Network, permission: "groups:read" },
   { label: "Inspect the audit log", description: "Search every recorded change", href: "/audit", keywords: "history events changes", icon: ScrollText, permission: "audit:read" },
   { label: "Configure assignment fields", description: "One-value and many-value categories", href: "/settings", keywords: "setup cardinality", icon: Settings, permission: "settings:read" },

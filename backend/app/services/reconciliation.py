@@ -17,6 +17,7 @@ from app.services.assignment_resolution import (
     resolve_employees_assignments_for_date,
 )
 from app.services.audit import record_audit_log, snapshot_assignment
+from app.services.automated_access import reconcile_automated_roles
 from app.services.overrides import FinalAssignment, apply_employee_overrides
 from app.services.policy_engine import resolve_employee_assignments
 from app.services.policy_matching import replace_employee_policies
@@ -74,6 +75,14 @@ def reconcile_employees(
             session,
             employee.id,
             resolution.policy_ids,
+        )
+        reconcile_automated_roles(
+            session,
+            employee_id=employee.id,
+            policy_ids=resolution.policy_ids,
+            evaluation_date=evaluation_date,
+            timestamp=effective_at,
+            actor=actor,
         )
         reconciled[employee.id] = refresh_employee_assignments(
             session,

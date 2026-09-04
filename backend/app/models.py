@@ -99,6 +99,11 @@ class Role(Base):
     assignment_field_scope: Mapped[
         Literal["all", "selected", "none"]
     ] = mapped_column(String(20), default="none", server_default="none")
+    automation_eligible: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+    )
     created_by: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -116,6 +121,14 @@ class Role(Base):
         cascade="all, delete-orphan",
     )
     assignment_field_links: Mapped[list[RoleAssignmentFieldScope]] = relationship(
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
+    policy_grants: Mapped[list[PolicyRoleGrant]] = relationship(
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
+    automated_user_links: Mapped[list[AutomatedUserRole]] = relationship(
         back_populates="role",
         cascade="all, delete-orphan",
     )
@@ -204,6 +217,10 @@ class User(Base):
         secondary="user_roles",
         back_populates="users",
     )
+    automated_role_links: Mapped[list[AutomatedUserRole]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class AuthSession(Base):
@@ -248,6 +265,39 @@ class UserRole(Base):
         ForeignKey("roles.id", ondelete="RESTRICT"),
         primary_key=True,
     )
+    # Explicit assignments are protected from automated reconciliation.
+    protected: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        server_default="true",
+    )
+
+
+class AutomatedUserRole(Base):
+    __tablename__ = "automated_user_roles"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("roles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    source_policy_version_id: Mapped[int] = mapped_column(
+        ForeignKey("policy_versions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    user: Mapped[User] = relationship(back_populates="automated_role_links")
+    role: Mapped[Role] = relationship(back_populates="automated_user_links")
+    source_policy_version: Mapped[PolicyVersion] = relationship(
+        back_populates="automated_user_roles"
+    )
 
 
 class ApprovedChangeExecution(Base):
@@ -265,6 +315,58 @@ class ApprovedChangeExecution(Base):
         server_default=func.now(),
     )
     response: Mapped[dict] = mapped_column(JSON)
+
+
+class ChangeApprovalRequest(Base):
+    __tablename__ = "change_approval_requests"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'approved', 'rejected', 'executed', 'expired')",
+            name="ck_change_approval_request_status",
+        ),
+        Index("ix_change_approval_requests_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    status: Mapped[
+        Literal["pending", "approved", "rejected", "executed", "expired"]
+    ] = mapped_column(String(20), default="pending", server_default="pending")
+    change_type: Mapped[str] = mapped_column(String(100))
+    change: Mapped[dict] = mapped_column(JSON)
+    preview: Mapped[dict] = mapped_column(JSON)
+    change_digest: Mapped[str] = mapped_column(String(64))
+    precondition_digest: Mapped[str] = mapped_column(String(64))
+    preview_digest: Mapped[str] = mapped_column(String(64))
+    requested_by: Mapped[str] = mapped_column(String(200))
+    requested_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    approved_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    approved_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    approved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    rejected_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    rejected_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    approval_token: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    executed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
 
 class ScheduledReconciliation(Base):
@@ -443,6 +545,7 @@ class Policy(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
     status: Mapped[Literal["draft", "active", "archived"]] = mapped_column(String(20), default="active")
+    created_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(),
         default=datetime.now,
@@ -496,6 +599,14 @@ class PolicyVersion(Base):
         back_populates="policy_version",
         cascade="all, delete-orphan",
     )
+    role_grants: Mapped[list[PolicyRoleGrant]] = relationship(
+        back_populates="policy_version",
+        cascade="all, delete-orphan",
+    )
+    automated_user_roles: Mapped[list[AutomatedUserRole]] = relationship(
+        back_populates="source_policy_version",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def condition_group(self) -> ConditionGroup:
@@ -508,6 +619,25 @@ class PolicyVersion(Base):
                 f"PolicyVersion {self.id} must have exactly one root condition group"
             )
         return roots[0]
+
+    @property
+    def automated_role_ids(self) -> list[int]:
+        return sorted(grant.role_id for grant in self.role_grants)
+
+
+class PolicyRoleGrant(Base):
+    __tablename__ = "policy_role_grants"
+
+    policy_version_id: Mapped[int] = mapped_column(
+        ForeignKey("policy_versions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("roles.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+    policy_version: Mapped[PolicyVersion] = relationship(back_populates="role_grants")
+    role: Mapped[Role] = relationship(back_populates="policy_grants")
 
 
 class ConditionFieldDefinition(Base):

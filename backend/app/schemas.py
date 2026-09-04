@@ -79,6 +79,7 @@ class RoleCreate(BaseModel):
     # an explicit least-privilege choice for every new role.
     assignment_field_scope: Literal["all", "selected", "none"] = "all"
     assignment_field_ids: list[int] = Field(default_factory=list)
+    automation_eligible: bool = False
 
     @model_validator(mode="after")
     def validate_assignment_field_scope(self) -> RoleCreate:
@@ -98,6 +99,7 @@ class RoleUpdate(BaseModel):
     employee_scope: Literal["all", "reporting_tree", "self", "none"] | None = None
     assignment_field_scope: Literal["all", "selected", "none"] | None = None
     assignment_field_ids: list[int] | None = None
+    automation_eligible: bool | None = None
 
 
 class RoleRead(ORMModel):
@@ -107,6 +109,7 @@ class RoleRead(ORMModel):
     employee_scope: Literal["all", "reporting_tree", "self", "none"]
     assignment_field_scope: Literal["all", "selected", "none"]
     assignment_field_ids: list[int]
+    automation_eligible: bool
     permissions: list[str]
     user_count: int
     created_by: str
@@ -151,6 +154,7 @@ class UserRead(ORMModel):
     created_at: datetime
     last_login_at: datetime | None
     roles: list[RoleSummaryRead] = Field(default_factory=list)
+    automated_roles: list[RoleSummaryRead] = Field(default_factory=list)
     permissions: list[str] = Field(default_factory=list)
 
 
@@ -307,6 +311,7 @@ class PolicyVersionCreate(BaseModel):
     created_by: str | None = Field(default=None, min_length=1, max_length=200)
     condition_group: ConditionGroupCreate
     values: list[PolicyValueCreate] = Field(default_factory=list)
+    automated_role_ids: list[int] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def require_a_valid_effective_range(self) -> PolicyVersionCreate:
@@ -354,6 +359,7 @@ class PolicyVersionRead(ORMModel):
     created_by: str | None
     condition_group: ConditionGroupRead
     values: list[PolicyValueRead]
+    automated_role_ids: list[int] = Field(default_factory=list)
 
 
 class PolicyCapabilitiesRead(BaseModel):
@@ -368,6 +374,7 @@ class PolicyRead(ORMModel):
     name: str
     status: Literal["draft", "active", "archived"]
     created_at: datetime
+    created_by: str | None = None
     versions: list[PolicyVersionRead]
     capabilities: PolicyCapabilitiesRead = Field(
         default_factory=PolicyCapabilitiesRead
@@ -637,6 +644,12 @@ class PolicyVersionCreateChangePreview(_ChangePreviewBase):
     version: PolicyVersionCreate
 
 
+class PolicyStatusChangePreview(_ChangePreviewBase):
+    type: Literal["policy_status_change"]
+    policy_id: int = Field(gt=0)
+    status: Literal["draft", "active", "archived"]
+
+
 class GroupMembershipChangePreview(_ChangePreviewBase):
     type: Literal["group_membership_change"]
     action: Literal["add", "remove"]
@@ -677,6 +690,7 @@ ChangePreviewCreate = Annotated[
     EmployeeCreateChangePreview
     | EmployeeUpdateChangePreview
     | PolicyVersionCreateChangePreview
+    | PolicyStatusChangePreview
     | GroupMembershipChangePreview
     | EmployeeOverrideChangePreview,
     Field(discriminator="type"),
@@ -732,21 +746,86 @@ class ChangeApprovalRead(BaseModel):
         return ensure_utc(value)
 
 
+class AutomatedRolePreviewChangeRead(BaseModel):
+    user_id: int
+    employee_id: int
+    employee_name: str
+    role_id: int
+    role_name: str
+    action: Literal["grant", "revoke"]
+    source_policy_version_id: int | None
+    source_is_proposed: bool = False
+
+
 class ChangePreviewRead(BaseModel):
     change_type: str
     valid: bool
     affected_employee_count: int
+    affected_user_count: int = 0
     changes: list[EmployeeAssignmentPreviewChangeRead]
+    access_changes: list[AutomatedRolePreviewChangeRead] = Field(default_factory=list)
     conflicts: list[ChangePreviewConflictRead]
     warnings: list[str]
     approval: ChangeApprovalRead | None = None
+    approval_request_id: str | None = None
+
+
+class ChangeApprovalRequestRead(BaseModel):
+    id: str
+    status: Literal["pending", "approved", "rejected", "executed", "expired"]
+    change_type: str
+    change: dict[str, Any]
+    preview: dict[str, Any]
+    requested_by: str
+    requested_by_user_id: int | None
+    created_at: datetime
+    expires_at: datetime
+    approved_by: str | None
+    approved_by_user_id: int | None
+    approved_at: datetime | None
+    rejected_by: str | None
+    rejected_at: datetime | None
+    executed_at: datetime | None
+    can_approve: bool
+    can_reject: bool
+    can_execute: bool
+
+    @field_validator(
+        "created_at",
+        "expires_at",
+        "approved_at",
+        "rejected_at",
+        "executed_at",
+        mode="before",
+    )
+    @classmethod
+    def normalize_approval_request_timestamps(
+        cls,
+        value: datetime | str | None,
+    ) -> datetime | None:
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        return ensure_utc(value) if value is not None else None
 
 
 class ApprovedChangeExecutionCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    approval_token: str = Field(min_length=1, max_length=4000)
-    change: ChangePreviewCreate
+    approval_token: str | None = Field(default=None, min_length=1, max_length=4000)
+    change: ChangePreviewCreate | None = None
+    approval_request_id: str | None = Field(default=None, min_length=36, max_length=36)
+
+    @model_validator(mode="after")
+    def require_token_pair_or_request(self) -> ApprovedChangeExecutionCreate:
+        has_pair = self.approval_token is not None and self.change is not None
+        has_request = self.approval_request_id is not None
+        if has_pair == has_request:
+            raise ValueError(
+                "Provide either approval_request_id or approval_token with change"
+            )
+        if (self.approval_token is None) != (self.change is None):
+            raise ValueError("approval_token and change must be provided together")
+        return self
 
 
 class ApprovedChangeExecutionRead(BaseModel):
@@ -757,7 +836,9 @@ class ApprovedChangeExecutionRead(BaseModel):
     executed_at: datetime
     executed_by: str
     affected_employee_count: int
+    affected_user_count: int = 0
     changes: list[EmployeeAssignmentPreviewChangeRead]
+    access_changes: list[AutomatedRolePreviewChangeRead] = Field(default_factory=list)
     resources: dict[str, int]
 
     @field_validator("executed_at", mode="before")

@@ -1,0 +1,62 @@
+"use client";
+
+import { Check, CircleAlert, Play, ShieldCheck, X } from "lucide-react";
+import { useState } from "react";
+import type { ChangeApprovalRequest } from "@/lib/types";
+
+export function ApprovalQueue({ initialRequests, apiConfigured }: { initialRequests: ChangeApprovalRequest[]; apiConfigured: boolean }) {
+  const [requests, setRequests] = useState(initialRequests);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  async function decide(request: ChangeApprovalRequest, action: "approve" | "reject" | "execute") {
+    setBusyId(request.id);
+    setError("");
+    try {
+      const endpoint = action === "execute" ? "/api/backend/change-executions" : `/api/backend/approval-requests/${request.id}/${action}`;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: action === "execute" ? JSON.stringify({ approval_request_id: request.id }) : undefined,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error?.message ?? result.detail ?? `Unable to ${action} this request.`);
+      setRequests((current) => current.map((item) => item.id === request.id ? action === "execute" ? { ...item, status: "executed", can_execute: false, executed_at: result.executed_at ?? new Date().toISOString() } : result : item));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : `Unable to ${action} this request.`);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return <div className="section-stack">
+    {error && <div className="error-banner"><CircleAlert size={14} />{error}</div>}
+    {requests.map((request) => {
+      const accessChanges = request.preview.access_changes ?? [];
+      return <section className="panel" key={request.id}>
+        <div className="panel-header"><div><h2 className="panel-title">{labelFor(request.change_type)}</h2><span className="secondary-cell">Requested by {request.requested_by} · {formatTimestamp(request.created_at)}</span></div><span className={`badge ${request.status === "approved" || request.status === "executed" ? "success" : request.status === "pending" ? "accent" : ""}`}>{request.status}</span></div>
+        <div className="panel-body">
+          <div className="field-grid">
+            <div><span className="field-label">Assignment impact</span><span className="primary-cell">{request.preview.affected_employee_count ?? 0} employees</span></div>
+            <div><span className="field-label">Access impact</span><span className="primary-cell">{request.preview.affected_user_count ?? 0} users</span></div>
+            <div><span className="field-label">Expires</span><span className="primary-cell">{formatTimestamp(request.expires_at)}</span></div>
+            <div><span className="field-label">Request ID</span><span className="secondary-cell">{request.id}</span></div>
+          </div>
+          {accessChanges.length > 0 && <div style={{ marginTop: 18 }}><div className="field-label">Automated role changes</div><div className="permission-chip-list">{accessChanges.slice(0, 12).map((change, index) => <span className={`badge ${change.action === "grant" ? "success" : ""}`} key={`${change.user_id}-${change.role_id}-${index}`}>{change.action === "grant" ? "+" : "−"} {change.role_name} · {change.employee_name}</span>)}{accessChanges.length > 12 && <span className="badge accent">+{accessChanges.length - 12} more</span>}</div></div>}
+          <details style={{ marginTop: 18 }}><summary className="text-button">View exact proposed change</summary><div className="audit-payload" style={{ marginTop: 10 }}><div><span className="label">Change payload</span><pre>{JSON.stringify(request.change, null, 2)}</pre></div></div></details>
+          {request.approved_by && <p className="form-hint" style={{ marginTop: 16 }}>Approved by {request.approved_by}{request.approved_at ? ` on ${formatTimestamp(request.approved_at)}` : ""}. The approving user must execute it.</p>}
+        </div>
+        {(request.can_approve || request.can_reject || request.can_execute) && <div className="form-footer"><span className="form-hint">Review the previewed assignment and access impact before deciding.</span><div className="heading-actions">{request.can_reject && <button className="button secondary" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "reject")}><X size={14} />Reject</button>}{request.can_approve && <button className="button" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "approve")}><Check size={14} />{busyId === request.id ? "Working…" : "Approve"}</button>}{request.can_execute && <button className="button" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "execute")}><Play size={14} />{busyId === request.id ? "Executing…" : "Execute approved change"}</button>}</div></div>}
+      </section>;
+    })}
+    {requests.length === 0 && <div className="empty-state panel"><div className="empty-icon"><ShieldCheck size={18} /></div><strong>No approval requests</strong><span>New human-authored change previews will appear here.</span></div>}
+  </div>;
+}
+
+function labelFor(changeType: string) {
+  return changeType.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+
+function formatTimestamp(value: string) {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+}

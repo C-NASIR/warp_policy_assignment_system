@@ -17,11 +17,12 @@ from app.error_contract import (
     validation_response,
 )
 from app.routers import (
+    access_control,
+    approval_requests,
     assignment_fields,
     assignment_queries,
     audit_logs,
     auth,
-    access_control,
     change_previews,
     condition_fields,
     employees,
@@ -31,6 +32,7 @@ from app.routers import (
     policies,
 )
 from app.schemas import APIErrorResponseRead
+from app.services.access_control import PermissionDeniedError, required_permissions
 from app.services.auth import (
     AuthenticationError,
     AuthorizationError,
@@ -38,7 +40,6 @@ from app.services.auth import (
     CredentialValidationError,
     required_scope,
 )
-from app.services.access_control import PermissionDeniedError, required_permissions
 from app.services.change_approvals import (
     ChangeApprovalConflictError,
     ChangeApprovalValidationError,
@@ -58,7 +59,6 @@ from app.services.policy_versions import (
     PolicyVersionOverlapError,
 )
 from app.services.reconciliation import AssignmentReconciliationOrderError
-
 
 HUMAN_AUTH_PATHS = {
     "/auth/setup-status",
@@ -180,6 +180,7 @@ for protected_router in (
     access_control.authorization_router,
     access_control.roles_router,
     access_control.users_router,
+    approval_requests.router,
 ):
     app.include_router(
         protected_router,
