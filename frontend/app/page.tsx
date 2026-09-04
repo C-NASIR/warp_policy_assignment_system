@@ -5,7 +5,7 @@ import { titleCase } from "@/lib/format";
 
 export default async function OverviewPage() {
   const [summary, policies, auditLogs] = await Promise.all([getAssignmentSummary(), getPolicies(), getAuditLogs()]);
-  const activity = [...auditLogs].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()).slice(0, 4).map((event) => ({ title: `${titleCase(event.entity_type)} #${event.entity_id}`, copy: `${titleCase(event.action)} by ${event.actor}`, time: relativeTime(event.timestamp) }));
+  const activity = [...auditLogs].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()).slice(0, 4).map((event) => ({ title: titleCase(event.entity_type), copy: `${titleCase(event.action)} by ${event.actor}`, time: relativeTime(event.timestamp) }));
   const today = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
   const coverage = summary.fields.slice(0, 4).map((item) => ({ name: item.assignment_field_definition.name, caption: `${item.assigned_employee_count} of ${summary.employee_count} employees`, value: summary.employee_count ? Math.round((item.assigned_employee_count / summary.employee_count) * 100) : 0 }));
   const metrics = [

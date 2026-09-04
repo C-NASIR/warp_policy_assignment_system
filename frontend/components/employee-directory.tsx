@@ -53,7 +53,7 @@ export function EmployeeDirectory({ employees }: { employees: Employee[] }) {
             <thead><tr><SortHeader label="Employee" column="name" sort={sort} onSort={toggleSort} /><SortHeader label="Department" column="department" sort={sort} onSort={toggleSort} /><SortHeader label="Location" column="location" sort={sort} onSort={toggleSort} /><SortHeader label="Worker type" column="employee_type" sort={sort} onSort={toggleSort} /><th>Assignments</th><th>Status</th></tr></thead>
             <tbody>{sorted.map((employee) => (
               <tr key={employee.id}>
-                <td><Link className="person-cell" href={`/employees/${employee.id}`}><span className="avatar">{initials(employee.name)}</span><span><span className="primary-cell">{employee.name}</span><span className="secondary-cell">Employee #{String(employee.id).padStart(4, "0")}</span></span></Link></td>
+                <td><Link className="person-cell" href={`/employees/${employee.id}`}><span className="avatar">{initials(employee.name)}</span><span className="primary-cell">{employee.name}</span></Link></td>
                 <td>{employee.department}</td><td>{employee.location ?? employee.state}</td><td>{employee.employee_type}</td>
                 <td><span className="badge accent">{employee.id === 1 ? 6 : 3 + (employee.id % 3)} active</span></td>
                 <td><span className="badge success"><span className="system-dot" style={{ boxShadow: "none", width: 5, height: 5 }} /> Current</span></td>

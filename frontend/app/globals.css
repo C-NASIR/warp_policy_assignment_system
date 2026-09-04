@@ -211,6 +211,7 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .data-table tbody tr { transition: 120ms ease; }
 .data-table tbody tr:hover { background: #fafaf7; }
 .data-table a:hover .primary-cell { color: var(--accent-ink); }
+.data-table .primary-cell, .data-table .secondary-cell { display: block; }
 .primary-cell { color: var(--ink); font-size: 12px; font-weight: 680; transition: 120ms ease; }
 .secondary-cell { margin-top: 3px; color: var(--muted); font-size: 10px; }
 .avatar { width: 32px; height: 32px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 9px; background: #eeeef7; color: #4f4a9b; font-size: 10px; font-weight: 750; }
@@ -369,6 +370,7 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .choice-card small { margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .audit-table td { vertical-align: top; }
 .audit-detail-row td { padding: 0 !important; background: #f8f7fc; }
+.audit-record-reference { padding: 10px 16px; border-top: 1px solid var(--border); color: var(--muted); font-family: var(--font-geist-mono); font-size: 9px; }
 .audit-payload { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border-top: 1px solid var(--border); background: var(--border); }
 .audit-payload > div { min-width: 0; padding: 14px 16px; background: #f8f7fc; }
 .audit-payload pre { max-height: 220px; margin: 7px 0 0; overflow: auto; color: #494853; font-family: var(--font-geist-mono); font-size: 10px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
