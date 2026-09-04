@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.dates import current_date, ensure_utc
 from app.services.condition_fields import ConditionFieldError, normalize_condition
@@ -11,6 +11,52 @@ from app.services.condition_fields import ConditionFieldError, normalize_conditi
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+
+class RootSetupStatusRead(BaseModel):
+    setup_required: bool
+
+
+class RootSetupCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    email: EmailStr
+    password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("name")
+    @classmethod
+    def strip_root_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+
+class HumanLoginCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
+
+
+class PasswordChangeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
+
+
+class UserRead(ORMModel):
+    id: int
+    email: EmailStr
+    name: str
+    status: Literal["active", "suspended", "disabled"]
+    is_root: bool
+    password_change_required: bool
+    employee_id: int | None
+    created_at: datetime
+    last_login_at: datetime | None
 
 
 class EmployeeCreate(BaseModel):

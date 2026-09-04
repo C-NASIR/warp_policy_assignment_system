@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, BookOpenCheck, CheckCircle2, Command, FilePlus2, LayoutDashboard, Menu, Network, Plus, ScrollText, Search, Settings, UserPlus, Users, X } from "lucide-react";
+import { Bell, BookOpenCheck, CheckCircle2, Command, FilePlus2, KeyRound, LayoutDashboard, LogOut, Menu, Network, Plus, ScrollText, Search, Settings, UserPlus, Users, X } from "lucide-react";
 import { KeyboardEvent, useEffect, useState } from "react";
+import type { CurrentUser } from "@/lib/types";
 
 const navigation = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
@@ -30,7 +31,7 @@ const activity = [
   { title: "Override needs review", detail: "Devon Moore · Monthly pay schedule", time: "1d" },
 ];
 
-export function AppShell({ children, connected }: { children: React.ReactNode; connected: boolean }) {
+export function AppShell({ children, connected, currentUser }: { children: React.ReactNode; connected: boolean; currentUser: CurrentUser | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,8 +39,10 @@ export function AppShell({ children, connected }: { children: React.ReactNode; c
   const [activityOpen, setActivityOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const isAuthPage = pathname === "/login" || pathname === "/setup";
   const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
-  const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : "PolicyOS");
+  const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : pathname.startsWith("/account") ? "Account security" : "PolicyOS");
   const filteredCommands = commands.filter((item) => `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(query.toLowerCase()));
 
   useEffect(() => {
@@ -70,6 +73,19 @@ export function AppShell({ children, connected }: { children: React.ReactNode; c
     if (event.key === "Enter" && filteredCommands[activeIndex]) { event.preventDefault(); runCommand(filteredCommands[activeIndex].href); }
   }
 
+  async function logout() {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/backend/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/login");
+      router.refresh();
+      setLoggingOut(false);
+    }
+  }
+
+  if (isAuthPage) return <>{children}</>;
+
   return (
     <div className="app-layout">
       {menuOpen && <button className="sidebar-scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
@@ -78,9 +94,9 @@ export function AppShell({ children, connected }: { children: React.ReactNode; c
         <div className="nav-label">Workspace</div>
         <nav className="nav-list" aria-label="Primary navigation">{navigation.map((item) => { const Icon = item.icon; return <Link className={`nav-item${isActive(item.href) ? " active" : ""}`} href={item.href} key={item.href} onClick={() => setMenuOpen(false)} aria-current={isActive(item.href) ? "page" : undefined}><Icon size={16} strokeWidth={1.8} />{item.label}</Link>; })}</nav>
         <div className="nav-label">Manage</div>
-        <nav className="nav-list" aria-label="Settings navigation"><Link className={`nav-item${isActive("/settings") ? " active" : ""}`} href="/settings" onClick={() => setMenuOpen(false)} aria-current={isActive("/settings") ? "page" : undefined}><Settings size={16} strokeWidth={1.8} />Assignment fields</Link></nav>
+        <nav className="nav-list" aria-label="Settings navigation"><Link className={`nav-item${isActive("/settings") ? " active" : ""}`} href="/settings" onClick={() => setMenuOpen(false)} aria-current={isActive("/settings") ? "page" : undefined}><Settings size={16} strokeWidth={1.8} />Assignment fields</Link>{currentUser && <Link className={`nav-item${isActive("/account") ? " active" : ""}`} href="/account/security" onClick={() => setMenuOpen(false)} aria-current={isActive("/account") ? "page" : undefined}><KeyRound size={16} strokeWidth={1.8} />Account security</Link>}</nav>
         <button className="sidebar-command" onClick={() => { setCommandOpen(true); setMenuOpen(false); }}><Search size={14} /><span>Quick find</span><kbd>⌘K</kbd></button>
-        <div className="sidebar-footer"><div className="company-switcher"><div className="company-avatar">AC</div><div><div className="company-name">Acme, Inc.</div><div className="company-role">Company admin</div></div></div></div>
+        <div className="sidebar-footer">{currentUser ? <div className="account-summary"><div className="account-avatar">{currentUser.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div><div className="account-copy"><div className="company-name">{currentUser.name}</div><div className="company-role">{currentUser.is_root ? "Root account" : currentUser.email}</div></div><button className="account-logout" type="button" onClick={logout} disabled={loggingOut} aria-label="Sign out"><LogOut size={15} /></button></div> : <div className="company-switcher"><div className="company-avatar">AC</div><div><div className="company-name">Acme, Inc.</div><div className="company-role">Demo workspace</div></div></div>}</div>
       </aside>
       <div className="main-column">
         <header className="topbar">

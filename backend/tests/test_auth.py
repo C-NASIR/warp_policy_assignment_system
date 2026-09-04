@@ -36,11 +36,11 @@ def test_health_is_public_but_business_endpoints_require_authentication(client):
     assert missing.json()["error"] == {
         "category": "authentication",
         "code": "authentication_required",
-        "message": "A bearer credential is required",
+        "message": "Authentication is required",
         "issues": [
             {
                 "code": "authentication_required",
-                "message": "A bearer credential is required",
+                "message": "Authentication is required",
                 "path": ["authorization"],
                 "metadata": {},
             }

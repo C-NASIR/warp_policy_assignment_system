@@ -124,3 +124,17 @@ export type AuditLog = {
   after: Record<string, unknown> | null;
   timestamp: string;
 };
+
+export type CurrentUser = {
+  id: number;
+  email: string;
+  name: string;
+  status: "active" | "suspended" | "disabled";
+  is_root: boolean;
+  password_change_required: boolean;
+  employee_id: number | null;
+  created_at: string;
+  last_login_at: string | null;
+};
+
+export type RootSetupStatus = { setup_required: boolean };

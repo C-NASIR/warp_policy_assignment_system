@@ -81,6 +81,8 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
 - **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override, with an immutable explanation of the decision.
 - **Audit log:** an append-only actor, entity, action, before/after snapshot, and timestamp for an important domain mutation.
+- **User:** a human account with a normalized email, Argon2id password hash, lifecycle status, and optional employee link. The one-time Root user has full access in Phase 1.
+- **Authentication session:** a revocable, expiring human login session whose opaque browser token is stored only as a SHA-256 hash.
 - **API credential:** a revocable, optionally expiring bearer credential whose opaque token is stored only as a SHA-256 hash and grants named operation scopes.
 - **Approved change execution:** an idempotency record tying one signed preview approval to its committed response and actor.
 - **Scheduled reconciliation:** a centralized pending, processed, or cancelled future trigger referencing the domain entity whose date caused it.
@@ -95,15 +97,16 @@ export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy
 export CHANGE_APPROVAL_SECRET="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_TOKEN="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_SUBJECT=local-admin
-export CORS_ALLOWED_ORIGINS=http://localhost:5173
+export AUTH_SESSION_COOKIE_SECURE=false
+export CORS_ALLOWED_ORIGINS=http://localhost:3000
 uv run fastapi dev main.py
 ```
 
 The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created on startup. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
 
-Every business API endpoint except `GET /` requires `Authorization: Bearer <credential>`. The bootstrap token grants all operations and exists only to issue the first persistent credential. It must contain at least 32 bytes, must be stored in the deployment secret manager, and should be removed after administrative credentials have been issued. `AUTH_BOOTSTRAP_SUBJECT` controls its audit identity and defaults to `bootstrap`.
+Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root sessions grant all operations during Phase 1. `AUTH_SESSION_TTL_SECONDS` defaults to 12 hours, and `AUTH_SESSION_COOKIE_SECURE` must be `true` behind production HTTPS. Passwords use Argon2id; only session-token hashes are stored in PostgreSQL. State-changing session requests also require a trusted `Origin`.
 
-Create separate least-privilege credentials for the MCP server, frontend gateway, and administrators. A newly issued `wpa_...` token is returned exactly once; list responses contain only its non-secret prefix and metadata. The database stores a SHA-256 token hash, expiry, revocation time, subject, and scopes. Treat the returned token as a secret. A browser bundle must never contain a shared static credential; the frontend should call through an authenticated server/session boundary or exchange an external identity for a short-lived credential when end-user login is added.
+Bearer credentials remain the machine-to-machine authentication mechanism for the MCP server and automation. The bootstrap token grants all operations and exists only to issue the first persistent API credential. It must contain at least 32 bytes, must be stored in the deployment secret manager, and should be removed after administrative credentials have been issued. `AUTH_BOOTSTRAP_SUBJECT` controls its audit identity and defaults to `bootstrap`. A newly issued `wpa_...` token is returned exactly once; the database stores only its SHA-256 hash and safe metadata. Browser code must never contain a shared API credential.
 
 Approved execution requires `CHANGE_APPROVAL_SECRET` containing at least 32
 bytes of secret material. Store it in the deployment secret manager and use the
@@ -139,18 +142,23 @@ scope-controlled `X-Actor` request header. JavaScript can read
 Preflight itself is unauthenticated, while every protected API operation still
 requires its bearer credential and operation scope.
 
-Cookie credentials are deliberately disabled. CORS is a browser boundary, not
-authentication, and the allowlist does not grant API access. The React app
-should use a user-specific, short-lived bearer credential supplied by a secure
-identity flow; it should not ship the bootstrap token or a shared MCP token in
-its JavaScript bundle. If browser authentication later moves to cookies, add a
-CSRF design before enabling credentialed cross-origin requests.
+Cross-origin cookie credentials remain disabled. The Next.js frontend receives
+the HTTP-only session cookie on its own origin and forwards it to FastAPI through
+its same-origin server proxy. CORS is only a browser boundary and does not grant
+API access. Both the frontend proxy and backend validate the origin of
+state-changing cookie-authenticated requests.
 
 ## API
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/` | Health check |
+| GET | `/auth/setup-status` | Report whether the one-time Root setup is available |
+| POST | `/auth/setup-root` | Create the first Root user and start a session |
+| POST | `/auth/login` | Authenticate a human user and start a session |
+| GET | `/auth/me` | Read the signed-in human user |
+| POST | `/auth/logout` | Revoke the current human session |
+| POST | `/auth/change-password` | Change the password, revoke other sessions, and rotate the current session |
 | GET | `/auth/scopes` | List supported operation scopes |
 | POST / GET | `/auth/credentials` | Issue a credential once or list safe credential metadata |
 | DELETE | `/auth/credentials/{id}` | Revoke a credential |
@@ -429,4 +437,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Version 1 intentionally excludes a frontend, end-user login and external identity-provider integration, retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. The API credential system is intended for the MCP server, trusted frontend gateway, automation, and administrative access; it is not a substitute for browser user sessions.
+Phase 1 includes local human authentication and the one-time Root account. It intentionally excludes role and permission management, non-Root user provisioning, password-reset delivery, MFA, external identity-provider integration, and per-user data visibility; those authorization capabilities belong to later phases. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.

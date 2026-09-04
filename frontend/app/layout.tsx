@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { WebMcpTools } from "@/components/webmcp-tools";
-import { apiConfigured } from "@/lib/backend";
+import { apiConfigured, getCurrentUser } from "@/lib/backend";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -25,10 +25,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const currentUser = apiConfigured ? await getCurrentUser() : null;
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body><WebMcpTools /><AppShell connected={apiConfigured}>{children}</AppShell></body>
+      <body><WebMcpTools /><AppShell connected={apiConfigured} currentUser={currentUser}>{children}</AppShell></body>
     </html>
   );
 }

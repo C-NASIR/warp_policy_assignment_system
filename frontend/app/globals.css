@@ -82,6 +82,12 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .company-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: #f2ad58; color: #35210c; font-size: 11px; font-weight: 800; }
 .company-name { font-size: 12px; font-weight: 650; }
 .company-role { color: var(--sidebar-muted); font-size: 10px; margin-top: 2px; }
+.account-summary { display: grid; grid-template-columns: 30px minmax(0, 1fr) 30px; align-items: center; gap: 10px; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / 0.08); }
+.account-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--accent); color: white; font-size: 10px; font-weight: 800; }
+.account-copy { min-width: 0; }
+.account-copy .company-name, .account-copy .company-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-logout { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--sidebar-muted); cursor: pointer; }
+.account-logout:hover { background: rgb(255 255 255 / .08); color: white; }
 .main-column { min-width: 0; }
 .topbar {
   height: 64px; position: sticky; top: 0; z-index: 30; display: flex; align-items: center;
@@ -379,6 +385,29 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .row-actions { display: flex; align-items: center; gap: 4px; }
 .floating-message { position: fixed; z-index: 70; right: 24px; bottom: 24px; max-width: 360px; box-shadow: 0 10px 30px rgb(0 0 0 / .12); }
 
+/* Human authentication */
+.auth-page { min-height: 100vh; display: grid; place-items: center; padding: 32px 18px; background: radial-gradient(circle at 50% 0%, #f0efff 0, transparent 38%), var(--canvas); }
+.auth-card { width: min(440px, 100%); padding: 30px; border: 1px solid var(--border); border-radius: 16px; background: rgb(255 255 255 / .94); box-shadow: 0 24px 70px rgb(30 30 35 / .11); }
+.auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 34px; }
+.auth-brand > span:last-child, .auth-brand strong, .auth-brand small { display: block; }
+.auth-brand strong { font-size: 13px; }
+.auth-brand small { margin-top: 2px; color: var(--muted); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.auth-icon { width: 42px; height: 42px; display: grid; place-items: center; margin-bottom: 18px; border-radius: 11px; background: var(--accent-soft); color: var(--accent-ink); }
+.auth-card h1 { font-size: 24px; }
+.auth-form { display: grid; gap: 15px; margin-top: 25px; }
+.auth-form .field, .security-form .field { display: block; }
+.auth-requirement, .auth-security { display: flex; align-items: flex-start; gap: 7px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.auth-requirement svg, .auth-security svg { flex: 0 0 auto; margin-top: 1px; color: var(--success); }
+.auth-submit { width: 100%; margin-top: 3px; }
+.auth-submit svg { margin-left: auto; }
+.auth-message { margin: 20px 0 -7px; }
+.auth-security { margin-top: 22px; padding-top: 17px; border-top: 1px solid var(--border); }
+.auth-security svg { color: var(--accent-ink); }
+.security-panel { max-width: 700px; }
+.security-form { display: grid; gap: 15px; max-width: 480px; }
+.security-footer { margin: 3px -19px -18px; border-top: 1px solid var(--border); background: var(--surface-subtle); }
+.form-hint { color: var(--muted); font-size: 10px; }
+
 /* Phase 3 interaction polish */
 .sort-button { display: inline-flex; align-items: center; gap: 5px; margin: -8px; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; font-weight: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
 .sort-button:hover { background: #ecece7; color: var(--ink); }
@@ -445,6 +474,9 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
   .modal-card { width: 100%; max-height: 100vh; min-height: 100vh; border-radius: 0; }
   .form-dialog, .confirm-card { width: 100%; max-height: 100vh; overflow-y: auto; border-radius: 0; }
   .command-backdrop { align-items: start; padding: 70px 10px 10px; }
+  .auth-page { align-items: start; padding: 18px 10px; }
+  .auth-card { padding: 24px 20px; }
+  .security-footer { align-items: stretch; flex-direction: column; }
 }
 
 @media (prefers-reduced-motion: reduce) {

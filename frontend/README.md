@@ -13,15 +13,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The interface starts in a complete demo mode when no API credential is configured. To connect it to the FastAPI backend, copy `.env.example` to `.env.local` and set:
+The interface starts in a complete demo mode when no API URL is configured. To connect it to the FastAPI backend, copy `.env.example` to `.env.local` and set:
 
 ```dotenv
 POLICY_API_URL=http://127.0.0.1:8000
-POLICY_API_TOKEN=<a credential with the required read and write scopes>
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-`POLICY_API_TOKEN` is server-only. Browser requests use the same-origin `/api/backend/*` proxy, so the bearer credential is never shipped to client-side JavaScript.
+On the first connected visit, PolicyOS opens the one-time Root account setup. Later visits require that human account to sign in. Browser requests use the same-origin `/api/backend/*` proxy, and the backend session token remains in an HTTP-only cookie rather than client-side JavaScript.
 
 ## Checks
 
@@ -30,4 +29,4 @@ npm run lint
 npm run build
 ```
 
-The backend remains the source of truth for assignment resolution, reconciliation, approval tokens, and audit records. Demo mode is intentionally non-persistent and exists so the frontend can be explored without provisioning Postgres and an API credential.
+The backend remains the source of truth for authentication, assignment resolution, reconciliation, approval tokens, and audit records. Demo mode is intentionally non-persistent and exists so the frontend can be explored without provisioning Postgres.

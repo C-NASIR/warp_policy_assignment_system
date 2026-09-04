@@ -88,6 +88,9 @@ class AuthenticatedPrincipal:
     scopes: frozenset[str]
     credential_id: int | None
     credential_name: str
+    authentication_method: str
+    user_id: int | None = None
+    session_id: int | None = None
 
     def has_scope(self, scope: str) -> bool:
         return WILDCARD_SCOPE in self.scopes or scope in self.scopes
@@ -111,6 +114,7 @@ def authenticate_token(session: Session, token: str) -> AuthenticatedPrincipal:
             scopes=frozenset({WILDCARD_SCOPE}),
             credential_id=None,
             credential_name="bootstrap",
+            authentication_method="bootstrap_token",
         )
 
     credential = session.scalar(
@@ -141,6 +145,7 @@ def authenticate_token(session: Session, token: str) -> AuthenticatedPrincipal:
         scopes=frozenset(credential.scopes),
         credential_id=credential.id,
         credential_name=credential.name,
+        authentication_method="api_credential",
     )
 
 

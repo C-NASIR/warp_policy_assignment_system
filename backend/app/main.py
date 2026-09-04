@@ -25,6 +25,7 @@ from app.routers import (
     condition_fields,
     employees,
     groups,
+    human_auth,
     impact_summaries,
     policies,
 )
@@ -57,6 +58,16 @@ from app.services.policy_versions import (
 from app.services.reconciliation import AssignmentReconciliationOrderError
 
 
+HUMAN_AUTH_PATHS = {
+    "/auth/setup-status",
+    "/auth/setup-root",
+    "/auth/login",
+    "/auth/me",
+    "/auth/logout",
+    "/auth/change-password",
+}
+
+
 class PolicyAssignmentAPI(FastAPI):
     def openapi(self) -> dict[str, Any]:
         """Publish the exact operation scope alongside bearer authentication."""
@@ -69,7 +80,7 @@ class PolicyAssignmentAPI(FastAPI):
             routes=self.routes,
         )
         for path, path_item in schema.get("paths", {}).items():
-            if path == "/":
+            if path == "/" or path in HUMAN_AUTH_PATHS:
                 continue
             for method, operation in path_item.items():
                 if method.upper() not in {
@@ -131,7 +142,7 @@ app = PolicyAssignmentAPI(
     responses={
         401: {
             "model": APIErrorResponseRead,
-            "description": "A valid bearer credential is required",
+            "description": "A valid API credential or user session is required",
         },
         403: {
             "model": APIErrorResponseRead,
@@ -148,6 +159,8 @@ app = PolicyAssignmentAPI(
     },
 )
 configure_browser_access(app)
+app.include_router(human_auth.public_router)
+app.include_router(human_auth.session_router)
 
 for protected_router in (
     employees.router,
