@@ -105,13 +105,30 @@ export CHANGE_APPROVAL_SECRET="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_TOKEN="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_SUBJECT=local-admin
 export AUTH_SESSION_COOKIE_SECURE=false
+export AUTH_MFA_ENCRYPTION_KEY="$(openssl rand -hex 32)"
+export AUTH_ROOT_RECOVERY_KEY="$(openssl rand -hex 32)"
 export CORS_ALLOWED_ORIGINS=http://localhost:3000
 uv run fastapi dev main.py
 ```
 
 The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created on startup. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
 
-Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root is an immutable break-glass superuser; other users receive the union of their assigned role permissions, employee-data scopes, and assignment-field scopes. Employee scope is enforced on employee records and every employee-derived result. Assignment-field scope independently filters assignment fields, policies, assignments, overrides, summaries, group-policy links, change previews and executions, and related audit events. A policy is accessible only when every output in every version belongs to the user's visible assignment fields, preventing partial edits to mixed-domain policies. Out-of-scope direct resource requests return 404 so they do not disclose whether the record exists. Policy responses include record-specific `can_update`, `can_create_version`, `can_activate`, and `can_archive` capabilities. These combine the caller's granular action permissions, assignment-field scope, and the record lifecycle state; the frontend consumes them while the API remains the final enforcement boundary. Permission and scope changes take effect on the next request, including for existing sessions. `AUTH_SESSION_TTL_SECONDS` defaults to 12 hours, and `AUTH_SESSION_COOKIE_SECURE` must be `true` behind production HTTPS. Passwords use Argon2id; only session-token hashes are stored in PostgreSQL. State-changing session requests also require a trusted `Origin`.
+Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root is an immutable break-glass superuser; other users receive the union of their assigned role permissions, employee-data scopes, and assignment-field scopes. Employee scope is enforced on employee records and every employee-derived result. Assignment-field scope independently filters assignment fields, policies, assignments, overrides, summaries, group-policy links, change previews and executions, and related audit events. A policy is accessible only when every output in every version belongs to the user's visible assignment fields, preventing partial edits to mixed-domain policies. Out-of-scope direct resource requests return 404 so they do not disclose whether the record exists. Policy responses include record-specific `can_update`, `can_create_version`, `can_activate`, and `can_archive` capabilities. These combine the caller's granular action permissions, assignment-field scope, and the record lifecycle state; the frontend consumes them while the API remains the final enforcement boundary. Permission and scope changes take effect on the next request, including for existing sessions.
+
+`AUTH_SESSION_TTL_SECONDS` defaults to 12 hours, idle sessions expire after 30 minutes (`AUTH_SESSION_IDLE_TTL_SECONDS`), and sensitive administrative changes require authentication within the last 10 minutes (`AUTH_REAUTH_TTL_SECONDS`). `AUTH_SESSION_COOKIE_SECURE` must be `true` behind production HTTPS. Passwords use Argon2id; only session-token hashes are stored in PostgreSQL. State-changing session requests also require a trusted `Origin`. Root and privileged sessions must enroll TOTP MFA by default. `AUTH_MFA_ENCRYPTION_KEY` must be a stable secret of at least 32 bytes shared by every API process. Recovery codes are stored as one-time Argon2id hashes. Password-reset responses never expose their token unless `AUTH_PASSWORD_RESET_EXPOSE_TOKEN=true` is intentionally enabled for a local delivery adapter or test environment.
+
+### Emergency Root recovery
+
+Use this only when both the Root password and MFA recovery methods are lost. Run it interactively on a trusted application host with database access; never put the recovery key or new password in shell history.
+
+```bash
+cd backend
+export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments
+export AUTH_ROOT_RECOVERY_KEY='value-from-your-secret-manager'
+uv run python scripts/emergency_root_recovery.py root@example.com
+```
+
+The tool verifies the separately stored recovery key, prompts for a new password, disables MFA, revokes every Root session, and writes both a critical security event and audit entry in the same transaction. After recovery, sign in, enroll MFA immediately, store the new recovery codes offline, review the access report and security events, then rotate `AUTH_ROOT_RECOVERY_KEY`.
 
 Bearer credentials remain the machine-to-machine authentication mechanism for the MCP server and automation. The bootstrap token grants all operations and exists only to issue the first persistent API credential. It must contain at least 32 bytes, must be stored in the deployment secret manager, and should be removed after administrative credentials have been issued. `AUTH_BOOTSTRAP_SUBJECT` controls its audit identity and defaults to `bootstrap`. A newly issued `wpa_...` token is returned exactly once; the database stores only its SHA-256 hash and safe metadata. Browser code must never contain a shared API credential.
 
@@ -166,6 +183,14 @@ state-changing cookie-authenticated requests.
 | GET | `/auth/me` | Read the signed-in human user |
 | POST | `/auth/logout` | Revoke the current human session |
 | POST | `/auth/change-password` | Change the password, revoke other sessions, and rotate the current session |
+| POST | `/auth/password-reset/request` | Generate a short-lived, single-use account recovery token without disclosing account existence |
+| POST | `/auth/password-reset/confirm` | Reset a password and revoke every active session |
+| GET | `/auth/security` | List MFA state, active devices, and recent security events |
+| POST / DELETE | `/auth/mfa/*` | Enroll, confirm, or disable TOTP MFA and recovery codes |
+| POST | `/auth/reauthenticate` | Rotate the session after password and MFA step-up authentication |
+| POST | `/auth/sessions/revoke-others` | Sign out every other device |
+| POST | `/auth/sessions/revoke-all` | Sign out every device including the current one |
+| GET | `/authorization/access-review` | Report stale, broad, unused, and privileged access risks |
 | GET | `/authorization/permissions` | List the human application-permission catalog |
 | POST / GET | `/roles` | Create or list roles, permission bundles, and data scopes |
 | GET / PATCH / DELETE | `/roles/{id}` | Read, update, or delete an unassigned role |

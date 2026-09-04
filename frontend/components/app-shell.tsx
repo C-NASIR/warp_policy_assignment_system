@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Bell, BookOpenCheck, CheckCircle2, Command, FilePlus2, KeyRound, LayoutDashboard, LogOut, Menu, Network, Plus, ScrollText, Search, Settings, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { KeyboardEvent, useEffect, useState } from "react";
 import { hasPermission } from "@/lib/permissions";
-import type { CurrentUser } from "@/lib/types";
+import type { CurrentUser, SecurityEvent } from "@/lib/types";
 
 const navigation = [
   { label: "Overview", href: "/", icon: LayoutDashboard, permission: "*" },
@@ -27,6 +27,7 @@ const commands = [
   { label: "Inspect the audit log", description: "Search every recorded change", href: "/audit", keywords: "history events changes", icon: ScrollText, permission: "audit:read" },
   { label: "Configure assignment fields", description: "One-value and many-value categories", href: "/settings", keywords: "setup cardinality", icon: Settings, permission: "settings:read" },
   { label: "Manage access", description: "Users, roles, and permissions", href: "/access", keywords: "authorization accounts", icon: ShieldCheck, permission: "access:read" },
+  { label: "Review privileged access", description: "MFA, stale users, and broad roles", href: "/access/review", keywords: "security permissions report", icon: ShieldCheck, permission: "access:review" },
 ];
 
 const activity = [
@@ -35,7 +36,7 @@ const activity = [
   { title: "Override needs review", detail: "Devon Moore · Monthly pay schedule", time: "1d" },
 ];
 
-export function AppShell({ children, connected, currentUser }: { children: React.ReactNode; connected: boolean; currentUser: CurrentUser | null }) {
+export function AppShell({ children, connected, currentUser, securityEvents }: { children: React.ReactNode; connected: boolean; currentUser: CurrentUser | null; securityEvents: SecurityEvent[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,7 +45,8 @@ export function AppShell({ children, connected, currentUser }: { children: React
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
-  const isAuthPage = pathname === "/login" || pathname === "/setup";
+  const visibleActivity = connected ? securityEvents.filter((item) => item.severity !== "info" && !item.acknowledged_at).slice(0, 5).map((item) => ({ title: item.event_type.replaceAll("_", " "), detail: String(item.details.ip ?? "Account security event"), time: item.created_at.slice(0, 10) })) : activity;
+  const isAuthPage = pathname === "/login" || pathname === "/setup" || pathname === "/recover";
   const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
   const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : pathname.startsWith("/access") ? "Access control" : pathname.startsWith("/account") ? "Account security" : "PolicyOS");
   const visibleNavigation = navigation.filter((item) => !connected || hasPermission(currentUser, item.permission));
@@ -99,14 +101,14 @@ export function AppShell({ children, connected, currentUser }: { children: React
         <div className="nav-label">Workspace</div>
         <nav className="nav-list" aria-label="Primary navigation">{visibleNavigation.map((item) => { const Icon = item.icon; return <Link className={`nav-item${isActive(item.href) ? " active" : ""}`} href={item.href} key={item.href} onClick={() => setMenuOpen(false)} aria-current={isActive(item.href) ? "page" : undefined}><Icon size={16} strokeWidth={1.8} />{item.label}</Link>; })}</nav>
         <div className="nav-label">Manage</div>
-        <nav className="nav-list" aria-label="Settings navigation">{(!connected || hasPermission(currentUser, "settings:read")) && <Link className={`nav-item${isActive("/settings") ? " active" : ""}`} href="/settings" onClick={() => setMenuOpen(false)} aria-current={isActive("/settings") ? "page" : undefined}><Settings size={16} strokeWidth={1.8} />Assignment fields</Link>}{currentUser && hasPermission(currentUser, "access:read") && <Link className={`nav-item${isActive("/access") ? " active" : ""}`} href="/access" onClick={() => setMenuOpen(false)} aria-current={isActive("/access") ? "page" : undefined}><ShieldCheck size={16} strokeWidth={1.8} />Access control</Link>}{currentUser && <Link className={`nav-item${isActive("/account") ? " active" : ""}`} href="/account/security" onClick={() => setMenuOpen(false)} aria-current={isActive("/account") ? "page" : undefined}><KeyRound size={16} strokeWidth={1.8} />Account security</Link>}</nav>
+        <nav className="nav-list" aria-label="Settings navigation">{(!connected || hasPermission(currentUser, "settings:read")) && <Link className={`nav-item${isActive("/settings") ? " active" : ""}`} href="/settings" onClick={() => setMenuOpen(false)} aria-current={isActive("/settings") ? "page" : undefined}><Settings size={16} strokeWidth={1.8} />Assignment fields</Link>}{currentUser && hasPermission(currentUser, "access:read") && <Link className={`nav-item${pathname === "/access" ? " active" : ""}`} href="/access" onClick={() => setMenuOpen(false)} aria-current={pathname === "/access" ? "page" : undefined}><ShieldCheck size={16} strokeWidth={1.8} />Access control</Link>}{currentUser && hasPermission(currentUser, "access:review") && <Link className={`nav-item${isActive("/access/review") ? " active" : ""}`} href="/access/review" onClick={() => setMenuOpen(false)} aria-current={isActive("/access/review") ? "page" : undefined}><ShieldCheck size={16} strokeWidth={1.8} />Access review</Link>}{currentUser && <Link className={`nav-item${isActive("/account") ? " active" : ""}`} href="/account/security" onClick={() => setMenuOpen(false)} aria-current={isActive("/account") ? "page" : undefined}><KeyRound size={16} strokeWidth={1.8} />Account security</Link>}</nav>
         <button className="sidebar-command" onClick={() => { setCommandOpen(true); setMenuOpen(false); }}><Search size={14} /><span>Quick find</span><kbd>⌘K</kbd></button>
         <div className="sidebar-footer">{currentUser ? <div className="account-summary"><div className="account-avatar">{currentUser.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div><div className="account-copy"><div className="company-name">{currentUser.name}</div><div className="company-role">{currentUser.is_root ? "Root account" : currentUser.roles.map((role) => role.name).join(", ") || "No role"}</div></div><button className="account-logout" type="button" onClick={logout} disabled={loggingOut} aria-label="Sign out"><LogOut size={15} /></button></div> : <div className="company-switcher"><div className="company-avatar">AC</div><div><div className="company-name">Acme, Inc.</div><div className="company-role">Demo workspace</div></div></div>}</div>
       </aside>
       <div className="main-column">
         <header className="topbar">
           <div className="topbar-context"><button className="icon-button mobile-menu-button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? "Close navigation" : "Open navigation"}>{menuOpen ? <X size={17} /> : <Menu size={17} />}</button><span className="topbar-page">{currentPage}</span><span className="topbar-divider" /><span className="system-dot" data-connected={connected} /><span className="system-copy">{connected ? "Engine current" : "Demo mode"}</span></div>
-          <div className="topbar-actions"><button className="command-trigger" onClick={() => { setCommandOpen(true); setActivityOpen(false); }}><Search size={14} /><span>Search or jump to…</span><kbd><Command size={10} />K</kbd></button>{(!connected || hasPermission(currentUser, "audit:read")) && <div className="activity-wrap"><button className="icon-button" aria-label="Open activity center" aria-expanded={activityOpen} onClick={() => { setActivityOpen((current) => !current); setCommandOpen(false); }}><Bell size={16} strokeWidth={1.8} /><span className="notification-dot" /></button>{activityOpen && <div className="activity-popover"><div className="popover-head"><div><strong>Activity</strong><span>What changed recently</span></div><span className="badge accent">3 new</span></div><div className="popover-list">{activity.map((item) => <div className="popover-item" key={item.title}><span className="activity-icon"><CheckCircle2 size={13} /></span><span><strong>{item.title}</strong><small>{item.detail}</small></span><time>{item.time}</time></div>)}</div><Link className="popover-footer" href="/audit" onClick={() => setActivityOpen(false)}>View complete audit log</Link></div>}</div>}</div>
+          <div className="topbar-actions"><button className="command-trigger" onClick={() => { setCommandOpen(true); setActivityOpen(false); }}><Search size={14} /><span>Search or jump to…</span><kbd><Command size={10} />K</kbd></button>{currentUser && <div className="activity-wrap"><button className="icon-button" aria-label="Open security notifications" aria-expanded={activityOpen} onClick={() => { setActivityOpen((current) => !current); setCommandOpen(false); }}><Bell size={16} strokeWidth={1.8} />{visibleActivity.length > 0 && <span className="notification-dot" />}</button>{activityOpen && <div className="activity-popover"><div className="popover-head"><div><strong>Security</strong><span>Account alerts requiring review</span></div><span className="badge accent">{visibleActivity.length} new</span></div><div className="popover-list">{visibleActivity.length === 0 && <div className="command-empty">No unreviewed security alerts.</div>}{visibleActivity.map((item) => <div className="popover-item" key={`${item.title}-${item.time}`}><span className="activity-icon"><CheckCircle2 size={13} /></span><span><strong>{item.title}</strong><small>{item.detail}</small></span><time>{item.time}</time></div>)}</div><Link className="popover-footer" href="/account/security" onClick={() => setActivityOpen(false)}>Review security events</Link></div>}</div>}</div>
         </header>
         <main className="content" id="main-content">{children}</main>
       </div>

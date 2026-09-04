@@ -140,6 +140,7 @@ export type CurrentUser = {
   status: "active" | "suspended" | "disabled";
   is_root: boolean;
   password_change_required: boolean;
+  mfa_enabled: boolean;
   employee_id: number | null;
   employee_link_hidden: boolean;
   created_at: string;
@@ -174,6 +175,51 @@ export type Role = RoleSummary & {
 };
 
 export type User = CurrentUser;
+
+export type AccountSession = {
+  id: number;
+  current: boolean;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+  created_ip: string | null;
+  last_ip: string | null;
+  user_agent: string | null;
+  mfa_verified: boolean;
+};
+
+export type SecurityEvent = {
+  id: number;
+  event_type: string;
+  severity: "info" | "warning" | "critical";
+  details: Record<string, unknown>;
+  created_at: string;
+  acknowledged_at: string | null;
+};
+
+export type AccountSecurity = {
+  mfa_enabled: boolean;
+  mfa_required: boolean;
+  sessions: AccountSession[];
+  events: SecurityEvent[];
+};
+
+export type AccessReview = {
+  generated_at: string;
+  active_user_count: number;
+  role_count: number;
+  privileged_user_count: number;
+  privileged_users_without_mfa: number;
+  unused_role_count: number;
+  findings: {
+    severity: "info" | "warning" | "critical";
+    code: string;
+    subject_type: "user" | "role";
+    subject_id: number;
+    subject_name: string;
+    message: string;
+  }[];
+};
 
 export type AutomatedRolePreviewChange = {
   user_id: number;

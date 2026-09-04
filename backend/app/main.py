@@ -67,6 +67,16 @@ HUMAN_AUTH_PATHS = {
     "/auth/me",
     "/auth/logout",
     "/auth/change-password",
+    "/auth/password-reset/request",
+    "/auth/password-reset/confirm",
+    "/auth/security",
+    "/auth/mfa/setup",
+    "/auth/mfa/confirm",
+    "/auth/mfa",
+    "/auth/reauthenticate",
+    "/auth/sessions/revoke-others",
+    "/auth/sessions/revoke-all",
+    "/auth/security-events/{event_id}/acknowledge",
 }
 
 
@@ -96,7 +106,9 @@ class PolicyAssignmentAPI(FastAPI):
                 }:
                     continue
                 operation["x-required-scopes"] = [required_scope(method, path)]
-                operation["x-required-permissions"] = sorted(required_permissions(method, path))
+                operation["x-required-permissions"] = sorted(
+                    required_permissions(method, path)
+                )
                 success_response = operation.get("responses", {}).get("200", {})
                 response_schema = (
                     success_response.get("content", {})
@@ -108,10 +120,14 @@ class PolicyAssignmentAPI(FastAPI):
                     for parameter in operation.get("parameters", [])
                     if parameter.get("in") == "query"
                 }
-                if response_schema.get("type") == "array" and {
-                    "limit",
-                    "offset",
-                } <= query_parameter_names:
+                if (
+                    response_schema.get("type") == "array"
+                    and {
+                        "limit",
+                        "offset",
+                    }
+                    <= query_parameter_names
+                ):
                     success_response.setdefault("headers", {}).update(
                         {
                             "X-Total-Count": {
@@ -193,8 +209,18 @@ async def authentication_error_handler(
     _: Request,
     exc: AuthenticationError,
 ) -> JSONResponse:
+    response_status = (
+        429
+        if exc.code == "login_throttled"
+        else 403
+        if exc.code == "mfa_enrollment_required"
+        else 401
+    )
+    headers = {"WWW-Authenticate": "Bearer"}
+    if exc.code == "login_throttled" and exc.metadata.get("retry_after_seconds"):
+        headers["Retry-After"] = str(exc.metadata["retry_after_seconds"])
     return JSONResponse(
-        status_code=401,
+        status_code=response_status,
         content=error_response(
             category="authentication",
             code=exc.code,
@@ -209,7 +235,7 @@ async def authentication_error_handler(
             ],
             legacy_detail=str(exc),
         ),
-        headers={"WWW-Authenticate": "Bearer"},
+        headers=headers,
     )
 
 

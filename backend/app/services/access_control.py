@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Literal
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.dates import current_datetime
+from app.dates import current_datetime, ensure_utc
 from app.models import (
     AssignmentFieldDefinition,
     AuthSession,
@@ -18,20 +19,48 @@ from app.models import (
     UserRole,
 )
 from app.services.audit import record_audit_log, snapshot_entity
-from app.services.human_auth import hash_password, normalize_email
+from app.services.human_auth import (
+    hash_password,
+    normalize_email,
+    record_security_event,
+)
 
 WILDCARD_PERMISSION = "*"
 AUTOMATION_FORBIDDEN_PERMISSIONS = frozenset(
-    {WILDCARD_PERMISSION, "access:manage", "api_credentials:manage"}
+    {WILDCARD_PERMISSION, "access:manage", "access:review", "api_credentials:manage"}
 )
 
 PERMISSIONS: dict[str, tuple[str, str, str]] = {
-    "employees:read": ("Employees", "View employees", "View employee profiles and employment facts."),
-    "employees:create": ("Employees", "Create employees", "Add employees and preview their initial assignments."),
-    "employees:update": ("Employees", "Update employees", "Change employee facts that can affect assignments."),
-    "employees:delete": ("Employees", "Delete employees", "Remove employees from the workspace."),
-    "policies:read": ("Policies", "View policies", "View policies, versions, rules, and impact."),
-    "policies:create": ("Policies", "Create policies", "Create policies and their first version."),
+    "employees:read": (
+        "Employees",
+        "View employees",
+        "View employee profiles and employment facts.",
+    ),
+    "employees:create": (
+        "Employees",
+        "Create employees",
+        "Add employees and preview their initial assignments.",
+    ),
+    "employees:update": (
+        "Employees",
+        "Update employees",
+        "Change employee facts that can affect assignments.",
+    ),
+    "employees:delete": (
+        "Employees",
+        "Delete employees",
+        "Remove employees from the workspace.",
+    ),
+    "policies:read": (
+        "Policies",
+        "View policies",
+        "View policies, versions, rules, and impact.",
+    ),
+    "policies:create": (
+        "Policies",
+        "Create policies",
+        "Create policies and their first version.",
+    ),
     "policies:update": (
         "Policies",
         "Full policy management (legacy)",
@@ -52,19 +81,72 @@ PERMISSIONS: dict[str, tuple[str, str, str]] = {
         "Archive policies",
         "Stop a policy from participating in assignment resolution.",
     ),
-    "groups:read": ("Groups", "View groups", "View groups and their policy connections."),
+    "groups:read": (
+        "Groups",
+        "View groups",
+        "View groups and their policy connections.",
+    ),
     "groups:create": ("Groups", "Create groups", "Create employee groups."),
-    "groups:update": ("Groups", "Manage groups", "Rename groups and change membership or attached policies."),
-    "assignments:read": ("Assignments", "View assignments", "View resolved assignments, history, and explanations."),
-    "assignments:manage": ("Assignments", "Manage assignments", "Refresh assignments and manage manual overrides."),
-    "settings:read": ("Configuration", "View assignment fields", "View assignment and condition-field configuration."),
-    "settings:manage": ("Configuration", "Manage assignment fields", "Create assignment output fields."),
-    "audit:read": ("Audit", "View audit log", "Inspect recorded changes and their actors."),
-    "access:read": ("Access control", "View users and roles", "View users, roles, and the permission catalog."),
-    "access:manage": ("Access control", "Manage users and roles", "Create and update users, roles, and role assignments."),
-    "api_credentials:manage": ("Integrations", "Manage API credentials", "Create, list, and revoke machine credentials."),
-    "changes:preview": ("Changes", "Preview changes", "Calculate the effects of supported changes before saving."),
-    "changes:execute": ("Changes", "Execute approved changes", "Commit a previously approved change preview."),
+    "groups:update": (
+        "Groups",
+        "Manage groups",
+        "Rename groups and change membership or attached policies.",
+    ),
+    "assignments:read": (
+        "Assignments",
+        "View assignments",
+        "View resolved assignments, history, and explanations.",
+    ),
+    "assignments:manage": (
+        "Assignments",
+        "Manage assignments",
+        "Refresh assignments and manage manual overrides.",
+    ),
+    "settings:read": (
+        "Configuration",
+        "View assignment fields",
+        "View assignment and condition-field configuration.",
+    ),
+    "settings:manage": (
+        "Configuration",
+        "Manage assignment fields",
+        "Create assignment output fields.",
+    ),
+    "audit:read": (
+        "Audit",
+        "View audit log",
+        "Inspect recorded changes and their actors.",
+    ),
+    "access:read": (
+        "Access control",
+        "View users and roles",
+        "View users, roles, and the permission catalog.",
+    ),
+    "access:review": (
+        "Access control",
+        "Review privileged access",
+        "Generate a security review of privileged users, broad roles, MFA coverage, and stale access.",
+    ),
+    "access:manage": (
+        "Access control",
+        "Manage users and roles",
+        "Create and update users, roles, and role assignments.",
+    ),
+    "api_credentials:manage": (
+        "Integrations",
+        "Manage API credentials",
+        "Create, list, and revoke machine credentials.",
+    ),
+    "changes:preview": (
+        "Changes",
+        "Preview changes",
+        "Calculate the effects of supported changes before saving.",
+    ),
+    "changes:execute": (
+        "Changes",
+        "Execute approved changes",
+        "Commit a previously approved change preview.",
+    ),
     "changes:approve": (
         "Changes",
         "Approve sensitive changes",
@@ -91,6 +173,8 @@ def authorize_permissions(granted: frozenset[str], required: set[str]) -> None:
 
 def required_permissions(method: str, path: str) -> set[str]:
     method = method.upper()
+    if path == "/authorization/access-review":
+        return {"access:review"}
     if path.startswith(("/users", "/roles", "/authorization")):
         return {"access:read"} if method == "GET" else {"access:manage"}
     if path.startswith("/auth/credentials") or path == "/auth/scopes":
@@ -123,7 +207,11 @@ def required_permissions(method: str, path: str) -> set[str]:
     if path.startswith("/groups"):
         if method == "GET":
             return {"groups:read"}
-        return {"groups:create"} if method == "POST" and path == "/groups" else {"groups:update"}
+        return (
+            {"groups:create"}
+            if method == "POST" and path == "/groups"
+            else {"groups:update"}
+        )
     if path.startswith("/policies"):
         if method == "GET":
             return {"policies:read"}
@@ -139,11 +227,13 @@ def required_permissions(method: str, path: str) -> set[str]:
 def effective_permissions(session: Session, user: User) -> frozenset[str]:
     if user.is_root:
         return frozenset({WILDCARD_PERMISSION})
-    explicit_values = set(session.scalars(
-        select(RolePermission.permission)
-        .join(UserRole, UserRole.role_id == RolePermission.role_id)
-        .where(UserRole.user_id == user.id)
-    ))
+    explicit_values = set(
+        session.scalars(
+            select(RolePermission.permission)
+            .join(UserRole, UserRole.role_id == RolePermission.role_id)
+            .where(UserRole.user_id == user.id)
+        )
+    )
     automated_values = set(
         session.scalars(
             select(RolePermission.permission)
@@ -155,6 +245,129 @@ def effective_permissions(session: Session, user: User) -> frozenset[str]:
         )
     )
     return frozenset(explicit_values | automated_values)
+
+
+def access_review(session: Session) -> dict:
+    """Build a point-in-time least-privilege and privileged-access review."""
+    roles = list(
+        session.scalars(
+            select(Role)
+            .options(
+                selectinload(Role.permission_links),
+                selectinload(Role.users),
+                selectinload(Role.automated_user_links),
+            )
+            .order_by(Role.name)
+        )
+    )
+    users = list(
+        session.scalars(select(User).where(User.status == "active").order_by(User.name))
+    )
+    privileged_permissions = {
+        WILDCARD_PERMISSION,
+        "access:manage",
+        "api_credentials:manage",
+        "changes:approve",
+        "changes:execute",
+    }
+    findings: list[dict] = []
+    privileged_users = 0
+    privileged_without_mfa = 0
+    dormant_before = current_datetime().timestamp() - 90 * 24 * 60 * 60
+
+    for user in users:
+        permissions = effective_permissions(session, user)
+        privileged = user.is_root or bool(permissions & privileged_permissions)
+        if privileged:
+            privileged_users += 1
+            if not user.mfa_enabled:
+                privileged_without_mfa += 1
+                findings.append(
+                    {
+                        "severity": "critical" if user.is_root else "warning",
+                        "code": "privileged_user_without_mfa",
+                        "subject_type": "user",
+                        "subject_id": user.id,
+                        "subject_name": user.email,
+                        "message": "Privileged access is not protected by MFA.",
+                    }
+                )
+        if (
+            user.last_login_at is None
+            or ensure_utc(user.last_login_at).timestamp() < dormant_before
+        ):
+            findings.append(
+                {
+                    "severity": "warning" if privileged else "info",
+                    "code": "dormant_user",
+                    "subject_type": "user",
+                    "subject_id": user.id,
+                    "subject_name": user.email,
+                    "message": "No sign-in has been recorded in the last 90 days.",
+                }
+            )
+
+    unused_roles = 0
+    for role in roles:
+        user_count = len(
+            {user.id for user in role.users}
+            | {link.user_id for link in role.automated_user_links}
+        )
+        permissions = {link.permission for link in role.permission_links}
+        if user_count == 0:
+            unused_roles += 1
+            findings.append(
+                {
+                    "severity": "info",
+                    "code": "unused_role",
+                    "subject_type": "role",
+                    "subject_id": role.id,
+                    "subject_name": role.name,
+                    "message": "This role has no current users.",
+                }
+            )
+        if role.employee_scope == "all" and role.assignment_field_scope == "all":
+            findings.append(
+                {
+                    "severity": "warning"
+                    if permissions & privileged_permissions
+                    else "info",
+                    "code": "broad_data_scope",
+                    "subject_type": "role",
+                    "subject_id": role.id,
+                    "subject_name": role.name,
+                    "message": "This role can see every employee and assignment field.",
+                }
+            )
+        if permissions & privileged_permissions:
+            findings.append(
+                {
+                    "severity": "warning",
+                    "code": "privileged_role",
+                    "subject_type": "role",
+                    "subject_id": role.id,
+                    "subject_name": role.name,
+                    "message": "Review this role because it grants sensitive administrative actions.",
+                }
+            )
+
+    severity_order = {"critical": 0, "warning": 1, "info": 2}
+    findings.sort(
+        key=lambda item: (
+            severity_order[item["severity"]],
+            item["subject_name"],
+            item["code"],
+        )
+    )
+    return {
+        "generated_at": current_datetime(),
+        "active_user_count": len(users),
+        "role_count": len(roles),
+        "privileged_user_count": privileged_users,
+        "privileged_users_without_mfa": privileged_without_mfa,
+        "unused_role_count": unused_roles,
+        "findings": findings,
+    }
 
 
 def role_by_id(session: Session, role_id: int) -> Role:
@@ -188,8 +401,8 @@ def create_role(
     name: str,
     description: str | None,
     permissions: Iterable[str],
-    employee_scope: str,
-    assignment_field_scope: str,
+    employee_scope: Literal["all", "reporting_tree", "self", "none"],
+    assignment_field_scope: Literal["all", "selected", "none"],
     assignment_field_ids: Iterable[int],
     automation_eligible: bool,
     actor: str,
@@ -197,7 +410,9 @@ def create_role(
     normalized_name = name.strip()
     if not normalized_name:
         raise ValueError("Role name cannot be blank")
-    if session.scalar(select(Role.id).where(func.lower(Role.name) == normalized_name.casefold())):
+    if session.scalar(
+        select(Role.id).where(func.lower(Role.name) == normalized_name.casefold())
+    ):
         raise ValueError("A role with this name already exists")
     normalized_permissions = validate_permissions(permissions)
     _validate_automation_eligibility(
@@ -214,8 +429,7 @@ def create_role(
         created_by=actor,
     )
     role.permission_links = [
-        RolePermission(permission=permission)
-        for permission in normalized_permissions
+        RolePermission(permission=permission) for permission in normalized_permissions
     ]
     role.assignment_field_links = _assignment_field_links(
         session,
@@ -243,8 +457,8 @@ def update_role(
     name: str | None,
     description: str | None,
     permissions: Iterable[str] | None,
-    employee_scope: str | None,
-    assignment_field_scope: str | None,
+    employee_scope: Literal["all", "reporting_tree", "self", "none"] | None,
+    assignment_field_scope: Literal["all", "selected", "none"] | None,
     assignment_field_ids: Iterable[int] | None,
     automation_eligible: bool | None,
     description_supplied: bool,
@@ -274,9 +488,7 @@ def update_role(
     resulting_name = role.name
     resulting_permissions = [link.permission for link in role.permission_links]
     resulting_automation_eligible = (
-        role.automation_eligible
-        if automation_eligible is None
-        else automation_eligible
+        role.automation_eligible if automation_eligible is None else automation_eligible
     )
     if automation_eligible is False and role.policy_grants:
         raise ValueError(
@@ -346,7 +558,9 @@ def delete_role(session: Session, role: Role, *, actor: str) -> None:
 
 def user_by_id(session: Session, user_id: int) -> User:
     user = session.scalar(
-        select(User).options(selectinload(User.roles).selectinload(Role.permission_links)).where(User.id == user_id)
+        select(User)
+        .options(selectinload(User.roles).selectinload(Role.permission_links))
+        .where(User.id == user_id)
     )
     if user is None:
         raise LookupError(f"User {user_id} was not found")
@@ -355,7 +569,15 @@ def user_by_id(session: Session, user_id: int) -> User:
 
 def roles_by_ids(session: Session, role_ids: Iterable[int]) -> list[Role]:
     unique_ids = sorted(set(role_ids))
-    roles = list(session.scalars(select(Role).where(Role.id.in_(unique_ids)).order_by(Role.id))) if unique_ids else []
+    roles = (
+        list(
+            session.scalars(
+                select(Role).where(Role.id.in_(unique_ids)).order_by(Role.id)
+            )
+        )
+        if unique_ids
+        else []
+    )
     if len(roles) != len(unique_ids):
         found = {role.id for role in roles}
         missing = [str(role_id) for role_id in unique_ids if role_id not in found]
@@ -416,7 +638,7 @@ def update_user(
     user: User,
     *,
     name: str | None,
-    status: str | None,
+    status: Literal["active", "suspended", "disabled"] | None,
     role_ids: Iterable[int] | None,
     employee_id: int | None,
     employee_id_supplied: bool,
@@ -484,7 +706,15 @@ def reset_user_password(
         raise ValueError("Use account security to change the Root password")
     user.password_hash = hash_password(password)
     user.password_change_required = True
+    user.password_changed_at = current_datetime()
     revoke_user_sessions(session, user)
+    record_security_event(
+        session,
+        user=user,
+        event_type="password_reset_by_administrator",
+        severity="critical",
+        details={"actor": actor},
+    )
     record_audit_log(
         session,
         actor=actor,
@@ -496,7 +726,9 @@ def reset_user_password(
     )
 
 
-def disable_user(session: Session, user: User, *, actor: str, actor_user_id: int) -> None:
+def disable_user(
+    session: Session, user: User, *, actor: str, actor_user_id: int
+) -> None:
     if user.is_root:
         raise ValueError("The Root user cannot be deleted")
     if user.id == actor_user_id:
@@ -504,6 +736,13 @@ def disable_user(session: Session, user: User, *, actor: str, actor_user_id: int
     before = user_snapshot(user)
     user.status = "disabled"
     revoke_user_sessions(session, user)
+    record_security_event(
+        session,
+        user=user,
+        event_type="account_disabled",
+        severity="critical",
+        details={"actor": actor},
+    )
     record_audit_log(
         session,
         actor=actor,
@@ -518,7 +757,9 @@ def disable_user(session: Session, user: User, *, actor: str, actor_user_id: int
 def revoke_user_sessions(session: Session, user: User) -> None:
     now = current_datetime()
     for auth_session in session.scalars(
-        select(AuthSession).where(AuthSession.user_id == user.id, AuthSession.revoked_at.is_(None))
+        select(AuthSession).where(
+            AuthSession.user_id == user.id, AuthSession.revoked_at.is_(None)
+        )
     ):
         auth_session.revoked_at = now
 
@@ -530,8 +771,7 @@ def role_snapshot(role: Role) -> dict:
         "employee_scope": role.employee_scope,
         "assignment_field_scope": role.assignment_field_scope,
         "assignment_field_ids": sorted(
-            link.assignment_field_definition_id
-            for link in role.assignment_field_links
+            link.assignment_field_definition_id for link in role.assignment_field_links
         ),
         "automation_eligible": role.automation_eligible,
         "permissions": sorted(link.permission for link in role.permission_links),
@@ -583,12 +823,21 @@ def _validate_automation_eligibility(
 
 def user_snapshot(user: User) -> dict:
     return {
-        **snapshot_entity(user, exclude={"password_hash"}),
+        **snapshot_entity(
+            user,
+            exclude={
+                "password_hash",
+                "mfa_secret_ciphertext",
+                "mfa_recovery_code_hashes",
+            },
+        ),
         "role_ids": sorted(role.id for role in user.roles),
     }
 
 
-def _validate_employee_link(session: Session, employee_id: int | None, *, user_id: int | None = None) -> None:
+def _validate_employee_link(
+    session: Session, employee_id: int | None, *, user_id: int | None = None
+) -> None:
     if employee_id is None:
         return
     if session.get(Employee, employee_id) is None:

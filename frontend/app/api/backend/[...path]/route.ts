@@ -37,6 +37,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       Accept: "application/json",
       ...(sessionToken ? { Cookie: `${sessionCookieName}=${sessionToken}` } : {}),
       ...(request.headers.get("origin") ? { Origin: request.headers.get("origin")! } : {}),
+      ...(request.headers.get("user-agent") ? { "User-Agent": request.headers.get("user-agent")!.slice(0, 500) } : {}),
       ...(body ? { "Content-Type": request.headers.get("content-type") ?? "application/json" } : {}),
     },
     body,

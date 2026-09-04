@@ -25,7 +25,12 @@ from app.services.auth import (
     required_scope,
 )
 from app.services.employee_visibility import EmployeeVisibility, employee_visibility
-from app.services.human_auth import SESSION_COOKIE_NAME, authenticate_session
+from app.services.human_auth import (
+    SESSION_COOKIE_NAME,
+    authenticate_session,
+    privileged_mfa_required,
+    session_recently_reauthenticated,
+)
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
 
@@ -44,7 +49,9 @@ def _require_trusted_session_origin(request: Request) -> None:
         return
     origin = request.headers.get("origin")
     same_origin = str(request.base_url).rstrip("/")
-    allowed_origins = set(getattr(request.app.state, "browser_allowed_origins", ()))
+    allowed_origins: set[str] = set(
+        getattr(request.app.state, "browser_allowed_origins", ())
+    )
     allowed_origins.add(same_origin)
     if origin not in allowed_origins:
         raise HTTPException(
@@ -74,7 +81,11 @@ def get_authenticated_principal(
 
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
     if session_token:
-        user, auth_session = authenticate_session(session, session_token)
+        user, auth_session = authenticate_session(
+            session,
+            session_token,
+            client_ip=request.client.host if request.client else None,
+        )
         _require_trusted_session_origin(request)
         if user.password_change_required:
             raise HTTPException(
@@ -114,7 +125,11 @@ def get_authenticated_human_session(
             "A user session is required",
             code="authentication_required",
         )
-    user, auth_session = authenticate_session(session, session_token)
+    user, auth_session = authenticate_session(
+        session,
+        session_token,
+        client_ip=request.client.host if request.client else None,
+    )
     _require_trusted_session_origin(request)
     return AuthenticatedHumanSession(user=user, session=auth_session)
 
@@ -153,13 +168,47 @@ HumanSession = Annotated[
 ]
 
 
-def authorize_operation(request: Request, principal: Authenticated) -> None:
+SENSITIVE_PERMISSIONS = frozenset(
+    {
+        "access:manage",
+        "api_credentials:manage",
+        "changes:approve",
+        "changes:execute",
+    }
+)
+
+
+def authorize_operation(
+    request: Request,
+    principal: Authenticated,
+    session: DatabaseSession,
+) -> None:
     """Authorize one API operation using its method and public route path."""
     if principal.authentication_method == "human_session":
-        authorize_permissions(
-            principal.permissions,
-            required_permissions(request.method, request.url.path),
-        )
+        required = required_permissions(request.method, request.url.path)
+        authorize_permissions(principal.permissions, required)
+        if (
+            request.method.upper() not in SAFE_SESSION_METHODS
+            and required & SENSITIVE_PERMISSIONS
+        ):
+            auth_session = session.get(AuthSession, principal.session_id)
+            user = session.get(User, principal.user_id)
+            if auth_session is None or user is None:
+                raise AuthenticationError(
+                    "The user session is invalid", code="invalid_session"
+                )
+            if privileged_mfa_required() and (
+                not user.mfa_enabled or auth_session.mfa_verified_at is None
+            ):
+                raise AuthenticationError(
+                    "Multi-factor authentication is required for privileged changes",
+                    code="mfa_enrollment_required",
+                )
+            if not session_recently_reauthenticated(auth_session):
+                raise AuthenticationError(
+                    "Re-enter your password before performing this sensitive operation",
+                    code="reauthentication_required",
+                )
     else:
         authorize(principal, {required_scope(request.method, request.url.path)})
     request.state.authenticated_principal = principal

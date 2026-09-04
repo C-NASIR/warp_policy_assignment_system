@@ -45,6 +45,112 @@ class HumanLoginCreate(BaseModel):
 
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)
+    mfa_code: str | None = Field(default=None, min_length=6, max_length=20)
+    recovery_code: str | None = Field(default=None, min_length=8, max_length=32)
+
+
+class PasswordResetRequestCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+
+
+class PasswordResetRequestRead(BaseModel):
+    message: str
+    reset_token: str | None = None
+
+
+class PasswordResetConfirmCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=32, max_length=200)
+    new_password: str = Field(min_length=12, max_length=128)
+    mfa_code: str | None = Field(default=None, min_length=6, max_length=20)
+    recovery_code: str | None = Field(default=None, min_length=8, max_length=32)
+
+
+class MFASetupCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str = Field(min_length=1, max_length=128)
+
+
+class MFASetupRead(BaseModel):
+    secret: str
+    provisioning_uri: str
+
+
+class MFAConfirmCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=6, max_length=20)
+
+
+class MFAConfirmRead(BaseModel):
+    recovery_codes: list[str]
+
+
+class MFADisableCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str = Field(min_length=1, max_length=128)
+    mfa_code: str | None = Field(default=None, min_length=6, max_length=20)
+    recovery_code: str | None = Field(default=None, min_length=8, max_length=32)
+
+
+class ReauthenticateCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    password: str = Field(min_length=1, max_length=128)
+    mfa_code: str | None = Field(default=None, min_length=6, max_length=20)
+    recovery_code: str | None = Field(default=None, min_length=8, max_length=32)
+
+
+class AuthSessionRead(BaseModel):
+    id: int
+    current: bool
+    created_at: datetime
+    last_seen_at: datetime
+    expires_at: datetime
+    created_ip: str | None
+    last_ip: str | None
+    user_agent: str | None
+    mfa_verified: bool
+
+
+class SecurityEventRead(ORMModel):
+    id: int
+    event_type: str
+    severity: Literal["info", "warning", "critical"]
+    details: dict[str, Any]
+    created_at: datetime
+    acknowledged_at: datetime | None
+
+
+class AccountSecurityRead(BaseModel):
+    mfa_enabled: bool
+    mfa_required: bool
+    sessions: list[AuthSessionRead]
+    events: list[SecurityEventRead]
+
+
+class AccessReviewFindingRead(BaseModel):
+    severity: Literal["info", "warning", "critical"]
+    code: str
+    subject_type: Literal["user", "role"]
+    subject_id: int
+    subject_name: str
+    message: str
+
+
+class AccessReviewRead(BaseModel):
+    generated_at: datetime
+    active_user_count: int
+    role_count: int
+    privileged_user_count: int
+    privileged_users_without_mfa: int
+    unused_role_count: int
+    findings: list[AccessReviewFindingRead]
 
 
 class PasswordChangeCreate(BaseModel):
@@ -84,7 +190,9 @@ class RoleCreate(BaseModel):
     @model_validator(mode="after")
     def validate_assignment_field_scope(self) -> RoleCreate:
         if self.assignment_field_scope == "selected" and not self.assignment_field_ids:
-            raise ValueError("Selected assignment fields must include at least one field")
+            raise ValueError(
+                "Selected assignment fields must include at least one field"
+            )
         if self.assignment_field_scope != "selected" and self.assignment_field_ids:
             raise ValueError("Assignment field IDs are only valid for selected scope")
         return self
@@ -149,6 +257,7 @@ class UserRead(ORMModel):
     status: Literal["active", "suspended", "disabled"]
     is_root: bool
     password_change_required: bool
+    mfa_enabled: bool
     employee_id: int | None
     employee_link_hidden: bool = False
     created_at: datetime
@@ -257,7 +366,10 @@ class EmployeeOverrideUpdate(BaseModel):
     def require_a_change(self) -> EmployeeOverrideUpdate:
         if not self.model_fields_set:
             raise ValueError("At least one override field must be provided")
-        if "assignment_field_definition_id" in self.model_fields_set and self.assignment_field_definition_id is None:
+        if (
+            "assignment_field_definition_id" in self.model_fields_set
+            and self.assignment_field_definition_id is None
+        ):
             raise ValueError("assignment_field_definition_id cannot be null")
         if "value" in self.model_fields_set and self.value is None:
             raise ValueError("value cannot be null")
@@ -300,7 +412,9 @@ class ConditionGroupCreate(BaseModel):
     @model_validator(mode="after")
     def require_an_operand(self) -> ConditionGroupCreate:
         if not self.conditions and not self.child_groups:
-            raise ValueError("A condition group must contain a condition or child group")
+            raise ValueError(
+                "A condition group must contain a condition or child group"
+            )
         return self
 
 
@@ -315,7 +429,10 @@ class PolicyVersionCreate(BaseModel):
 
     @model_validator(mode="after")
     def require_a_valid_effective_range(self) -> PolicyVersionCreate:
-        if self.effective_until is not None and self.effective_until < self.effective_from:
+        if (
+            self.effective_until is not None
+            and self.effective_until < self.effective_from
+        ):
             raise ValueError("effective_until cannot be before effective_from")
         return self
 
@@ -376,9 +493,7 @@ class PolicyRead(ORMModel):
     created_at: datetime
     created_by: str | None = None
     versions: list[PolicyVersionRead]
-    capabilities: PolicyCapabilitiesRead = Field(
-        default_factory=PolicyCapabilitiesRead
-    )
+    capabilities: PolicyCapabilitiesRead = Field(default_factory=PolicyCapabilitiesRead)
 
 
 class AssignmentRead(ORMModel):
@@ -669,7 +784,9 @@ class EmployeeOverrideChangePreview(_ChangePreviewBase):
     def require_fields_for_override_action(self) -> EmployeeOverrideChangePreview:
         if self.action == "create":
             if self.override_id is not None:
-                raise ValueError("override_id is not accepted when creating an override")
+                raise ValueError(
+                    "override_id is not accepted when creating an override"
+                )
             if self.assignment_field_definition_id is None or self.value is None:
                 raise ValueError(
                     "Creating an override requires assignment_field_definition_id and value"

@@ -58,9 +58,7 @@ def create_tables() -> None:
             )
         )
         session.execute(
-            text(
-                "ALTER TABLE roles ALTER COLUMN employee_scope SET DEFAULT 'none'"
-            )
+            text("ALTER TABLE roles ALTER COLUMN employee_scope SET DEFAULT 'none'")
         )
         # Existing roles previously had access to every assignment domain.
         session.execute(
@@ -89,8 +87,61 @@ def create_tables() -> None:
         )
         session.execute(
             text(
-                "ALTER TABLE policies ADD COLUMN IF NOT EXISTS created_by "
-                "VARCHAR(200)"
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_enabled "
+                "BOOLEAN NOT NULL DEFAULT false"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_secret_ciphertext VARCHAR(1000)"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_recovery_code_hashes "
+                "JSON NOT NULL DEFAULT '[]'"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS reauthenticated_at "
+                "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS mfa_verified_at TIMESTAMPTZ"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS created_ip VARCHAR(64)"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS last_ip VARCHAR(64)"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS user_agent VARCHAR(500)"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS "
+                "pending_mfa_secret_ciphertext VARCHAR(1000)"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE policies ADD COLUMN IF NOT EXISTS created_by VARCHAR(200)"
             )
         )
         session.execute(
@@ -113,6 +164,18 @@ def create_tables() -> None:
                 "AND conrelid = 'roles'::regclass) THEN "
                 "ALTER TABLE roles ADD CONSTRAINT ck_role_assignment_field_scope "
                 "CHECK (assignment_field_scope IN ('all', 'selected', 'none')); "
+                "END IF; END $$"
+            )
+        )
+        session.execute(
+            text(
+                "DO $$ BEGIN "
+                "IF NOT EXISTS (SELECT 1 FROM pg_constraint "
+                "WHERE conname = 'ck_security_event_severity' "
+                "AND conrelid = 'security_events'::regclass) THEN "
+                "ALTER TABLE security_events ADD CONSTRAINT "
+                "ck_security_event_severity CHECK "
+                "(severity IN ('info', 'warning', 'critical')); "
                 "END IF; END $$"
             )
         )

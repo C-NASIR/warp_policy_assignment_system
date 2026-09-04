@@ -25,6 +25,10 @@ os.environ["DATABASE_URL"] = test_database_url.render_as_string(hide_password=Fa
 TEST_BOOTSTRAP_TOKEN = "test-bootstrap-token-with-at-least-32-bytes"
 os.environ["AUTH_BOOTSTRAP_TOKEN"] = TEST_BOOTSTRAP_TOKEN
 os.environ["AUTH_BOOTSTRAP_SUBJECT"] = "api"
+os.environ["AUTH_MFA_ENCRYPTION_KEY"] = "test-mfa-encryption-key-at-least-32-bytes"
+# Existing feature tests focus on their own authorization boundary. Phase 7
+# has dedicated tests that opt into privileged MFA enforcement explicitly.
+os.environ["AUTH_REQUIRE_PRIVILEGED_MFA"] = "false"
 
 from app import models  # noqa: F401
 from app.database import Base, get_db

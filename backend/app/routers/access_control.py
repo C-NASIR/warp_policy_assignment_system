@@ -8,6 +8,7 @@ from app.dependencies import Authenticated, DatabaseSession, EmployeeScope
 from app.models import AssignmentFieldDefinition, AutomatedUserRole, Role, User
 from app.pagination import Pagination, paginate_scalars, paginate_sequence
 from app.schemas import (
+    AccessReviewRead,
     AssignmentFieldDefinitionRead,
     PermissionRead,
     RoleCreate,
@@ -21,6 +22,7 @@ from app.schemas import (
 )
 from app.services.access_control import (
     PERMISSIONS,
+    access_review,
     create_role,
     create_user,
     delete_role,
@@ -49,6 +51,11 @@ def list_permissions(
         for name, (group, label, description) in PERMISSIONS.items()
     ]
     return paginate_sequence(values, pagination, response)
+
+
+@authorization_router.get("/access-review", response_model=AccessReviewRead)
+def review_access(session: DatabaseSession) -> AccessReviewRead:
+    return AccessReviewRead.model_validate(access_review(session))
 
 
 @authorization_router.get(
@@ -87,7 +94,9 @@ def list_roles(
         statement = statement.where(
             or_(Role.name.ilike(pattern), Role.description.ilike(pattern))
         )
-    roles = paginate_scalars(session, statement.order_by(Role.name, Role.id), pagination, response)
+    roles = paginate_scalars(
+        session, statement.order_by(Role.name, Role.id), pagination, response
+    )
     return [_role_read(role) for role in roles]
 
 
@@ -132,7 +141,9 @@ def change_role(
             session,
             role,
             name=data.name,
-            description=data.description if "description" in data.model_fields_set else None,
+            description=data.description
+            if "description" in data.model_fields_set
+            else None,
             permissions=data.permissions,
             employee_scope=data.employee_scope,
             assignment_field_scope=data.assignment_field_scope,
@@ -155,7 +166,9 @@ def remove_role(
     try:
         delete_role(session, _find_role(session, role_id), actor=principal.subject)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -177,12 +190,16 @@ def list_users(
     )
     if search:
         pattern = f"%{search.strip()}%"
-        statement = statement.where(or_(User.name.ilike(pattern), User.email.ilike(pattern)))
+        statement = statement.where(
+            or_(User.name.ilike(pattern), User.email.ilike(pattern))
+        )
     if user_status:
         statement = statement.where(User.status == user_status)
     if role_id:
         statement = statement.where(User.roles.any(Role.id == role_id))
-    users = paginate_scalars(session, statement.order_by(User.name, User.id), pagination, response)
+    users = paginate_scalars(
+        session, statement.order_by(User.name, User.id), pagination, response
+    )
     return [_user_read(session, user, visibility) for user in users]
 
 
@@ -289,7 +306,9 @@ def remove_user(
             actor_user_id=principal.user_id or -1,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -301,8 +320,7 @@ def _role_read(role: Role) -> RoleRead:
         employee_scope=role.employee_scope,
         assignment_field_scope=role.assignment_field_scope,
         assignment_field_ids=sorted(
-            link.assignment_field_definition_id
-            for link in role.assignment_field_links
+            link.assignment_field_definition_id for link in role.assignment_field_links
         ),
         automation_eligible=role.automation_eligible,
         permissions=sorted(link.permission for link in role.permission_links),
@@ -337,18 +355,21 @@ def _user_read(
         status=user.status,
         is_root=user.is_root,
         password_change_required=user.password_change_required,
+        mfa_enabled=user.mfa_enabled,
         employee_id=(
             user.employee_id
             if user.employee_id is None or visibility.can_access(user.employee_id)
             else None
         ),
         employee_link_hidden=(
-            user.employee_id is not None
-            and not visibility.can_access(user.employee_id)
+            user.employee_id is not None and not visibility.can_access(user.employee_id)
         ),
         created_at=user.created_at,
         last_login_at=user.last_login_at,
-        roles=[RoleSummaryRead.model_validate(role) for role in sorted(user.roles, key=lambda item: item.name)],
+        roles=[
+            RoleSummaryRead.model_validate(role)
+            for role in sorted(user.roles, key=lambda item: item.name)
+        ],
         automated_roles=[
             RoleSummaryRead.model_validate(role) for role in automated_roles
         ],
@@ -360,22 +381,34 @@ def _find_role(session: DatabaseSession, role_id: int) -> Role:
     try:
         return role_by_id(session, role_id)
     except LookupError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
 
 
 def _find_user(session: DatabaseSession, user_id: int) -> User:
     try:
         return user_by_id(session, user_id)
     except LookupError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
 
 
 def _raise_role_value_error(exc: ValueError) -> None:
-    code = status.HTTP_409_CONFLICT if "already exists" in str(exc) else status.HTTP_422_UNPROCESSABLE_CONTENT
+    code = (
+        status.HTTP_409_CONFLICT
+        if "already exists" in str(exc)
+        else status.HTTP_422_UNPROCESSABLE_CONTENT
+    )
     raise HTTPException(status_code=code, detail=str(exc)) from exc
 
 
 def _raise_user_value_error(exc: ValueError) -> None:
     message = str(exc)
-    code = status.HTTP_409_CONFLICT if "already exists" in message or "already linked" in message else status.HTTP_422_UNPROCESSABLE_CONTENT
+    code = (
+        status.HTTP_409_CONFLICT
+        if "already exists" in message or "already linked" in message
+        else status.HTTP_422_UNPROCESSABLE_CONTENT
+    )
     raise HTTPException(status_code=code, detail=message) from exc

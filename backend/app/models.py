@@ -93,12 +93,12 @@ class Role(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    employee_scope: Mapped[
-        Literal["all", "reporting_tree", "self", "none"]
-    ] = mapped_column(String(30), default="none", server_default="none")
-    assignment_field_scope: Mapped[
-        Literal["all", "selected", "none"]
-    ] = mapped_column(String(20), default="none", server_default="none")
+    employee_scope: Mapped[Literal["all", "reporting_tree", "self", "none"]] = (
+        mapped_column(String(30), default="none", server_default="none")
+    )
+    assignment_field_scope: Mapped[Literal["all", "selected", "none"]] = mapped_column(
+        String(20), default="none", server_default="none"
+    )
     automation_eligible: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
@@ -183,11 +183,31 @@ class User(Base):
         default="active",
         server_default="active",
     )
-    is_root: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    is_root: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     password_change_required: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
         server_default="false",
+    )
+    mfa_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+    )
+    mfa_secret_ciphertext: Mapped[str | None] = mapped_column(
+        String(1000),
+        nullable=True,
+    )
+    mfa_recovery_code_hashes: Mapped[list[str]] = mapped_column(
+        JSON,
+        default=list,
+        server_default="[]",
+    )
+    password_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
     employee_id: Mapped[int | None] = mapped_column(
         ForeignKey("employees.id", ondelete="SET NULL"),
@@ -210,6 +230,14 @@ class User(Base):
         nullable=True,
     )
     sessions: Mapped[list[AuthSession]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    security_events: Mapped[list[SecurityEvent]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    password_reset_tokens: Mapped[list[PasswordResetToken]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -251,7 +279,98 @@ class AuthSession(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    reauthenticated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    mfa_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    created_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    last_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    pending_mfa_secret_ciphertext: Mapped[str | None] = mapped_column(
+        String(1000),
+        nullable=True,
+    )
     user: Mapped[User] = relationship(back_populates="sessions")
+
+
+class LoginThrottle(Base):
+    __tablename__ = "login_throttles"
+
+    key_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    failed_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    window_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    __table_args__ = (
+        Index("ix_password_reset_tokens_user", "user_id", "created_at"),
+        Index("ix_password_reset_tokens_expiry", "expires_at", "used_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    requested_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    user: Mapped[User] = relationship(back_populates="password_reset_tokens")
+
+
+class SecurityEvent(Base):
+    __tablename__ = "security_events"
+    __table_args__ = (
+        CheckConstraint(
+            "severity IN ('info', 'warning', 'critical')",
+            name="ck_security_event_severity",
+        ),
+        Index("ix_security_events_user_created", "user_id", "created_at"),
+        Index("ix_security_events_severity", "severity", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    event_type: Mapped[str] = mapped_column(String(100))
+    severity: Mapped[Literal["info", "warning", "critical"]] = mapped_column(String(20))
+    details: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    user: Mapped[User] = relationship(back_populates="security_events")
 
 
 class UserRole(Base):
@@ -493,7 +612,9 @@ class Employee(Base):
         foreign_keys=[manager_id],
         passive_deletes=True,
     )
-    policies: Mapped[list[Policy]] = relationship(secondary="employee_policies", back_populates="employees")
+    policies: Mapped[list[Policy]] = relationship(
+        secondary="employee_policies", back_populates="employees"
+    )
     groups: Mapped[list[Group]] = relationship(
         secondary="employee_group_memberships",
         back_populates="employees",
@@ -544,15 +665,21 @@ class Policy(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
-    status: Mapped[Literal["draft", "active", "archived"]] = mapped_column(String(20), default="active")
+    status: Mapped[Literal["draft", "active", "archived"]] = mapped_column(
+        String(20), default="active"
+    )
     created_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(),
         default=datetime.now,
         server_default=func.now(),
     )
-    employees: Mapped[list[Employee]] = relationship(secondary="employee_policies", back_populates="policies")
-    groups: Mapped[list[Group]] = relationship(secondary="group_policies", back_populates="policies")
+    employees: Mapped[list[Employee]] = relationship(
+        secondary="employee_policies", back_populates="policies"
+    )
+    groups: Mapped[list[Group]] = relationship(
+        secondary="group_policies", back_populates="policies"
+    )
     versions: Mapped[list[PolicyVersion]] = relationship(
         back_populates="policy",
         cascade="all, delete-orphan",
@@ -705,7 +832,9 @@ class ConditionFieldDependency(Base):
     dependency_key: Mapped[str] = mapped_column(String(200))
     source_table: Mapped[str | None] = mapped_column(String(100), nullable=True)
     source_column: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    role: Mapped[str] = mapped_column(String(100), default="value", server_default="value")
+    role: Mapped[str] = mapped_column(
+        String(100), default="value", server_default="value"
+    )
     impact_resolver_key: Mapped[str] = mapped_column(String(200))
     condition_field_definition: Mapped[ConditionFieldDefinition] = relationship(
         back_populates="dependencies"
@@ -744,7 +873,9 @@ class ConditionGroup(Base):
         nullable=True,
     )
     logical_operator: Mapped[Literal["and", "or"]] = mapped_column(String(10))
-    policy_version: Mapped[PolicyVersion] = relationship(back_populates="condition_groups")
+    policy_version: Mapped[PolicyVersion] = relationship(
+        back_populates="condition_groups"
+    )
     parent_group: Mapped[ConditionGroup | None] = relationship(
         back_populates="child_groups",
         remote_side="ConditionGroup.id",
@@ -790,7 +921,9 @@ class CompiledPolicyClause(Base):
         ForeignKey("policy_versions.id", ondelete="CASCADE"),
         index=True,
     )
-    policy_version: Mapped[PolicyVersion] = relationship(back_populates="compiled_clauses")
+    policy_version: Mapped[PolicyVersion] = relationship(
+        back_populates="compiled_clauses"
+    )
     conditions: Mapped[list[CompiledPolicyCondition]] = relationship(
         back_populates="clause",
         cascade="all, delete-orphan",
@@ -845,7 +978,9 @@ class EmployeeOverride(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"))
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id", ondelete="CASCADE")
+    )
     assignment_field_definition_id: Mapped[int] = mapped_column(
         ForeignKey("assignment_field_definitions.id")
     )
@@ -886,7 +1021,9 @@ class EmployeeAssignment(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"))
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id", ondelete="CASCADE")
+    )
     assignment_field_definition_id: Mapped[int] = mapped_column(
         ForeignKey("assignment_field_definitions.id")
     )
