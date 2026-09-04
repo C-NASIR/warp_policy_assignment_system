@@ -133,6 +133,7 @@ export type CurrentUser = {
   is_root: boolean;
   password_change_required: boolean;
   employee_id: number | null;
+  employee_link_hidden: boolean;
   created_at: string;
   last_login_at: string | null;
   roles: RoleSummary[];
@@ -152,6 +153,7 @@ export type RoleSummary = { id: number; name: string };
 
 export type Role = RoleSummary & {
   description: string | null;
+  employee_scope: "all" | "reporting_tree" | "self" | "none";
   permissions: string[];
   user_count: number;
   created_by: string;

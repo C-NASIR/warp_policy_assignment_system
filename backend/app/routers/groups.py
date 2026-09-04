@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import AuditActor, DatabaseSession
+from app.dependencies import AuditActor, DatabaseSession, EmployeeScope
 from app.models import (
     Employee,
     EmployeeGroupMembership,
@@ -15,6 +15,7 @@ from app.models import (
 )
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import EmployeeRead, GroupCreate, GroupRead, GroupUpdate, PolicyRead
+from app.services.employee_visibility import visible_employee_or_404
 from app.services.groups import (
     add_employee_to_group,
     add_policy_to_group,
@@ -72,6 +73,7 @@ def employees(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: EmployeeScope,
     search: Annotated[str | None, Query(max_length=200)] = None,
     state: Annotated[str | None, Query(max_length=100)] = None,
     department: Annotated[str | None, Query(max_length=100)] = None,
@@ -86,6 +88,7 @@ def employees(
         )
         .where(EmployeeGroupMembership.group_id == group_id)
     )
+    statement = visibility.apply(statement)
     if search:
         pattern = f"%{search.strip()}%"
         statement = statement.where(
@@ -120,7 +123,9 @@ def add_employee(
     employee_id: int,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> Employee:
+    visible_employee_or_404(session, visibility, employee_id)
     return add_employee_to_group(session, group_id, employee_id, actor)
 
 
@@ -133,7 +138,9 @@ def remove_employee(
     employee_id: int,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> Response:
+    visible_employee_or_404(session, visibility, employee_id)
     remove_employee_from_group(session, group_id, employee_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

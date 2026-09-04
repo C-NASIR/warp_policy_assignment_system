@@ -20,7 +20,7 @@ POLICY_API_URL=http://127.0.0.1:8000
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-On the first connected visit, PolicyOS opens the one-time Root account setup. Root can then create least-privilege roles and provision users under **Access control**. New users receive a temporary password and must replace it on first login. Navigation and mutation controls reflect effective role permissions, while the backend independently enforces every request. Browser requests use the same-origin `/api/backend/*` proxy, and the backend session token remains in an HTTP-only cookie rather than client-side JavaScript.
+On the first connected visit, PolicyOS opens the one-time Root account setup. Root can then create least-privilege roles and provision users under **Access control**. Each role combines action permissions with an employee visibility scope: all employees, the linked employee's reporting tree, the linked employee only, or no employees. User accounts can be linked to an employee record so self and reporting-tree scopes have a clear anchor. New users receive a temporary password and must replace it on first login. Navigation and mutation controls reflect effective role permissions, while every connected employee list and employee-derived result is already filtered by the backend. Browser requests use the same-origin `/api/backend/*` proxy, and the backend session token remains in an HTTP-only cookie rather than client-side JavaScript.
 
 ## Checks
 

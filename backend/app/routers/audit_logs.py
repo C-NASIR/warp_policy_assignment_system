@@ -3,11 +3,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, Response
 
-from app.dependencies import DatabaseSession
+from app.dependencies import DatabaseSession, EmployeeScope
 from app.models import AuditLog
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import AuditLogRead
 from app.services.audit import audit_log_statement
+from app.services.employee_visibility import apply_audit_visibility
 
 router = APIRouter(prefix="/audit-logs", tags=["audit logs"])
 
@@ -17,6 +18,7 @@ def list_all(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: EmployeeScope,
     entity_type: str | None = None,
     entity_id: int | None = None,
     actor: str | None = None,
@@ -34,6 +36,7 @@ def list_all(
         to_timestamp=to_timestamp,
         search=search,
     )
+    statement = apply_audit_visibility(statement, visibility)
     return paginate_scalars(
         session,
         statement.order_by(AuditLog.timestamp, AuditLog.id),

@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from app.dates import current_datetime
-from app.dependencies import AuditActor, DatabaseSession
+from app.dependencies import AuditActor, DatabaseSession, EmployeeScope
 from app.error_contract import conflict_issue
 from app.models import (
     ApprovedChangeExecution,
@@ -46,6 +46,11 @@ from app.services.employee_overrides import (
     create_employee_override,
     delete_employee_override,
     update_employee_override,
+)
+from app.services.employee_visibility import (
+    EmployeeVisibility,
+    require_employee_creation_scope,
+    visible_employee_or_404,
 )
 from app.services.employees import create_employee, update_employee
 from app.services.groups import add_employee_to_group, remove_employee_from_group
@@ -84,6 +89,7 @@ def preview(
     data: ChangePreviewCreate,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> ChangePreviewRead:
     """Simulate one supported mutation and roll back every resulting write."""
     savepoint = session.begin_nested()
@@ -93,15 +99,17 @@ def preview(
             data,
             lock=False,
         )
-        before = _current_assignments(session)
+        before = _current_assignments(session, visibility=visibility)
         context = _MutationContext()
         try:
-            _apply_change(session, data, actor, context)
+            _apply_change(session, data, actor, context, visibility)
             session.flush()
             after = _current_assignments(
                 session,
                 proposed_policy_version_ids=context.proposed_policy_version_ids,
                 proposed_override_ids=context.proposed_override_ids,
+                visibility=visibility,
+                proposed_employee_ids=context.proposed_employee_ids,
             )
             changes = _assignment_changes(
                 session,
@@ -156,6 +164,7 @@ def execute_approved_change(
     data: ApprovedChangeExecutionCreate,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> ApprovedChangeExecutionRead:
     """Execute exactly one signed preview, once, if its impact is unchanged."""
     claims = verify_change_approval(
@@ -198,15 +207,17 @@ def execute_approved_change(
             },
         )
 
-    before = _current_assignments(session)
+    before = _current_assignments(session, visibility=visibility)
     context = _MutationContext()
-    _apply_change(session, data.change, actor, context)
+    _apply_change(session, data.change, actor, context, visibility)
     session.flush()
 
     comparable_after = _current_assignments(
         session,
         proposed_policy_version_ids=context.proposed_policy_version_ids,
         proposed_override_ids=context.proposed_override_ids,
+        visibility=visibility,
+        proposed_employee_ids=context.proposed_employee_ids,
     )
     comparable_changes = _assignment_changes(
         session,
@@ -236,7 +247,11 @@ def execute_approved_change(
             },
         )
 
-    actual_after = _current_assignments(session)
+    actual_after = _current_assignments(
+        session,
+        visibility=visibility,
+        proposed_employee_ids=context.proposed_employee_ids,
+    )
     actual_context = _MutationContext(
         included_employee_ids=set(context.included_employee_ids),
         resources=dict(context.resources),
@@ -280,8 +295,10 @@ def _apply_change(
     data: ChangePreviewCreate,
     actor: str,
     context: _MutationContext,
+    visibility: EmployeeVisibility,
 ) -> None:
     if isinstance(data, EmployeeCreateChangePreview):
+        require_employee_creation_scope(session, visibility, data.employee.manager_id)
         employee = create_employee(session, data.employee, actor)
         context.included_employee_ids.add(employee.id)
         context.proposed_employee_ids.add(employee.id)
@@ -289,7 +306,21 @@ def _apply_change(
         return
 
     if isinstance(data, EmployeeUpdateChangePreview):
-        employee = _employee_or_404(session, data.employee_id)
+        employee = visible_employee_or_404(
+            session,
+            visibility,
+            data.employee_id,
+        )
+        if (
+            "manager_id" in data.changes.model_fields_set
+            and data.changes.manager_id is not None
+            and data.changes.manager_id != employee.manager_id
+        ):
+            visible_employee_or_404(
+                session,
+                visibility,
+                data.changes.manager_id,
+            )
         update_employee(session, employee, data.changes, actor)
         context.included_employee_ids.add(employee.id)
         context.resources["employee_id"] = employee.id
@@ -315,6 +346,7 @@ def _apply_change(
         return
 
     if isinstance(data, GroupMembershipChangePreview):
+        visible_employee_or_404(session, visibility, data.employee_id)
         if data.action == "add":
             add_employee_to_group(
                 session,
@@ -335,6 +367,7 @@ def _apply_change(
         return
 
     if isinstance(data, EmployeeOverrideChangePreview):
+        visible_employee_or_404(session, visibility, data.employee_id)
         context.included_employee_ids.add(data.employee_id)
         if data.action == "create":
             assignment_field_definition_id = data.assignment_field_definition_id
@@ -400,35 +433,34 @@ def _affected_employee_count(
     return sum(bool(item.added or item.removed or item.changed) for item in changes)
 
 
-def _employee_or_404(session: DatabaseSession, employee_id: int) -> Employee:
-    employee = session.get(Employee, employee_id)
-    if employee is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Employee {employee_id} not found",
-        )
-    return employee
-
-
 def _current_assignments(
     session: DatabaseSession,
     *,
     proposed_policy_version_ids: set[int] | None = None,
     proposed_override_ids: set[int] | None = None,
+    visibility: EmployeeVisibility,
+    proposed_employee_ids: set[int] | None = None,
 ) -> dict[int, list[AssignmentPreviewRead]]:
     proposed_policy_version_ids = proposed_policy_version_ids or set()
     proposed_override_ids = proposed_override_ids or set()
+    statement = (
+        select(EmployeeAssignment)
+        .where(EmployeeAssignment.effective_until.is_(None))
+        .options(joinedload(EmployeeAssignment.assignment_field_definition))
+        .order_by(
+            EmployeeAssignment.employee_id,
+            EmployeeAssignment.assignment_field_definition_id,
+            EmployeeAssignment.value,
+            EmployeeAssignment.id,
+        )
+    )
+    if not visibility.unrestricted:
+        visible_ids = set(visibility.employee_ids)
+        visible_ids.update(proposed_employee_ids or set())
+        statement = statement.where(EmployeeAssignment.employee_id.in_(visible_ids))
     assignments = list(
         session.scalars(
-            select(EmployeeAssignment)
-            .where(EmployeeAssignment.effective_until.is_(None))
-            .options(joinedload(EmployeeAssignment.assignment_field_definition))
-            .order_by(
-                EmployeeAssignment.employee_id,
-                EmployeeAssignment.assignment_field_definition_id,
-                EmployeeAssignment.value,
-                EmployeeAssignment.id,
-            )
+            statement
         )
     )
     result: dict[int, list[AssignmentPreviewRead]] = {}

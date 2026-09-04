@@ -79,10 +79,19 @@ class APICredential(Base):
 
 class Role(Base):
     __tablename__ = "roles"
+    __table_args__ = (
+        CheckConstraint(
+            "employee_scope IN ('all', 'reporting_tree', 'self', 'none')",
+            name="ck_role_employee_scope",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    employee_scope: Mapped[
+        Literal["all", "reporting_tree", "self", "none"]
+    ] = mapped_column(String(30), default="none", server_default="none")
     created_by: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

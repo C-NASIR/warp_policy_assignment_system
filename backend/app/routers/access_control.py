@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import Authenticated, DatabaseSession
+from app.dependencies import Authenticated, DatabaseSession, EmployeeScope
 from app.models import Role, User
 from app.pagination import Pagination, paginate_scalars, paginate_sequence
 from app.schemas import (
@@ -31,6 +31,7 @@ from app.services.access_control import (
     update_user,
     user_by_id,
 )
+from app.services.employee_visibility import EmployeeVisibility, visible_employee_or_404
 
 authorization_router = APIRouter(prefix="/authorization", tags=["authorization"])
 roles_router = APIRouter(prefix="/roles", tags=["roles"])
@@ -81,6 +82,7 @@ def add_role(
             name=data.name,
             description=data.description,
             permissions=data.permissions,
+            employee_scope=data.employee_scope,
             actor=principal.subject,
         )
     except ValueError as exc:
@@ -108,6 +110,7 @@ def change_role(
             name=data.name,
             description=data.description if "description" in data.model_fields_set else None,
             permissions=data.permissions,
+            employee_scope=data.employee_scope,
             description_supplied="description" in data.model_fields_set,
             actor=principal.subject,
         )
@@ -134,6 +137,7 @@ def list_users(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: EmployeeScope,
     search: Annotated[str | None, Query(max_length=200)] = None,
     user_status: Annotated[
         Literal["active", "suspended", "disabled"] | None,
@@ -152,7 +156,7 @@ def list_users(
     if role_id:
         statement = statement.where(User.roles.any(Role.id == role_id))
     users = paginate_scalars(session, statement.order_by(User.name, User.id), pagination, response)
-    return [_user_read(session, user) for user in users]
+    return [_user_read(session, user, visibility) for user in users]
 
 
 @users_router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
@@ -160,7 +164,10 @@ def add_user(
     data: UserCreate,
     session: DatabaseSession,
     principal: Authenticated,
+    visibility: EmployeeScope,
 ) -> UserRead:
+    if data.employee_id is not None:
+        visible_employee_or_404(session, visibility, data.employee_id)
     try:
         user = create_user(
             session,
@@ -173,12 +180,16 @@ def add_user(
         )
     except ValueError as exc:
         _raise_user_value_error(exc)
-    return _user_read(session, user)
+    return _user_read(session, user, visibility)
 
 
 @users_router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: int, session: DatabaseSession) -> UserRead:
-    return _user_read(session, _find_user(session, user_id))
+def get_user(
+    user_id: int,
+    session: DatabaseSession,
+    visibility: EmployeeScope,
+) -> UserRead:
+    return _user_read(session, _find_user(session, user_id), visibility)
 
 
 @users_router.patch("/{user_id}", response_model=UserRead)
@@ -187,15 +198,22 @@ def change_user(
     data: UserUpdate,
     session: DatabaseSession,
     principal: Authenticated,
+    visibility: EmployeeScope,
 ) -> UserRead:
     if principal.user_id is None:
         actor_user_id = -1
     else:
         actor_user_id = principal.user_id
+    user = _find_user(session, user_id)
+    if "employee_id" in data.model_fields_set:
+        if user.employee_id is not None:
+            visible_employee_or_404(session, visibility, user.employee_id)
+        if data.employee_id is not None:
+            visible_employee_or_404(session, visibility, data.employee_id)
     try:
         user = update_user(
             session,
-            _find_user(session, user_id),
+            user,
             name=data.name,
             status=data.status,
             role_ids=data.role_ids,
@@ -206,7 +224,7 @@ def change_user(
         )
     except ValueError as exc:
         _raise_user_value_error(exc)
-    return _user_read(session, user)
+    return _user_read(session, user, visibility)
 
 
 @users_router.post("/{user_id}/reset-password", response_model=UserRead)
@@ -215,6 +233,7 @@ def reset_password(
     data: UserPasswordResetCreate,
     session: DatabaseSession,
     principal: Authenticated,
+    visibility: EmployeeScope,
 ) -> UserRead:
     user = _find_user(session, user_id)
     try:
@@ -226,7 +245,7 @@ def reset_password(
         )
     except ValueError as exc:
         _raise_user_value_error(exc)
-    return _user_read(session, user)
+    return _user_read(session, user, visibility)
 
 
 @users_router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -252,6 +271,7 @@ def _role_read(role: Role) -> RoleRead:
         id=role.id,
         name=role.name,
         description=role.description,
+        employee_scope=role.employee_scope,
         permissions=sorted(link.permission for link in role.permission_links),
         user_count=len(role.users),
         created_by=role.created_by,
@@ -260,7 +280,11 @@ def _role_read(role: Role) -> RoleRead:
     )
 
 
-def _user_read(session: DatabaseSession, user: User) -> UserRead:
+def _user_read(
+    session: DatabaseSession,
+    user: User,
+    visibility: EmployeeVisibility,
+) -> UserRead:
     return UserRead(
         id=user.id,
         email=user.email,
@@ -268,7 +292,15 @@ def _user_read(session: DatabaseSession, user: User) -> UserRead:
         status=user.status,
         is_root=user.is_root,
         password_change_required=user.password_change_required,
-        employee_id=user.employee_id,
+        employee_id=(
+            user.employee_id
+            if user.employee_id is None or visibility.can_access(user.employee_id)
+            else None
+        ),
+        employee_link_hidden=(
+            user.employee_id is not None
+            and not visibility.can_access(user.employee_id)
+        ),
         created_at=user.created_at,
         last_login_at=user.last_login_at,
         roles=[RoleSummaryRead.model_validate(role) for role in sorted(user.roles, key=lambda item: item.name)],

@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException
 
-from app.dependencies import DatabaseSession
+from app.dependencies import DatabaseSession, EmployeeScope
 from app.schemas import AssignmentQueryCreate, EmployeeAssignmentQueryRead
 from app.services.assignment_queries import (
     AssignmentQueryEmployeeNotFoundError,
     EmployeeAssignmentQueryResult,
     query_employee_assignments,
 )
+from app.services.employee_visibility import visible_employee_or_404
 
 router = APIRouter(prefix="/assignment-queries", tags=["assignment queries"])
 
@@ -15,7 +16,10 @@ router = APIRouter(prefix="/assignment-queries", tags=["assignment queries"])
 def query(
     data: AssignmentQueryCreate,
     session: DatabaseSession,
+    visibility: EmployeeScope,
 ) -> list[EmployeeAssignmentQueryResult]:
+    for employee_id in set(data.employee_ids):
+        visible_employee_or_404(session, visibility, employee_id)
     try:
         return query_employee_assignments(
             session,

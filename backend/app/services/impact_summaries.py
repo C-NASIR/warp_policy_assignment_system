@@ -64,10 +64,15 @@ def build_assignment_summary(
     evaluation_date: date,
     *,
     employee_id: int | None = None,
+    visible_employee_ids: set[int] | None = None,
 ) -> AssignmentSummaryRead:
     employee_statement = select(Employee.id).order_by(Employee.id)
     if employee_id is not None:
         employee_statement = employee_statement.where(Employee.id == employee_id)
+    if visible_employee_ids is not None:
+        employee_statement = employee_statement.where(
+            Employee.id.in_(visible_employee_ids)
+        )
     employee_ids = list(session.scalars(employee_statement))
     assignments: list[_SummaryAssignment] = []
     conflicts: list[ImpactSummaryConflictRead] = []
@@ -176,8 +181,15 @@ def build_policy_impact_summary(
     session: Session,
     policy: Policy,
     evaluation_date: date,
+    *,
+    visible_employee_ids: set[int] | None = None,
 ) -> PolicyImpactSummaryRead:
-    employees = list(session.scalars(select(Employee).order_by(Employee.id)))
+    employee_statement = select(Employee).order_by(Employee.id)
+    if visible_employee_ids is not None:
+        employee_statement = employee_statement.where(
+            Employee.id.in_(visible_employee_ids)
+        )
+    employees = list(session.scalars(employee_statement))
     effective_version = get_effective_policy_version(
         session,
         policy.id,

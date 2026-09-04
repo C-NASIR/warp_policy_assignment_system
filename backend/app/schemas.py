@@ -3,7 +3,14 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.dates import current_date, ensure_utc
 from app.services.condition_fields import ConditionFieldError, normalize_condition
@@ -65,6 +72,9 @@ class RoleCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
     permissions: list[str] = Field(default_factory=list)
+    # Preserve the pre-Phase-3 behavior for older API clients that do not send
+    # this newly introduced field. The first-party UI always chooses explicitly.
+    employee_scope: Literal["all", "reporting_tree", "self", "none"] = "all"
 
 
 class RoleUpdate(BaseModel):
@@ -73,12 +83,14 @@ class RoleUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
     permissions: list[str] | None = None
+    employee_scope: Literal["all", "reporting_tree", "self", "none"] | None = None
 
 
 class RoleRead(ORMModel):
     id: int
     name: str
     description: str | None
+    employee_scope: Literal["all", "reporting_tree", "self", "none"]
     permissions: list[str]
     user_count: int
     created_by: str
@@ -119,6 +131,7 @@ class UserRead(ORMModel):
     is_root: bool
     password_change_required: bool
     employee_id: int | None
+    employee_link_hidden: bool = False
     created_at: datetime
     last_login_at: datetime | None
     roles: list[RoleSummaryRead] = Field(default_factory=list)

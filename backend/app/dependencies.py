@@ -20,6 +20,7 @@ from app.services.auth import (
     authorize,
     required_scope,
 )
+from app.services.employee_visibility import EmployeeVisibility, employee_visibility
 from app.services.human_auth import SESSION_COOKIE_NAME, authenticate_session
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
@@ -118,6 +119,16 @@ Authenticated = Annotated[
     AuthenticatedPrincipal,
     Depends(get_authenticated_principal),
 ]
+
+
+def get_employee_visibility(
+    session: DatabaseSession,
+    principal: Authenticated,
+) -> EmployeeVisibility:
+    return employee_visibility(session, principal)
+
+
+EmployeeScope = Annotated[EmployeeVisibility, Depends(get_employee_visibility)]
 
 HumanSession = Annotated[
     AuthenticatedHumanSession,

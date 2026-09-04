@@ -48,4 +48,30 @@ def create_tables() -> None:
         # Multiple Uvicorn processes may start together. Serialize the small
         # system-catalog upsert so the unique field keys remain race-free.
         session.execute(text("SELECT pg_advisory_xact_lock(762341908)"))
+        # create_all does not add columns to an existing installation. Preserve
+        # the global access of pre-Phase-3 roles, then make new roles default to
+        # no employee rows until their scope is chosen explicitly.
+        session.execute(
+            text(
+                "ALTER TABLE roles ADD COLUMN IF NOT EXISTS employee_scope "
+                "VARCHAR(30) NOT NULL DEFAULT 'all'"
+            )
+        )
+        session.execute(
+            text(
+                "ALTER TABLE roles ALTER COLUMN employee_scope SET DEFAULT 'none'"
+            )
+        )
+        session.execute(
+            text(
+                "DO $$ BEGIN "
+                "IF NOT EXISTS (SELECT 1 FROM pg_constraint "
+                "WHERE conname = 'ck_role_employee_scope' "
+                "AND conrelid = 'roles'::regclass) THEN "
+                "ALTER TABLE roles ADD CONSTRAINT ck_role_employee_scope "
+                "CHECK (employee_scope IN "
+                "('all', 'reporting_tree', 'self', 'none')); "
+                "END IF; END $$"
+            )
+        )
         sync_condition_field_definitions(session)

@@ -6,7 +6,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
 from app.dates import current_date
-from app.dependencies import AuditActor, DatabaseSession
+from app.dependencies import AuditActor, DatabaseSession, EmployeeScope
 from app.models import (
     Condition,
     ConditionGroup,
@@ -128,6 +128,7 @@ def get(policy_id: int, session: DatabaseSession) -> Policy:
 def impact_summary(
     policy_id: int,
     session: DatabaseSession,
+    visibility: EmployeeScope,
     evaluation_date: date | None = None,
 ) -> PolicyImpactSummaryRead:
     effective_on = evaluation_date or current_date()
@@ -143,6 +144,9 @@ def impact_summary(
         session,
         _policy_or_404(session, policy_id),
         effective_on,
+        visible_employee_ids=(
+            None if visibility.unrestricted else set(visibility.employee_ids)
+        ),
     )
 
 

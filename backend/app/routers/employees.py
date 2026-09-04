@@ -1,12 +1,11 @@
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, Query, Response, status
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
 
 from app.dates import current_date, current_datetime
-from app.dependencies import AuditActor, DatabaseSession
+from app.dependencies import AuditActor, DatabaseSession, EmployeeScope
 from app.models import Employee, EmployeeAssignment, EmployeeOverride
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
@@ -29,6 +28,10 @@ from app.services.employee_overrides import (
     employee_overrides_statement,
     update_employee_override,
 )
+from app.services.employee_visibility import (
+    require_employee_creation_scope,
+    visible_employee_or_404,
+)
 from app.services.employees import create_employee, delete_employee, update_employee
 from app.services.impact_summaries import build_assignment_summary
 from app.services.reconciliation import reconcile_employees
@@ -36,15 +39,14 @@ from app.services.reconciliation import reconcile_employees
 router = APIRouter(prefix="/employees", tags=["employees"])
 
 
-def _employee_or_404(session: Session, employee_id: int) -> Employee:
-    employee = session.get(Employee, employee_id)
-    if employee is None:
-        raise HTTPException(status_code=404, detail=f"Employee {employee_id} not found")
-    return employee
-
-
 @router.post("", response_model=EmployeeRead, status_code=status.HTTP_201_CREATED)
-def create(data: EmployeeCreate, session: DatabaseSession, actor: AuditActor) -> Employee:
+def create(
+    data: EmployeeCreate,
+    session: DatabaseSession,
+    actor: AuditActor,
+    visibility: EmployeeScope,
+) -> Employee:
+    require_employee_creation_scope(session, visibility, data.manager_id)
     return create_employee(session, data, actor)
 
 
@@ -53,6 +55,7 @@ def list_all(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: EmployeeScope,
     search: Annotated[str | None, Query(max_length=200)] = None,
     state: Annotated[str | None, Query(max_length=100)] = None,
     department: Annotated[str | None, Query(max_length=100)] = None,
@@ -63,7 +66,7 @@ def list_all(
     start_date_from: date | None = None,
     start_date_to: date | None = None,
 ) -> list[Employee]:
-    statement = select(Employee)
+    statement = visibility.apply(select(Employee))
     if search:
         pattern = f"%{search.strip()}%"
         statement = statement.where(
@@ -104,8 +107,12 @@ def list_all(
 
 
 @router.get("/{employee_id}", response_model=EmployeeRead)
-def get(employee_id: int, session: DatabaseSession) -> Employee:
-    return _employee_or_404(session, employee_id)
+def get(
+    employee_id: int,
+    session: DatabaseSession,
+    visibility: EmployeeScope,
+) -> Employee:
+    return visible_employee_or_404(session, visibility, employee_id)
 
 
 @router.get(
@@ -115,9 +122,10 @@ def get(employee_id: int, session: DatabaseSession) -> Employee:
 def assignment_summary(
     employee_id: int,
     session: DatabaseSession,
+    visibility: EmployeeScope,
     evaluation_date: date | None = None,
 ) -> AssignmentSummaryRead:
-    _employee_or_404(session, employee_id)
+    visible_employee_or_404(session, visibility, employee_id)
     return build_assignment_summary(
         session,
         evaluation_date or current_date(),
@@ -131,10 +139,18 @@ def patch(
     data: EmployeeUpdate,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> Employee:
+    employee = visible_employee_or_404(session, visibility, employee_id)
+    if (
+        "manager_id" in data.model_fields_set
+        and data.manager_id is not None
+        and data.manager_id != employee.manager_id
+    ):
+        visible_employee_or_404(session, visibility, data.manager_id)
     return update_employee(
         session,
-        _employee_or_404(session, employee_id),
+        employee,
         data,
         actor,
     )
@@ -145,8 +161,13 @@ def delete(
     employee_id: int,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> Response:
-    delete_employee(session, _employee_or_404(session, employee_id), actor)
+    delete_employee(
+        session,
+        visible_employee_or_404(session, visibility, employee_id),
+        actor,
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -156,12 +177,13 @@ def assignments(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: EmployeeScope,
     as_of: datetime | None = None,
     assignment_field_definition_id: Annotated[int | None, Query(gt=0)] = None,
     value: Annotated[str | None, Query(max_length=500)] = None,
     source: Literal["policy", "override"] | None = None,
 ) -> list[EmployeeAssignment]:
-    _employee_or_404(session, employee_id)
+    visible_employee_or_404(session, visibility, employee_id)
     statement = employee_assignments_as_of_statement(employee_id, as_of)
     if assignment_field_definition_id is not None:
         statement = statement.where(
@@ -188,13 +210,14 @@ def assignment_history(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: EmployeeScope,
     assignment_field_definition_id: Annotated[int | None, Query(gt=0)] = None,
     value: Annotated[str | None, Query(max_length=500)] = None,
     source: Literal["policy", "override"] | None = None,
     effective_from: datetime | None = None,
     effective_to: datetime | None = None,
 ) -> list[EmployeeAssignment]:
-    _employee_or_404(session, employee_id)
+    visible_employee_or_404(session, visibility, employee_id)
     statement = employee_assignment_history_statement(employee_id)
     if assignment_field_definition_id is not None:
         statement = statement.where(
@@ -224,10 +247,11 @@ def overrides(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: EmployeeScope,
     assignment_field_definition_id: Annotated[int | None, Query(gt=0)] = None,
     value: Annotated[str | None, Query(max_length=500)] = None,
 ) -> list[EmployeeOverride]:
-    _employee_or_404(session, employee_id)
+    visible_employee_or_404(session, visibility, employee_id)
     statement = employee_overrides_statement(employee_id)
     if assignment_field_definition_id is not None:
         statement = statement.where(
@@ -249,7 +273,9 @@ def create_override(
     data: EmployeeOverrideCreate,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> EmployeeOverride:
+    visible_employee_or_404(session, visibility, employee_id)
     return create_employee_override(
         session,
         employee_id,
@@ -269,7 +295,9 @@ def patch_override(
     data: EmployeeOverrideUpdate,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> EmployeeOverride:
+    visible_employee_or_404(session, visibility, employee_id)
     return update_employee_override(
         session,
         employee_id,
@@ -289,14 +317,20 @@ def delete_override(
     override_id: int,
     session: DatabaseSession,
     actor: AuditActor,
+    visibility: EmployeeScope,
 ) -> Response:
+    visible_employee_or_404(session, visibility, employee_id)
     delete_employee_override(session, employee_id, override_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{employee_id}/refresh", response_model=list[AssignmentRead])
-def refresh(employee_id: int, session: DatabaseSession) -> list[EmployeeAssignment]:
-    _employee_or_404(session, employee_id)
+def refresh(
+    employee_id: int,
+    session: DatabaseSession,
+    visibility: EmployeeScope,
+) -> list[EmployeeAssignment]:
+    visible_employee_or_404(session, visibility, employee_id)
     reconciliation_at = current_datetime()
     reconciled = reconcile_employees(
         session,

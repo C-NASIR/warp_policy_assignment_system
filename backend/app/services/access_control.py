@@ -54,7 +54,7 @@ def authorize_permissions(granted: frozenset[str], required: set[str]) -> None:
 
 def required_permissions(method: str, path: str) -> set[str]:
     method = method.upper()
-    if path.startswith("/users") or path.startswith("/roles") or path.startswith("/authorization"):
+    if path.startswith(("/users", "/roles", "/authorization")):
         return {"access:read"} if method == "GET" else {"access:manage"}
     if path.startswith("/auth/credentials") or path == "/auth/scopes":
         return {"api_credentials:manage"}
@@ -68,7 +68,7 @@ def required_permissions(method: str, path: str) -> set[str]:
         return {"settings:read"} if method == "GET" else {"settings:manage"}
     if path.startswith("/condition-fields"):
         return {"settings:read"}
-    if path.startswith("/assignment-summary") or path.startswith("/assignment-queries"):
+    if path.startswith(("/assignment-summary", "/assignment-queries")):
         return {"assignments:read"}
     if path.startswith("/employees"):
         if "/assignments" in path or "/overrides" in path or path.endswith("/refresh"):
@@ -128,6 +128,7 @@ def create_role(
     name: str,
     description: str | None,
     permissions: Iterable[str],
+    employee_scope: str,
     actor: str,
 ) -> Role:
     normalized_name = name.strip()
@@ -138,6 +139,7 @@ def create_role(
     role = Role(
         name=normalized_name,
         description=description.strip() if description else None,
+        employee_scope=employee_scope,
         created_by=actor,
     )
     role.permission_links = [
@@ -165,6 +167,7 @@ def update_role(
     name: str | None,
     description: str | None,
     permissions: Iterable[str] | None,
+    employee_scope: str | None,
     description_supplied: bool,
     actor: str,
 ) -> Role:
@@ -189,6 +192,8 @@ def update_role(
             RolePermission(permission=permission)
             for permission in validate_permissions(permissions)
         ]
+    if employee_scope is not None:
+        role.employee_scope = employee_scope
     session.flush()
     record_audit_log(
         session,
@@ -386,6 +391,7 @@ def role_snapshot(role: Role) -> dict:
     return {
         "name": role.name,
         "description": role.description,
+        "employee_scope": role.employee_scope,
         "permissions": sorted(link.permission for link in role.permission_links),
     }
 
