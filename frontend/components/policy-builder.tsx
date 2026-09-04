@@ -9,7 +9,7 @@ import type { AssignmentField, Condition, ConditionField, Employee, Policy } fro
 type BuilderCondition = Condition & { rowId: number };
 type BuilderOutput = { rowId: number; assignment_field_definition_id: number; value: string };
 
-export function PolicyBuilder({ conditionFields, assignmentFields, employees, apiConfigured, basePolicy }: { conditionFields: ConditionField[]; assignmentFields: AssignmentField[]; employees: Employee[]; apiConfigured: boolean; basePolicy?: Policy | null }) {
+export function PolicyBuilder({ conditionFields, assignmentFields, employees, apiConfigured, basePolicy, activateOnCreate = true }: { conditionFields: ConditionField[]; assignmentFields: AssignmentField[]; employees: Employee[]; apiConfigured: boolean; basePolicy?: Policy | null; activateOnCreate?: boolean }) {
   const router = useRouter();
   const baseVersion = basePolicy?.versions.at(-1);
   const [name, setName] = useState(basePolicy?.name ?? "");
@@ -80,11 +80,11 @@ export function PolicyBuilder({ conditionFields, assignmentFields, employees, ap
     try {
       const change = basePolicy ? { type: "policy_version_create", policy_id: basePolicy.id, version } : null;
       const endpoint = basePolicy && approval ? "/api/backend/change-executions" : basePolicy ? `/api/backend/policies/${basePolicy.id}/versions` : "/api/backend/policies";
-      const body = basePolicy && approval ? { approval_token: approval, change } : basePolicy ? version : { name: name.trim(), status: "active", ...version };
+      const body = basePolicy && approval ? { approval_token: approval, change } : basePolicy ? version : { name: name.trim(), status: activateOnCreate ? "active" : "draft", ...version };
       const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error?.message ?? result.detail ?? "The policy could not be saved.");
-      setSuccess(basePolicy ? "New policy version created and assignments reconciled." : "Policy created and assignments reconciled.");
+      setSuccess(basePolicy ? "New policy version created and assignments reconciled." : activateOnCreate ? "Policy created and assignments reconciled." : "Policy draft created for activation review.");
       router.push(`/policies/${basePolicy?.id ?? result.id}`); router.refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to save this policy."); }
     finally { setSaving(false); }

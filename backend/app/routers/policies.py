@@ -9,6 +9,7 @@ from app.dates import current_date
 from app.dependencies import (
     AssignmentFieldScope,
     AuditActor,
+    Authenticated,
     DatabaseSession,
     EmployeeScope,
 )
@@ -35,6 +36,11 @@ from app.services.assignment_field_visibility import (
 )
 from app.services.audit import record_audit_log, snapshot_entity
 from app.services.impact_summaries import build_policy_impact_summary
+from app.services.policy_access import (
+    policy_read,
+    require_policy_permission,
+    require_policy_version_create,
+)
 from app.services.policy_authoring import create_policy_version_from_input
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
 from app.services.scheduled_reconciliations import sync_policy_version_schedules
@@ -92,12 +98,17 @@ def create(
     session: DatabaseSession,
     actor: AuditActor,
     field_visibility: AssignmentFieldScope,
-) -> Policy:
+    principal: Authenticated,
+) -> PolicyRead:
     validate_assignment_field_ids(
         session,
         field_visibility,
         (value.assignment_field_definition_id for value in data.values),
     )
+    if data.status == "active":
+        require_policy_permission(principal, "policies:activate")
+    elif data.status == "archived":
+        require_policy_permission(principal, "policies:archive")
     policy = Policy(name=data.name, status=data.status)
     session.add(policy)
     session.flush()
@@ -112,7 +123,9 @@ def create(
     )
     create_policy_version_from_input(session, policy, data, actor)
     refresh_employees_affected_by_policy(session, policy)
-    return session.scalar(_query().where(Policy.id == policy.id))
+    created = session.scalar(_query().where(Policy.id == policy.id))
+    assert created is not None
+    return policy_read(principal, created)
 
 
 @router.get("", response_model=list[PolicyRead])
@@ -121,14 +134,15 @@ def list_all(
     response: Response,
     pagination: Pagination,
     field_visibility: AssignmentFieldScope,
+    principal: Authenticated,
     search: Annotated[str | None, Query(max_length=200)] = None,
     status_filter: Annotated[
-        Literal["active", "archived"] | None,
+        Literal["draft", "active", "archived"] | None,
         Query(alias="status"),
     ] = None,
     created_from: datetime | None = None,
     created_to: datetime | None = None,
-) -> list[Policy]:
+) -> list[PolicyRead]:
     statement = _query().where(visible_policy_condition(field_visibility))
     if search:
         statement = statement.where(Policy.name.ilike(f"%{search.strip()}%"))
@@ -138,12 +152,13 @@ def list_all(
         statement = statement.where(Policy.created_at >= created_from)
     if created_to is not None:
         statement = statement.where(Policy.created_at <= created_to)
-    return paginate_scalars(
+    policies = paginate_scalars(
         session,
         statement.order_by(Policy.id),
         pagination,
         response,
     )
+    return [policy_read(principal, policy) for policy in policies]
 
 
 @router.get("/{policy_id}", response_model=PolicyRead)
@@ -151,8 +166,12 @@ def get(
     policy_id: int,
     session: DatabaseSession,
     field_visibility: AssignmentFieldScope,
-) -> Policy:
-    return _policy_or_404(session, policy_id, field_visibility)
+    principal: Authenticated,
+) -> PolicyRead:
+    return policy_read(
+        principal,
+        _policy_or_404(session, policy_id, field_visibility),
+    )
 
 
 @router.get(
@@ -192,8 +211,17 @@ def patch(
     session: DatabaseSession,
     actor: AuditActor,
     field_visibility: AssignmentFieldScope,
-) -> Policy:
+    principal: Authenticated,
+) -> PolicyRead:
     policy = _policy_or_404(session, policy_id, field_visibility)
+    if data.name is not None or not data.model_fields_set:
+        require_policy_permission(principal, "policies:update")
+    if data.status == "active":
+        require_policy_permission(principal, "policies:activate")
+    elif data.status == "archived":
+        require_policy_permission(principal, "policies:archive")
+    elif data.status == "draft" and policy.status != "draft":
+        require_policy_permission(principal, "policies:update")
     before = snapshot_entity(policy)
     if data.name is not None:
         policy.name = data.name
@@ -220,7 +248,9 @@ def patch(
             sync_policy_version_schedules(session, policy)
             sync_all_employee_tenure_schedules(session)
             refresh_employees_affected_by_policy(session, policy)
-    return session.scalar(_query().where(Policy.id == policy.id))
+    changed = session.scalar(_query().where(Policy.id == policy.id))
+    assert changed is not None
+    return policy_read(principal, changed)
 
 
 @router.get("/{policy_id}/versions", response_model=list[PolicyVersionRead])
@@ -267,8 +297,10 @@ def add_version(
     session: DatabaseSession,
     actor: AuditActor,
     field_visibility: AssignmentFieldScope,
+    principal: Authenticated,
 ) -> PolicyVersion:
     policy = _policy_or_404(session, policy_id, field_visibility)
+    require_policy_version_create(principal, policy)
     validate_assignment_field_ids(
         session,
         field_visibility,

@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.dependencies import (
     AssignmentFieldScope,
     AuditActor,
+    Authenticated,
     DatabaseSession,
     EmployeeScope,
 )
@@ -34,6 +35,7 @@ from app.services.groups import (
     remove_policy_from_group,
     update_group,
 )
+from app.services.policy_access import policy_read
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -161,12 +163,13 @@ def policies(
     response: Response,
     pagination: Pagination,
     field_visibility: AssignmentFieldScope,
+    principal: Authenticated,
     search: Annotated[str | None, Query(max_length=200)] = None,
     status_filter: Annotated[
-        Literal["active", "archived"] | None,
+        Literal["draft", "active", "archived"] | None,
         Query(alias="status"),
     ] = None,
-) -> list[Policy]:
+) -> list[PolicyRead]:
     get_group(session, group_id)
     statement = (
         select(Policy)
@@ -179,12 +182,13 @@ def policies(
         statement = statement.where(Policy.name.ilike(f"%{search.strip()}%"))
     if status_filter is not None:
         statement = statement.where(Policy.status == status_filter)
-    return paginate_scalars(
+    policies = paginate_scalars(
         session,
         statement.order_by(Policy.id),
         pagination,
         response,
     )
+    return [policy_read(principal, policy) for policy in policies]
 
 
 @router.post(
@@ -198,9 +202,13 @@ def add_policy(
     session: DatabaseSession,
     actor: AuditActor,
     field_visibility: AssignmentFieldScope,
-) -> Policy:
+    principal: Authenticated,
+) -> PolicyRead:
     require_visible_policy(session, field_visibility, policy_id)
-    return add_policy_to_group(session, group_id, policy_id, actor)
+    return policy_read(
+        principal,
+        add_policy_to_group(session, group_id, policy_id, actor),
+    )
 
 
 @router.delete(

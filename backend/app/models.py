@@ -442,7 +442,7 @@ class Policy(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
-    status: Mapped[Literal["active", "archived"]] = mapped_column(String(20), default="active")
+    status: Mapped[Literal["draft", "active", "archived"]] = mapped_column(String(20), default="active")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(),
         default=datetime.now,

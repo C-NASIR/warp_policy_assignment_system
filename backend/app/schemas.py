@@ -75,7 +75,7 @@ class RoleCreate(BaseModel):
     # Preserve the pre-Phase-3 behavior for older API clients that do not send
     # this newly introduced field. The first-party UI always chooses explicitly.
     employee_scope: Literal["all", "reporting_tree", "self", "none"] = "all"
-    # Older clients retain their pre-Phase-4 access. The first-party UI sends
+    # Older clients retain their pre-Phase-5 access. The first-party UI sends
     # an explicit least-privilege choice for every new role.
     assignment_field_scope: Literal["all", "selected", "none"] = "all"
     assignment_field_ids: list[int] = Field(default_factory=list)
@@ -317,14 +317,14 @@ class PolicyVersionCreate(BaseModel):
 
 class PolicyCreate(PolicyVersionCreate):
     name: str = Field(min_length=1, max_length=200)
-    status: Literal["active", "archived"] = "active"
+    status: Literal["draft", "active", "archived"] = "active"
 
 
 class PolicyUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str | None = Field(default=None, min_length=1, max_length=200)
-    status: Literal["active", "archived"] | None = None
+    status: Literal["draft", "active", "archived"] | None = None
 
 
 class PolicyValueRead(PolicyValueCreate, ORMModel):
@@ -356,12 +356,22 @@ class PolicyVersionRead(ORMModel):
     values: list[PolicyValueRead]
 
 
+class PolicyCapabilitiesRead(BaseModel):
+    can_update: bool = False
+    can_create_version: bool = False
+    can_activate: bool = False
+    can_archive: bool = False
+
+
 class PolicyRead(ORMModel):
     id: int
     name: str
-    status: Literal["active", "archived"]
+    status: Literal["draft", "active", "archived"]
     created_at: datetime
     versions: list[PolicyVersionRead]
+    capabilities: PolicyCapabilitiesRead = Field(
+        default_factory=PolicyCapabilitiesRead
+    )
 
 
 class AssignmentRead(ORMModel):
@@ -478,7 +488,7 @@ class PolicyFieldImpactSummaryRead(BaseModel):
 class PolicyImpactSummaryRead(BaseModel):
     policy_id: int
     policy_name: str
-    policy_status: Literal["active", "archived"]
+    policy_status: Literal["draft", "active", "archived"]
     evaluation_date: date
     mode: Literal["current", "calculated_future"]
     calculation_basis: Literal["live_resolution_current_employee_facts"]

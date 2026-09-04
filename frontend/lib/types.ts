@@ -57,9 +57,15 @@ export type PolicyVersion = {
 export type Policy = {
   id: number;
   name: string;
-  status: "active" | "archived";
+  status: "draft" | "active" | "archived";
   created_at: string;
   versions: PolicyVersion[];
+  capabilities: {
+    can_update: boolean;
+    can_create_version: boolean;
+    can_activate: boolean;
+    can_archive: boolean;
+  };
 };
 
 export type ConditionField = {

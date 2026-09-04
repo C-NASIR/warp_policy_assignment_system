@@ -12,6 +12,7 @@ from app.dates import current_datetime
 from app.dependencies import (
     AssignmentFieldScope,
     AuditActor,
+    Authenticated,
     DatabaseSession,
     EmployeeScope,
 )
@@ -67,6 +68,7 @@ from app.services.employee_visibility import (
 from app.services.employees import create_employee, update_employee
 from app.services.groups import add_employee_to_group, remove_employee_from_group
 from app.services.org_chart import EmployeeHierarchyConflictError
+from app.services.policy_access import require_policy_version_create
 from app.services.policy_authoring import create_policy_version_from_input
 from app.services.policy_engine import PolicyConflictError
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
@@ -103,9 +105,10 @@ def preview(
     actor: AuditActor,
     visibility: EmployeeScope,
     field_visibility: AssignmentFieldScope,
+    principal: Authenticated,
 ) -> ChangePreviewRead:
     """Simulate one supported mutation and roll back every resulting write."""
-    _validate_change_scope(session, data, field_visibility)
+    _validate_change_scope(session, data, field_visibility, principal)
     savepoint = session.begin_nested()
     try:
         approved_precondition_digest = change_precondition_digest(
@@ -191,6 +194,7 @@ def execute_approved_change(
     actor: AuditActor,
     visibility: EmployeeScope,
     field_visibility: AssignmentFieldScope,
+    principal: Authenticated,
 ) -> ApprovedChangeExecutionRead:
     """Execute exactly one signed preview, once, if its impact is unchanged."""
     claims = verify_change_approval(
@@ -198,7 +202,12 @@ def execute_approved_change(
         check_expiration=False,
     )
     validate_approved_change(claims, data.change)
-    _validate_change_scope(session, data.change, field_visibility)
+    _validate_change_scope(
+        session,
+        data.change,
+        field_visibility,
+        principal,
+    )
     lock_approval_execution(session, claims.approval_id)
     existing = session.get(ApprovedChangeExecution, claims.approval_id)
     if existing is not None:
@@ -452,9 +461,13 @@ def _validate_change_scope(
     session: DatabaseSession,
     data: ChangePreviewCreate,
     visibility: AssignmentFieldVisibility,
+    principal: Authenticated,
 ) -> None:
     if isinstance(data, PolicyVersionCreateChangePreview):
         require_visible_policy(session, visibility, data.policy_id)
+        policy = session.get(Policy, data.policy_id)
+        assert policy is not None
+        require_policy_version_create(principal, policy)
         validate_assignment_field_ids(
             session,
             visibility,

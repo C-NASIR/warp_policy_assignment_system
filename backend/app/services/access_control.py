@@ -28,7 +28,26 @@ PERMISSIONS: dict[str, tuple[str, str, str]] = {
     "employees:delete": ("Employees", "Delete employees", "Remove employees from the workspace."),
     "policies:read": ("Policies", "View policies", "View policies, versions, rules, and impact."),
     "policies:create": ("Policies", "Create policies", "Create policies and their first version."),
-    "policies:update": ("Policies", "Update policies", "Add versions or change policy lifecycle state."),
+    "policies:update": (
+        "Policies",
+        "Full policy management (legacy)",
+        "Edit policy metadata, add versions, and change lifecycle state. Existing roles keep this combined grant.",
+    ),
+    "policies:version:create": (
+        "Policies",
+        "Create policy versions",
+        "Add versions to draft policies; activating production behavior remains a separate permission.",
+    ),
+    "policies:activate": (
+        "Policies",
+        "Activate policies",
+        "Activate draft or archived policies and authorize new versions of active policies.",
+    ),
+    "policies:archive": (
+        "Policies",
+        "Archive policies",
+        "Stop a policy from participating in assignment resolution.",
+    ),
     "groups:read": ("Groups", "View groups", "View groups and their policy connections."),
     "groups:create": ("Groups", "Create groups", "Create employee groups."),
     "groups:update": ("Groups", "Manage groups", "Rename groups and change membership or attached policies."),
@@ -97,7 +116,12 @@ def required_permissions(method: str, path: str) -> set[str]:
     if path.startswith("/policies"):
         if method == "GET":
             return {"policies:read"}
-        return {"policies:create"} if method == "POST" and path == "/policies" else {"policies:update"}
+        if method == "POST" and path == "/policies":
+            return {"policies:create"}
+        # Policy routes enforce the specific version/lifecycle permission after
+        # loading the record. This keeps the middleware contract precise while
+        # retaining policies:update as a backwards-compatible combined grant.
+        return set()
     return set()
 
 
