@@ -284,6 +284,37 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .required { color: var(--danger); }
 .form-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; }
 .form-hint { color: var(--muted); font-size: 10px; }
+.access-tabs { width: fit-content; display: inline-flex; gap: 3px; margin-bottom: 16px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.access-tabs button { min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 650; cursor: pointer; }
+.access-tabs button.active { background: var(--surface-strong); color: white; }
+.access-table .badge + .badge { margin-left: 4px; }
+.role-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.role-card { min-height: 220px; padding: 18px; }
+.role-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.role-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: var(--accent-soft); color: var(--accent-ink); }
+.role-card h2 { margin: 17px 0 7px; font-size: 14px; }
+.role-card p { min-height: 34px; margin-bottom: 16px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.role-card-meta { display: flex; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 9px; }
+.permission-chip-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 13px; }
+.access-form-dialog { width: min(760px, 100%); max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
+.access-form-dialog .modal-body { overflow-y: auto; }
+.access-form-dialog .modal-head { flex: 0 0 auto; }
+.access-form-dialog .modal-head .eyebrow { margin-bottom: 4px; }
+.access-form-dialog .form-footer { flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--surface-subtle); }
+.permission-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.permission-groups fieldset, .role-options { display: grid; align-content: start; gap: 6px; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
+.permission-groups legend, .role-options legend { padding: 0 5px; color: var(--muted); font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.role-options { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 20px; }
+.permission-option { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 9px; padding: 9px; border-radius: 8px; cursor: pointer; }
+.permission-option:hover { background: var(--surface-subtle); }
+.permission-option input { margin-top: 2px; accent-color: var(--accent); }
+.permission-option strong, .permission-option small { display: block; }
+.permission-option strong { font-size: 10px; }
+.permission-option small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.icon-button.danger-button { color: var(--danger); }
+.access-denied { max-width: 620px; margin: 80px auto; padding: 34px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-sm); }
+.access-denied .eyebrow { margin-top: 18px; }
+.access-denied .button { margin-top: 24px; }
 .preview-panel { position: sticky; top: 82px; overflow: hidden; }
 .preview-empty { padding: 34px 23px; text-align: center; }
 .preview-empty-icon { width: 42px; height: 42px; display: grid; place-items: center; margin: 0 auto 13px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); }
@@ -446,7 +477,7 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 @keyframes shimmer { to { transform: translateX(100%); } }
 
 @media (max-width: 960px) {
-  .detail-grid, .form-shell, .builder-shell, .inline-create { grid-template-columns: 1fr; }
+  .detail-grid, .form-shell, .builder-shell, .inline-create, .role-grid { grid-template-columns: 1fr; }
   .inline-create { align-items: stretch; }
   .preview-panel { position: static; }
 }
@@ -477,6 +508,8 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
   .auth-page { align-items: start; padding: 18px 10px; }
   .auth-card { padding: 24px 20px; }
   .security-footer { align-items: stretch; flex-direction: column; }
+  .permission-groups, .role-options { grid-template-columns: 1fr; }
+  .access-form-dialog .form-footer { align-items: stretch; flex-direction: column; }
 }
 
 @media (prefers-reduced-motion: reduce) {

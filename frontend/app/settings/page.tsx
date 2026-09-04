@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { AssignmentFieldManager } from "@/components/assignment-field-manager";
-import { apiConfigured, getAssignmentFields } from "@/lib/backend";
+import { apiConfigured, getAssignmentFields, getCurrentUser } from "@/lib/backend";
+import { hasPermission } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Assignment fields" };
 
 export default async function SettingsPage() {
-  const fields = await getAssignmentFields();
-  return <AssignmentFieldManager initialFields={fields} apiConfigured={apiConfigured} />;
+  const [fields, user] = await Promise.all([getAssignmentFields(), getCurrentUser()]);
+  return <AssignmentFieldManager initialFields={fields} apiConfigured={apiConfigured} canManage={hasPermission(user, "settings:manage")} />;
 }

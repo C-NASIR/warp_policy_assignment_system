@@ -77,6 +77,45 @@ class APICredential(Base):
     )
 
 
+class Role(Base):
+    __tablename__ = "roles"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+        onupdate=current_datetime,
+    )
+    permission_links: Mapped[list[RolePermission]] = relationship(
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
+    users: Mapped[list[User]] = relationship(
+        secondary="user_roles",
+        back_populates="roles",
+    )
+
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("roles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    permission: Mapped[str] = mapped_column(String(100), primary_key=True)
+    role: Mapped[Role] = relationship(back_populates="permission_links")
+
+
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (
@@ -126,6 +165,10 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    roles: Mapped[list[Role]] = relationship(
+        secondary="user_roles",
+        back_populates="users",
+    )
 
 
 class AuthSession(Base):
@@ -157,6 +200,19 @@ class AuthSession(Base):
         nullable=True,
     )
     user: Mapped[User] = relationship(back_populates="sessions")
+
+
+class UserRole(Base):
+    __tablename__ = "user_roles"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("roles.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
 
 
 class ApprovedChangeExecution(Base):

@@ -1,6 +1,6 @@
 # PolicyOS frontend
 
-PolicyOS is the admin interface for the policy assignment engine in this repository. It gives company admins a dashboard, employee directory, assignment explanations, employee onboarding and editing with impact previews, policy authoring with effective dates and deterministic priorities, group management, manual overrides, assignment history, policy lifecycle controls, assignment-field setup, and an inspectable audit log.
+PolicyOS is the role-aware interface for the policy assignment engine in this repository. It gives authorized users a dashboard, employee directory, assignment explanations, employee onboarding and editing with impact previews, policy authoring with effective dates and deterministic priorities, group management, manual overrides, assignment history, policy lifecycle controls, assignment-field setup, an inspectable audit log, and human access administration.
 
 Use **Command/Ctrl + K** anywhere in the app to open Quick Find and jump directly to a page or common action.
 
@@ -20,7 +20,7 @@ POLICY_API_URL=http://127.0.0.1:8000
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-On the first connected visit, PolicyOS opens the one-time Root account setup. Later visits require that human account to sign in. Browser requests use the same-origin `/api/backend/*` proxy, and the backend session token remains in an HTTP-only cookie rather than client-side JavaScript.
+On the first connected visit, PolicyOS opens the one-time Root account setup. Root can then create least-privilege roles and provision users under **Access control**. New users receive a temporary password and must replace it on first login. Navigation and mutation controls reflect effective role permissions, while the backend independently enforces every request. Browser requests use the same-origin `/api/backend/*` proxy, and the backend session token remains in an HTTP-only cookie rather than client-side JavaScript.
 
 ## Checks
 

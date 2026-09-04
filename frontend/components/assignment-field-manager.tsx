@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import type { AssignmentField } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
-export function AssignmentFieldManager({ initialFields, apiConfigured }: { initialFields: AssignmentField[]; apiConfigured: boolean }) {
+export function AssignmentFieldManager({ initialFields, apiConfigured, canManage = true }: { initialFields: AssignmentField[]; apiConfigured: boolean; canManage?: boolean }) {
   const [fields, setFields] = useState(initialFields);
   const [search, setSearch] = useState("");
   const [cardinality, setCardinality] = useState("all");
@@ -37,7 +37,7 @@ export function AssignmentFieldManager({ initialFields, apiConfigured }: { initi
   }
 
   return <>
-    <div className="page-heading"><div><p className="eyebrow">System setup</p><h1>Assignment fields</h1><p className="page-subtitle">Define assignable policy categories and the conflict behavior each category requires.</p></div><button className="button" onClick={() => { setOpen(true); setError(""); }}><Plus size={15} /> Create field</button></div>
+    <div className="page-heading"><div><p className="eyebrow">System setup</p><h1>Assignment fields</h1><p className="page-subtitle">Define assignable policy categories and the conflict behavior each category requires.</p></div>{canManage && <button className="button" onClick={() => { setOpen(true); setError(""); }}><Plus size={15} /> Create field</button>}</div>
     {notice && <div className="success-banner" role="status"><Check size={14} />{notice}</div>}
     <div className="toolbar"><div className="toolbar-left"><label className="search-box"><Search size={14} /><input className="input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assignment fields" aria-label="Search assignment fields" /></label><select className="select filter-select" value={cardinality} onChange={(event) => setCardinality(event.target.value)} aria-label="Filter by cardinality"><option value="all">All cardinalities</option><option value="one">One value</option><option value="many">Many values</option></select></div><span className="results-count">{filtered.length} fields</span></div>
     <div className="data-panel"><table className="data-table"><thead><tr><th>Assignment field</th><th>Cardinality</th><th>Resolution</th><th>Behavior</th></tr></thead><tbody>{filtered.map((field) => <tr key={field.id}><td><span className="person-cell"><span className="avatar"><Braces size={14} /></span><span className="primary-cell">{field.name}</span></span></td><td><span className="badge accent">{field.cardinality === "one" ? "One value" : "Many values"}</span></td><td>{field.cardinality === "one" ? "Highest priority wins" : "Set union"}</td><td><span className="secondary-cell" style={{ margin: 0 }}>{field.cardinality === "one" ? "One final value per employee" : "Unique values from every matching rule"}</span></td></tr>)}</tbody></table>{filtered.length === 0 && <div className="empty-state compact">No assignment fields match those filters.</div>}<div className="pagination-footer"><span>{fields.length} total fields</span><span>Cardinality is fixed after creation</span></div></div>

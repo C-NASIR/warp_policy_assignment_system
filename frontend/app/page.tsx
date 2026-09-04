@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, BookOpenCheck, CircleCheckBig, Network, Plus, ShieldCheck, UserPlus, Users } from "lucide-react";
-import { getAssignmentSummary, getAuditLogs, getPolicies } from "@/lib/backend";
+import { getAssignmentSummary, getAuditLogs, getCurrentUser, getPolicies } from "@/lib/backend";
 import { titleCase } from "@/lib/format";
 
 export default async function OverviewPage() {
-  const [summary, policies, auditLogs] = await Promise.all([getAssignmentSummary(), getPolicies(), getAuditLogs()]);
+  const [summary, policies, auditLogs, user] = await Promise.all([getAssignmentSummary(), getPolicies(), getAuditLogs(), getCurrentUser()]);
   const activity = [...auditLogs].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()).slice(0, 4).map((event) => ({ title: titleCase(event.entity_type), copy: `${titleCase(event.action)} by ${event.actor}`, time: relativeTime(event.timestamp) }));
   const today = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
   const coverage = summary.fields.slice(0, 4).map((item) => ({ name: item.assignment_field_definition.name, caption: `${item.assigned_employee_count} of ${summary.employee_count} employees`, value: summary.employee_count ? Math.round((item.assigned_employee_count / summary.employee_count) * 100) : 0 }));
@@ -17,7 +17,7 @@ export default async function OverviewPage() {
   return (
     <>
       <div className="page-heading">
-        <div><p className="eyebrow">{today}</p><h1>Good morning, Priya</h1><p className="page-subtitle">Your policy assignments are healthy. Three future changes are scheduled and no conflicts need attention.</p></div>
+        <div><p className="eyebrow">{today}</p><h1>Good morning, {user?.name.split(" ")[0] ?? "Priya"}</h1><p className="page-subtitle">Your policy assignments are healthy. Three future changes are scheduled and no conflicts need attention.</p></div>
         <Link className="button" href="/policies/new"><Plus size={15} /> Create policy</Link>
       </div>
       <section className="metric-grid" aria-label="Assignment system metrics">

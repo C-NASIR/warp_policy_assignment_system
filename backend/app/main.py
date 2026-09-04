@@ -21,6 +21,7 @@ from app.routers import (
     assignment_queries,
     audit_logs,
     auth,
+    access_control,
     change_previews,
     condition_fields,
     employees,
@@ -37,6 +38,7 @@ from app.services.auth import (
     CredentialValidationError,
     required_scope,
 )
+from app.services.access_control import PermissionDeniedError, required_permissions
 from app.services.change_approvals import (
     ChangeApprovalConflictError,
     ChangeApprovalValidationError,
@@ -94,6 +96,7 @@ class PolicyAssignmentAPI(FastAPI):
                 }:
                     continue
                 operation["x-required-scopes"] = [required_scope(method, path)]
+                operation["x-required-permissions"] = sorted(required_permissions(method, path))
                 success_response = operation.get("responses", {}).get("200", {})
                 response_schema = (
                     success_response.get("content", {})
@@ -146,7 +149,7 @@ app = PolicyAssignmentAPI(
         },
         403: {
             "model": APIErrorResponseRead,
-            "description": "The credential lacks the required operation scope",
+            "description": "The credential scope or human role lacks the required access",
         },
         409: {
             "model": APIErrorResponseRead,
@@ -174,6 +177,9 @@ for protected_router in (
     change_previews.router,
     change_previews.execution_router,
     auth.router,
+    access_control.authorization_router,
+    access_control.roles_router,
+    access_control.users_router,
 ):
     app.include_router(
         protected_router,
@@ -222,6 +228,30 @@ async def authorization_error_handler(
                     code=exc.code,
                     message=str(exc),
                     path=["authorization", "scopes"],
+                    metadata=exc.metadata,
+                )
+            ],
+            legacy_detail=str(exc),
+        ),
+    )
+
+
+@app.exception_handler(PermissionDeniedError)
+async def permission_denied_error_handler(
+    _: Request,
+    exc: PermissionDeniedError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=403,
+        content=error_response(
+            category="authorization",
+            code=exc.code,
+            message=str(exc),
+            issues=[
+                validation_issue(
+                    code=exc.code,
+                    message=str(exc),
+                    path=["authorization", "permissions"],
                     metadata=exc.metadata,
                 )
             ],

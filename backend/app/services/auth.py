@@ -91,6 +91,7 @@ class AuthenticatedPrincipal:
     authentication_method: str
     user_id: int | None = None
     session_id: int | None = None
+    permissions: frozenset[str] = frozenset()
 
     def has_scope(self, scope: str) -> bool:
         return WILDCARD_SCOPE in self.scopes or scope in self.scopes

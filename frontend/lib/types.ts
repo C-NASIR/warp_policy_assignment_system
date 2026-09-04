@@ -135,6 +135,28 @@ export type CurrentUser = {
   employee_id: number | null;
   created_at: string;
   last_login_at: string | null;
+  roles: RoleSummary[];
+  permissions: string[];
 };
 
 export type RootSetupStatus = { setup_required: boolean };
+
+export type Permission = {
+  name: string;
+  group: string;
+  label: string;
+  description: string;
+};
+
+export type RoleSummary = { id: number; name: string };
+
+export type Role = RoleSummary & {
+  description: string | null;
+  permissions: string[];
+  user_count: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type User = CurrentUser;

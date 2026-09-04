@@ -1,9 +1,11 @@
 "use client";
 
 import { Check, CircleAlert, KeyRound } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 export function SecurityForm() {
+  const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -26,7 +28,7 @@ export function SecurityForm() {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error?.issues?.[0]?.message ?? result.error?.message ?? result.detail ?? "The password could not be changed.");
-      setCurrentPassword(""); setNewPassword(""); setConfirmation(""); setNotice("Password changed. Other active sessions were signed out.");
+      setCurrentPassword(""); setNewPassword(""); setConfirmation(""); setNotice("Password changed. Other active sessions were signed out."); router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The password could not be changed.");
     } finally { setBusy(false); }

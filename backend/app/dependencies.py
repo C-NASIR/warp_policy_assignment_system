@@ -7,6 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import AuthSession, User
+from app.services.access_control import (
+    authorize_permissions,
+    effective_permissions,
+    required_permissions,
+)
 from app.services.auth import (
     ACTOR_OVERRIDE_SCOPE,
     AuthenticatedPrincipal,
@@ -66,6 +71,11 @@ def get_authenticated_principal(
     if session_token:
         user, auth_session = authenticate_session(session, session_token)
         _require_trusted_session_origin(request)
+        if user.password_change_required:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You must change your temporary password before using PolicyOS",
+            )
         return AuthenticatedPrincipal(
             subject=user.email,
             scopes=frozenset({"*"}) if user.is_root else frozenset(),
@@ -74,6 +84,7 @@ def get_authenticated_principal(
             authentication_method="human_session",
             user_id=user.id,
             session_id=auth_session.id,
+            permissions=effective_permissions(session, user),
         )
 
     raise AuthenticationError(
@@ -116,7 +127,13 @@ HumanSession = Annotated[
 
 def authorize_operation(request: Request, principal: Authenticated) -> None:
     """Authorize one API operation using its method and public route path."""
-    authorize(principal, {required_scope(request.method, request.url.path)})
+    if principal.authentication_method == "human_session":
+        authorize_permissions(
+            principal.permissions,
+            required_permissions(request.method, request.url.path),
+        )
+    else:
+        authorize(principal, {required_scope(request.method, request.url.path)})
     request.state.authenticated_principal = principal
 
 

@@ -8,7 +8,7 @@ import type { Group } from "@/lib/types";
 
 type GroupRow = Group & { memberCount: number; policyCount: number };
 
-export function GroupDirectory({ initialGroups, apiConfigured }: { initialGroups: GroupRow[]; apiConfigured: boolean }) {
+export function GroupDirectory({ initialGroups, apiConfigured, canCreate = true }: { initialGroups: GroupRow[]; apiConfigured: boolean; canCreate?: boolean }) {
   const router = useRouter();
   const [groups, setGroups] = useState(initialGroups);
   const [creating, setCreating] = useState(false);
@@ -39,7 +39,7 @@ export function GroupDirectory({ initialGroups, apiConfigured }: { initialGroups
   }
 
   return <>
-    <div className="page-heading"><div><p className="eyebrow">Collections</p><h1>Groups</h1><p className="page-subtitle">Manage explicit employee populations and the policies every member inherits.</p></div><button className="button" onClick={() => { setCreating(true); setError(""); }}><Plus size={15} /> Create group</button></div>
+    <div className="page-heading"><div><p className="eyebrow">Collections</p><h1>Groups</h1><p className="page-subtitle">Manage explicit employee populations and the policies every member inherits.</p></div>{canCreate && <button className="button" onClick={() => { setCreating(true); setError(""); }}><Plus size={15} /> Create group</button>}</div>
     {creating && <section className="inline-create"><div><div className="form-section-title">Create a group</div><div className="form-section-description">Start with a clear population name. Members and policies are added on the next screen.</div></div><label className="field"><span className="field-label">Group name</span><input className="input" autoFocus value={name} onChange={(event) => { setName(event.target.value); setError(""); }} placeholder="e.g. California employees" /></label><div className="heading-actions"><button className="button secondary" onClick={() => { setCreating(false); setName(""); }}>Cancel</button><button className="button" disabled={saving} onClick={createGroup}>{saving ? "Creating…" : "Create group"}</button></div>{error && <div className="error-banner full-row"><CircleAlert size={13} />{error}</div>}</section>}
     <div className="management-grid">{groups.map((group) => <Link className="management-card" href={`/groups/${group.id}`} key={group.id}><div className="management-card-icon"><Network size={17} /></div><div className="management-card-main"><div className="management-card-title">{group.name}</div><div className="management-card-meta"><span><Users size={12} />{group.memberCount} members</span><span>{group.policyCount} attached {group.policyCount === 1 ? "policy" : "policies"}</span></div></div><ArrowRight size={15} /></Link>)}</div>
   </>;

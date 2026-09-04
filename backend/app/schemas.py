@@ -47,6 +47,70 @@ class PasswordChangeCreate(BaseModel):
     new_password: str = Field(min_length=12, max_length=128)
 
 
+class PermissionRead(BaseModel):
+    name: str
+    group: str
+    label: str
+    description: str
+
+
+class RoleSummaryRead(ORMModel):
+    id: int
+    name: str
+
+
+class RoleCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    permissions: list[str] = Field(default_factory=list)
+
+
+class RoleUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    permissions: list[str] | None = None
+
+
+class RoleRead(ORMModel):
+    id: int
+    name: str
+    description: str | None
+    permissions: list[str]
+    user_count: int
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class UserCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    email: EmailStr
+    temporary_password: str = Field(min_length=12, max_length=128)
+    role_ids: list[int] = Field(min_length=1)
+    employee_id: int | None = Field(default=None, gt=0)
+
+
+class UserUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    status: Literal["active", "suspended", "disabled"] | None = None
+    role_ids: list[int] | None = None
+    employee_id: int | None = Field(default=None, gt=0)
+
+
+class UserPasswordResetCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    temporary_password: str = Field(min_length=12, max_length=128)
+
+
 class UserRead(ORMModel):
     id: int
     email: EmailStr
@@ -57,6 +121,8 @@ class UserRead(ORMModel):
     employee_id: int | None
     created_at: datetime
     last_login_at: datetime | None
+    roles: list[RoleSummaryRead] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
 
 
 class EmployeeCreate(BaseModel):

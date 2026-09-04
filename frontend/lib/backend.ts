@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { assignmentFields, assignmentSummary, assignmentsByEmployee, auditLogs, conditionFields, employees, groupEmployeeIds, groupPolicyIds, groups, overridesByEmployee, policies, policyImpacts } from "./demo-data";
-import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, CurrentUser, Employee, EmployeeOverride, Group, Policy, PolicyImpact, RootSetupStatus } from "./types";
+import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, CurrentUser, Employee, EmployeeOverride, Group, Permission, Policy, PolicyImpact, Role, RootSetupStatus, User } from "./types";
 
 const configuredApiUrl = process.env.POLICY_API_URL?.replace(/\/$/, "");
 const sessionCookieName = "policyos_session";
@@ -22,6 +22,10 @@ async function read<T>(path: string, fallback: T): Promise<T> {
     cache: "no-store",
   });
   if (response.status === 401) redirect("/login");
+  if (response.status === 403) {
+    const user = await getCurrentUser();
+    redirect(user?.password_change_required ? "/account/security" : "/forbidden");
+  }
   if (response.status === 404) return fallback;
   if (!response.ok) throw new Error(`Policy API request failed with ${response.status}`);
   return response.json() as Promise<T>;
@@ -54,6 +58,9 @@ export const getConditionFields = () => read<ConditionField[]>("/condition-field
 export const getAssignmentSummary = () => read<AssignmentSummary>("/assignment-summary", assignmentSummary);
 export const getGroups = () => read<Group[]>("/groups?limit=500", groups);
 export const getAuditLogs = () => read<AuditLog[]>("/audit-logs?limit=100", auditLogs);
+export const getPermissions = () => read<Permission[]>("/authorization/permissions?limit=500", []);
+export const getRoles = () => read<Role[]>("/roles?limit=500", []);
+export const getUsers = () => read<User[]>("/users?limit=500", []);
 
 export async function getEmployee(id: number) {
   return read<Employee | null>(`/employees/${id}`, employees.find((item) => item.id === id) ?? null);

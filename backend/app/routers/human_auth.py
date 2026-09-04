@@ -6,8 +6,10 @@ from app.schemas import (
     PasswordChangeCreate,
     RootSetupCreate,
     RootSetupStatusRead,
+    RoleSummaryRead,
     UserRead,
 )
+from app.services.access_control import effective_permissions
 from app.services.human_auth import (
     SESSION_COOKIE_NAME,
     authenticate_human,
@@ -45,6 +47,22 @@ def _clear_session_cookie(response: Response) -> None:
     )
 
 
+def _user_read(session: DatabaseSession, user) -> UserRead:
+    return UserRead(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        status=user.status,
+        is_root=user.is_root,
+        password_change_required=user.password_change_required,
+        employee_id=user.employee_id,
+        created_at=user.created_at,
+        last_login_at=user.last_login_at,
+        roles=[RoleSummaryRead.model_validate(role) for role in sorted(user.roles, key=lambda item: item.name)],
+        permissions=sorted(effective_permissions(session, user)),
+    )
+
+
 @public_router.get("/setup-status", response_model=RootSetupStatusRead)
 def setup_status(session: DatabaseSession) -> RootSetupStatusRead:
     return RootSetupStatusRead(setup_required=root_setup_required(session))
@@ -70,7 +88,7 @@ def setup_root(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     _set_session_cookie(response, created_session.token)
-    return UserRead.model_validate(user)
+    return _user_read(session, user)
 
 
 @public_router.post("/login", response_model=UserRead)
@@ -85,12 +103,12 @@ def login(
         password=data.password,
     )
     _set_session_cookie(response, created_session.token)
-    return UserRead.model_validate(user)
+    return _user_read(session, user)
 
 
 @session_router.get("/me", response_model=UserRead)
-def me(identity: HumanSession) -> UserRead:
-    return UserRead.model_validate(identity.user)
+def me(identity: HumanSession, session: DatabaseSession) -> UserRead:
+    return _user_read(session, identity.user)
 
 
 @session_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -124,4 +142,4 @@ def update_password(
             detail=str(exc),
         ) from exc
     _set_session_cookie(response, replacement.token)
-    return UserRead.model_validate(identity.user)
+    return _user_read(session, identity.user)

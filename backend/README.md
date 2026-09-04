@@ -81,7 +81,9 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
 - **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override, with an immutable explanation of the decision.
 - **Audit log:** an append-only actor, entity, action, before/after snapshot, and timestamp for an important domain mutation.
-- **User:** a human account with a normalized email, Argon2id password hash, lifecycle status, and optional employee link. The one-time Root user has full access in Phase 1.
+- **User:** a human account with a normalized email, Argon2id password hash, lifecycle status, one or more assigned roles, and an optional employee link. Administratively reset passwords are temporary and must be changed at the next login.
+- **Role:** a reusable, named bundle of application permissions assigned many-to-many to non-Root users.
+- **Role permission:** one allow-only capability such as `employees:read`, `policies:update`, or `access:manage`. Effective permissions are the union of every assigned role.
 - **Authentication session:** a revocable, expiring human login session whose opaque browser token is stored only as a SHA-256 hash.
 - **API credential:** a revocable, optionally expiring bearer credential whose opaque token is stored only as a SHA-256 hash and grants named operation scopes.
 - **Approved change execution:** an idempotency record tying one signed preview approval to its committed response and actor.
@@ -104,7 +106,7 @@ uv run fastapi dev main.py
 
 The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created on startup. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
 
-Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root sessions grant all operations during Phase 1. `AUTH_SESSION_TTL_SECONDS` defaults to 12 hours, and `AUTH_SESSION_COOKIE_SECURE` must be `true` behind production HTTPS. Passwords use Argon2id; only session-token hashes are stored in PostgreSQL. State-changing session requests also require a trusted `Origin`.
+Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root is an immutable break-glass superuser; other users receive only the union of their assigned role permissions. Permission changes take effect on the next request, including for existing sessions. `AUTH_SESSION_TTL_SECONDS` defaults to 12 hours, and `AUTH_SESSION_COOKIE_SECURE` must be `true` behind production HTTPS. Passwords use Argon2id; only session-token hashes are stored in PostgreSQL. State-changing session requests also require a trusted `Origin`.
 
 Bearer credentials remain the machine-to-machine authentication mechanism for the MCP server and automation. The bootstrap token grants all operations and exists only to issue the first persistent API credential. It must contain at least 32 bytes, must be stored in the deployment secret manager, and should be removed after administrative credentials have been issued. `AUTH_BOOTSTRAP_SUBJECT` controls its audit identity and defaults to `bootstrap`. A newly issued `wpa_...` token is returned exactly once; the database stores only its SHA-256 hash and safe metadata. Browser code must never contain a shared API credential.
 
@@ -159,6 +161,12 @@ state-changing cookie-authenticated requests.
 | GET | `/auth/me` | Read the signed-in human user |
 | POST | `/auth/logout` | Revoke the current human session |
 | POST | `/auth/change-password` | Change the password, revoke other sessions, and rotate the current session |
+| GET | `/authorization/permissions` | List the human application-permission catalog |
+| POST / GET | `/roles` | Create or list roles and their permission bundles |
+| GET / PATCH / DELETE | `/roles/{id}` | Read, update, or delete an unassigned role |
+| POST / GET | `/users` | Provision or list human users |
+| GET / PATCH / DELETE | `/users/{id}` | Read, update, or disable a human user |
+| POST | `/users/{id}/reset-password` | Set a temporary password and revoke active sessions |
 | GET | `/auth/scopes` | List supported operation scopes |
 | POST / GET | `/auth/credentials` | Issue a credential once or list safe credential metadata |
 | DELETE | `/auth/credentials/{id}` | Revoke a credential |
@@ -331,11 +339,17 @@ locking serializes concurrent executions of the same approval. Approval tokens
 remain bearer capabilities in addition to the API credential required for
 execution, and must not be logged or exposed to unrelated users.
 
-## Authentication and operation scopes
+## Authentication, roles, and operation scopes
 
-Authorization is deliberately capability-oriented so the React interface and
-MCP server share one backend contract while receiving different permissions.
-The supported scopes are:
+Authorization is deliberately capability-oriented. Human sessions use the
+fine-grained permission catalog exposed by `GET /authorization/permissions`.
+Permissions are allow-only, roles can be combined, and Root implicitly has `*`.
+The backend remains authoritative; the frontend uses the same effective list to
+hide inaccessible navigation and mutation controls. OpenAPI publishes
+`x-required-permissions` for every protected operation.
+
+Machine API credentials retain their separate, coarse operation scopes so MCP
+and automation clients remain compatible:
 
 - `read`: employees, policies, groups, rule-builder catalogs, and assignments
 - `preview`: non-persisting change simulations
@@ -349,9 +363,9 @@ execution are intentionally separate capabilities. Credential administration
 and audit access are also isolated from ordinary reads and writes. Missing,
 invalid, expired, or revoked credentials return a structured `401`; insufficient
 scope returns a structured `403` containing the required and granted scopes.
-OpenAPI exposes the bearer scheme and an `x-required-scopes` value on every
+OpenAPI also exposes the bearer scheme and an `x-required-scopes` value on every
 protected operation, so generated clients and MCP tooling can explain and
-enforce the same boundary.
+enforce the machine boundary.
 
 ## Error contract
 
@@ -437,4 +451,4 @@ Patching Alice's state to Wisconsin removes the California policy match and auto
 
 ## Version 1 boundaries
 
-Phase 1 includes local human authentication and the one-time Root account. It intentionally excludes role and permission management, non-Root user provisioning, password-reset delivery, MFA, external identity-provider integration, and per-user data visibility; those authorization capabilities belong to later phases. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.
+Phase 2 includes roles, granular allow-only permissions, non-Root user provisioning, temporary-password enforcement, administrative password reset, account suspension/disablement, permission-aware navigation, and backend authorization. It intentionally excludes password-reset delivery, MFA, external identity-provider integration, and row-level employee visibility; population scoping belongs to a later phase. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.

@@ -2,27 +2,29 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, BookOpenCheck, CheckCircle2, Command, FilePlus2, KeyRound, LayoutDashboard, LogOut, Menu, Network, Plus, ScrollText, Search, Settings, UserPlus, Users, X } from "lucide-react";
+import { Bell, BookOpenCheck, CheckCircle2, Command, FilePlus2, KeyRound, LayoutDashboard, LogOut, Menu, Network, Plus, ScrollText, Search, Settings, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { KeyboardEvent, useEffect, useState } from "react";
+import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser } from "@/lib/types";
 
 const navigation = [
-  { label: "Overview", href: "/", icon: LayoutDashboard },
-  { label: "Employees", href: "/employees", icon: Users },
-  { label: "Policies", href: "/policies", icon: BookOpenCheck },
-  { label: "Groups", href: "/groups", icon: Network },
-  { label: "Audit log", href: "/audit", icon: ScrollText },
+  { label: "Overview", href: "/", icon: LayoutDashboard, permission: "*" },
+  { label: "Employees", href: "/employees", icon: Users, permission: "employees:read" },
+  { label: "Policies", href: "/policies", icon: BookOpenCheck, permission: "policies:read" },
+  { label: "Groups", href: "/groups", icon: Network, permission: "groups:read" },
+  { label: "Audit log", href: "/audit", icon: ScrollText, permission: "audit:read" },
 ];
 
 const commands = [
-  { label: "Go to overview", description: "Assignment health and recent changes", href: "/", keywords: "home dashboard", icon: LayoutDashboard },
-  { label: "Find an employee", description: "Browse assignments and employment facts", href: "/employees", keywords: "people workers", icon: Users },
-  { label: "Add an employee", description: "Preview policies during onboarding", href: "/employees/new", keywords: "onboard hire create", icon: UserPlus },
-  { label: "Browse policies", description: "Rules, versions, priorities, and impact", href: "/policies", keywords: "rules assignments", icon: BookOpenCheck },
-  { label: "Create a policy", description: "Build and preview a new assignment rule", href: "/policies/new", keywords: "new rule", icon: FilePlus2 },
-  { label: "Manage groups", description: "Membership and inherited policies", href: "/groups", keywords: "collections teams", icon: Network },
-  { label: "Inspect the audit log", description: "Search every recorded change", href: "/audit", keywords: "history events changes", icon: ScrollText },
-  { label: "Configure assignment fields", description: "One-value and many-value categories", href: "/settings", keywords: "setup cardinality", icon: Settings },
+  { label: "Go to overview", description: "Assignment health and recent changes", href: "/", keywords: "home dashboard", icon: LayoutDashboard, permission: "*" },
+  { label: "Find an employee", description: "Browse assignments and employment facts", href: "/employees", keywords: "people workers", icon: Users, permission: "employees:read" },
+  { label: "Add an employee", description: "Preview policies during onboarding", href: "/employees/new", keywords: "onboard hire create", icon: UserPlus, permission: "employees:create" },
+  { label: "Browse policies", description: "Rules, versions, priorities, and impact", href: "/policies", keywords: "rules assignments", icon: BookOpenCheck, permission: "policies:read" },
+  { label: "Create a policy", description: "Build and preview a new assignment rule", href: "/policies/new", keywords: "new rule", icon: FilePlus2, permission: "policies:create" },
+  { label: "Manage groups", description: "Membership and inherited policies", href: "/groups", keywords: "collections teams", icon: Network, permission: "groups:read" },
+  { label: "Inspect the audit log", description: "Search every recorded change", href: "/audit", keywords: "history events changes", icon: ScrollText, permission: "audit:read" },
+  { label: "Configure assignment fields", description: "One-value and many-value categories", href: "/settings", keywords: "setup cardinality", icon: Settings, permission: "settings:read" },
+  { label: "Manage access", description: "Users, roles, and permissions", href: "/access", keywords: "authorization accounts", icon: ShieldCheck, permission: "access:read" },
 ];
 
 const activity = [
@@ -42,8 +44,9 @@ export function AppShell({ children, connected, currentUser }: { children: React
   const [loggingOut, setLoggingOut] = useState(false);
   const isAuthPage = pathname === "/login" || pathname === "/setup";
   const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
-  const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : pathname.startsWith("/account") ? "Account security" : "PolicyOS");
-  const filteredCommands = commands.filter((item) => `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(query.toLowerCase()));
+  const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : pathname.startsWith("/access") ? "Access control" : pathname.startsWith("/account") ? "Account security" : "PolicyOS");
+  const visibleNavigation = navigation.filter((item) => !connected || hasPermission(currentUser, item.permission));
+  const filteredCommands = commands.filter((item) => (!connected || hasPermission(currentUser, item.permission)) && `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(query.toLowerCase()));
 
   useEffect(() => {
     function onKeyDown(event: globalThis.KeyboardEvent) {
@@ -92,16 +95,16 @@ export function AppShell({ children, connected, currentUser }: { children: React
       <aside className={`sidebar${menuOpen ? " open" : ""}`} aria-label="Workspace navigation">
         <div className="brand"><div className="brand-mark">P</div><div><div className="brand-title">PolicyOS</div><div className="brand-subtitle">Assignment engine</div></div><button className="sidebar-close" onClick={() => setMenuOpen(false)} aria-label="Close navigation"><X size={16} /></button></div>
         <div className="nav-label">Workspace</div>
-        <nav className="nav-list" aria-label="Primary navigation">{navigation.map((item) => { const Icon = item.icon; return <Link className={`nav-item${isActive(item.href) ? " active" : ""}`} href={item.href} key={item.href} onClick={() => setMenuOpen(false)} aria-current={isActive(item.href) ? "page" : undefined}><Icon size={16} strokeWidth={1.8} />{item.label}</Link>; })}</nav>
+        <nav className="nav-list" aria-label="Primary navigation">{visibleNavigation.map((item) => { const Icon = item.icon; return <Link className={`nav-item${isActive(item.href) ? " active" : ""}`} href={item.href} key={item.href} onClick={() => setMenuOpen(false)} aria-current={isActive(item.href) ? "page" : undefined}><Icon size={16} strokeWidth={1.8} />{item.label}</Link>; })}</nav>
         <div className="nav-label">Manage</div>
-        <nav className="nav-list" aria-label="Settings navigation"><Link className={`nav-item${isActive("/settings") ? " active" : ""}`} href="/settings" onClick={() => setMenuOpen(false)} aria-current={isActive("/settings") ? "page" : undefined}><Settings size={16} strokeWidth={1.8} />Assignment fields</Link>{currentUser && <Link className={`nav-item${isActive("/account") ? " active" : ""}`} href="/account/security" onClick={() => setMenuOpen(false)} aria-current={isActive("/account") ? "page" : undefined}><KeyRound size={16} strokeWidth={1.8} />Account security</Link>}</nav>
+        <nav className="nav-list" aria-label="Settings navigation">{(!connected || hasPermission(currentUser, "settings:read")) && <Link className={`nav-item${isActive("/settings") ? " active" : ""}`} href="/settings" onClick={() => setMenuOpen(false)} aria-current={isActive("/settings") ? "page" : undefined}><Settings size={16} strokeWidth={1.8} />Assignment fields</Link>}{currentUser && hasPermission(currentUser, "access:read") && <Link className={`nav-item${isActive("/access") ? " active" : ""}`} href="/access" onClick={() => setMenuOpen(false)} aria-current={isActive("/access") ? "page" : undefined}><ShieldCheck size={16} strokeWidth={1.8} />Access control</Link>}{currentUser && <Link className={`nav-item${isActive("/account") ? " active" : ""}`} href="/account/security" onClick={() => setMenuOpen(false)} aria-current={isActive("/account") ? "page" : undefined}><KeyRound size={16} strokeWidth={1.8} />Account security</Link>}</nav>
         <button className="sidebar-command" onClick={() => { setCommandOpen(true); setMenuOpen(false); }}><Search size={14} /><span>Quick find</span><kbd>⌘K</kbd></button>
-        <div className="sidebar-footer">{currentUser ? <div className="account-summary"><div className="account-avatar">{currentUser.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div><div className="account-copy"><div className="company-name">{currentUser.name}</div><div className="company-role">{currentUser.is_root ? "Root account" : currentUser.email}</div></div><button className="account-logout" type="button" onClick={logout} disabled={loggingOut} aria-label="Sign out"><LogOut size={15} /></button></div> : <div className="company-switcher"><div className="company-avatar">AC</div><div><div className="company-name">Acme, Inc.</div><div className="company-role">Demo workspace</div></div></div>}</div>
+        <div className="sidebar-footer">{currentUser ? <div className="account-summary"><div className="account-avatar">{currentUser.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div><div className="account-copy"><div className="company-name">{currentUser.name}</div><div className="company-role">{currentUser.is_root ? "Root account" : currentUser.roles.map((role) => role.name).join(", ") || "No role"}</div></div><button className="account-logout" type="button" onClick={logout} disabled={loggingOut} aria-label="Sign out"><LogOut size={15} /></button></div> : <div className="company-switcher"><div className="company-avatar">AC</div><div><div className="company-name">Acme, Inc.</div><div className="company-role">Demo workspace</div></div></div>}</div>
       </aside>
       <div className="main-column">
         <header className="topbar">
           <div className="topbar-context"><button className="icon-button mobile-menu-button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? "Close navigation" : "Open navigation"}>{menuOpen ? <X size={17} /> : <Menu size={17} />}</button><span className="topbar-page">{currentPage}</span><span className="topbar-divider" /><span className="system-dot" data-connected={connected} /><span className="system-copy">{connected ? "Engine current" : "Demo mode"}</span></div>
-          <div className="topbar-actions"><button className="command-trigger" onClick={() => { setCommandOpen(true); setActivityOpen(false); }}><Search size={14} /><span>Search or jump to…</span><kbd><Command size={10} />K</kbd></button><div className="activity-wrap"><button className="icon-button" aria-label="Open activity center" aria-expanded={activityOpen} onClick={() => { setActivityOpen((current) => !current); setCommandOpen(false); }}><Bell size={16} strokeWidth={1.8} /><span className="notification-dot" /></button>{activityOpen && <div className="activity-popover"><div className="popover-head"><div><strong>Activity</strong><span>What changed recently</span></div><span className="badge accent">3 new</span></div><div className="popover-list">{activity.map((item) => <div className="popover-item" key={item.title}><span className="activity-icon"><CheckCircle2 size={13} /></span><span><strong>{item.title}</strong><small>{item.detail}</small></span><time>{item.time}</time></div>)}</div><Link className="popover-footer" href="/audit" onClick={() => setActivityOpen(false)}>View complete audit log</Link></div>}</div></div>
+          <div className="topbar-actions"><button className="command-trigger" onClick={() => { setCommandOpen(true); setActivityOpen(false); }}><Search size={14} /><span>Search or jump to…</span><kbd><Command size={10} />K</kbd></button>{(!connected || hasPermission(currentUser, "audit:read")) && <div className="activity-wrap"><button className="icon-button" aria-label="Open activity center" aria-expanded={activityOpen} onClick={() => { setActivityOpen((current) => !current); setCommandOpen(false); }}><Bell size={16} strokeWidth={1.8} /><span className="notification-dot" /></button>{activityOpen && <div className="activity-popover"><div className="popover-head"><div><strong>Activity</strong><span>What changed recently</span></div><span className="badge accent">3 new</span></div><div className="popover-list">{activity.map((item) => <div className="popover-item" key={item.title}><span className="activity-icon"><CheckCircle2 size={13} /></span><span><strong>{item.title}</strong><small>{item.detail}</small></span><time>{item.time}</time></div>)}</div><Link className="popover-footer" href="/audit" onClick={() => setActivityOpen(false)}>View complete audit log</Link></div>}</div>}</div>
         </header>
         <main className="content" id="main-content">{children}</main>
       </div>

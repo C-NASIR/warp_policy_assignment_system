@@ -3,6 +3,8 @@
 import { ArrowRight, Check, CircleAlert, KeyRound, LockKeyhole, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { firstAllowedPath } from "@/lib/permissions";
+import type { CurrentUser } from "@/lib/types";
 
 type AuthMode = "login" | "setup";
 
@@ -30,12 +32,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(isSetup ? { name, email, password } : { email, password }),
       });
-      const result = await response.json().catch(() => ({}));
+      const result = await response.json().catch(() => ({})) as Partial<CurrentUser> & { error?: { issues?: { message?: string }[]; message?: string }; detail?: string };
       if (!response.ok) {
         const issue = result.error?.issues?.[0]?.message;
         throw new Error(issue ?? result.error?.message ?? result.detail ?? "Authentication could not be completed.");
       }
-      router.replace("/");
+      router.replace(isSetup ? "/" : firstAllowedPath(result as CurrentUser));
       router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Authentication could not be completed.");
