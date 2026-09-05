@@ -1,0 +1,30 @@
+---
+title: Permissions and two data boundaries
+description: Separate permission to perform an action from visibility of employees and assignment fields.
+content_id: C14
+section: concepts
+order: 140
+audiences: [access administrator, assignment investigator]
+permissions: []
+owner: access control
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2027-03-05"
+verified_by: [backend/tests/test_access_control.py, backend/tests/test_employee_visibility.py, backend/tests/test_assignment_field_visibility.py]
+reading_time: 4
+prerequisites: [Employee records versus user accounts]
+---
+
+## Action permission is one check
+
+A permission such as `employees:read` or `policies:create` allows an action category. Human access is the union of allow-only roles; roles do not contain deny rules.
+
+## Scope is another check
+
+Employee scope independently limits whose records are visible: none, the linked employee, the linked employee and reporting tree, or all employees. Assignment-field scope independently limits which assignment and policy domains are visible: none, selected fields, or all fields.
+
+Two users with the same action permission can therefore see different employees or assignment fields. A direct request for an out-of-scope resource may return 404 so its existence is not disclosed.
+
+When diagnosing access, check all three dimensions: action permission, employee scope, and assignment-field scope. Also verify the user-to-employee link when self or reporting-tree scope is involved.
+
+<PolicyLink href="/access" permission="access:read">Review role permissions and scopes</PolicyLink>

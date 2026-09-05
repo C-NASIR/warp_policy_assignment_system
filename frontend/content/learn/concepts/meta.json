@@ -6,11 +6,16 @@
     "condition-fields-versus-assignment-fields",
     "policies-versions-and-assignments",
     "direct-matches-and-group-policies",
+    "condition-trees-and-derived-facts",
     "one-and-many-value-resolution",
     "equal-priority-conflicts",
     "effective-dates-and-version-boundaries",
+    "current-historical-and-future-results",
+    "reconciliation-and-scheduled-changes",
     "manual-overrides-and-provenance",
     "preview-approval-and-execution",
-    "assignment-history-versus-audit-log"
+    "assignment-history-versus-audit-log",
+    "permissions-and-data-boundaries",
+    "explicit-and-policy-derived-roles"
   ]
 }

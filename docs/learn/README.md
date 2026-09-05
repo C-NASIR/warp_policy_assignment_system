@@ -131,3 +131,22 @@ Phase 3 is implemented in `frontend/content/learn`:
 The articles remain in `technical-review` until feature owners and target readers
 complete the authoring and verification workflow above. Phase 3 implementation
 does not mark that organizational review as complete.
+
+## Phase 4 status
+
+Phase 4 is implemented across the learning content and application shell:
+
+- Every P0/P1 concept, workflow guide, feature reference, and troubleshooting
+  article in the content map is published.
+- Quick Find searches article titles, descriptions, headings, and body text in
+  addition to its permission-filtered product pages and actions.
+- Major product routes expose a contextual Help link to the relevant guide or
+  reference article.
+- Articles link back into application screens through permission-aware controls;
+  unavailable actions explain the required permission.
+- Article pages include responsive related-article cards generated from nearby
+  content in the same curriculum section.
+
+P2 depth, isolated interactive exercises, progress tracking, and knowledge-check
+scoring remain later-phase work. Phase 4 articles remain in `technical-review`
+until their workflow and reader reviews are complete.

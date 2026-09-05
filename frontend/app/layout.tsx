@@ -4,6 +4,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import { AppShell } from "@/components/app-shell";
 import { WebMcpTools } from "@/components/webmcp-tools";
 import { apiConfigured, getAccountSecurity, getCurrentUser } from "@/lib/backend";
+import { getLearnSearchEntries } from "@/lib/learn-source";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -29,9 +30,10 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const currentUser = apiConfigured ? await getCurrentUser() : null;
   const accountSecurity = currentUser ? await getAccountSecurity() : null;
+  const learnSearchEntries = getLearnSearchEntries();
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-      <body><RootProvider search={{ enabled: false }} theme={{ enabled: false }}><WebMcpTools /><AppShell connected={apiConfigured} currentUser={currentUser} securityEvents={accountSecurity?.events ?? []}>{children}</AppShell></RootProvider></body>
+      <body><RootProvider search={{ enabled: false }} theme={{ enabled: false }}><WebMcpTools /><AppShell connected={apiConfigured} currentUser={currentUser} securityEvents={accountSecurity?.events ?? []} learnSearchEntries={learnSearchEntries}>{children}</AppShell></RootProvider></body>
     </html>
   );
 }

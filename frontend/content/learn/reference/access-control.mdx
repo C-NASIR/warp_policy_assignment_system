@@ -1,0 +1,24 @@
+---
+title: Access control
+description: Reference users, roles, permissions, employee visibility, assignment-field scope, and automation eligibility.
+content_id: R10
+section: reference
+order: 100
+audiences: [access administrator]
+permissions: [access:read]
+owner: access control
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: [frontend/components/access-manager.tsx, backend/tests/test_access_control.py]
+reading_time: 5
+prerequisites: [Permissions and two data boundaries]
+---
+
+The **Users** tab shows account identity, employee link, explicit and policy-derived roles, effective permission count, password-change state, and status. Management authority enables create, edit, reset, and disable actions.
+
+The **Roles** tab defines allow-only permission bundles. Employee scope controls whose records are visible; assignment-field scope controls which policy and assignment domains are visible. **Allow policies to grant this role** marks a safe role as automation-eligible.
+
+Users can have several roles; effective permissions are their union. Root and protected high-privilege capabilities remain outside policy automation.
+
+<PolicyLink href="/access" permission="access:read">Open Access control</PolicyLink>

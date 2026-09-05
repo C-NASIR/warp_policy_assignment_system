@@ -1,0 +1,24 @@
+---
+title: Condition field catalog
+description: Understand field labels, operators, input types, and reconciliation dependencies available to policy rules.
+content_id: R15
+section: reference
+order: 150
+audiences: [policy author]
+permissions: [policies:read]
+owner: policy authoring
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: [backend/app/services/condition_fields.py, backend/tests/test_tenure_rules.py, backend/tests/test_org_chart_rules.py]
+reading_time: 4
+prerequisites: [Condition trees and derived facts]
+---
+
+The policy builder retrieves an allowlisted catalog rather than accepting arbitrary field names. Each entry defines its display label, permitted operators, input type, and dependencies.
+
+Static fields include trusted employee attributes such as state, department, employee type, location, start date, and manager. Derived entries cover supported tenure and reporting-organization facts.
+
+Use the builder as the live catalog because available operators and input controls come from the backend. Dependencies tell reconciliation which workforce changes can affect a result.
+
+<PolicyLink href="/policies/new" permission="policies:create">Inspect available condition fields</PolicyLink>

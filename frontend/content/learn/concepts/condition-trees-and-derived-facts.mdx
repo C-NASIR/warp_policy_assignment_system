@@ -1,0 +1,30 @@
+---
+title: Condition trees and derived facts
+description: Read ALL, ANY, nesting, and supported computed workforce facts without confusing authoring with execution.
+content_id: C05
+section: concepts
+order: 50
+audiences: [policy author, assignment investigator]
+permissions: []
+owner: policy authoring
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2027-03-05"
+verified_by: [backend/app/services/policy_compiler.py, backend/app/services/condition_fields.py, backend/tests/test_policy_compiler.py]
+reading_time: 4
+prerequisites: [Condition fields versus assignment fields]
+---
+
+## Read the canonical tree
+
+An **ALL** group matches when every child condition matches. An **ANY** group matches when at least one does. Nested groups let authors express combinations such as “Full-time AND (California OR Oregon).” The builder and saved version preserve this canonical tree, even though the engine compiles it to an equivalent OR-of-AND form for evaluation.
+
+## Derived facts
+
+PolicyOS exposes only allowlisted derived fields. Tenure is calculated from the employee start date and evaluation date. Organization fields use reporting relationships, such as whether an employee reports within a manager's tree. Their dependencies are explicit so a relevant employee change can trigger reconciliation.
+
+Use the field's available operators and input type. Do not type an unsupported field name or assume arbitrary employee data is available to rules.
+
+When investigating a match, read the explanation's satisfied clauses alongside the original tree. A compiled clause is evidence of the same authored logic, not a different policy.
+
+<PolicyLink href="/policies/new" permission="policies:create">Build a condition tree</PolicyLink>

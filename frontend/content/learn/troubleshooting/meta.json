@@ -1,5 +1,18 @@
 {
   "title": "Troubleshooting",
   "description": "Diagnostic paths for unexpected results.",
-  "pages": ["policy-did-not-apply"]
+  "pages": [
+    "policy-did-not-apply",
+    "policy-matched-but-not-selected",
+    "equal-priority-conflict",
+    "future-version-not-effective",
+    "policy-value-hidden-by-override",
+    "cannot-see-record-or-field",
+    "cannot-approve-or-execute",
+    "approved-change-stale-or-expired",
+    "group-policy-applied-without-match",
+    "group-change-reconciled-immediately",
+    "value-unchanged-history-row",
+    "demo-changes-gone"
+  ]
 }

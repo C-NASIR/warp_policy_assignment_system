@@ -1,0 +1,26 @@
+---
+title: Activate, archive, or reactivate a policy
+description: Change lifecycle state using the capabilities exposed on the policy record.
+content_id: G07
+section: guides
+order: 70
+audiences: [policy activator]
+permissions: [policies:activate, policies:archive]
+owner: policy lifecycle
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: [frontend/components/policy-lifecycle.tsx, backend/tests/test_policy_change_reconciliation.py, backend/tests/test_phase6_access_approvals.py]
+reading_time: 4
+prerequisites: ["Policies, versions, and assignments"]
+---
+
+## Use record capabilities
+
+Open the policy detail page. Available lifecycle actions reflect both your scope and the record's current status. Activate a draft to let its effective version participate; archive an active policy to remove it from resolution; reactivate an archived policy only when the record exposes that capability.
+
+Ordinary lifecycle changes reconcile affected assignments after confirmation. A lifecycle change involving automated access uses preview and independent approval before execution.
+
+After the action, verify policy status, current-version dates, impact, and a sample employee explanation. Archiving removes current participation but does not rewrite historical assignments or audit events.
+
+<PolicyLink href="/policies" permission="policies:read">Open a policy record</PolicyLink>

@@ -49,6 +49,14 @@ export const learnSource = loader({
 
 export type LearnPage = (typeof learnSource)["$inferPage"];
 
+export type LearnSearchEntry = {
+  title: string;
+  description: string;
+  href: string;
+  section: string;
+  searchText: string;
+};
+
 const sectionLabels: Record<LearnSection, string> = {
   "start-here": "Start here",
   concepts: "Core concepts",
@@ -77,4 +85,34 @@ export function getLearnNavigation() {
     label: sectionLabels[section],
     pages: pages.filter((page) => page.data.section === section),
   }));
+}
+
+export function getLearnSearchEntries(): LearnSearchEntry[] {
+  return getOrderedLearnPages().map((page) => ({
+    title: page.data.title,
+    description: page.data.description ?? "PolicyOS learning article",
+    href: page.url,
+    section: sectionLabels[page.data.section],
+    searchText: [
+      page.data.title,
+      page.data.description,
+      ...page.data.structuredData.headings.map((heading) => heading.content),
+      ...page.data.structuredData.contents.map((content) => content.content),
+    ].filter(Boolean).join(" ").toLowerCase(),
+  }));
+}
+
+export function getRelatedLearnPages(page: LearnPage, limit = 3) {
+  const sectionPages = getOrderedLearnPages().filter((item) => item.data.section === page.data.section);
+  const index = sectionPages.findIndex((item) => item.url === page.url);
+  if (index < 0) return [];
+
+  return sectionPages
+    .filter((_, candidateIndex) => candidateIndex !== index)
+    .sort((left, right) => {
+      const leftIndex = sectionPages.indexOf(left);
+      const rightIndex = sectionPages.indexOf(right);
+      return Math.abs(leftIndex - index) - Math.abs(rightIndex - index) || leftIndex - rightIndex;
+    })
+    .slice(0, limit);
 }

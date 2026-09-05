@@ -1,0 +1,30 @@
+---
+title: Onboard an employee and review assignments
+description: Create a trusted employee record only after reviewing its calculated policy results.
+content_id: G01
+section: guides
+order: 10
+audiences: [people operator]
+permissions: [employees:create, changes:preview]
+owner: employee operations
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: [frontend/components/employee-form.tsx, backend/tests/test_change_previews.py]
+reading_time: 4
+prerequisites: ["Inputs, assignment fields, and values"]
+---
+
+## Enter trusted facts
+
+Open **Employees**, choose **Add employee**, and enter the required name, department, employment type, state or region, and start date. Add work location and manager when known. These are policy inputs; do not enter expected assignment results as employee facts.
+
+## Review before creating
+
+Choose **Review assignments**. Inspect each proposed field, value, source, and change label. If the connected engine reports a conflict, do not continue—correct the employee fact or ask a policy author to resolve the rule ambiguity.
+
+Choose **Create employee** only when the preview matches the intended onboarding outcome. The connected workflow commits the employee and reconciles assignments. A separate access administrator can create and link a user account later.
+
+> Demo mode is non-persistent. Its simplified preview is useful for orientation but is not production evidence.
+
+<PolicyLink href="/employees/new" permission="employees:create">Start employee onboarding</PolicyLink>

@@ -1,5 +1,23 @@
 {
   "title": "Feature reference",
   "description": "Screens, controls, and decision evidence.",
-  "pages": ["glossary", "assignment-explanation-anatomy"]
+  "pages": [
+    "glossary",
+    "overview",
+    "employee-directory",
+    "employee-detail",
+    "policy-builder",
+    "policy-detail-and-lifecycle",
+    "groups",
+    "change-approvals",
+    "assignment-fields",
+    "audit-log",
+    "access-control",
+    "account-security",
+    "quick-find",
+    "permission-catalog",
+    "condition-field-catalog",
+    "policy-status-and-capability-matrix",
+    "assignment-explanation-anatomy"
+  ]
 }

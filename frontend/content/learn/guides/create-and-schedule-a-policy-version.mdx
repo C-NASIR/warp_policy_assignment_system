@@ -1,0 +1,30 @@
+---
+title: Create and schedule a policy version
+description: Change an existing policy without overwriting the definition or evidence used in the past.
+content_id: G06
+section: guides
+order: 60
+audiences: [policy author]
+permissions: [policies:version:create, changes:preview]
+owner: policy versions
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: [frontend/components/policy-builder.tsx, backend/tests/test_policy_versions.py, backend/tests/test_policy_access.py]
+reading_time: 5
+prerequisites: [Effective dates and version boundaries]
+---
+
+## Start from the policy record
+
+Open the policy and choose its new-version action. Your record capability must allow version creation; a general permission does not override status or scope restrictions.
+
+Copy only the behavior that should continue, then update conditions, outputs, priority, automated roles, and dates. A new start date after an open-ended version closes the prior version on the preceding day. Overlaps are rejected; gaps intentionally produce no policy behavior.
+
+## Preview the exact version
+
+Review affected employees, assignments, and access. If the active policy change includes automated access, submit it for independent approval. Otherwise, execute with the connected preview token when authorized.
+
+After creation, confirm the version boundary and whether it is current or scheduled.
+
+<PolicyLink href="/policies" permission="policies:read">Choose a policy to version</PolicyLink>

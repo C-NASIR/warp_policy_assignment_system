@@ -1,0 +1,24 @@
+---
+title: Employee detail
+description: Reference profile facts, current assignments, explanations, overrides, and assignment history.
+content_id: R03
+section: reference
+order: 30
+audiences: [people operator, assignment investigator]
+permissions: [employees:read]
+owner: employee operations
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["frontend/app/employees/[id]/page.tsx", frontend/components/assignment-card.tsx, frontend/components/override-manager.tsx]
+reading_time: 4
+prerequisites: [Why Avery received each assignment]
+---
+
+The profile area shows trusted workforce inputs and the reporting relationship. Edit capability depends on `employees:update`.
+
+**Current assignments** lists resolved field values. Expand a card to inspect policy/version source, direct evidence or group origin, priority, selection, and override replacement. Assignment-field scope can hide fields even when the employee is visible.
+
+**Manual overrides** supports reviewed exceptions with `assignments:manage`. **Assignment history** includes current and retired rows with their source and effective interval.
+
+<PolicyLink href="/employees" permission="employees:read">Choose an employee</PolicyLink>

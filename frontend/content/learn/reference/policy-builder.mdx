@@ -1,0 +1,24 @@
+---
+title: Policy builder
+description: Reference policy basics, condition groups, outputs, automated roles, dates, and impact.
+content_id: R04
+section: reference
+order: 40
+audiences: [policy author]
+permissions: [policies:create]
+owner: policy authoring
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: [frontend/components/policy-builder.tsx, backend/tests/test_policy_versions.py]
+reading_time: 5
+prerequisites: [Condition trees and derived facts]
+---
+
+**Policy basics** contains the stable name, numeric priority, and inclusive effective dates. A successor version can close a prior open-ended range.
+
+**Conditions** supports ALL or ANY logic, additional rows, and one nested group. Fields expose their valid operators and input controls. **Assignments** selects a configured output field and value; multiple rows can target multiple outputs.
+
+Eligible roles may appear as automated-access outputs. These can change whether independent approval is required. The impact panel distinguishes matches from resulting assignment changes. Editing the proposal invalidates the prior preview.
+
+<PolicyLink href="/policies/new" permission="policies:create">Open Policy builder</PolicyLink>

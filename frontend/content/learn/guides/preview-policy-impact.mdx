@@ -1,0 +1,26 @@
+---
+title: Preview policy impact
+description: Separate matched employees from values that would actually be selected after resolution.
+content_id: G08
+section: guides
+order: 80
+audiences: [policy author, policy activator]
+permissions: [changes:preview]
+owner: policy authoring
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: [frontend/components/policy-builder.tsx, backend/tests/test_impact_summaries.py, backend/tests/test_change_previews.py]
+reading_time: 4
+prerequisites: [One-value and many-value resolution]
+---
+
+## Inspect two populations
+
+First review who matches the direct conditions or receives the policy through a group. Then review which assignment values are selected after priority, cardinality, competing policies, and overrides.
+
+A high match count does not mean the policy supplies every final value. Look for one-field winners, many-field additions, unchanged results, conflicts, and automated-role changes.
+
+Change any input to the proposal only before previewing again. Execution is tied to the exact connected preview; never assume a stale impact report authorizes modified input.
+
+<PolicyLink href="/policies" permission="policies:read">Select a policy to preview</PolicyLink>

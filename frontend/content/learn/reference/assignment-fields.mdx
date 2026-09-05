@@ -1,0 +1,22 @@
+---
+title: Assignment fields
+description: Reference output names, one-or-many cardinality, creation, and resolution labels.
+content_id: R08
+section: reference
+order: 80
+audiences: [configuration administrator, policy author]
+permissions: [settings:read]
+owner: configuration
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: [frontend/components/assignment-field-manager.tsx, backend/app/models.py]
+reading_time: 3
+prerequisites: [Condition fields versus assignment fields]
+---
+
+The assignment-field catalog supports name search and cardinality filtering. Each definition is either **One value** or **Many values**.
+
+One fields use priority to select one result and can conflict at equal winning priority. Many fields retain unique values. Cardinality is fixed after creation. Creating a definition does not create employee assignments; effective policies or overrides must supply values.
+
+<PolicyLink href="/settings" permission="settings:read">Open Assignment fields</PolicyLink>

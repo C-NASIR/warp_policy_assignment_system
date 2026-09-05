@@ -6,7 +6,7 @@ import { ArticleMeta } from "@/components/learn/article-meta";
 import { LearnNavigation } from "@/components/learn/learn-navigation";
 import { getLearnMdxComponents } from "@/components/learn/mdx-components";
 import { getCurrentUser } from "@/lib/backend";
-import { getOrderedLearnPages, labelForLearnSection, learnSource } from "@/lib/learn-source";
+import { getOrderedLearnPages, getRelatedLearnPages, labelForLearnSection, learnSource } from "@/lib/learn-source";
 
 export function generateStaticParams() {
   return learnSource.generateParams();
@@ -30,6 +30,7 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
   const pageIndex = orderedPages.findIndex((item) => item.url === page.url);
   const previous = pageIndex > 0 ? orderedPages[pageIndex - 1] : null;
   const next = pageIndex >= 0 && pageIndex < orderedPages.length - 1 ? orderedPages[pageIndex + 1] : null;
+  const related = getRelatedLearnPages(page);
   const isHome = page.slugs.length === 0;
 
   return (
@@ -45,6 +46,7 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
         </header>
         {page.data.toc.length > 0 && <details className="learn-mobile-toc"><summary><ListTree size={14} /> On this page</summary><TocList items={page.data.toc} /></details>}
         <div className="learn-body prose"><Body components={getLearnMdxComponents(currentUser)} /></div>
+        {!isHome && related.length > 0 && <section className="learn-related" aria-labelledby="related-articles-title"><h2 id="related-articles-title">Related articles</h2><div>{related.map((item) => <Link href={item.url} key={item.url}><strong>{item.data.title}</strong><span>{item.data.description}</span></Link>)}</div></section>}
         {!isHome && <nav className="learn-pagination" aria-label="Lesson navigation">
           {previous ? <Link href={previous.url}><ArrowLeft size={15} /><span><small>Previous</small><strong>{previous.data.title}</strong></span></Link> : <span />}
           {next ? <Link className="next" href={next.url}><span><small>Next</small><strong>{next.data.title}</strong></span><ArrowRight size={15} /></Link> : <span />}

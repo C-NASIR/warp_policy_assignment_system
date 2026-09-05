@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, BookOpenCheck, CheckCircle2, Command, FilePlus2, KeyRound, LayoutDashboard, LogOut, Menu, Network, Plus, ScrollText, Search, Settings, ShieldCheck, UserPlus, Users, X } from "lucide-react";
+import { Bell, BookOpenCheck, CheckCircle2, Command, FilePlus2, HelpCircle, KeyRound, LayoutDashboard, LogOut, Menu, Network, Plus, ScrollText, Search, Settings, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { KeyboardEvent, useEffect, useState } from "react";
+import type { LearnSearchEntry } from "@/lib/learn-source";
 import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser, SecurityEvent } from "@/lib/types";
 
@@ -38,7 +39,26 @@ const activity = [
   { title: "Override needs review", detail: "Devon Moore · Monthly pay schedule", time: "1d" },
 ];
 
-export function AppShell({ children, connected, currentUser, securityEvents }: { children: React.ReactNode; connected: boolean; currentUser: CurrentUser | null; securityEvents: SecurityEvent[] }) {
+function contextualHelp(pathname: string) {
+  if (pathname === "/employees/new") return { label: "Employee onboarding help", href: "/learn/guides/onboard-an-employee" };
+  if (/^\/employees\/[^/]+/.test(pathname)) return { label: "Employee assignment help", href: "/learn/guides/investigate-an-assignment" };
+  if (pathname === "/employees") return { label: "Employee directory help", href: "/learn/reference/employee-directory" };
+  if (pathname === "/policies/new") return { label: "Policy builder help", href: "/learn/reference/policy-builder" };
+  if (/^\/policies\/[^/]+/.test(pathname)) return { label: "Policy version help", href: "/learn/guides/create-and-schedule-a-policy-version" };
+  if (pathname === "/policies") return { label: "Policy reference", href: "/learn/reference/policy-detail-and-lifecycle" };
+  if (/^\/groups\/[^/]+/.test(pathname)) return { label: "Group membership help", href: "/learn/guides/add-or-remove-a-group-member" };
+  if (pathname === "/groups") return { label: "Group management help", href: "/learn/guides/create-and-manage-a-group" };
+  if (pathname === "/approvals") return { label: "Approval help", href: "/learn/guides/review-approve-and-execute" };
+  if (pathname === "/audit") return { label: "Audit help", href: "/learn/guides/search-and-compare-audit-events" };
+  if (pathname === "/settings") return { label: "Assignment field help", href: "/learn/guides/create-an-assignment-field" };
+  if (pathname === "/access/review") return { label: "Access review help", href: "/learn/guides/review-privileged-access" };
+  if (pathname === "/access") return { label: "Access control help", href: "/learn/guides/create-a-least-privilege-role" };
+  if (pathname === "/account/security") return { label: "Account security help", href: "/learn/guides/enroll-mfa-and-manage-sessions" };
+  if (pathname === "/dashboard") return { label: "Overview help", href: "/learn/reference/overview" };
+  return null;
+}
+
+export function AppShell({ children, connected, currentUser, securityEvents, learnSearchEntries }: { children: React.ReactNode; connected: boolean; currentUser: CurrentUser | null; securityEvents: SecurityEvent[]; learnSearchEntries: LearnSearchEntry[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,8 +71,22 @@ export function AppShell({ children, connected, currentUser, securityEvents }: {
   const isPublicPage = ["/", "/login", "/signup", "/setup", "/recover"].includes(pathname);
   const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
   const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : pathname.startsWith("/access") ? "Access control" : pathname.startsWith("/account") ? "Account security" : "PolicyOS");
+  const help = contextualHelp(pathname);
   const visibleNavigation = navigation.filter((item) => item.permission === null || !connected || hasPermission(currentUser, item.permission));
-  const filteredCommands = commands.filter((item) => (item.permission === null || !connected || hasPermission(currentUser, item.permission)) && `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(query.toLowerCase()));
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleCommands = commands.filter((item) => item.permission === null || !connected || hasPermission(currentUser, item.permission));
+  const matchingArticles = normalizedQuery ? learnSearchEntries
+    .filter((item) => item.searchText.includes(normalizedQuery))
+    .sort((left, right) => {
+      const leftTitle = left.title.toLowerCase();
+      const rightTitle = right.title.toLowerCase();
+      const leftScore = leftTitle.startsWith(normalizedQuery) ? 0 : leftTitle.includes(normalizedQuery) ? 1 : left.description.toLowerCase().includes(normalizedQuery) ? 2 : 3;
+      const rightScore = rightTitle.startsWith(normalizedQuery) ? 0 : rightTitle.includes(normalizedQuery) ? 1 : right.description.toLowerCase().includes(normalizedQuery) ? 2 : 3;
+      return leftScore - rightScore || left.title.localeCompare(right.title);
+    })
+    .slice(0, 12)
+    .map((item) => ({ label: item.title, description: `Learn · ${item.section} · ${item.description}`, href: item.href, keywords: item.searchText, icon: BookOpenCheck, permission: null })) : [];
+  const filteredCommands = [...visibleCommands, ...matchingArticles].filter((item) => `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(normalizedQuery));
 
   useEffect(() => {
     if (isPublicPage) return;
@@ -111,11 +145,11 @@ export function AppShell({ children, connected, currentUser, securityEvents }: {
       <div className="main-column">
         <header className="topbar">
           <div className="topbar-context"><button className="icon-button mobile-menu-button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? "Close navigation" : "Open navigation"}>{menuOpen ? <X size={17} /> : <Menu size={17} />}</button><span className="topbar-page">{currentPage}</span><span className="topbar-divider" /><span className="system-dot" data-connected={connected} /><span className="system-copy">{connected ? "Engine current" : "Demo mode"}</span></div>
-          <div className="topbar-actions"><button className="command-trigger" onClick={() => { setCommandOpen(true); setActivityOpen(false); }}><Search size={14} /><span>Search or jump to…</span><kbd><Command size={10} />K</kbd></button>{currentUser && <div className="activity-wrap"><button className="icon-button" aria-label="Open security notifications" aria-expanded={activityOpen} onClick={() => { setActivityOpen((current) => !current); setCommandOpen(false); }}><Bell size={16} strokeWidth={1.8} />{visibleActivity.length > 0 && <span className="notification-dot" />}</button>{activityOpen && <div className="activity-popover"><div className="popover-head"><div><strong>Security</strong><span>Account alerts requiring review</span></div><span className="badge accent">{visibleActivity.length} new</span></div><div className="popover-list">{visibleActivity.length === 0 && <div className="command-empty">No unreviewed security alerts.</div>}{visibleActivity.map((item) => <div className="popover-item" key={`${item.title}-${item.time}`}><span className="activity-icon"><CheckCircle2 size={13} /></span><span><strong>{item.title}</strong><small>{item.detail}</small></span><time>{item.time}</time></div>)}</div><Link className="popover-footer" href="/account/security" onClick={() => setActivityOpen(false)}>Review security events</Link></div>}</div>}</div>
+          <div className="topbar-actions">{help && <Link className="context-help" href={help.href} aria-label={help.label}><HelpCircle size={14} /><span>Help</span></Link>}<button className="command-trigger" onClick={() => { setCommandOpen(true); setActivityOpen(false); }}><Search size={14} /><span>Search or jump to…</span><kbd><Command size={10} />K</kbd></button>{currentUser && <div className="activity-wrap"><button className="icon-button" aria-label="Open security notifications" aria-expanded={activityOpen} onClick={() => { setActivityOpen((current) => !current); setCommandOpen(false); }}><Bell size={16} strokeWidth={1.8} />{visibleActivity.length > 0 && <span className="notification-dot" />}</button>{activityOpen && <div className="activity-popover"><div className="popover-head"><div><strong>Security</strong><span>Account alerts requiring review</span></div><span className="badge accent">{visibleActivity.length} new</span></div><div className="popover-list">{visibleActivity.length === 0 && <div className="command-empty">No unreviewed security alerts.</div>}{visibleActivity.map((item) => <div className="popover-item" key={`${item.title}-${item.time}`}><span className="activity-icon"><CheckCircle2 size={13} /></span><span><strong>{item.title}</strong><small>{item.detail}</small></span><time>{item.time}</time></div>)}</div><Link className="popover-footer" href="/account/security" onClick={() => setActivityOpen(false)}>Review security events</Link></div>}</div>}</div>
         </header>
         <main className="content" id="main-content">{children}</main>
       </div>
-      {commandOpen && <div className="command-backdrop" role="presentation" onMouseDown={() => setCommandOpen(false)}><section className="command-menu" role="dialog" aria-modal="true" aria-label="Quick find" onMouseDown={(event) => event.stopPropagation()}><div className="command-input"><Search size={17} /><input autoFocus value={query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={onCommandKeyDown} placeholder="Search pages and actions…" aria-label="Search pages and actions" /><kbd>Esc</kbd></div><div className="command-results" role="listbox">{filteredCommands.map((item, index) => { const Icon = item.icon; return <button className={`command-item${index === activeIndex ? " active" : ""}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => runCommand(item.href)} role="option" aria-selected={index === activeIndex} key={item.href + item.label}><span className="command-icon"><Icon size={16} /></span><span><strong>{item.label}</strong><small>{item.description}</small></span>{item.href.includes("new") && <Plus size={13} />}</button>; })}{filteredCommands.length === 0 && <div className="command-empty">No matching page or action.</div>}</div><div className="command-footer"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> open</span></div></section></div>}
+      {commandOpen && <div className="command-backdrop" role="presentation" onMouseDown={() => setCommandOpen(false)}><section className="command-menu" role="dialog" aria-modal="true" aria-label="Quick find" onMouseDown={(event) => event.stopPropagation()}><div className="command-input"><Search size={17} /><input autoFocus value={query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={onCommandKeyDown} placeholder="Search pages, actions, and help…" aria-label="Search pages, actions, and learning articles" /><kbd>Esc</kbd></div><div className="command-results" role="listbox">{filteredCommands.map((item, index) => { const Icon = item.icon; return <button className={`command-item${index === activeIndex ? " active" : ""}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => runCommand(item.href)} role="option" aria-selected={index === activeIndex} key={item.href + item.label}><span className="command-icon"><Icon size={16} /></span><span><strong>{item.label}</strong><small>{item.description}</small></span>{item.href.includes("new") && <Plus size={13} />}</button>; })}{filteredCommands.length === 0 && <div className="command-empty">No matching page, action, or learning article.</div>}</div><div className="command-footer"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span>Searches article text</span></div></section></div>}
     </div>
   );
 }

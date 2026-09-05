@@ -1,5 +1,24 @@
 {
   "title": "How-to guides",
   "description": "Focused steps for completing PolicyOS tasks.",
-  "pages": ["investigate-an-assignment"]
+  "pages": [
+    "onboard-an-employee",
+    "change-employee-facts-safely",
+    "investigate-an-assignment",
+    "create-an-assignment-field",
+    "create-a-policy",
+    "create-and-schedule-a-policy-version",
+    "activate-archive-or-reactivate-policy",
+    "preview-policy-impact",
+    "create-and-manage-a-group",
+    "add-or-remove-a-group-member",
+    "attach-or-detach-a-policy",
+    "manage-an-override",
+    "review-approve-and-execute",
+    "search-and-compare-audit-events",
+    "create-a-least-privilege-role",
+    "provision-and-link-a-user-account",
+    "review-privileged-access",
+    "enroll-mfa-and-manage-sessions"
+  ]
 }
