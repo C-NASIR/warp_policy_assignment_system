@@ -181,6 +181,8 @@ def required_permissions(method: str, path: str) -> set[str]:
         return {"api_credentials:manage"}
     if path.startswith("/audit-logs"):
         return {"audit:read"}
+    if path.startswith("/learning-insights"):
+        return {"audit:read"}
     if path.startswith("/change-previews"):
         return {"changes:preview"}
     if path.startswith("/change-executions"):

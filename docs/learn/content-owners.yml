@@ -1,0 +1,23 @@
+version: 1
+owners:
+  - { name: access control, area: "users, roles, permissions", cadence: quarterly }
+  - { name: access security, area: access reviews and privileged access, cadence: quarterly }
+  - { name: account security, area: "sessions, passwords, and MFA", cadence: quarterly }
+  - { name: assignment history, area: assignment timelines, cadence: quarterly }
+  - { name: assignment queries, area: current and dated queries, cadence: semiannual }
+  - { name: assignment resolution, area: "candidate selection and explanations", cadence: quarterly }
+  - { name: audit, area: audit events and investigations, cadence: quarterly }
+  - { name: automated access, area: policy-derived roles, cadence: quarterly }
+  - { name: change approvals, area: "preview, approval, and execution", cadence: quarterly }
+  - { name: configuration, area: "assignment and condition fields", cadence: quarterly }
+  - { name: employee operations, area: employee records and onboarding, cadence: quarterly }
+  - { name: groups, area: "group membership and attached policies", cadence: quarterly }
+  - { name: learning experience, area: "exercises, feedback, and learning quality", cadence: quarterly }
+  - { name: overrides, area: manual exceptions, cadence: quarterly }
+  - { name: policy authoring, area: "rules and policy creation", cadence: quarterly }
+  - { name: policy engine, area: "matching and reconciliation", cadence: quarterly }
+  - { name: policy lifecycle, area: "activation and archival", cadence: quarterly }
+  - { name: policy versions, area: "effective dates and scheduling", cadence: quarterly }
+  - { name: product education, area: "curriculum and terminology", cadence: semiannual }
+  - { name: product experience, area: "navigation and Quick Find", cadence: quarterly }
+  - { name: reconciliation, area: "scheduled and immediate recalculation", cadence: quarterly }

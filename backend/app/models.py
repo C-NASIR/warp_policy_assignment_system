@@ -1056,3 +1056,32 @@ class EmployeeAssignment(Base):
     assignment_field_definition: Mapped[AssignmentFieldDefinition] = relationship()
     source_policy_version: Mapped[PolicyVersion | None] = relationship()
     source_override: Mapped[EmployeeOverride | None] = relationship()
+
+
+class LearningEvent(Base):
+    """Privacy-limited signals used to improve learning content."""
+
+    __tablename__ = "learning_events"
+    __table_args__ = (
+        CheckConstraint(
+            "event_type IN ('article_feedback', 'search_miss')",
+            name="ck_learning_events_type",
+        ),
+        Index("ix_learning_events_type_created", "event_type", "created_at"),
+        Index("ix_learning_events_article", "article_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_type: Mapped[Literal["article_feedback", "search_miss"]] = mapped_column(
+        String(30)
+    )
+    article_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    path: Mapped[str] = mapped_column(String(500))
+    query: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    helpful: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )

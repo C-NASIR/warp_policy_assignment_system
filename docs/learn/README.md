@@ -72,9 +72,8 @@ Allowed statuses are `outline`, `draft`, `technical-review`, `product-review`,
    `verified_by`.
 3. Have the feature owner verify every procedural step in a connected workspace.
 4. Have a reader from the primary audience complete the task without coaching.
-5. Move the article to `approved`, record `last_verified`, and set a review date
-   no more than 90 days later for workflow content or 180 days later for stable
-   concepts.
+5. Move the article to `approved`, record `last_verified`, and set the next
+   quarterly review for workflow content or semiannual review for stable concepts.
 6. When a feature changes, update its article in the same change set. If behavior
    cannot be verified, label the affected passage and do not present it as a
    supported workflow.
@@ -171,3 +170,24 @@ Phase 5 is implemented as an isolated client-side learning layer:
 The Practice articles remain in `technical-review` until target readers complete
 the usability and accessibility review. Phase 6 will formalize those checks and
 measurement rather than expanding the exercise fixture into customer data.
+
+## Phase 6 status
+
+Phase 6 is implemented as a repeatable quality and measurement program:
+
+- `npm run learn:quality` validates metadata, owners, review dates,
+  implementation evidence, section navigation, article links, contextual help,
+  lint, and the production build; CI runs the gate on relevant changes.
+- A named role registry assigns every article to a maintained product area, and
+  quarterly or semiannual due dates make stale content fail validation.
+- The accessibility and usability review records implementation findings and a
+  reusable target-reader protocol without fabricating organizational sign-off.
+- Connected articles collect fixed-choice helpfulness feedback, and Quick Find
+  records only debounced zero-result queries. Demo mode records neither.
+- Users with `audit:read` can see aggregate helpfulness, articles needing
+  attention, and unsuccessful searches on the Audit page. Raw user-level events
+  are not exposed in that view.
+
+Articles remain `technical-review` until their content owner and target reader
+complete the organizational approval steps. Phase 6 supplies the enforcement,
+review method, and product evidence needed to complete those sign-offs.

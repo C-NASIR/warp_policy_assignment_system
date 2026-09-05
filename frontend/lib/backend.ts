@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { assignmentFields, assignmentSummary, assignmentsByEmployee, auditLogs, conditionFields, employees, groupEmployeeIds, groupPolicyIds, groups, overridesByEmployee, policies, policyImpacts } from "./demo-data";
-import type { AccessReview, AccountSecurity, Assignment, AssignmentField, AssignmentSummary, AuditLog, ChangeApprovalRequest, ConditionField, CurrentUser, Employee, EmployeeOverride, Group, Permission, Policy, PolicyImpact, Role, RoleSummary, RootSetupStatus, User } from "./types";
+import type { AccessReview, AccountSecurity, Assignment, AssignmentField, AssignmentSummary, AuditLog, ChangeApprovalRequest, ConditionField, CurrentUser, Employee, EmployeeOverride, Group, LearningInsights, Permission, Policy, PolicyImpact, Role, RoleSummary, RootSetupStatus, User } from "./types";
 
 const configuredApiUrl = process.env.POLICY_API_URL?.replace(/\/$/, "");
 const sessionCookieName = "policyos_session";
@@ -66,6 +66,7 @@ export const getAutomatableRoles = () => read<RoleSummary[]>("/policies/automata
 export const getApprovalRequests = () => read<ChangeApprovalRequest[]>("/approval-requests", []);
 export const getAccountSecurity = () => read<AccountSecurity>("/auth/security", { mfa_enabled: false, mfa_required: false, sessions: [], events: [] });
 export const getAccessReview = () => read<AccessReview | null>("/authorization/access-review", null);
+export const getLearningInsights = () => read<LearningInsights>("/learning-insights", { total_feedback: 0, helpful_percentage: null, article_feedback: [], unsuccessful_searches: [] });
 
 export async function getEmployee(id: number) {
   return read<Employee | null>(`/employees/${id}`, employees.find((item) => item.id === id) ?? null);

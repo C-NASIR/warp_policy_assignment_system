@@ -89,6 +89,7 @@ which role can perform the optional in-product step.
 | R15 | Condition field catalog | Static and derived fields, operators, input types, and dependencies | P1 |
 | R16 | Policy status and record-capability matrix | Draft, active, archived, versioning, activation, and archive combinations | P1 |
 | R17 | Assignment explanation anatomy | Policy/version, origin, matched clauses, strategy, candidates, and override replacement | P0 |
+| R18 | Learning quality and feedback | Article responses, unsuccessful searches, privacy boundaries, ownership, and review cadence | P1 |
 
 ## Troubleshooting
 

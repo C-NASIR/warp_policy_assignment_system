@@ -221,6 +221,21 @@ export type AccessReview = {
   }[];
 };
 
+export type LearningInsights = {
+  total_feedback: number;
+  helpful_percentage: number | null;
+  article_feedback: {
+    article_id: string;
+    helpful_count: number;
+    not_helpful_count: number;
+  }[];
+  unsuccessful_searches: {
+    query: string;
+    count: number;
+    last_seen_at: string;
+  }[];
+};
+
 export type AutomatedRolePreviewChange = {
   user_id: number;
   employee_id: number;

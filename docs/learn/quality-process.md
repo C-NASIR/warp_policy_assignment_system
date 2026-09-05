@@ -1,0 +1,57 @@
+# Learn PolicyOS quality process
+
+## Release gate
+
+Run `npm run learn:quality` from `frontend` before merging learning-center work.
+The gate validates the MDX build, metadata contract, unique IDs, ownership,
+review intervals, implementation evidence, section navigation, internal article
+links, contextual help links, lint, and the production build. CI repeats the
+same checks on changes to learning content or its supporting code.
+
+Every feature change must update the affected article and its `verified_by`
+evidence in the same pull request. A changed behavior resets `last_verified` and
+sets `review_by` to the next quarterly review; stable concepts and reference
+material may use a semiannual review. The automated gate allows up to 95 or 185
+days so calendar-quarter and six-month dates are representable.
+
+## Ownership and review
+
+`content-owners.yml` is the registry of accountable product roles. Frontmatter
+must use one of those exact owner names. The owner checks the connected product,
+permission boundaries, empty/error states, and all cited tests. Product
+Education checks plain language and curriculum placement. A target reader then
+attempts the task without coaching before the article moves to `approved`.
+
+## Accessibility and usability checklist
+
+For every new or changed interaction:
+
+1. Complete the task using keyboard only, including visible focus and Escape.
+2. Confirm buttons, fields, fieldsets, status updates, tables, landmarks, and
+   navigation have usable accessible names and semantics.
+3. Check zoom at 200%, narrow mobile layout, reduced motion, and text wrapping.
+4. Verify errors do not rely on color alone and async feedback is announced.
+5. Ask one reader from the primary audience to complete the documented task
+   without coaching and record the result in the review report.
+
+## Measurement and action
+
+Connected deployments collect a fixed-choice helpfulness response per article
+and zero-result Quick Find queries. They do not collect free-text article
+feedback or store the submitting user's identity. Obvious email addresses and
+long numbers are masked before a missed query is stored. The Audit page shows
+only aggregate counts to users with `audit:read`. Demo mode saves neither signal.
+
+Review the aggregate panel monthly. Investigate an article when it has at least
+five responses and more unhelpful than helpful votes. Add an alias, article, or
+heading when the same unsuccessful query occurs three times and expresses an
+in-scope task. Document the action in the review report and compare the next
+month's counts. Apply the deployment's normal retention policy to learning
+events; delete or aggregate old raw events when that policy requires it.
+
+## Incident path
+
+If documentation contradicts connected behavior, label or remove the unsafe
+instruction immediately, open a product/documentation issue, and return the
+article to `technical-review`. Security, permission, approval, or data-loss
+claims are release blockers.

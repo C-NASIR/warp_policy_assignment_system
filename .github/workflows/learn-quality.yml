@@ -1,0 +1,40 @@
+name: Learn quality
+
+on:
+  pull_request:
+    paths:
+      - "frontend/content/learn/**"
+      - "frontend/components/learn/**"
+      - "frontend/components/app-shell.tsx"
+      - "frontend/app/learn/**"
+      - "frontend/lib/learn-source.ts"
+      - "frontend/scripts/validate-learn.mjs"
+      - "frontend/package*.json"
+      - "docs/learn/**"
+      - ".github/workflows/learn-quality.yml"
+  push:
+    paths:
+      - "frontend/content/learn/**"
+      - "frontend/components/learn/**"
+      - "frontend/components/app-shell.tsx"
+      - "frontend/app/learn/**"
+      - "frontend/lib/learn-source.ts"
+      - "frontend/scripts/validate-learn.mjs"
+      - "frontend/package*.json"
+      - "docs/learn/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run learn:quality

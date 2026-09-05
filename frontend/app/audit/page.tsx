@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AuditLogExplorer } from "@/components/audit-log-explorer";
-import { apiConfigured, getAuditLogs, getCurrentUser, getEmployees, getGroups, getPolicies } from "@/lib/backend";
+import { apiConfigured, getAuditLogs, getCurrentUser, getEmployees, getGroups, getLearningInsights, getPolicies } from "@/lib/backend";
 import { titleCase } from "@/lib/format";
 import { hasPermission } from "@/lib/permissions";
 import type { AuditLog, Employee, Group, Policy } from "@/lib/types";
@@ -9,14 +9,15 @@ export const metadata: Metadata = { title: "Audit log" };
 
 export default async function AuditPage() {
   const user = await getCurrentUser();
-  const [events, employees, policies, groups] = await Promise.all([
+  const [events, employees, policies, groups, learningInsights] = await Promise.all([
     getAuditLogs(),
     !apiConfigured || hasPermission(user, "employees:read") ? getEmployees() : [],
     !apiConfigured || hasPermission(user, "policies:read") ? getPolicies() : [],
     !apiConfigured || hasPermission(user, "groups:read") ? getGroups() : [],
+    getLearningInsights(),
   ]);
   const entityLabels = Object.fromEntries(events.map((event) => [event.id, auditEntityLabel(event, employees, policies, groups)]));
-  return <AuditLogExplorer events={events} entityLabels={entityLabels} />;
+  return <AuditLogExplorer events={events} entityLabels={entityLabels} learningInsights={learningInsights} />;
 }
 
 function auditEntityLabel(event: AuditLog, employees: Employee[], policies: Policy[], groups: Group[]) {

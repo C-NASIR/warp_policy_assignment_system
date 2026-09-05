@@ -3,10 +3,11 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ListTree } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ArticleMeta } from "@/components/learn/article-meta";
+import { ArticleFeedback } from "@/components/learn/article-feedback";
 import { LessonProgress } from "@/components/learn/exercises";
 import { LearnNavigation } from "@/components/learn/learn-navigation";
 import { getLearnMdxComponents } from "@/components/learn/mdx-components";
-import { getCurrentUser } from "@/lib/backend";
+import { apiConfigured, getCurrentUser } from "@/lib/backend";
 import { getOrderedLearnPages, getRelatedLearnPages, labelForLearnSection, learnSource } from "@/lib/learn-source";
 
 export function generateStaticParams() {
@@ -48,6 +49,7 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
         </header>
         {page.data.toc.length > 0 && <details className="learn-mobile-toc"><summary><ListTree size={14} /> On this page</summary><TocList items={page.data.toc} /></details>}
         <div className="learn-body prose"><Body components={getLearnMdxComponents(currentUser)} /></div>
+        {!isHome && <ArticleFeedback articleId={page.data.content_id} path={page.url} connected={apiConfigured} />}
         {!isHome && related.length > 0 && <section className="learn-related" aria-labelledby="related-articles-title"><h2 id="related-articles-title">Related articles</h2><div>{related.map((item) => <Link href={item.url} key={item.url}><strong>{item.data.title}</strong><span>{item.data.description}</span></Link>)}</div></section>}
         {!isHome && <nav className="learn-pagination" aria-label="Lesson navigation">
           {previous ? <Link href={previous.url}><ArrowLeft size={15} /><span><small>Previous</small><strong>{previous.data.title}</strong></span></Link> : <span />}

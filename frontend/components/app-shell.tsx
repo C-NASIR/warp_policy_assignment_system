@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, BookOpenCheck, CheckCircle2, Command, FilePlus2, HelpCircle, KeyRound, LayoutDashboard, LogOut, Menu, Network, Plus, ScrollText, Search, Settings, ShieldCheck, UserPlus, Users, X } from "lucide-react";
-import { KeyboardEvent, useEffect, useState } from "react";
+import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { LearnSearchEntry } from "@/lib/learn-source";
 import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser, SecurityEvent } from "@/lib/types";
@@ -67,6 +67,7 @@ export function AppShell({ children, connected, currentUser, securityEvents, lea
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
+  const recordedSearchMisses = useRef(new Set<string>());
   const visibleActivity = connected ? securityEvents.filter((item) => item.severity !== "info" && !item.acknowledged_at).slice(0, 5).map((item) => ({ title: item.event_type.replaceAll("_", " "), detail: String(item.details.ip ?? "Account security event"), time: item.created_at.slice(0, 10) })) : activity;
   const isPublicPage = ["/", "/login", "/signup", "/setup", "/recover"].includes(pathname);
   const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
@@ -106,6 +107,24 @@ export function AppShell({ children, connected, currentUser, securityEvents, lea
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previous; };
   }, [commandOpen, menuOpen]);
+
+  useEffect(() => {
+    if (!connected || !currentUser || !commandOpen || normalizedQuery.length < 2 || filteredCommands.length > 0 || recordedSearchMisses.current.has(normalizedQuery)) return;
+    const timeout = window.setTimeout(async () => {
+      recordedSearchMisses.current.add(normalizedQuery);
+      try {
+        const response = await fetch("/api/backend/learning-events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event_type: "search_miss", query: normalizedQuery, path: pathname }),
+        });
+        if (!response.ok) throw new Error("search measurement request failed");
+      } catch {
+        recordedSearchMisses.current.delete(normalizedQuery);
+      }
+    }, 900);
+    return () => window.clearTimeout(timeout);
+  }, [commandOpen, connected, currentUser, filteredCommands.length, normalizedQuery, pathname]);
 
   function runCommand(href: string) {
     setCommandOpen(false); setQuery(""); setActiveIndex(0); router.push(href);
@@ -149,7 +168,7 @@ export function AppShell({ children, connected, currentUser, securityEvents, lea
         </header>
         <main className="content" id="main-content">{children}</main>
       </div>
-      {commandOpen && <div className="command-backdrop" role="presentation" onMouseDown={() => setCommandOpen(false)}><section className="command-menu" role="dialog" aria-modal="true" aria-label="Quick find" onMouseDown={(event) => event.stopPropagation()}><div className="command-input"><Search size={17} /><input autoFocus value={query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={onCommandKeyDown} placeholder="Search pages, actions, and help…" aria-label="Search pages, actions, and learning articles" /><kbd>Esc</kbd></div><div className="command-results" role="listbox">{filteredCommands.map((item, index) => { const Icon = item.icon; return <button className={`command-item${index === activeIndex ? " active" : ""}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => runCommand(item.href)} role="option" aria-selected={index === activeIndex} key={item.href + item.label}><span className="command-icon"><Icon size={16} /></span><span><strong>{item.label}</strong><small>{item.description}</small></span>{item.href.includes("new") && <Plus size={13} />}</button>; })}{filteredCommands.length === 0 && <div className="command-empty">No matching page, action, or learning article.</div>}</div><div className="command-footer"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span>Searches article text</span></div></section></div>}
+      {commandOpen && <div className="command-backdrop" role="presentation" onMouseDown={() => setCommandOpen(false)}><section className="command-menu" role="dialog" aria-modal="true" aria-label="Quick find" onMouseDown={(event) => event.stopPropagation()}><div className="command-input"><Search size={17} /><input autoFocus value={query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={onCommandKeyDown} placeholder="Search pages, actions, and help…" aria-label="Search pages, actions, and learning articles" /><kbd>Esc</kbd></div><div className="command-results" role="listbox">{filteredCommands.map((item, index) => { const Icon = item.icon; return <button className={`command-item${index === activeIndex ? " active" : ""}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => runCommand(item.href)} role="option" aria-selected={index === activeIndex} key={item.href + item.label}><span className="command-icon"><Icon size={16} /></span><span><strong>{item.label}</strong><small>{item.description}</small></span>{item.href.includes("new") && <Plus size={13} />}</button>; })}{filteredCommands.length === 0 && <div className="command-empty">No matching page, action, or learning article.</div>}</div><div className="command-footer"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span>{connected ? "Zero-result searches improve Learn" : "Searches article text"}</span></div></section></div>}
     </div>
   );
 }

@@ -650,6 +650,93 @@ class AuditLogRead(ORMModel):
         return ensure_utc(value)
 
 
+LearningFeedbackReason = Literal[
+    "clear",
+    "incomplete",
+    "outdated",
+    "hard_to_follow",
+    "other",
+]
+
+
+class LearningEventCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_type: Literal["article_feedback", "search_miss"]
+    article_id: str | None = Field(default=None, min_length=1, max_length=50)
+    path: str = Field(min_length=1, max_length=500)
+    query: str | None = Field(default=None, min_length=2, max_length=200)
+    helpful: bool | None = None
+    reason: LearningFeedbackReason | None = None
+
+    @field_validator("article_id", "query", mode="before")
+    @classmethod
+    def strip_optional_text(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("path")
+    @classmethod
+    def validate_path(cls, value: str) -> str:
+        value = value.strip()
+        if not value.startswith("/") or value.startswith("//"):
+            raise ValueError("must be an application-relative path")
+        return value
+
+    @model_validator(mode="after")
+    def validate_event_shape(self) -> LearningEventCreate:
+        if self.event_type == "article_feedback":
+            if self.article_id is None or self.helpful is None:
+                raise ValueError("article feedback requires article_id and helpful")
+            if self.query is not None:
+                raise ValueError("article feedback cannot contain a query")
+            if self.helpful and self.reason not in (None, "clear"):
+                raise ValueError("helpful feedback can only use the clear reason")
+        else:
+            if self.query is None:
+                raise ValueError("a search miss requires a query")
+            if any(
+                value is not None
+                for value in (self.article_id, self.helpful, self.reason)
+            ):
+                raise ValueError("a search miss cannot contain article feedback fields")
+        return self
+
+
+class LearningEventRead(ORMModel):
+    id: int
+    event_type: Literal["article_feedback", "search_miss"]
+    article_id: str | None
+    path: str
+    query: str | None
+    helpful: bool | None
+    reason: LearningFeedbackReason | None
+    created_at: datetime
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def return_utc_created_at(cls, value: datetime) -> datetime:
+        return ensure_utc(value)
+
+
+class LearningArticleFeedbackSummary(BaseModel):
+    article_id: str
+    helpful_count: int
+    not_helpful_count: int
+
+
+class LearningSearchMissSummary(BaseModel):
+    query: str
+    count: int
+    last_seen_at: datetime
+
+
+class LearningInsightsRead(BaseModel):
+    total_feedback: int
+    helpful_percentage: float | None
+    article_feedback: list[LearningArticleFeedbackSummary]
+    unsuccessful_searches: list[LearningSearchMissSummary]
+
+
 class OperationScopeRead(BaseModel):
     name: str
     description: str
