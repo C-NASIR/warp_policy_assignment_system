@@ -1,6 +1,8 @@
 import os
 from collections.abc import Generator
+from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -10,9 +12,15 @@ class Base(DeclarativeBase):
     pass
 
 
-DEFAULT_DATABASE_URL = (
-    "postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments"
-)
+# Keep local configuration beside the backend while allowing process-level
+# environment variables to override every value in deployed environments.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
+
+# Local Homebrew PostgreSQL installs create a role matching the macOS user and
+# expose a Unix socket. Production and remote environments should set
+# DATABASE_URL explicitly.
+DEFAULT_DATABASE_URL = "postgresql+psycopg:///policy_assignments"
 
 
 def postgresql_url(value: str) -> URL:

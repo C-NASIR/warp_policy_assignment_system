@@ -100,7 +100,7 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are expected.
 
 ```bash
 uv sync
-export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments
+export DATABASE_URL=postgresql+psycopg:///policy_assignments
 export CHANGE_APPROVAL_SECRET="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_TOKEN="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_SUBJECT=local-admin
@@ -108,7 +108,7 @@ export AUTH_SESSION_COOKIE_SECURE=false
 export AUTH_MFA_ENCRYPTION_KEY="$(openssl rand -hex 32)"
 export AUTH_ROOT_RECOVERY_KEY="$(openssl rand -hex 32)"
 export CORS_ALLOWED_ORIGINS=http://localhost:3000
-uv run fastapi dev main.py
+uv run python -m fastapi dev main.py
 ```
 
 The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created on startup. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
@@ -123,7 +123,7 @@ Use this only when both the Root password and MFA recovery methods are lost. Run
 
 ```bash
 cd backend
-export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments
+export DATABASE_URL=postgresql+psycopg:///policy_assignments
 export AUTH_ROOT_RECOVERY_KEY='value-from-your-secret-manager'
 uv run python scripts/emergency_root_recovery.py root@example.com
 ```
