@@ -8,7 +8,7 @@ export function firstAllowedPath(user: CurrentUser): string {
   if (user.password_change_required) return "/account/security";
   const privileged = user.is_root || ["access:manage", "api_credentials:manage", "changes:approve", "changes:execute"].some((permission) => hasPermission(user, permission));
   if (privileged && !user.mfa_enabled) return "/account/security";
-  if (user.permissions.includes("*")) return "/";
+  if (user.permissions.includes("*")) return "/dashboard";
   const destinations: [string, string][] = [
     ["employees:read", "/employees"],
     ["policies:read", "/policies"],

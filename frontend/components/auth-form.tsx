@@ -9,7 +9,7 @@ import type { CurrentUser } from "@/lib/types";
 
 type AuthMode = "login" | "setup";
 
-export function AuthForm({ mode }: { mode: AuthMode }) {
+export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected?: boolean }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,6 +24,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!connected) return;
     if (isSetup && password !== confirmation) {
       setError("The passwords do not match.");
       return;
@@ -61,11 +62,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
   return <main className="auth-page">
     <section className="auth-card" aria-labelledby="auth-title">
-      <div className="auth-brand"><span className="brand-mark">P</span><span><strong>PolicyOS</strong><small>Assignment engine</small></span></div>
+      <Link href="/" className="auth-brand" aria-label="PolicyOS home"><span className="brand-mark">P</span><span><strong>PolicyOS</strong><small>Assignment engine</small></span></Link>
       <div className="auth-icon">{isSetup ? <ShieldCheck size={21} /> : <KeyRound size={21} />}</div>
-      <p className="eyebrow">{isSetup ? "Secure initialization" : "Welcome back"}</p>
-      <h1 id="auth-title">{isSetup ? "Create the Root account" : "Sign in to PolicyOS"}</h1>
-      <p className="page-subtitle">{isSetup ? "This one-time account initializes the workspace and has full access during Phase 1." : "Use the account created for this PolicyOS workspace."}</p>
+      <p className="eyebrow">{isSetup ? "Get started" : "Welcome back"}</p>
+      <h1 id="auth-title">{isSetup ? "Sign up for PolicyOS" : "Sign in to PolicyOS"}</h1>
+      <p className="page-subtitle">{isSetup ? "Create the first administrator account to set up your workspace. You can add your team once you’re inside." : "Use the account created for this PolicyOS workspace."}</p>
+      {!connected && <p className="auth-demo-note">This preview is not connected to an authentication service. <Link href="/dashboard">Explore the demo workspace</Link>.</p>}
       {error && <div className="error-banner auth-message" role="alert"><CircleAlert size={14} />{error}</div>}
       <form className="auth-form" onSubmit={submit}>
         {isSetup && <label className="field"><span className="field-label">Full name</span><input className="input" required autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Priya Shah" /></label>}
@@ -74,9 +76,10 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         {!isSetup && factorRequired && <><label className="field"><span className="field-label">{useRecovery ? "Recovery code" : "Authenticator code"}</span><input className="input" required inputMode={useRecovery ? "text" : "numeric"} autoComplete="one-time-code" value={factor} onChange={(event) => setFactor(event.target.value)} placeholder={useRecovery ? "xxxxxx-xxxxxx" : "000000"} /></label><button className="button secondary" type="button" onClick={() => { setUseRecovery((value) => !value); setFactor(""); }}>{useRecovery ? "Use authenticator code" : "Use a recovery code"}</button></>}
         {isSetup && <label className="field"><span className="field-label">Confirm password</span><input className="input" required type="password" minLength={12} maxLength={128} autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></label>}
         {isSetup && <div className="auth-requirement"><Check size={13} /> Use at least 12 characters. The password is stored only as a secure hash.</div>}
-        <button className="button auth-submit" disabled={busy} type="submit">{busy ? "Please wait…" : isSetup ? "Create Root account" : "Sign in"}<ArrowRight size={14} /></button>
+        <button className="button auth-submit" disabled={busy || !connected} type="submit">{busy ? "Please wait…" : isSetup ? "Create account" : "Sign in"}<ArrowRight size={14} /></button>
       </form>
       {!isSetup && <Link className="popover-footer" href="/recover">Forgot your password?</Link>}
+      <p className="auth-switch">{isSetup ? "Already have an account? " : "New to PolicyOS? "}<Link href={isSetup ? "/login" : "/signup"}>{isSetup ? "Sign in" : "Sign up"}</Link></p>
       <div className="auth-security"><LockKeyhole size={13} /><span>{isSetup ? "Root setup closes permanently after this account is created." : "Your session is stored in a secure, HTTP-only cookie."}</span></div>
     </section>
   </main>;

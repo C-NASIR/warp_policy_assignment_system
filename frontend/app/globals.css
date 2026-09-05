@@ -430,6 +430,10 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .auth-requirement, .auth-security { display: flex; align-items: flex-start; gap: 7px; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .auth-requirement svg, .auth-security svg { flex: 0 0 auto; margin-top: 1px; color: var(--success); }
 .auth-submit { width: 100%; margin-top: 3px; }
+.auth-card > .auth-submit { margin-top: 24px; }
+.auth-switch { display: block; margin: 22px 0 0; color: var(--muted); text-align: center; font-size: 14px; }
+.auth-switch a, .auth-demo-note a { color: var(--accent-ink); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+.auth-demo-note { margin: 20px 0 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-subtle); color: var(--muted); font-size: 14px; line-height: 1.6; }
 .auth-submit svg { margin-left: auto; }
 .auth-message { margin: 20px 0 -7px; }
 .auth-security { margin-top: 22px; padding-top: 17px; border-top: 1px solid var(--border); }

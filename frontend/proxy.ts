@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const sessionCookieName = "policyos_session";
-const publicPaths = new Set(["/login", "/setup", "/recover"]);
+const publicPaths = new Set(["/", "/login", "/signup", "/setup", "/recover"]);
 
 export function proxy(request: NextRequest) {
   if (!process.env.POLICY_API_URL || publicPaths.has(request.nextUrl.pathname)) {

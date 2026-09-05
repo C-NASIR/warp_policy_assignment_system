@@ -8,7 +8,7 @@ import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser, SecurityEvent } from "@/lib/types";
 
 const navigation = [
-  { label: "Overview", href: "/", icon: LayoutDashboard, permission: "*" },
+  { label: "Overview", href: "/dashboard", icon: LayoutDashboard, permission: "*" },
   { label: "Employees", href: "/employees", icon: Users, permission: "employees:read" },
   { label: "Policies", href: "/policies", icon: BookOpenCheck, permission: "policies:read" },
   { label: "Approvals", href: "/approvals", icon: CheckCircle2, permission: "changes:approve" },
@@ -17,7 +17,7 @@ const navigation = [
 ];
 
 const commands = [
-  { label: "Go to overview", description: "Assignment health and recent changes", href: "/", keywords: "home dashboard", icon: LayoutDashboard, permission: "*" },
+  { label: "Go to overview", description: "Assignment health and recent changes", href: "/dashboard", keywords: "home dashboard", icon: LayoutDashboard, permission: "*" },
   { label: "Find an employee", description: "Browse assignments and employment facts", href: "/employees", keywords: "people workers", icon: Users, permission: "employees:read" },
   { label: "Add an employee", description: "Preview policies during onboarding", href: "/employees/new", keywords: "onboard hire create", icon: UserPlus, permission: "employees:create" },
   { label: "Browse policies", description: "Rules, versions, priorities, and impact", href: "/policies", keywords: "rules assignments", icon: BookOpenCheck, permission: "policies:read" },
@@ -46,13 +46,14 @@ export function AppShell({ children, connected, currentUser, securityEvents }: {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
   const visibleActivity = connected ? securityEvents.filter((item) => item.severity !== "info" && !item.acknowledged_at).slice(0, 5).map((item) => ({ title: item.event_type.replaceAll("_", " "), detail: String(item.details.ip ?? "Account security event"), time: item.created_at.slice(0, 10) })) : activity;
-  const isAuthPage = pathname === "/login" || pathname === "/setup" || pathname === "/recover";
+  const isPublicPage = ["/", "/login", "/signup", "/setup", "/recover"].includes(pathname);
   const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
   const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : pathname.startsWith("/access") ? "Access control" : pathname.startsWith("/account") ? "Account security" : "PolicyOS");
   const visibleNavigation = navigation.filter((item) => !connected || hasPermission(currentUser, item.permission));
   const filteredCommands = commands.filter((item) => (!connected || hasPermission(currentUser, item.permission)) && `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(query.toLowerCase()));
 
   useEffect(() => {
+    if (isPublicPage) return;
     function onKeyDown(event: globalThis.KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault(); setCommandOpen((current) => !current); setActivityOpen(false);
@@ -61,7 +62,7 @@ export function AppShell({ children, connected, currentUser, securityEvents }: {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [isPublicPage]);
 
   useEffect(() => {
     if (!commandOpen && !menuOpen) return;
@@ -91,7 +92,7 @@ export function AppShell({ children, connected, currentUser, securityEvents }: {
     }
   }
 
-  if (isAuthPage) return <>{children}</>;
+  if (isPublicPage) return <>{children}</>;
 
   return (
     <div className="app-layout">
