@@ -2,8 +2,8 @@
 
 This directory is the source of truth for the learning center's content plan.
 Phase 1 covers audience definition, a workflow and behavior audit, the shared
-teaching scenario, and the curriculum map. It intentionally does not add the
-`/learn` route or documentation packages; those belong to Phase 2.
+teaching scenario, and the curriculum map. Phase 2 now provides the Fumadocs and
+MDX foundation at `/learn`.
 
 ## Deliverables
 
@@ -94,10 +94,19 @@ Allowed statuses are `outline`, `draft`, `technical-review`, `product-review`,
 The unchecked approval is the only organizational sign-off; the repository
 artifacts required to make that review are complete.
 
-## Phase 2 handoff
+## Phase 2 status
 
-Phase 2 should implement only the content foundation: MDX loading, the `/learn`
-route, responsive reading layout, navigation, table of contents, article
-metadata, and authenticated access. It should seed one short article from each
-top-level section to validate information architecture without pulling Phase 3
-writing into the infrastructure change.
+Phase 2 is implemented in `frontend`:
+
+- Fumadocs MDX compiles and validates `frontend/content/learn`.
+- `/learn/[[...slug]]` renders the landing page and articles.
+- The PolicyOS-integrated layout provides desktop and mobile navigation, article
+  metadata, generated tables of contents, and previous/next links.
+- Connected deployments use the existing session proxy to protect `/learn`; the
+  common content remains readable by every signed-in user.
+- Product links explain missing permissions instead of exposing an unusable
+  destination.
+- One technical-review sample exists in each planned top-level section.
+
+Full article search, contextual links from application controls, and the rest of
+the curriculum remain Phase 3 and Phase 4 work.

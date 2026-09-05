@@ -14,6 +14,7 @@ const navigation = [
   { label: "Approvals", href: "/approvals", icon: CheckCircle2, permission: "changes:approve" },
   { label: "Groups", href: "/groups", icon: Network, permission: "groups:read" },
   { label: "Audit log", href: "/audit", icon: ScrollText, permission: "audit:read" },
+  { label: "Learn", href: "/learn", icon: BookOpenCheck, permission: null },
 ];
 
 const commands = [
@@ -28,6 +29,7 @@ const commands = [
   { label: "Configure assignment fields", description: "One-value and many-value categories", href: "/settings", keywords: "setup cardinality", icon: Settings, permission: "settings:read" },
   { label: "Manage access", description: "Users, roles, and permissions", href: "/access", keywords: "authorization accounts", icon: ShieldCheck, permission: "access:read" },
   { label: "Review privileged access", description: "MFA, stale users, and broad roles", href: "/access/review", keywords: "security permissions report", icon: ShieldCheck, permission: "access:review" },
+  { label: "Learn PolicyOS", description: "Courses, concepts, guides, and answers", href: "/learn", keywords: "help docs documentation training", icon: BookOpenCheck, permission: null },
 ];
 
 const activity = [
@@ -49,8 +51,8 @@ export function AppShell({ children, connected, currentUser, securityEvents }: {
   const isPublicPage = ["/", "/login", "/signup", "/setup", "/recover"].includes(pathname);
   const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
   const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : pathname.startsWith("/access") ? "Access control" : pathname.startsWith("/account") ? "Account security" : "PolicyOS");
-  const visibleNavigation = navigation.filter((item) => !connected || hasPermission(currentUser, item.permission));
-  const filteredCommands = commands.filter((item) => (!connected || hasPermission(currentUser, item.permission)) && `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(query.toLowerCase()));
+  const visibleNavigation = navigation.filter((item) => item.permission === null || !connected || hasPermission(currentUser, item.permission));
+  const filteredCommands = commands.filter((item) => (item.permission === null || !connected || hasPermission(currentUser, item.permission)) && `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(query.toLowerCase()));
 
   useEffect(() => {
     if (isPublicPage) return;

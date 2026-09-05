@@ -1,8 +1,12 @@
 # PolicyOS frontend
 
-PolicyOS is the role-aware interface for the policy assignment engine in this repository. It gives authorized users a dashboard, employee directory, assignment explanations, employee onboarding and editing with impact previews, policy authoring with effective dates, deterministic priorities, and automated access roles, an independent change-approval queue, group management, manual overrides, assignment history, policy lifecycle controls, assignment-field setup, an inspectable audit log, and human access administration.
+PolicyOS is the role-aware interface for the policy assignment engine in this repository. It gives authorized users a dashboard, employee directory, assignment explanations, employee onboarding and editing with impact previews, policy authoring with effective dates, deterministic priorities, and automated access roles, an independent change-approval queue, group management, manual overrides, assignment history, policy lifecycle controls, assignment-field setup, an inspectable audit log, human access administration, and an authenticated Fumadocs learning center at `/learn`.
 
 Use **Command/Ctrl + K** anywhere in the app to open Quick Find and jump directly to a page or common action.
+
+Learning content lives in `content/learn` as schema-validated MDX. The collection,
+ordering, and metadata contract are defined in `lib/learn-source.ts`; the broader
+curriculum and authoring workflow live in `../docs/learn`.
 
 ## Run locally
 

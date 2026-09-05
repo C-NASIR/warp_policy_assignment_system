@@ -1,0 +1,46 @@
+---
+title: Why didn't this policy apply?
+description: Check lifecycle, dates, direct conditions, group links, resolution, and access boundaries in the right order.
+content_id: T01
+section: troubleshooting
+order: 10
+audiences:
+  - assignment investigator
+  - policy author
+permissions:
+  - policies:read
+  - assignments:read
+owner: policy engine
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by:
+  - backend/tests/test_policy_matching.py
+  - backend/tests/test_groups.py
+  - backend/tests/test_policy_versions.py
+reading_time: 5
+prerequisites:
+  - What PolicyOS does
+---
+
+## 1. Check the policy lifecycle
+
+Only an active policy participates in resolution. Draft and archived policies contribute no assignments.
+
+## 2. Check the effective version
+
+Confirm that one policy version covers the date you are investigating. Ranges are inclusive, and a valid gap means the policy contributes no behavior during that gap.
+
+## 3. Check how the policy could apply
+
+For a direct match, compare every condition with the employee's current trusted or derived facts. For group inheritance, confirm both the employee's explicit membership and the policy attachment. A group-attached policy can apply even when its direct condition tree does not match.
+
+## 4. Check whether another result won
+
+“Matched” and “selected” are different. A higher-priority candidate can win a one-value field, while a manual override replaces the field's policy results. Equal-priority policies producing different values create a conflict instead of an arbitrary winner.
+
+## 5. Check access boundaries
+
+Employee scope and assignment-field scope can hide records and outputs. Direct requests for out-of-scope resources may return not found to avoid disclosing that the record exists.
+
+<PolicyLink href="/policies" permission="policies:read">Inspect policy status and impact</PolicyLink>
