@@ -47,6 +47,7 @@ See the component guides for deeper technical and operational detail:
 
 - [Backend documentation](backend/README.md)
 - [Frontend documentation](frontend/README.md)
+- [Learning center plan](docs/learn/README.md)
 
 ## Prerequisites
 
