@@ -1,0 +1,41 @@
+---
+title: Preview, approval, and exact execution
+description: Understand the safety boundary between simulated impact, authorization, and committed change.
+content_id: C12
+section: concepts
+order: 120
+audiences:
+  - policy author
+  - approver
+permissions: []
+owner: change approvals
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2027-03-05"
+verified_by:
+  - backend/tests/test_change_previews.py
+  - backend/tests/test_phase6_access_approvals.py
+reading_time: 4
+prerequisites:
+  - Policies, versions, and assignments
+---
+
+## Preview is a simulation
+
+A connected preview evaluates a proposed payload against current state and reports expected impact. It is non-persistent. The application may use a transactional savepoint so it can calculate realistic downstream changes and then roll them back.
+
+## Approval is independent authorization
+
+Supported sensitive human changes create a persisted request containing the exact proposed operation. Automated-access policy changes are one example. Not every preview becomes a request.
+
+The author cannot approve their own request. A different authorized user reviews the impact and exact payload, then approves or rejects it. Request-specific capabilities, status, and expiry can also govern available actions.
+
+## Execution commits what was approved
+
+Approval alone does not mutate production state. The approving user executes the approved request, and PolicyOS verifies the exact signed operation before committing it. If the proposal changes or becomes stale, preview it again and obtain a new approval.
+
+After execution, reconciliation updates downstream assignments and eligible automated roles. Explicit roles are preserved.
+
+Demo mode does not persist previews or approvals. Use it to learn the interface, not to prove a separation-of-duties workflow completed.
+
+<PolicyLink href="/approvals" permission="changes:approve">Review persisted approval requests</PolicyLink>

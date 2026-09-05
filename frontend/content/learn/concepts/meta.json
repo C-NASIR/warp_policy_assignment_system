@@ -1,5 +1,16 @@
 {
   "title": "Core concepts",
   "description": "How the assignment engine works and why.",
-  "pages": ["policies-versions-and-assignments"]
+  "pages": [
+    "employee-records-versus-user-accounts",
+    "condition-fields-versus-assignment-fields",
+    "policies-versions-and-assignments",
+    "direct-matches-and-group-policies",
+    "one-and-many-value-resolution",
+    "equal-priority-conflicts",
+    "effective-dates-and-version-boundaries",
+    "manual-overrides-and-provenance",
+    "preview-approval-and-execution",
+    "assignment-history-versus-audit-log"
+  ]
 }

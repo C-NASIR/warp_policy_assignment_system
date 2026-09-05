@@ -1,0 +1,46 @@
+---
+title: Direct matches and group-inherited policies
+description: Learn the two origins that can make an effective policy a candidate for an employee.
+content_id: C04
+section: concepts
+order: 40
+audiences:
+  - signed-in reader
+  - group manager
+  - assignment investigator
+permissions: []
+owner: groups
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2027-03-05"
+verified_by:
+  - backend/tests/test_groups.py
+  - backend/tests/test_policy_change_reconciliation.py
+reading_time: 3
+prerequisites:
+  - Policies, versions, and assignments
+---
+
+## Direct origin
+
+A direct match means the employee satisfied the effective policy version's condition tree. The explanation records the matching clauses and employee facts.
+
+## Group origin
+
+A group-inherited policy reaches the employee because three explicit relationships exist:
+
+1. the employee is a member of the group;
+2. the policy is attached to the group; and
+3. the policy has an effective version that can participate.
+
+The employee does not also need to satisfy that policy's direct condition tree. The explanation names the group as the origin.
+
+Groups do not compute membership from department, location, or another field. If Avery belongs to Engineering, that is an explicit membership—not an inference from `department = Engineering`.
+
+## Deduplication
+
+The same policy may reach an employee through a direct match and one or more groups. PolicyOS deduplicates those origins before resolution, so the policy's values are not counted repeatedly.
+
+Membership changes are previewed. Attaching or detaching a policy is a distinct group action that reconciles affected members immediately.
+
+<PolicyLink href="/groups" permission="groups:read">Browse explicit groups</PolicyLink>

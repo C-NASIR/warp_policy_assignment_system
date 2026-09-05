@@ -1,0 +1,52 @@
+---
+title: Why Avery received each assignment
+description: Read source, origin, evidence, and selection details to explain every result.
+content_id: B06
+section: start-here
+order: 60
+audiences:
+  - new operator
+  - assignment investigator
+permissions:
+  - employees:read
+  - assignments:read
+owner: assignment resolution
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by:
+  - frontend/components/assignment-card.tsx
+  - backend/tests/test_assignment_explanations.py
+reading_time: 5
+prerequisites:
+  - Effective dates, priority, and cardinality
+---
+
+## Read an explanation in four passes
+
+Open an employee assignment and ask:
+
+1. **Source:** Which stable policy and exact version supplied the value?
+2. **Origin:** Did the policy match directly or arrive through a group?
+3. **Evidence:** Which employee facts satisfied the rule, or which explicit group supplied it?
+4. **Selection:** What field, cardinality, strategy, and priority determined the outcome?
+
+## Avery's resolved result
+
+| Field | Final value or values | Explanation |
+| --- | --- | --- |
+| Pay schedule | Bi-weekly | California state matched; priority 20 beat the Semi-monthly candidate at 10 |
+| Vacation policy | Standard PTO | Full-time matched Standard PTO |
+| Application access | 1Password, GitHub, Linear | Security Baseline matched directly; Engineering Access came through the Engineering group; the many field combined unique values |
+| Compliance training | CA Workplace Harassment | California state matched California Compliance |
+| Equipment stipend | $1,000 annual | Engineering department matched Engineering Equipment |
+
+The most important sentence is not “this policy matched.” It is “this exact policy version supplied this value through this origin, and this field's strategy selected it.”
+
+An explanation is stored as an immutable snapshot. If its material evidence changes, assignment history can gain a new row even when the visible value stays the same.
+
+<PolicyLink href="/employees" permission="employees:read">Open the employee directory</PolicyLink>
+
+[Next: Preview, approval, execution, and reconciliation](/learn/start-here/preview-approval-execution-and-reconciliation)
+
+[Reference: Assignment explanation anatomy](/learn/reference/assignment-explanation-anatomy)

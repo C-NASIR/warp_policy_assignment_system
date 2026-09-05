@@ -1,5 +1,16 @@
 {
   "title": "Start here",
   "description": "A guided introduction to policy assignments.",
-  "pages": ["what-policyos-does"]
+  "pages": [
+    "what-policyos-does",
+    "employees-and-user-accounts",
+    "inputs-assignment-fields-and-values",
+    "how-policies-match",
+    "effective-dates-priority-and-cardinality",
+    "why-avery-received-each-assignment",
+    "preview-approval-execution-and-reconciliation",
+    "overrides-are-explicit-exceptions",
+    "history-and-audit",
+    "first-assignment-walkthrough"
+  ]
 }

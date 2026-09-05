@@ -1,0 +1,53 @@
+---
+title: Preview, approval, execution, and reconciliation
+description: Separate simulation, independent authorization, exact execution, and downstream recomputation.
+content_id: B07
+section: start-here
+order: 70
+audiences:
+  - new operator
+  - policy author
+  - approver
+permissions: []
+owner: change approvals
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by:
+  - backend/tests/test_change_previews.py
+  - backend/tests/test_phase6_access_approvals.py
+  - backend/tests/test_policy_change_reconciliation.py
+reading_time: 5
+prerequisites:
+  - Why Avery received each assignment
+---
+
+## Four different moments
+
+**Preview** simulates a proposed change and shows its impact. It does not commit the mutation.
+
+**Approval** records an independent decision for a sensitive persisted request. Not every preview enters the approval queue. The author cannot approve their own request.
+
+**Execution** commits the exact approved payload. The approving user must also execute the request; changing the proposal requires a new preview and approval.
+
+**Reconciliation** recalculates downstream assignments—and eligible policy-derived roles—after the committed change.
+
+## Avery's Engineering Access change
+
+A policy author proposes a new Engineering Access version that adds the automation-eligible Engineering tools role. They preview the version and inspect the affected population and access change.
+
+Because the proposal grants automated human access, it creates a persisted request for independent review. A different user opens the approval queue, reviews the exact change, approves it, and executes it. PolicyOS then reconciles the affected employees.
+
+Avery's linked account can receive the automated role because Avery is in the Engineering group and the role is eligible for automation. Any explicitly assigned account roles remain intact.
+
+## When approval is not involved
+
+Ordinary previews and lifecycle changes do not all create persisted approval requests. The approval flow is limited to sensitive supported operations, including policy changes with automated access. Use the preview presented by the connected application as the authority for the particular action.
+
+Demo mode is a non-persistent visual sandbox: success messages there do not prove that an approval was stored or a production change executed.
+
+[Next: Overrides are explicit exceptions](/learn/start-here/overrides-are-explicit-exceptions)
+
+[Concept: Preview, approval, and exact execution](/learn/concepts/preview-approval-and-execution)
+
+<PolicyLink href="/approvals" permission="changes:approve">Open change approvals</PolicyLink>

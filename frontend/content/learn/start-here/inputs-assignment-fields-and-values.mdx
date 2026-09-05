@@ -1,0 +1,58 @@
+---
+title: Inputs, assignment fields, and values
+description: Separate the employee facts policies test from the assignment values they produce.
+content_id: B03
+section: start-here
+order: 30
+audiences:
+  - signed-in reader
+  - new operator
+permissions: []
+owner: policy engine
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by:
+  - backend/app/models.py
+  - backend/app/services/condition_fields.py
+  - backend/tests/test_services.py
+reading_time: 4
+prerequisites:
+  - Employees and user accounts are different
+---
+
+## Inputs describe the employee
+
+Policies test **condition fields**: trusted employee facts and supported derived facts. For Avery, `state = California`, `department = Engineering`, and `employee type = Full-time` are inputs. A policy condition asks a question about those facts; it does not edit them.
+
+## Outputs describe the result
+
+Policies write values to **assignment fields**. The field gives the output a name and a fixed cardinality:
+
+- **One** means the employee can have one resolved value at a time.
+- **Many** means the employee can have a set of unique resolved values.
+
+Avery's course workspace uses these fields:
+
+| Assignment field | Cardinality | Example result |
+| --- | --- | --- |
+| Pay schedule | One | Bi-weekly |
+| Vacation policy | One | Standard PTO |
+| Application access | Many | 1Password, GitHub, Linear |
+| Compliance training | Many | CA Workplace Harassment |
+| Equipment stipend | One | $1,000 annual |
+
+Cardinality belongs to the field and is fixed after the field is created. Policies supply candidate values; the field's cardinality determines how those candidates can become final assignments.
+
+## Classify the data before authoring a rule
+
+Ask two questions:
+
+1. Is this a fact PolicyOS trusts about the employee? Use a condition field.
+2. Is this a result the policy should assign? Use an assignment field and value.
+
+For example, Engineering is an input in `department = Engineering`; `$1,000 annual` is an output in `Equipment stipend = $1,000 annual`.
+
+[Next: How policies match](/learn/start-here/how-policies-match)
+
+[Concept: Condition fields versus assignment fields](/learn/concepts/condition-fields-versus-assignment-fields)

@@ -1,9 +1,9 @@
-# Learn PolicyOS: Phase 1
+# Learn PolicyOS
 
 This directory is the source of truth for the learning center's content plan.
 Phase 1 covers audience definition, a workflow and behavior audit, the shared
-teaching scenario, and the curriculum map. Phase 2 now provides the Fumadocs and
-MDX foundation at `/learn`.
+teaching scenario, and the curriculum map. Phase 2 provides the Fumadocs and MDX
+foundation at `/learn`. Phase 3 provides the first usable beginner curriculum.
 
 ## Deliverables
 
@@ -108,5 +108,26 @@ Phase 2 is implemented in `frontend`:
   destination.
 - One technical-review sample exists in each planned top-level section.
 
-Full article search, contextual links from application controls, and the rest of
-the curriculum remain Phase 3 and Phase 4 work.
+Full article search, contextual links from application controls, and practical
+feature coverage remain Phase 4 work.
+
+## Phase 3 status
+
+Phase 3 is implemented in `frontend/content/learn`:
+
+- The ordered B01–B10 beginner course follows Avery Chen from employee inputs
+  through matching, resolution, explanations, change safety, overrides, history,
+  and audit.
+- Every P0 concept article required by the course is published under Core
+  concepts.
+- The glossary defines the terms used across the first usable release.
+- Worked tables and answer-reveal checks let a novice reconstruct Avery's five
+  assignment fields without requiring mutation access.
+- Optional product links remain permission-aware, and the prose identifies when
+  an administrator must perform a step.
+- Claims remain tied to implementation and test evidence through article
+  metadata.
+
+The articles remain in `technical-review` until feature owners and target readers
+complete the authoring and verification workflow above. Phase 3 implementation
+does not mark that organizational review as complete.

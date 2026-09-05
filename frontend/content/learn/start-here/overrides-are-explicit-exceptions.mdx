@@ -1,0 +1,43 @@
+---
+title: Overrides are explicit exceptions
+description: See how a field-level exception replaces policy results while preserving provenance.
+content_id: B08
+section: start-here
+order: 80
+audiences:
+  - new operator
+  - assignment investigator
+permissions: []
+owner: overrides
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by:
+  - backend/tests/test_overrides.py
+  - backend/tests/test_audit_logs.py
+reading_time: 4
+prerequisites:
+  - Preview, approval, execution, and reconciliation
+---
+
+## Replacement, not another candidate
+
+A manual override is an explicit exception for one employee and one assignment field. It is applied after policy resolution and replaces all policy-derived results for that field.
+
+Avery normally has **Pay schedule: Bi-weekly** from California Pay Schedule. An assignment manager previews an override to **Monthly**, then commits it. Avery's current Pay schedule becomes Monthly; Bi-weekly remains visible in the override explanation as a replaced policy result.
+
+Removing the override does not require recreating the policy assignment. Reconciliation resolves the field again, so Bi-weekly returns from the still-matching California policy.
+
+## Provenance survives change
+
+Updating or removing an override retires its immutable source record instead of erasing it. Assignment history and audit evidence can therefore identify which exception produced a past value.
+
+An override is not a conflict repair. Policy candidates are resolved before the override is applied, so an equal-priority conflict between different one-field values still stops resolution. Fix the rule overlap or priorities first.
+
+Use overrides for intentional, reviewable exceptions—not as a hidden substitute for maintaining the policies.
+
+[Next: History and audit answer different questions](/learn/start-here/history-and-audit)
+
+[Concept: Manual overrides and provenance](/learn/concepts/manual-overrides-and-provenance)
+
+<PolicyLink href="/employees" permission="assignments:manage">Manage an employee override</PolicyLink>

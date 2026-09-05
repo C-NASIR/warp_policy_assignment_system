@@ -1,0 +1,50 @@
+---
+title: How policies match
+description: Follow direct conditions and explicit group membership as two ways a policy can apply.
+content_id: B04
+section: start-here
+order: 40
+audiences:
+  - signed-in reader
+  - new operator
+permissions: []
+owner: groups
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by:
+  - backend/tests/test_groups.py
+  - backend/tests/test_policy_change_reconciliation.py
+reading_time: 4
+prerequisites:
+  - Inputs, assignment fields, and values
+---
+
+## Direct matching
+
+An active policy can become a candidate when its effective version's conditions match an employee's facts. Avery directly matches:
+
+- California Pay Schedule because state is California.
+- Standard PTO and Security Baseline because employee type is Full-time.
+- California Compliance because state is California.
+- Engineering Equipment because department is Engineering.
+
+A direct explanation records the employee facts and condition clauses that matched.
+
+## Group inheritance
+
+Groups are explicit collections; PolicyOS does not infer Engineering group membership from Avery's Engineering department. A group manager adds Avery to the Engineering group and attaches Engineering Access to that group.
+
+Engineering Access has a direct condition of `location = Remote`. Avery works in San Francisco, so that condition does not match. The policy still becomes a candidate because Avery is an explicit member of a group to which the policy is attached. The assignment explanation records the group origin instead of inventing a direct condition match.
+
+This distinction matters when investigating a surprising value: check both the condition evidence and any group origin.
+
+## One policy, one candidate set
+
+If the same policy reaches an employee directly and through one or more groups, PolicyOS deduplicates it before resolution. Multiple paths do not multiply the policy's values.
+
+Group membership changes use a preview. Attaching or detaching a policy from a group is a separate action and reconciles affected members immediately.
+
+[Next: Effective dates, priority, and cardinality](/learn/start-here/effective-dates-priority-and-cardinality)
+
+[Concept: Direct matches and group-inherited policies](/learn/concepts/direct-matches-and-group-policies)

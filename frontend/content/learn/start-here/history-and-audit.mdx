@@ -1,0 +1,50 @@
+---
+title: History and audit answer different questions
+description: Use assignment history for past truth and the audit log for change accountability.
+content_id: B09
+section: start-here
+order: 90
+audiences:
+  - new operator
+  - assignment investigator
+  - auditor
+permissions: []
+owner: audit
+status: technical-review
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by:
+  - backend/tests/test_assignment_history.py
+  - backend/tests/test_audit_logs.py
+reading_time: 4
+prerequisites:
+  - Overrides are explicit exceptions
+---
+
+## Ask the question first
+
+Use **assignment history** to answer: “What assignment was true for this employee at this time?” A history row carries its value, source, explanation snapshot, and effective timestamp interval. Its interval starts at `valid_from` and continues up to—but not including—`valid_to`.
+
+Use the **audit log** to answer: “What changed, when, and who caused it?” Audit events record the actor, action, entity, UTC timestamp, and before/after details.
+
+| Question | Best evidence |
+| --- | --- |
+| What was Avery's pay schedule before the override? | Assignment history |
+| Which source supplied Monthly? | Assignment history and its explanation |
+| Who created or removed the override? | Audit log |
+| When did the change occur? | Audit log |
+| Why did the policy-derived value return? | New assignment explanation plus the related audit event |
+
+## Follow the override timeline
+
+Before the override, Avery's open Pay schedule row is Bi-weekly. Committing Monthly closes that row and opens an override-sourced row. Removing the override closes Monthly and opens a newly resolved Bi-weekly row.
+
+The audit log supplies the human actions around that timeline. It does not replace the assignment history, and history does not identify every administrative action.
+
+A material explanation change can open a new history row even when the displayed value is unchanged. Compare source and evidence, not only the value label.
+
+[Next: Your first assignment walkthrough](/learn/start-here/first-assignment-walkthrough)
+
+[Concept: Assignment history versus the audit log](/learn/concepts/assignment-history-versus-audit-log)
+
+<PolicyLink href="/audit" permission="audit:read">Open the audit log</PolicyLink>
