@@ -6,6 +6,7 @@ import { z } from "zod";
 export const learnSections = [
   "start-here",
   "concepts",
+  "practice",
   "guides",
   "reference",
   "troubleshooting",
@@ -60,6 +61,7 @@ export type LearnSearchEntry = {
 const sectionLabels: Record<LearnSection, string> = {
   "start-here": "Start here",
   concepts: "Core concepts",
+  practice: "Practice",
   guides: "How-to guides",
   reference: "Feature reference",
   troubleshooting: "Troubleshooting",

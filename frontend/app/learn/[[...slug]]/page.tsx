@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ListTree } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ArticleMeta } from "@/components/learn/article-meta";
+import { LessonProgress } from "@/components/learn/exercises";
 import { LearnNavigation } from "@/components/learn/learn-navigation";
 import { getLearnMdxComponents } from "@/components/learn/mdx-components";
 import { getCurrentUser } from "@/lib/backend";
@@ -42,6 +43,7 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
           <h1>{page.data.title}</h1>
           {page.data.description && <p className="learn-description">{page.data.description}</p>}
           <ArticleMeta page={page} />
+          {!isHome && <LessonProgress articleId={page.data.content_id} total={orderedPages.length} />}
           {page.data.prerequisites.length > 0 && <p className="learn-prerequisites"><strong>Before you start:</strong> {page.data.prerequisites.join(" · ")}</p>}
         </header>
         {page.data.toc.length > 0 && <details className="learn-mobile-toc"><summary><ListTree size={14} /> On this page</summary><TocList items={page.data.toc} /></details>}

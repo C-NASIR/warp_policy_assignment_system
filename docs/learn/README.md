@@ -147,6 +147,27 @@ Phase 4 is implemented across the learning content and application shell:
 - Article pages include responsive related-article cards generated from nearby
   content in the same curriculum section.
 
-P2 depth, isolated interactive exercises, progress tracking, and knowledge-check
-scoring remain later-phase work. Phase 4 articles remain in `technical-review`
-until their workflow and reader reviews are complete.
+P2 reference depth and the formal quality and measurement program remain
+later-phase work. Phase 4 articles remain in `technical-review` until their
+workflow and reader reviews are complete.
+
+## Phase 5 status
+
+Phase 5 is implemented as an isolated client-side learning layer:
+
+- The Practice section contains an Avery assignment lab, priority/cardinality
+  simulator, effective-date simulator, and scored course knowledge check.
+- Exercises use only the fictional teaching fixture and deterministic rules
+  verified against backend tests. They never call the PolicyOS API or read or
+  mutate workspace data.
+- Every exercise labels its isolation and provides immediate outcome-specific
+  feedback, explanations, and a reset or retry path.
+- Learners can opt into per-article progress on their device. Progress uses one
+  versioned local-storage record, is disabled by default, and can be cleared by
+  choosing **Stop tracking**.
+- The exercise layout and controls adapt to mobile widths and use native labels,
+  fieldsets, radios, checkboxes, ranges, dates, and live feedback regions.
+
+The Practice articles remain in `technical-review` until target readers complete
+the usability and accessibility review. Phase 6 will formalize those checks and
+measurement rather than expanding the exercise fixture into customer data.
