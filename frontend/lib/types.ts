@@ -9,6 +9,10 @@ export type Employee = {
   manager_id: number | null;
 };
 
+export type EmployeeDirectoryItem = Employee & {
+  active_assignment_count: number;
+};
+
 export type AssignmentField = {
   id: number;
   name: string;

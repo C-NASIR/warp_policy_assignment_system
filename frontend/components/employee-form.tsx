@@ -96,7 +96,7 @@ export function EmployeeEditor({
     setSubmitting(true); setError("");
     if (!apiConfigured) {
       setSuccess(employee ? "Employee updated in demo mode. The assignment preview reflects the new profile." : "Employee created in demo mode with the assignments shown.");
-      if (!employee) { setData(createBlankEmployee()); setPreview(null); setApproval(null); setValidationAttempted(false); }
+      if (!employee) { setData(createBlankEmployee()); setPreview(null); setApproval(null); setValidationAttempted(false); router.push("/employees"); }
       setSubmitting(false); return;
     }
     try {
@@ -105,8 +105,8 @@ export function EmployeeEditor({
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error?.message ?? "The employee change could not be saved.");
       setSuccess(employee ? "Employee and downstream assignments updated." : "Employee created and assignments resolved.");
-      if (!employee) { setData(createBlankEmployee()); setPreview(null); setApproval(null); setValidationAttempted(false); }
-      router.refresh();
+      if (!employee) { setData(createBlankEmployee()); setPreview(null); setApproval(null); setValidationAttempted(false); router.push("/employees"); }
+      else router.refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to save this change."); }
     finally { setSubmitting(false); }
   }

@@ -252,6 +252,8 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 /* Detail pages */
 .breadcrumb { display: flex; align-items: center; gap: 5px; margin-bottom: 18px; color: var(--muted); font-size: 10px; }
 .breadcrumb a:hover { color: var(--accent-ink); }
+.page-back-link { width: fit-content; min-height: 32px; display: inline-flex; align-items: center; gap: 7px; margin-bottom: 16px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: rgb(255 255 255 / .72); color: var(--muted); font-size: 10px; font-weight: 680; box-shadow: var(--shadow-sm); transition: 140ms ease; }
+.page-back-link:hover { border-color: #c9c5e8; background: var(--surface); color: var(--accent-ink); transform: translateX(-1px); }
 .detail-hero { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
 .detail-identity { display: flex; align-items: center; gap: 14px; }
 .detail-avatar { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 13px; background: linear-gradient(145deg, #eeedff, #dcd9ff); color: #433e9f; font-size: 14px; font-weight: 780; }

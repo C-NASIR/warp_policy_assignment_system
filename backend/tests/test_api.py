@@ -73,6 +73,10 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
     assert by_value["payroll_app"]["source_policy_version_id"] == california_version_id
     assert by_value["GitHub"]["source_policy_version_id"] == engineering_version_id
     assert by_value["biweekly"]["assignment_field_definition"]["name"] == "pay_schedule"
+    directory_entry = next(
+        item for item in client.get("/employees").json() if item["id"] == alice["id"]
+    )
+    assert directory_entry["active_assignment_count"] == 3
 
     response = client.patch(f"/employees/{alice['id']}", json={"state": "Wisconsin"})
     assert response.status_code == 200
@@ -81,6 +85,10 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
     assert {assignment["source_policy_version_id"] for assignment in assignments} == {
         engineering_version_id
     }
+    directory_entry = next(
+        item for item in client.get("/employees").json() if item["id"] == alice["id"]
+    )
+    assert directory_entry["active_assignment_count"] == 2
 
 
 def test_nonmatching_policy_produces_no_assignment_then_employee_update_applies_it(client):

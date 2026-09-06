@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 from app.dates import current_date, current_datetime
 from app.dependencies import (
@@ -17,6 +17,7 @@ from app.schemas import (
     AssignmentRead,
     AssignmentSummaryRead,
     EmployeeCreate,
+    EmployeeDirectoryRead,
     EmployeeOverrideCreate,
     EmployeeOverrideRead,
     EmployeeOverrideUpdate,
@@ -59,12 +60,13 @@ def create(
     return create_employee(session, data, actor)
 
 
-@router.get("", response_model=list[EmployeeRead])
+@router.get("", response_model=list[EmployeeDirectoryRead])
 def list_all(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
     visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
     search: Annotated[str | None, Query(max_length=200)] = None,
     state: Annotated[str | None, Query(max_length=100)] = None,
     department: Annotated[str | None, Query(max_length=100)] = None,
@@ -74,7 +76,7 @@ def list_all(
     has_manager: bool | None = None,
     start_date_from: date | None = None,
     start_date_to: date | None = None,
-) -> list[Employee]:
+) -> list[EmployeeDirectoryRead]:
     statement = visibility.apply(select(Employee))
     if search:
         pattern = f"%{search.strip()}%"
@@ -107,12 +109,46 @@ def list_all(
         statement = statement.where(Employee.start_date >= start_date_from)
     if start_date_to is not None:
         statement = statement.where(Employee.start_date <= start_date_to)
-    return paginate_scalars(
+    employees = paginate_scalars(
         session,
         statement.order_by(Employee.id),
         pagination,
         response,
     )
+    if not employees:
+        return []
+
+    effective_at = current_datetime()
+    count_statement = (
+        select(
+            EmployeeAssignment.employee_id,
+            func.count(EmployeeAssignment.id),
+        )
+        .where(
+            EmployeeAssignment.employee_id.in_(
+                [employee.id for employee in employees]
+            ),
+            EmployeeAssignment.effective_from <= effective_at,
+            or_(
+                EmployeeAssignment.effective_until.is_(None),
+                EmployeeAssignment.effective_until > effective_at,
+            ),
+        )
+        .group_by(EmployeeAssignment.employee_id)
+    )
+    count_statement = field_visibility.apply(
+        count_statement,
+        EmployeeAssignment.assignment_field_definition_id,
+    )
+    counts = dict(session.execute(count_statement).all())
+
+    return [
+        EmployeeDirectoryRead(
+            **EmployeeRead.model_validate(employee).model_dump(),
+            active_assignment_count=int(counts.get(employee.id, 0)),
+        )
+        for employee in employees
+    ]
 
 
 @router.get("/{employee_id}", response_model=EmployeeRead)

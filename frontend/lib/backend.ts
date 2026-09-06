@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { assignmentFields, assignmentSummary, assignmentsByEmployee, auditLogs, conditionFields, employees, groupEmployeeIds, groupPolicyIds, groups, overridesByEmployee, policies, policyImpacts } from "./demo-data";
-import type { AccessReview, AccountSecurity, Assignment, AssignmentField, AssignmentSummary, AuditLog, ChangeApprovalRequest, ConditionField, CurrentUser, Employee, EmployeeOverride, Group, LearningInsights, Permission, Policy, PolicyImpact, Role, RoleSummary, RootSetupStatus, User } from "./types";
+import type { AccessReview, AccountSecurity, Assignment, AssignmentField, AssignmentSummary, AuditLog, ChangeApprovalRequest, ConditionField, CurrentUser, Employee, EmployeeDirectoryItem, EmployeeOverride, Group, LearningInsights, Permission, Policy, PolicyImpact, Role, RoleSummary, RootSetupStatus, User } from "./types";
 
 const configuredApiUrl = process.env.POLICY_API_URL?.replace(/\/$/, "");
 const sessionCookieName = "policyos_session";
@@ -51,7 +51,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   return response.json() as Promise<CurrentUser>;
 }
 
-export const getEmployees = () => read<Employee[]>("/employees?limit=500", employees);
+export const getEmployees = () => read<EmployeeDirectoryItem[]>("/employees?limit=500", employees);
 export const getPolicies = () => read<Policy[]>("/policies?limit=500", policies);
 export const getAssignmentFields = () => read<AssignmentField[]>("/assignment-fields?limit=500", assignmentFields);
 export const getConditionFields = () => read<ConditionField[]>("/condition-fields?limit=500", conditionFields);

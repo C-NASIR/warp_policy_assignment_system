@@ -1,14 +1,14 @@
-import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, Employee, EmployeeOverride, Group, Policy, PolicyImpact } from "./types";
+import type { Assignment, AssignmentField, AssignmentSummary, AuditLog, ConditionField, EmployeeDirectoryItem, EmployeeOverride, Group, Policy, PolicyImpact } from "./types";
 
-export const employees: Employee[] = [
-  { id: 1, name: "Alice Johnson", state: "California", department: "Engineering", employee_type: "Full-time", location: "San Francisco", start_date: "2021-04-12", manager_id: 4 },
-  { id: 2, name: "Jordan Lee", state: "New York", department: "Product", employee_type: "Full-time", location: "New York", start_date: "2023-08-21", manager_id: 5 },
-  { id: 3, name: "Devon Moore", state: "Texas", department: "Sales", employee_type: "Contractor", location: "Austin", start_date: "2025-01-06", manager_id: 6 },
-  { id: 4, name: "Maya Patel", state: "California", department: "Engineering", employee_type: "Full-time", location: "San Francisco", start_date: "2018-06-18", manager_id: null },
-  { id: 5, name: "Priya Shah", state: "Illinois", department: "Product", employee_type: "Full-time", location: "Chicago", start_date: "2019-11-04", manager_id: null },
-  { id: 6, name: "Mateo Garcia", state: "Florida", department: "Sales", employee_type: "Full-time", location: "Remote", start_date: "2022-02-14", manager_id: null },
-  { id: 7, name: "Samira Okafor", state: "Washington", department: "Design", employee_type: "Full-time", location: "Seattle", start_date: "2024-03-11", manager_id: 5 },
-  { id: 8, name: "Theo Martin", state: "California", department: "Support", employee_type: "Part-time", location: "Los Angeles", start_date: "2025-10-20", manager_id: 6 },
+export const employees: EmployeeDirectoryItem[] = [
+  { id: 1, name: "Alice Johnson", state: "California", department: "Engineering", employee_type: "Full-time", location: "San Francisco", start_date: "2021-04-12", manager_id: 4, active_assignment_count: 6 },
+  { id: 2, name: "Jordan Lee", state: "New York", department: "Product", employee_type: "Full-time", location: "New York", start_date: "2023-08-21", manager_id: 5, active_assignment_count: 3 },
+  { id: 3, name: "Devon Moore", state: "Texas", department: "Sales", employee_type: "Contractor", location: "Austin", start_date: "2025-01-06", manager_id: 6, active_assignment_count: 2 },
+  { id: 4, name: "Maya Patel", state: "California", department: "Engineering", employee_type: "Full-time", location: "San Francisco", start_date: "2018-06-18", manager_id: null, active_assignment_count: 3 },
+  { id: 5, name: "Priya Shah", state: "Illinois", department: "Product", employee_type: "Full-time", location: "Chicago", start_date: "2019-11-04", manager_id: null, active_assignment_count: 0 },
+  { id: 6, name: "Mateo Garcia", state: "Florida", department: "Sales", employee_type: "Full-time", location: "Remote", start_date: "2022-02-14", manager_id: null, active_assignment_count: 0 },
+  { id: 7, name: "Samira Okafor", state: "Washington", department: "Design", employee_type: "Full-time", location: "Seattle", start_date: "2024-03-11", manager_id: 5, active_assignment_count: 0 },
+  { id: 8, name: "Theo Martin", state: "California", department: "Support", employee_type: "Part-time", location: "Los Angeles", start_date: "2025-10-20", manager_id: 6, active_assignment_count: 0 },
 ];
 
 export const assignmentFields: AssignmentField[] = [

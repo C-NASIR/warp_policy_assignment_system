@@ -4,9 +4,9 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search, Users, X } from "lucide-react";
 import { useState } from "react";
 import { initials } from "@/lib/format";
-import type { Employee } from "@/lib/types";
+import type { EmployeeDirectoryItem } from "@/lib/types";
 
-export function EmployeeDirectory({ employees }: { employees: Employee[] }) {
+export function EmployeeDirectory({ employees }: { employees: EmployeeDirectoryItem[] }) {
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("all");
   const [type, setType] = useState("all");
@@ -55,7 +55,7 @@ export function EmployeeDirectory({ employees }: { employees: Employee[] }) {
               <tr key={employee.id}>
                 <td><Link className="person-cell" href={`/employees/${employee.id}`}><span className="avatar">{initials(employee.name)}</span><span className="primary-cell">{employee.name}</span></Link></td>
                 <td>{employee.department}</td><td>{employee.location ?? employee.state}</td><td>{employee.employee_type}</td>
-                <td><span className="badge accent">{employee.id === 1 ? 6 : 3 + (employee.id % 3)} active</span></td>
+                <td><span className="badge accent">{employee.active_assignment_count} active</span></td>
                 <td><span className="badge success"><span className="system-dot" style={{ boxShadow: "none", width: 5, height: 5 }} /> Current</span></td>
               </tr>
             ))}</tbody>

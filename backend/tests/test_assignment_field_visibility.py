@@ -248,6 +248,12 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
     assert {item["assignment_field_definition_id"] for item in assignments} == {
         access["id"]
     }
+    directory_entry = next(
+        item
+        for item in client.get("/employees").json()
+        if item["id"] == employee["id"]
+    )
+    assert directory_entry["active_assignment_count"] == len(assignments)
     query = client.post(
         "/assignment-queries",
         json={

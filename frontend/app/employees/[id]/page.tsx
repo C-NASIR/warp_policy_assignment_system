@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, Info, Pencil, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Info, Pencil, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { AssignmentCard } from "@/components/assignment-card";
 import { EmployeeEditor } from "@/components/employee-form";
@@ -33,7 +33,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
   const overrideCount = assignments.filter((item) => item.source_override_id).length;
   return (
     <>
-      <div className="breadcrumb"><Link href="/employees">Employees</Link><ChevronRight size={11} /><span>{employee.name}</span></div>
+      <Link className="page-back-link" href="/employees"><ArrowLeft size={13} />Back to employees</Link>
       <div className="detail-hero">
         <div className="detail-identity"><div className="detail-avatar">{initials(employee.name)}</div><div><h1 className="detail-title">{employee.name}</h1><div className="detail-meta">{employee.department} · {employee.employee_type} · {employee.location ?? employee.state}</div></div></div>
         {hasPermission(user, "employees:update") && <EmployeeEditor employee={employee} employees={allEmployees} fields={fields} currentAssignments={assignments} apiConfigured={apiConfigured} trigger={<><Pencil size={14} /> Edit employee</>} compact />}
