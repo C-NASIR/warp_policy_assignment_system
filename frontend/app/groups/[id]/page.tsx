@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { GroupManager } from "@/components/group-manager";
 import { apiConfigured, getCurrentUser, getEmployees, getGroup, getGroupEmployees, getGroupPolicies, getPolicies } from "@/lib/backend";
@@ -22,5 +22,5 @@ export default async function GroupDetailPage({ params }: PageProps<"/groups/[id
     !apiConfigured || hasPermission(user, "policies:read") ? getPolicies() : [],
   ]);
   if (!group) notFound();
-  return <><div className="breadcrumb"><Link href="/groups">Groups</Link><ChevronRight size={11} /><span>{group.name}</span></div><GroupManager group={group} initialMembers={members} initialPolicies={attachedPolicies} employees={employees} policies={policies} apiConfigured={apiConfigured} canManage={hasPermission(user, "groups:update")} /></>;
+  return <><Link className="page-back-link" href="/groups"><ArrowLeft size={13} />Back to groups</Link><GroupManager group={group} initialMembers={members} initialPolicies={attachedPolicies} employees={employees} policies={policies} apiConfigured={apiConfigured} canManage={hasPermission(user, "groups:update")} /></>;
 }

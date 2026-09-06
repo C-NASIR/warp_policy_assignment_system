@@ -1,6 +1,6 @@
 # PolicyOS workflow audit
 
-Audit date: 2026-09-05
+Audit date: 2026-09-06
 
 This audit combines frontend inspection with backend tests and service
 documentation. “Verified” means the behavior has direct implementation and test
@@ -36,7 +36,7 @@ Employee facts and reporting relationships
 | Create a policy version | `/policies/new?policyId={id}` | Uses the connected preview contract; active-policy versions require activation authority and can create a persisted human approval request | `frontend/components/policy-builder.tsx`, `backend/tests/test_policy_access.py`, `backend/tests/test_phase6_access_approvals.py` | Verified |
 | Activate or archive | `/policies/{id}` | Uses record capabilities; ordinary lifecycle changes reconcile immediately, while lifecycle changes with automated access require preview and independent approval | `frontend/components/policy-lifecycle.tsx`, `backend/tests/test_policy_change_reconciliation.py`, `backend/tests/test_phase6_access_approvals.py` | Verified |
 | Manage groups | `/groups`, `/groups/{id}` | Groups are explicit; membership changes are previewed, while policy attachment and detachment reconcile members immediately | `frontend/components/group-manager.tsx`, `backend/tests/test_groups.py` | Verified |
-| Review approvals | `/approvals` | Another user can approve or reject a pending request; the approving user must execute it; the author cannot approve it | `frontend/components/approval-queue.tsx`, `backend/tests/test_phase6_access_approvals.py` | Verified |
+| Review approvals | `/approvals` | Another user can approve or reject a pending request; the ordinary approving user executes it; Root may execute an approved request; the author cannot approve it | `frontend/components/approval-queue.tsx`, `backend/app/services/approval_requests.py`, `backend/tests/test_phase6_access_approvals.py` | Verified |
 | Configure assignment fields | `/settings` | Creates named `one` or `many` output fields; cardinality is fixed after creation | `frontend/components/assignment-field-manager.tsx`, `backend/app/models.py` | UI verified |
 | Inspect audit | `/audit` | Filters recent append-only events and exposes actor, entity, action, timestamp, and before/after snapshots | `frontend/components/audit-log-explorer.tsx`, `backend/tests/test_audit_logs.py` | Verified |
 | Manage users and roles | `/access` | Provisions users, links employees, assigns roles, and defines permission, employee, and assignment-field scopes | `frontend/components/access-manager.tsx`, `backend/tests/test_access_control.py`, `backend/tests/test_employee_visibility.py`, `backend/tests/test_assignment_field_visibility.py` | Verified |
@@ -61,7 +61,10 @@ Employee facts and reporting relationships
 | Overrides do not suppress policy conflicts | `backend/tests/test_overrides.py` |
 | Past assignment queries read recorded history, today reads persisted state, and future queries calculate without persistence | `backend/tests/test_assignment_queries.py` |
 | Assignment history answers what was true; audit answers what changed, when, and by whom | `backend/tests/test_assignment_history.py`, `backend/tests/test_audit_logs.py` |
-| Human access is the union of allow-only roles plus independent employee and assignment-field scopes | `backend/tests/test_access_control.py`, `backend/tests/test_employee_visibility.py`, `backend/tests/test_assignment_field_visibility.py` |
+| The first user is Root with wildcard permission and unrestricted data visibility; Root still uses authentication, validation, and applicable security controls | `backend/app/services/human_auth.py`, `backend/app/services/access_control.py`, `backend/app/dependencies.py`, `backend/tests/test_access_control.py`, `backend/tests/test_security_hardening.py` |
+| An employee record does not create a user; a user may link to an employee, and a non-Root user must have at least one explicit role at creation | `backend/app/services/access_control.py`, `backend/tests/test_access_control.py` |
+| Human access is the union of allow-only role permissions plus separately unioned employee and assignment-field scopes | `backend/app/services/access_control.py`, `backend/app/services/employee_visibility.py`, `backend/app/services/assignment_field_visibility.py`, `backend/tests/test_access_control.py`, `backend/tests/test_employee_visibility.py`, `backend/tests/test_assignment_field_visibility.py` |
+| Reporting-tree scope includes the linked employee plus direct and indirect descendants; a manager relationship alone grants no account or permission | `backend/app/services/employee_visibility.py`, `backend/app/services/org_chart.py`, `backend/tests/test_employee_visibility.py` |
 | Policy-derived roles require an eligible role and linked employee account; explicit roles are preserved | `backend/tests/test_phase6_access_approvals.py`, `backend/app/services/access_control.py` |
 
 ## Route and permission map
@@ -107,19 +110,18 @@ screens and trying controls, but it differs from connected behavior:
 Content must label demo-only walkthroughs and must never claim that a demo
 mutation persisted or exercised separation of duties.
 
-## Gaps and content constraints
+## Current gaps and content constraints
 
-| Gap | Phase 1 decision |
+| Gap | Content decision |
 | --- | --- |
-| No `/learn` route, MDX loader, documentation navigation, or article search | Implement in Phase 2 |
-| Quick Find searches a fixed list, not article content | Add documentation indexing in Phase 4 |
-| No contextual help links from workflow controls | Add after stable article slugs exist in Phase 4 |
-| No frontend workflow for batch future assignment queries | Document the concept in Phase 3; reserve API procedure for later reference |
-| No frontend UI for scheduled reconciliation operations or machine credentials | Do not promise UI steps; cover only verified concepts or API reference later |
-| First-policy preview is not the same connected engine preview used by a new version | Phrase the initial guide as a population estimate and verify again before Phase 3 publication |
+| No separate employee self-service portal | Describe self scope as a restricted view in the normal PolicyOS application |
+| No built-in approval notification, arbitrary reviewer assignment, or request-search box | Use the request ID and the team's normal handoff process; do not promise messaging |
+| No frontend workflow for batch future assignment queries | Teach the distinction between future calculation and current stored assignments; reserve an API procedure for later reference |
+| No frontend UI for scheduled reconciliation operations or machine credentials | Do not promise UI steps; cover only verified concepts or later API reference |
+| First-policy preview is not the same connected engine preview used by a new version | Describe it as a population estimate and verify the saved result |
 | Group membership is previewed, but policy attach/detach is immediate | Keep the steps distinct; do not say every group change has a preview |
-| Persisted approval is limited to sensitive human policy/automated-access flows | Do not imply that every preview enters the approval queue |
-| Existing Maya demo data conflicts with a “Maya joins Engineering” story | Use the isolated Avery Chen fixture |
+| Persisted approval is limited to supported human policy flows | Do not imply that every preview or denied mutation enters the approval queue |
+| Demo data is not the curriculum fixture | Use an isolated Rachel/Morgan/Jordan training fixture and do not infer connected behavior from demo state |
 
 ## Reverification triggers
 

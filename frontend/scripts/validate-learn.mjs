@@ -8,6 +8,14 @@ const frontendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 const repoRoot = path.resolve(frontendRoot, "..");
 const contentRoot = path.join(frontendRoot, "content", "learn");
 const sections = ["concepts", "policyos", "practice"];
+const conceptSubsections = new Set([
+  "From decisions to assignments",
+  "How policies combine",
+  "Groups and exceptions",
+  "Change, time, and evidence",
+  "People, accounts, and access",
+  "Controlled and automated access",
+]);
 const statuses = ["outline", "draft", "technical-review", "product-review", "approved", "retired"];
 const required = ["title", "description", "content_id", "section", "order", "audiences", "permissions", "owner", "status", "last_verified", "review_by", "verified_by", "reading_time", "prerequisites"];
 const failures = [];
@@ -64,6 +72,11 @@ for (const article of articles) {
   const { file, data, body } = article;
   for (const field of required) if (data[field] === undefined || data[field] === null) fail(file, `missing required field ${field}`);
   if (!sections.includes(data.section)) fail(file, `unknown section ${data.section}`);
+  if (data.section === "concepts" && path.basename(file) !== "index.mdx") {
+    if (!conceptSubsections.has(data.subsection)) fail(file, `unknown or missing Concepts subsection ${JSON.stringify(data.subsection)}`);
+  } else if (data.subsection !== undefined) {
+    fail(file, "subsection is currently supported only for Concepts lessons");
+  }
   if (!statuses.includes(data.status)) fail(file, `unknown status ${data.status}`);
   if (!owners.has(data.owner)) fail(file, `owner ${JSON.stringify(data.owner)} is not registered`);
   if (!Array.isArray(data.audiences) || data.audiences.length === 0) fail(file, "audiences must not be empty");

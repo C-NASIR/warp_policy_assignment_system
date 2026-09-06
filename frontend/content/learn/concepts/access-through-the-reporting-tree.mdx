@@ -1,0 +1,47 @@
+---
+title: "Access through the reporting tree"
+description: "How a linked manager account can see direct and indirect reports."
+content_id: "CON19"
+section: "concepts"
+subsection: "People, accounts, and access"
+order: 190
+audiences: ["new learner"]
+permissions: []
+owner: "access control"
+status: "draft"
+last_verified: "2026-09-06"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/app/services/employee_visibility.py", "backend/app/services/org_chart.py", "backend/tests/test_employee_visibility.py"]
+reading_time: 2
+prerequisites: ["Permissions and scopes work together"]
+---
+
+Rachel now manages Devon, and Devon later manages Sam. The employee records form a reporting tree:
+
+> Rachel → Devon → Sam
+
+The company wants Rachel to work with her whole organization without seeing an unrelated team.
+
+Three pieces make that possible:
+
+1. Rachel has a PolicyOS user account.
+2. That account is linked to Rachel's employee record.
+3. An assigned role grants the needed action permissions with **linked employee and reporting tree** scope.
+
+With that scope, Rachel's visible population includes Rachel, her direct report Devon, and her indirect report Sam. A peer manager and that peer's team remain outside the tree.
+
+The reporting relationship supplies the population, but it does not supply authority. Making Rachel Devon's manager on the employee record does not create Rachel's user account, give Rachel employee-reading permission, or assign a manager role. An administrator must configure those separately.
+
+It also helps to keep three different mechanisms apart:
+
+| Mechanism | What it expresses |
+| --- | --- |
+| Reporting relationship | Who manages whom in the employee hierarchy; it can define access scope |
+| Employee group | An explicit collection used to give members another route to attached policies |
+| Access role | Which PolicyOS actions and data scopes a user receives |
+
+Putting Devon in the Product Launch group does not make Rachel Devon's manager. Calling a role “Product Launch manager” does not add anyone to that group. Each mechanism has its own job.
+
+Reporting-tree visibility is recalculated from the current hierarchy, so moving an employee to a different manager can change who sees that employee. The same employee edit may also change policy eligibility for other reasons. Access and assignment effects should both be reviewed.
+
+Next, we'll use a smaller employee scope: one linked record only.

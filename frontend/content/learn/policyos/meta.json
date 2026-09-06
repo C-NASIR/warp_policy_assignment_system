@@ -14,8 +14,10 @@
     "manage-an-exception",
     "schedule-a-policy-change",
     "update-employee-facts",
-    "review-controlled-changes",
     "investigate-past-decisions",
-    "manage-access"
+    "manage-access",
+    "limit-access-with-scopes",
+    "review-controlled-changes",
+    "grant-roles-through-policy"
   ]
 }

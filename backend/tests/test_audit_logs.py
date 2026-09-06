@@ -96,6 +96,17 @@ def test_policy_and_version_audits_include_actor_and_version_snapshots(client):
     assert policy_events[1]["before"]["status"] == "active"
     assert policy_events[1]["after"]["status"] == "archived"
 
+    newest_policy_events = _audit_logs(
+        client,
+        entity_type="Policy",
+        entity_id=policy["id"],
+        sort="desc",
+    )
+    assert [event["action"] for event in newest_policy_events] == [
+        "archived",
+        "created",
+    ]
+
     version_events = _audit_logs(client, entity_type="PolicyVersion", actor="admin_42")
     assert len(version_events) == 2
     assert version_events[0]["before"] is None

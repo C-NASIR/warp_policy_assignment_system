@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, Response
 
@@ -30,6 +30,7 @@ def list_all(
     from_timestamp: datetime | None = None,
     to_timestamp: datetime | None = None,
     search: Annotated[str | None, Query(max_length=200)] = None,
+    sort: Literal["asc", "desc"] = "asc",
 ) -> list[AuditLog]:
     statement = audit_log_statement(
         entity_type=entity_type,
@@ -46,9 +47,14 @@ def list_all(
         statement,
         field_visibility,
     )
+    order = (
+        (AuditLog.timestamp.desc(), AuditLog.id.desc())
+        if sort == "desc"
+        else (AuditLog.timestamp, AuditLog.id)
+    )
     return paginate_scalars(
         session,
-        statement.order_by(AuditLog.timestamp, AuditLog.id),
+        statement.order_by(*order),
         pagination,
         response,
     )

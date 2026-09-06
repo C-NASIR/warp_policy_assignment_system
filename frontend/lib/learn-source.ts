@@ -14,6 +14,7 @@ export type LearnSection = (typeof learnSections)[number];
 const articleSchema = pageSchema.extend({
   content_id: z.string().min(1),
   section: z.enum(learnSections),
+  subsection: z.string().min(1).optional(),
   order: z.number().int().nonnegative(),
   audiences: z.array(z.string()).min(1),
   permissions: z.array(z.string()),
@@ -76,11 +77,26 @@ export function getOrderedLearnPages() {
 
 export function getLearnNavigation() {
   const pages = getOrderedLearnPages();
-  return learnSections.map((section) => ({
-    section,
-    label: sectionLabels[section],
-    pages: pages.filter((page) => page.data.section === section),
-  }));
+  return learnSections.map((section) => {
+    const sectionPages = pages.filter((page) => page.data.section === section);
+    const subsections = sectionPages.reduce<Array<{
+      label: string | null;
+      pages: typeof sectionPages;
+    }>>((groups, page) => {
+      const label = page.data.subsection ?? null;
+      const current = groups.at(-1);
+      if (current?.label === label) current.pages.push(page);
+      else groups.push({ label, pages: [page] });
+      return groups;
+    }, []);
+
+    return {
+      section,
+      label: sectionLabels[section],
+      pages: sectionPages,
+      subsections,
+    };
+  });
 }
 
 export function getLearnSearchEntries(): LearnSearchEntry[] {

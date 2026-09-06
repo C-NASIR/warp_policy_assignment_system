@@ -1,49 +1,48 @@
 ---
 title: "Who can do what?"
-description: "Employee records, user accounts, roles, and permissions."
+description: "How one Root user begins growing a workspace."
 content_id: "CON16"
 section: "concepts"
+subsection: "People, accounts, and access"
 order: 160
 audiences: ["new learner"]
 permissions: []
-owner: "product education"
+owner: "access control"
 status: "draft"
-last_verified: "2026-09-05"
+last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_access_control.py", "backend/tests/test_employee_visibility.py", "backend/tests/test_assignment_field_visibility.py", "backend/tests/test_phase6_access_approvals.py"]
-reading_time: 2
+verified_by: ["docs/learn/content-map.md", "backend/app/services/human_auth.py", "backend/app/services/access_control.py", "backend/tests/test_access_control.py", "backend/tests/test_security_hardening.py"]
+reading_time: 3
 prerequisites: ["Explaining what happened"]
 ---
 
-Rachel has an employee record because the company needs to make decisions about her employment.
+When the workspace is empty, one person completes the initial setup. PolicyOS creates the first sign-in as the **Root account**.
 
-Does that mean she can sign in and edit company policies?
+Root has all application permissions and unrestricted employee and assignment-field visibility. At the beginning, that makes practical sense: someone must establish the workspace and decide who else may enter it.
 
-To answer that, we need to separate an **employee record** from a **user account**.
+Root is special. It is not a role that an administrator can assign to someone else, and the Root account cannot be edited or disabled through ordinary user management. Other users can still receive substantial administrative responsibilities, but those responsibilities come through roles.
 
-The employee record holds facts used in policy decisions. A user account represents someone who can sign in. They can be linked, but creating an employee record alone doesn't create a login or give someone administrative authority.
+Broad authority is not the same as exemption from every rule. Root must still sign in, satisfy configured security checks for sensitive operations, provide valid data, and obey domain rules such as non-overlapping policy versions. Root may complete supported policy changes without the ordinary user's independent-approval queue, but still uses the application's preview and execution contracts where the workflow calls for them.
 
-Once Rachel has a user account, two questions follow:
+## Rachel exists before Rachel can sign in
 
-1. Who is signing in?
-2. What is that person allowed to do?
+The company already has an employee record for Rachel. That record holds facts such as her department, employee type, start date, and manager. Policies use those facts to determine assignments.
 
-**Authentication** establishes identity. **Authorization** controls permitted actions and access to data.
+An employee record is not a sign-in account.
 
-A **permission** allows a particular action, such as reading assignments, editing employee facts, or approving a change.
+| Record | What it represents | What creating it does |
+| --- | --- | --- |
+| Employee | A person whose work facts drive policy decisions | Adds facts that policies can evaluate |
+| User | A person who can sign in to PolicyOS | Creates application access governed by roles |
 
-A **role** bundles permissions for a responsibility. An employee role might allow Rachel to read her own assignments. A people-operations role might allow a colleague to manage employee records.
+Creating Rachel as an employee does not create a password, a session, or permission to use PolicyOS. Likewise, a consultant who operates PolicyOS might have a user account without being one of the employees evaluated by workforce policies.
 
-The action is only part of the decision. **Scope** describes which records or assignment fields that access covers.
+The two records can be **linked** when the same person is both an employee and a PolicyOS user. That link later lets access rules refer to “this user's own employee record” and to the employee's reporting tree. The link itself grants neither permission nor visibility.
 
-“Can read assignments” might mean Rachel's own assignments, her team's assignments, or everyone's. Access may also be limited to particular fields, such as application access. A role needs the appropriate permissions and data scope together.
+## The first delegation
 
-In PolicyOS, users can have several roles. Their allowed permissions and scopes combine, so adding a broad role can expand access. A narrower role doesn't cancel a broader grant.
+The company grows, and Morgan joins People Operations. Root wants Morgan to maintain employee facts without taking over every responsibility in the workspace.
 
-Some roles can be granted through policies to linked user accounts. These are distinct from roles assigned explicitly by an administrator. Losing a policy-derived grant doesn't remove an independently assigned role.
+Root creates a user account for Morgan and assigns at least one role. Merely entering Morgan's name, email, or company job title does not grant authority. The assigned role does.
 
-An assignment saying “company email” also doesn't itself create an email account. Actual access requires the corresponding provisioning or authorization mechanism.
-
-You've now followed the domain from one decision for Rachel to reusable rules, resolved assignments, controlled changes, and explainable history.
-
-The PolicyOS section will connect these concepts to the application's screens and workflows, beginning with finding your way around.
+That gives us the next design question: how do we turn “Morgan maintains employee information” into a reusable, reviewable definition of access?

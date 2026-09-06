@@ -1,0 +1,35 @@
+---
+title: "Access to your own information"
+description: "Combine a linked account, read permissions, and self scope."
+content_id: "CON20"
+section: "concepts"
+subsection: "People, accounts, and access"
+order: 200
+audiences: ["new learner"]
+permissions: []
+owner: "access control"
+status: "draft"
+last_verified: "2026-09-06"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/access-manager.tsx", "backend/app/services/employee_visibility.py", "backend/tests/test_employee_visibility.py", "backend/tests/test_assignment_field_visibility.py"]
+reading_time: 2
+prerequisites: ["Access through the reporting tree"]
+---
+
+Rachel does not need management authority to read a limited part of her own record.
+
+The company can configure an **Employee assignment reader** role with:
+
+- permission to view employees and assignments;
+- employee scope set to the linked employee only; and
+- assignment-field scope limited to the fields employees should read, such as Annual vacation allowance.
+
+When Rachel's user account is linked to Rachel's employee record, those pieces work together. Rachel can open the employee experience that the normal PolicyOS application exposes and read the allowed assignment. Other employees and other assignment fields remain outside this role's scope.
+
+PolicyOS does not provide a separate employee self-service portal in this workflow. This is the same application, with navigation and records limited by the account's effective permissions and scopes.
+
+The link is essential for self scope. An unlinked account has no “self” employee to reveal. The read permissions are essential too: linking the account does not independently grant access.
+
+As always, another assigned role can broaden the result. If Rachel also receives an all-employee assignment-reader role, the narrow self role does not override it.
+
+By now the company can divide routine work among people. A more sensitive change introduces a different need: one person proposes it and another decides whether it may proceed.

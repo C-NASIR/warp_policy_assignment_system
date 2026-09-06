@@ -10,17 +10,27 @@ export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
       {navigation.map((group) => (
         <section className="learn-nav-group" key={group.section}>
           <div className="learn-nav-label">{group.label}</div>
-          <div className="learn-nav-links">
-            {group.pages.map((page, index) => (
-              <Link
-                className={page.url === currentUrl ? "active" : undefined}
-                href={page.url}
-                aria-current={page.url === currentUrl ? "page" : undefined}
-                key={page.url}
-              >
-                <span>{page.data.title}</span>
-                <small>{String(index + 1).padStart(2, "0")}</small>
-              </Link>
+          <div className="learn-nav-subsections">
+            {group.subsections.map((subsection, subsectionIndex) => (
+              <div className="learn-nav-subgroup" key={subsection.label ?? `${group.section}-${subsectionIndex}`}>
+                {subsection.label && <div className="learn-nav-sublabel">{subsection.label}</div>}
+                <div className="learn-nav-links">
+                  {subsection.pages.map((page) => {
+                    const index = group.pages.findIndex((item) => item.url === page.url);
+                    return (
+                      <Link
+                        className={page.url === currentUrl ? "active" : undefined}
+                        href={page.url}
+                        aria-current={page.url === currentUrl ? "page" : undefined}
+                        key={page.url}
+                      >
+                        <span>{page.data.title}</span>
+                        <small>{String(index + 1).padStart(2, "0")}</small>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         </section>

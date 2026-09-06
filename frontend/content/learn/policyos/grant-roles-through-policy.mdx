@@ -1,0 +1,50 @@
+---
+title: "Grant roles through policy"
+description: "Connect employee eligibility to a linked user's PolicyOS access."
+content_id: "APP17"
+section: "policyos"
+order: 170
+audiences: ["new learner"]
+permissions: ["access:read", "access:manage", "employees:read", "policies:read", "policies:create", "policies:version:create", "policies:activate", "changes:preview", "changes:approve", "changes:execute"]
+owner: "automated access"
+status: "draft"
+last_verified: "2026-09-06"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/access-manager.tsx", "frontend/components/policy-builder.tsx", "backend/app/services/access_control.py", "backend/app/services/automated_access.py", "backend/app/services/policy_authoring.py", "backend/tests/test_phase6_access_approvals.py"]
+reading_time: 4
+prerequisites: ["Review controlled changes"]
+---
+
+The company wants an Engineering policy to grant limited PolicyOS reading access while an employee remains eligible. This builds on explicit roles rather than replacing them.
+
+## Prepare an eligible role and linked account
+
+In **Access control**, create or review an **Engineering assignment reader** role. Give it only the read permissions and scopes its holders need, then select **Allow policies to grant this role**.
+
+That role name is our example, not a built-in role. Only roles marked policy eligible appear under **Automated access roles** in the policy builder. PolicyOS rejects policy eligibility for a role named Root or a role containing protected access-management, access-review, or credential-management permissions.
+
+On **Users**, confirm Rachel has a user account linked to Rachel's employee record. The employee record may already receive policy assignments without this account, but the automated role has no user to attach to until the link exists. The account must also be active for Rachel to sign in and use that access.
+
+## Add the role to a policy proposal
+
+As Morgan, open the relevant Engineering policy's new-version workflow. Keep its workforce condition and assignment outputs accurate, then select Engineering assignment reader under **Automated access roles**.
+
+The role grant follows the same routes as the policy itself. Rachel can reach the policy because her employee facts match its conditions or because an explicit group containing Rachel has the policy attached. A department named Engineering does not itself create Engineering group membership.
+
+Choose **Preview impact**. Inspect both affected employees and affected linked users. The preview can show projected role grants or removals separately from assignment-value changes.
+
+Because Morgan is an ordinary signed-in author, this version enters the independent approval flow. Give Jordan the request ID. Jordan reviews the exact proposal and automated role changes, approves or rejects it, and—after approval—executes it.
+
+## Verify the source and later removal
+
+After execution and reconciliation, open **Access control** as an authorized administrator. Rachel's Users row shows Engineering assignment reader with a **Policy** label. Explicitly assigned roles appear separately without that label.
+
+If Rachel later stops reaching the effective policy, reconciliation removes the policy-derived grant. An explicit grant of the same role remains, as do unrelated explicit roles. The account itself is not disabled or deleted.
+
+Changing the policy, employee facts, reporting data, or explicit group membership can affect eligibility. Future-dated versions do not change today's grant until their effective date and reconciliation. Sensitive automated-access lifecycle changes use the same approval queue you just followed.
+
+This automation controls roles inside PolicyOS only. It does not create user accounts or provision email, payroll, source-control, or any other external service. An Application access assignment value is still only a policy result unless another system acts on it.
+
+<PolicyLink href="/policies" permission="policies:read">Open Policies</PolicyLink>
+
+[Review explicit and policy-derived role grants](/learn/concepts/when-a-policy-grants-a-role).

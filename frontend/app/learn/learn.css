@@ -26,8 +26,11 @@
 .learn-sidebar {
   position: sticky;
   top: 0;
+  display: flex;
+  flex-direction: column;
   align-self: start;
   height: 100vh;
+  height: 100dvh;
   padding: 22px 18px 28px;
   border-right: 1px solid rgb(255 255 255 / .05);
   background: var(--sidebar);
@@ -37,6 +40,7 @@
 
 .learn-app-link {
   display: grid;
+  flex-shrink: 0;
   grid-template-columns: 38px minmax(0, 1fr) auto;
   align-items: center;
   gap: 11px;
@@ -68,10 +72,11 @@
 
 .learn-sidebar-home {
   display: grid;
+  flex-shrink: 0;
   grid-template-columns: 38px 1fr;
   align-items: center;
   gap: 11px;
-  margin: 14px 0 18px;
+  margin: 16px 0 28px;
   padding: 11px 10px;
   border-radius: 9px;
   background: rgb(255 255 255 / .08);
@@ -90,21 +95,30 @@
 .learn-sidebar-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 9px; background: rgb(99 91 255 / .18); color: #aaa5ff; }
 
 .learn-sidebar-navigation {
-  height: calc(100vh - 157px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 0 4px 28px 2px;
+  padding: 2px 4px 12px 2px;
+  scroll-padding-block: 12px;
+  overscroll-behavior-y: contain;
   scrollbar-width: thin;
   scrollbar-color: #55565a transparent;
 }
 
-.learn-nav-group { margin: 0 0 24px; }
-.learn-nav-label { margin: 0 9px 8px; color: #77797e; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.learn-nav-links { display: grid; gap: 3px; }
-.learn-nav-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 9px; border-radius: 8px; color: #b8b9bc; font-size: 13px; line-height: 1.35; transition: 150ms ease; }
+.learn-nav-group { margin: 0 0 36px; }
+.learn-nav-group:last-child { margin-bottom: 0; }
+.learn-nav-label { margin: 0 10px 18px; color: #a6a1d0; font-size: 10px; font-weight: 700; line-height: 1.5; letter-spacing: .13em; text-transform: uppercase; }
+.learn-nav-subsections { display: grid; gap: 22px; }
+.learn-nav-subgroup { min-width: 0; }
+.learn-nav-subgroup + .learn-nav-subgroup { padding-top: 20px; border-top: 1px solid rgb(255 255 255 / .07); }
+.learn-nav-sublabel { margin: 0 10px 10px; color: #eeeef2; font-size: 13px; font-weight: 700; line-height: 1.5; letter-spacing: .01em; }
+.learn-nav-links { display: grid; gap: 2px; }
+.learn-nav-links a { display: grid; grid-template-columns: minmax(0, 1fr) 18px; align-items: baseline; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 7px; color: #b8b9bc; font-size: 13px; line-height: 1.5; transition: background-color 150ms ease, color 150ms ease; }
 .learn-nav-links a:hover { background: rgb(255 255 255 / .06); color: white; }
-.learn-nav-links a.active { background: rgb(255 255 255 / .1); color: white; font-weight: 700; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .04); }
-.learn-nav-links small { color: #77797e; font-size: 11px; white-space: nowrap; }
-.learn-nav-links a.active small { color: #918aff; }
+.learn-nav-links a.active { background: rgb(130 119 255 / .13); color: #eeecff; font-weight: 600; box-shadow: inset 2px 0 #a49bff; }
+.learn-nav-links a:focus-visible { outline: 2px solid #aaa5ff; outline-offset: -2px; }
+.learn-nav-links small { color: #8c8d94; font-size: 10px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.learn-nav-links a.active small { color: #b7afff; }
 
 .learn-mobile-shell,
 .learn-mobile-navigation,
@@ -244,8 +258,8 @@
   .learn-mobile-navigation { display: block; }
   .learn-mobile-navigation > summary { display: flex; align-items: center; gap: 9px; padding: 14px 24px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; }
   .learn-mobile-navigation > summary svg { color: #918aff; }
-  .learn-mobile-navigation > nav { max-height: 60vh; overflow-y: auto; padding: 4px 13px 13px; border-top: 1px solid rgb(255 255 255 / .08); }
-  .learn-mobile-navigation .learn-nav-group { margin-top: 16px; }
+  .learn-mobile-navigation > nav { max-height: 60vh; overflow-y: auto; overscroll-behavior-y: contain; padding: 24px 14px; border-top: 1px solid rgb(255 255 255 / .08); }
+  .learn-mobile-navigation .learn-nav-links a { min-height: 44px; align-items: center; }
   .learn-article-column { max-width: 780px; margin: 0 auto; padding: 0; }
 }
 

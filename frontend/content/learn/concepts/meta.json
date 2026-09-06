@@ -17,6 +17,12 @@
     "when-circumstances-change",
     "changing-things-safely",
     "explaining-what-happened",
-    "who-can-do-what"
+    "who-can-do-what",
+    "turn-responsibilities-into-roles",
+    "permissions-and-scopes-work-together",
+    "access-through-the-reporting-tree",
+    "access-to-your-own-information",
+    "separate-proposing-from-authorizing",
+    "when-a-policy-grants-a-role"
   ]
 }

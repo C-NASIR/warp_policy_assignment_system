@@ -1,0 +1,58 @@
+---
+title: "Limit access with scopes"
+description: "Configure team, field, and self visibility without changing action permissions."
+content_id: "APP16"
+section: "policyos"
+order: 150
+audiences: ["new learner"]
+permissions: ["access:read", "access:manage", "employees:read"]
+owner: "access control"
+status: "draft"
+last_verified: "2026-09-06"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/access-manager.tsx", "backend/app/services/employee_visibility.py", "backend/app/services/assignment_field_visibility.py", "backend/tests/test_employee_visibility.py", "backend/tests/test_assignment_field_visibility.py"]
+reading_time: 4
+prerequisites: ["Manage access"]
+---
+
+Morgan's first People operator role covered the whole company. Now the organization needs three narrower access shapes. Use these examples to reason about the role configuration; the role names are not built in.
+
+## A manager's team
+
+Rachel manages Devon, and Devon manages Sam. Confirm those **Manager** links on the employee records before configuring access.
+
+Create a **Team assignment reader** role with employee- and assignment-reading permissions. Set **Employee visibility** to **Linked employee and reporting tree** and select only the assignment fields managers should read.
+
+Link Rachel's user account to Rachel's employee record and assign the role. With this configuration, Rachel can see herself, direct report Devon, and indirect report Sam. An unrelated team is outside her employee scope.
+
+The manager links alone did not produce that result. Rachel also needed a user account, the correct employee link, read permissions, and reporting-tree scope.
+
+## One field across the company
+
+Create a **Payroll assignment reader** role with employee- and assignment-reading permissions. Set employee visibility to all employees, but set **Assignment field access** to **Selected assignment fields** and choose only **Pay schedule**.
+
+Its holder can read that field for the visible employee population. The same role cannot read Application access or Annual vacation allowance. Selecting Pay schedule without assignment-reading permission would still allow no assignment-reading action.
+
+## One employee's own result
+
+Create an **Employee assignment reader** role with employee- and assignment-reading permissions. Set employee visibility to **Linked employee only** and select Annual vacation allowance as its assignment-field access.
+
+Assign it to Rachel's linked account only if this limited view matches the company's intent. Rachel uses the normal PolicyOS application; there is no separate self-service portal. Without the account-to-employee link, self scope reveals no employee record.
+
+## Verify the combination
+
+Use the intended accounts to inspect the employee list, employee details, and assignments. Do not infer a scoped view from Root.
+
+If one user holds several roles, review them together. Selected fields combine, self and reporting-tree populations combine, and an all scope in any role wins for that dimension. A narrow role cannot deny access granted by a broader one.
+
+Reporting relationships, policy groups, and access roles remain separate:
+
+- changing Rachel's reports changes the population reached by reporting-tree scope;
+- adding Devon to Product Launch changes a route to attached policies; and
+- assigning Team assignment reader changes Rachel's PolicyOS authority.
+
+Role and user changes save directly after the administrator's sensitive-action confirmation. They do not create approval requests.
+
+<PolicyLink href="/access" permission="access:read">Review roles and users</PolicyLink>
+
+[Review how permissions and scopes combine](/learn/concepts/permissions-and-scopes-work-together).

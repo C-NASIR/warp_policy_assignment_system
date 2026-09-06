@@ -26,13 +26,15 @@ owner and an audience representative sign off.
 
 ## Moderated usability protocol
 
-Give a new operator the Avery scenario and ask them to explain the final five
-assignments, find why pay schedule won, predict a future effective date, and
-locate the relevant audit evidence. Do not coach. Record completion, wrong turns,
-terms searched, and the learner's explanation—not customer or employee data.
+Give a new operator the Rachel scenario and ask them to explain why an employee
+record is not a user, how Morgan receives authority, what limits Rachel to her
+reporting tree, and why Jordan rather than Morgan approves and executes the
+supported proposal. Then ask them to distinguish an explicit role from a
+policy-derived grant. Do not coach. Record completion, wrong turns, terms
+searched, and the learner's explanation—not customer or employee data.
 
-Success means the reader completes all four tasks, explains priority versus
-cardinality correctly, and distinguishes assignment history from the audit log.
-Any repeated wrong turn becomes a content change or Quick Find alias. The
-monthly aggregate baseline begins when Phase 6 is deployed; no user findings are
-fabricated in this repository report.
+Success means the reader completes all five explanations, distinguishes action
+permissions from both scopes, and does not confuse reporting relationships,
+employee groups, or access roles. Any repeated wrong turn becomes a content
+change or Quick Find alias. No user findings are fabricated in this repository
+report.

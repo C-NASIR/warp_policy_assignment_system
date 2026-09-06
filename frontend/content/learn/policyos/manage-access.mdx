@@ -1,53 +1,57 @@
 ---
 title: "Manage access"
-description: "Link accounts and configure roles and permissions."
+description: "Give a colleague a defined responsibility in PolicyOS."
 content_id: "APP15"
 section: "policyos"
-order: 150
+order: 140
 audiences: ["new learner"]
 permissions: ["access:read", "access:manage", "employees:read"]
 owner: "access control"
 status: "draft"
-last_verified: "2026-09-05"
+last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/access-manager.tsx", "backend/app/services/access_control.py", "backend/tests/test_access_control.py", "backend/tests/test_employee_visibility.py", "backend/tests/test_assignment_field_visibility.py"]
-reading_time: 2
+verified_by: ["docs/learn/content-map.md", "frontend/components/access-manager.tsx", "backend/app/services/access_control.py", "backend/tests/test_access_control.py", "backend/tests/test_security_hardening.py"]
+reading_time: 3
 prerequisites: ["Investigate past decisions"]
 ---
 
-Rachel has an employee record. Now give her a user account that can read her own assignments, using an authorized administrator in a connected training deployment.
+Root has been running the workspace alone. Morgan now needs to maintain employee information, so Root will give Morgan a defined responsibility instead of sharing the Root account.
 
-Open **Access control** through Quick find's **Manage access** command or the link below. The page separates **Users** from **Roles**.
+Open **Access control** through Quick find's **Manage access** command or the link below. The page separates **Roles**, which define responsibilities, from **Users**, who can sign in.
 
-Start with the role:
+## Define the responsibility first
 
-1. Select **Roles**, then **Create role**.
-2. Name it **Employee assignment reader** and describe its purpose.
-3. Set **Employee visibility** to **Linked employee only**.
-4. Set **Assignment field access** to **Selected assignment fields** and select **Annual vacation allowance**.
-5. Select **View employees** and **View assignments** in the permission list.
-6. Leave **Allow policies to grant this role** unchecked for this explicit assignment, then choose **Save role**.
+On **Roles**, create a role named **People operator**. This is a role we are configuring for the example company, not a built-in PolicyOS role.
 
-The permissions allow the actions; the scopes limit which employee and fields those actions can reach. Selecting a field scope alone doesn't grant a read permission.
+Give it the permissions needed to view, create, and update employees and to preview supported employee changes. Add assignment-reading permission only if Morgan must inspect the resulting assignments. Do not add policy, access-management, approval, or execution permissions merely because Morgan's company job title sounds administrative.
 
-Then prepare the account:
+For this first delegation, choose all employees as the employee scope and all assignment fields if Morgan genuinely supports the whole organization. The next lesson replaces those broad choices with narrower examples.
 
-1. Select **Users** and choose **Create user**, or edit Rachel's existing training account.
-2. Enter the account's name and intended email when creating it. Supply a temporary password of at least 12 characters through your organization's account-provisioning process.
-3. Choose Rachel under **Linked employee**. This selector requires permission to read her employee record.
-4. Select **Employee assignment reader** under **Assigned roles**, then choose **Save user**.
-5. Check the Users row for the correct **Employee link**, role, and active status.
+Before saving, read the form as one access statement:
 
-A new user must change the temporary password at first sign-in. Rachel can then open her employee detail and read the allowed vacation assignment. Other assignment fields should remain outside this role's scope. Test with the intended account rather than inferring its view from an administrator's screen.
+> A People operator may perform these selected actions, for these employees, in these assignment domains.
 
-When editing an existing account, review all its roles. Allowed permissions and scopes combine, so a broad existing role can still grant access beyond this new role's limits.
+Role changes are sensitive operations. The form asks the current administrator to re-enter a password and, when enabled, an MFA code. The role saves directly; this action does not enter the policy approval queue.
 
-Roles marked **Policy eligible** can be selected as automated policy outputs. Their grants appear with a **Policy** label on user rows and are distinct from explicit roles. Administrative roles are restricted from automation.
+## Provision Morgan's account
 
-This lesson requires access-management authority. Demo mode disables saving users and roles. The role and user forms save directly; they don't use the policy approval queue described in the preceding lessons.
+On **Users**, create Morgan's user with the intended email, a temporary password of at least 12 characters, and the People operator role. A non-Root user must have at least one role.
 
-You've now applied the domain from employee facts through rules, assignments, changes, evidence, and access. The Practice section is the next part of the curriculum; its exercises are still being prepared.
+Link Morgan to Morgan's employee record only if that record exists and later self or reporting-tree scope should start from Morgan. Account creation does not create the employee record, and the employee link does not add permissions.
+
+After saving, verify the Users row:
+
+- Morgan is active.
+- People operator appears as an explicitly assigned role, without a **Policy** label.
+- The employee link is correct or deliberately empty.
+- The effective permission count matches the intended responsibility.
+
+Morgan must change the temporary password at first sign-in. Until then, PolicyOS blocks normal application operations. Test the resulting access with Morgan's account; Root's view cannot demonstrate what Morgan can see.
+
+An account's name and email identify the user. Morgan's authority comes from all assigned roles, not from the name “People Operations.” If another role is later added, its permissions and scopes broaden Morgan's effective access.
+
+Demo mode disables saving users and roles. Use a connected training deployment for this walkthrough.
 
 <PolicyLink href="/access" permission="access:read">Open Access control</PolicyLink>
 
-[Review accounts, roles, permissions, and scope](/learn/concepts/who-can-do-what).
+[Review why accounts and roles are separate](/learn/concepts/who-can-do-what).

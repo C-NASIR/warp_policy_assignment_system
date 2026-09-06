@@ -1,0 +1,40 @@
+---
+title: "Turn responsibilities into roles"
+description: "Permissions describe actions; roles bundle a job to be done."
+content_id: "CON17"
+section: "concepts"
+subsection: "People, accounts, and access"
+order: 170
+audiences: ["new learner"]
+permissions: []
+owner: "access control"
+status: "draft"
+last_verified: "2026-09-06"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/app/services/access_control.py", "backend/tests/test_access_control.py"]
+reading_time: 2
+prerequisites: ["Who can do what?"]
+---
+
+“Morgan works in People Operations” is a fact about Morgan's employment. It is not an access rule.
+
+To delegate deliberately, Root translates the work into allowed actions. Morgan may need to view employees, add employees, update employee facts, and preview the effect of a change. Each allowed action is a **permission**.
+
+A **role** collects permissions into a reusable responsibility. Root might configure a role named **People operator** and assign it to Morgan and future colleagues who do the same work.
+
+People operator is an example created for our company. It is not a built-in PolicyOS role. The same is true of names such as **Policy author**, **Reviewer**, **Assignment reader**, or **Payroll operator**. Their names communicate intent; their configured permissions determine what they actually allow.
+
+This distinction matters when responsibilities separate:
+
+| Responsibility | Illustrative actions |
+| --- | --- |
+| People operator | Read, create, and update employee records; preview supported changes |
+| Policy author | Read policies, create policies or versions, and preview their impact |
+| Reviewer | Read the approval queue, approve or reject eligible proposals, and execute an approved change |
+| Assignment reader | Read employee assignment results and explanations |
+
+A user can hold several roles. Morgan might be both a People operator and an Assignment reader. PolicyOS combines the permissions from all of Morgan's roles: if any role allows an action, that action is allowed.
+
+Roles only add access. Assigning a narrow role does not subtract a broader permission granted by another role. That is why an administrator reviews the user's complete set of roles rather than judging one role in isolation.
+
+We now know which actions Morgan can perform. We still have not answered which employees and which kinds of assignment data those actions can reach.

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, CircleCheckBig, Info, Pencil, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, CircleCheckBig, Info, Pencil, Users } from "lucide-react";
 import { notFound } from "next/navigation";
 import { PolicyLifecycle } from "@/components/policy-lifecycle";
 import { apiConfigured, getAssignmentFields, getAutomatableRoles, getCurrentUser, getPolicy, getPolicyImpact } from "@/lib/backend";
@@ -22,7 +22,7 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
   const assignmentValueCount = current?.values.length ?? 0;
   const fieldNames = Object.fromEntries(fields.map((field) => [field.id, field.name]));
   const roleNames = Object.fromEntries(roles.map((role) => [role.id, role.name]));
-  return <><div className="breadcrumb"><Link href="/policies">Policies</Link><ChevronRight size={11} /><span>{policy.name}</span></div>
+  return <><Link className="page-back-link" href="/policies"><ArrowLeft size={13} />Back to policies</Link>
     <div className="detail-hero"><div><div className="heading-actions" style={{ marginBottom: 7 }}><span className="badge">Version {current?.version_number ?? "—"}</span></div><h1 className="detail-title">{policy.name}</h1><div className="detail-meta">Effective {formatDate(current?.effective_from)} · Priority {current?.priority ?? "—"}</div></div><div className="heading-actions"><PolicyLifecycle policy={policy} apiConfigured={apiConfigured} />{policy.capabilities.can_create_version && <Link className="button secondary" href={`/policies/new?policyId=${policy.id}`}><Pencil size={14} /> New version</Link>}</div></div>
     <div className="detail-grid"><div className="section-stack">
       <section className="panel"><div className="panel-header"><h2 className="panel-title">Who this applies to</h2><span className="badge accent">{current?.condition_group.logical_operator === "or" ? "Any condition" : "All conditions"}</span></div><div className="panel-body">{current ? <RuleSummary group={current.condition_group} /> : <div className="empty-state compact">No active rule version.</div>}</div></section>

@@ -1,16 +1,17 @@
 ---
 title: "Changing things safely"
-description: "Previewing impact, approving changes, and executing them."
+description: "Previewing a change before committing it."
 content_id: "CON14"
 section: "concepts"
+subsection: "Change, time, and evidence"
 order: 140
 audiences: ["new learner"]
 permissions: []
 owner: "product education"
 status: "draft"
-last_verified: "2026-09-05"
+last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_change_previews.py", "backend/tests/test_phase6_access_approvals.py"]
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_change_previews.py"]
 reading_time: 2
 prerequisites: ["When circumstances change"]
 ---
@@ -27,24 +28,19 @@ A **preview** calculates the effect of a proposed change without committing it. 
 - Whose final values would stay the same?
 - Would the change create a conflict?
 
-For a change effective today, suppose the preview shows Rachel moving from 20 days to 22. Another employee's 25-day override remains in place. Both employees can match the changed policy while their final results behave differently.
+Suppose the preview shows Rachel moving from 20 days to 22. Another employee's 25-day override remains in place. Both employees can match the changed policy while their final results behave differently.
 
-Some changes also require **approval**: an authorized person reviews the proposal and decides whether it may proceed.
-
-**Execution** is the step that actually commits the approved change. Approval alone doesn't change Rachel's assignment. If execution creates a future version, its future date still governs when its values apply.
-
-These steps answer different questions:
+Preview and execution answer different questions:
 
 | Step | Question |
 | --- | --- |
-| Preview | What would happen? |
-| Approval | May this proposed change proceed? |
-| Execution | Has the change actually been committed? |
+| Preview | What would happen if this exact proposal were committed now? |
+| Execution | Has the proposed change actually been committed? |
 
-In PolicyOS, ordinary signed-in authors use independent approval for new policy versions and automated-access lifecycle changes. Employee edits and override reviews have their own preview-and-confirm flows. Where independent approval applies, the author cannot approve their own request, and the approving user must execute it with the required authority.
+A preview is evidence, not a saved change. If the underlying record or calculated impact changes before execution, the earlier preview can become stale. The safe response is to calculate again instead of assuming the old result still applies.
 
-A preview also depends on the state that was reviewed. If relevant data changes, or an approval expires, the system may reject execution and require a fresh preview and approval.
+Some organizations add another question between preview and execution: **May this change proceed?** PolicyOS supports that independent approval step for particular policy changes. It is not a universal fallback whenever someone lacks permission. We will introduce it after we understand how a growing organization divides authority.
 
-**Review the proposed effect, then make sure the committed change is the one that was reviewed.**
+**First understand the effect. Then commit the change that was actually reviewed.**
 
 Next, we'll look at the evidence left behind after a change.

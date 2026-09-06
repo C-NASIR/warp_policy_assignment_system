@@ -376,6 +376,9 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .condition-row .input, .condition-row .select { height: 36px; font-size: 10px; }
 .remove-button { width: 30px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: var(--faint); cursor: pointer; }
 .remove-button:hover { background: var(--danger-soft); color: var(--danger); }
+.remove-button.danger { border: 1px solid #efd2d0; background: var(--danger-soft); color: var(--danger); }
+.remove-button.danger:hover { border-color: #dfa9a5; background: #ffe4e2; color: #922a2a; }
+.remove-button.danger:disabled { border-color: transparent; background: transparent; color: var(--faint); }
 .text-button { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: var(--accent-ink); font-size: 10px; font-weight: 680; cursor: pointer; }
 .output-list { display: grid; gap: 8px; }
 .output-row { display: grid; grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 1fr) 30px; gap: 7px; }
@@ -415,6 +418,9 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .attach-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-bottom: 14px; }
 .member-list, .override-list { display: grid; gap: 7px; }
 .member-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-subtle); }
+.member-row > a, .member-row .person-cell > span:last-child { min-width: 0; }
+.member-row .primary-cell, .member-row .secondary-cell { display: block; }
+.member-row .secondary-cell { margin-top: 3px; line-height: 1.4; }
 .empty-state.compact { min-height: auto; padding: 25px 14px; }
 .confirm-card { position: relative; width: min(440px, 100%); padding: 26px; border: 1px solid var(--border); border-radius: 14px; background: var(--canvas); box-shadow: 0 30px 80px rgb(0 0 0 / .24); }
 .confirm-card h2 { margin: 13px 0 7px; font-size: 16px; }
@@ -432,7 +438,21 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .choice-card strong, .choice-card small { display: block; }
 .choice-card strong { font-size: 10px; }
 .choice-card small { margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.5; }
-.audit-table td { vertical-align: top; }
+.audit-table-scroll { overflow-x: auto; }
+.audit-table { min-width: 920px; table-layout: fixed; }
+.audit-table .audit-when-column { width: 130px; }
+.audit-table .audit-actor-column { width: 190px; }
+.audit-table .audit-entity-column { width: 260px; }
+.audit-table .audit-action-column { width: 100px; }
+.audit-table .audit-details-column { width: 50px; }
+.audit-table td { height: 70px; vertical-align: middle; }
+.audit-table th:last-child, .audit-table td:last-child { padding-right: 12px; padding-left: 8px; text-align: right; }
+.audit-time span, .audit-time small { display: block; white-space: nowrap; }
+.audit-time span { color: var(--ink); font-weight: 650; }
+.audit-time small { margin-top: 4px; color: var(--faint); font-size: 9px; }
+.audit-actor { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.audit-summary { display: block; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.audit-expand-button { width: 32px; height: 32px; margin-left: auto; }
 .audit-detail-row td { padding: 0 !important; background: #f8f7fc; }
 .audit-record-reference { padding: 10px 16px; border-top: 1px solid var(--border); color: var(--muted); font-family: var(--font-geist-mono); font-size: 9px; }
 .audit-payload { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border-top: 1px solid var(--border); background: var(--border); }
@@ -565,8 +585,9 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
   .toolbar { align-items: stretch; flex-direction: column; }
   .toolbar-left { align-items: stretch; flex-direction: column; }
   .search-box, .filter-select { width: 100%; }
-  .data-panel { overflow-x: auto; }
+  .data-panel { overflow: hidden; }
   .data-table { min-width: 720px; }
+  .audit-table { min-width: 920px; }
   .detail-hero { align-items: flex-start; flex-direction: column; }
   .profile-grid, .field-grid { grid-template-columns: 1fr; }
   .stat-grid, .review-finding { grid-template-columns: 1fr; }

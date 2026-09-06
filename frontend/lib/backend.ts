@@ -57,7 +57,7 @@ export const getAssignmentFields = () => read<AssignmentField[]>("/assignment-fi
 export const getConditionFields = () => read<ConditionField[]>("/condition-fields?limit=500", conditionFields);
 export const getAssignmentSummary = () => read<AssignmentSummary>("/assignment-summary", assignmentSummary);
 export const getGroups = () => read<Group[]>("/groups?limit=500", groups);
-export const getAuditLogs = () => read<AuditLog[]>("/audit-logs?limit=100", auditLogs);
+export const getAuditLogs = () => read<AuditLog[]>("/audit-logs?limit=100&sort=desc", auditLogs);
 export const getPermissions = () => read<Permission[]>("/authorization/permissions?limit=500", []);
 export const getAuthorizationAssignmentFields = () => read<AssignmentField[]>("/authorization/assignment-fields", assignmentFields);
 export const getRoles = () => read<Role[]>("/roles?limit=500", []);

@@ -1,0 +1,45 @@
+---
+title: "Permissions and scopes work together"
+description: "Separate permission to act from visibility into particular data."
+content_id: "CON18"
+section: "concepts"
+subsection: "People, accounts, and access"
+order: 180
+audiences: ["new learner"]
+permissions: []
+owner: "access control"
+status: "draft"
+last_verified: "2026-09-06"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/app/services/employee_visibility.py", "backend/app/services/assignment_field_visibility.py", "backend/tests/test_employee_visibility.py", "backend/tests/test_assignment_field_visibility.py"]
+reading_time: 3
+prerequisites: ["Turn responsibilities into roles"]
+---
+
+Morgan has permission to read assignments. Does that mean Morgan can read every assignment for every employee?
+
+Not necessarily. PolicyOS separates three questions:
+
+1. **Permission:** May this user perform the action?
+2. **Employee scope:** Which employees may the action concern?
+3. **Assignment-field scope:** Which kinds of assignment data may the action concern?
+
+The permission is the verb. The scopes bound the data on which that verb operates.
+
+Suppose the company configures a **Payroll operator** role with assignment-reading permission, all-employee scope, and access only to the **Pay schedule** field. Its holder can read pay-schedule assignments across the company but cannot use that role to read Application access assignments.
+
+A manager role might reverse the shape: it could cover every assignment field but only employees in the holder's reporting tree.
+
+All required parts must line up. Selecting Pay schedule in a field scope does not grant permission to read assignments. Assignment-reading permission with no employee scope exposes no employee rows. Permission to update employees does not automatically grant permission to manage assignments.
+
+Multiple roles broaden effective access in each dimension:
+
+- Permissions are combined.
+- Selected assignment fields are combined; any role with all-field scope makes field visibility unrestricted.
+- Employee scopes are combined; any role with all-employee scope makes employee visibility unrestricted.
+
+These are allow-only grants. A role called **Restricted reader** cannot cancel broader access Morgan already receives elsewhere.
+
+Scope is enforced beyond the first list a user sees. It also limits related employee, assignment, policy, group, preview, and audit data where those domains apply. Hidden records commonly behave as not found instead of announcing that they exist.
+
+Next, we'll see how employee scope can follow the company's reporting relationships.

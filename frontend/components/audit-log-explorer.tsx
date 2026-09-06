@@ -17,7 +17,7 @@ export function AuditLogExplorer({ events, entityLabels, learningInsights }: { e
     return haystack.includes(search.toLowerCase()) && (entity === "all" || event.entity_type === entity) && (action === "all" || event.action === action);
   });
 
-  return <><div className="page-heading"><div><p className="eyebrow">Accountability</p><h1>Audit log</h1><p className="page-subtitle">Trace who changed every policy, employee, group, assignment, and override.</p></div><span className="badge accent"><ScrollText size={11} /> Append-only</span></div><LearningSignals insights={learningInsights} /><div className="toolbar"><div className="toolbar-left"><label className="search-box"><Search size={14} /><input className="input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search actor or change" aria-label="Search audit log" /></label><select className="select filter-select" value={entity} onChange={(event) => setEntity(event.target.value)} aria-label="Filter by entity"><option value="all">All entities</option>{entityTypes.map((item) => <option key={item} value={item}>{titleCase(item)}</option>)}</select><select className="select filter-select" value={action} onChange={(event) => setAction(event.target.value)} aria-label="Filter by action"><option value="all">All actions</option>{actions.map((item) => <option key={item} value={item}>{titleCase(item)}</option>)}</select></div><span className="results-count">{filtered.length} events</span></div><div className="data-panel"><table className="data-table audit-table"><thead><tr><th>When</th><th>Actor</th><th>Entity</th><th>Action</th><th>Summary</th><th aria-label="Details" /></tr></thead><tbody>{filtered.map((event) => <AuditRow event={event} entityLabel={entityLabels[event.id] ?? titleCase(event.entity_type)} expanded={expanded === event.id} onToggle={() => setExpanded((current) => current === event.id ? null : event.id)} key={event.id} />)}</tbody></table>{filtered.length === 0 && <div className="empty-state compact">No audit events match those filters.</div>}<div className="pagination-footer"><span>{filtered.length} of {events.length} recent events</span><span>All times shown in UTC</span></div></div></>;
+  return <><div className="page-heading"><div><p className="eyebrow">Accountability</p><h1>Audit log</h1><p className="page-subtitle">Trace who changed every policy, employee, group, assignment, and override.</p></div><span className="badge accent"><ScrollText size={11} /> Append-only</span></div><LearningSignals insights={learningInsights} /><div className="toolbar"><div className="toolbar-left"><label className="search-box"><Search size={14} /><input className="input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search actor or change" aria-label="Search audit log" /></label><select className="select filter-select" value={entity} onChange={(event) => setEntity(event.target.value)} aria-label="Filter by entity"><option value="all">All entities</option>{entityTypes.map((item) => <option key={item} value={item}>{titleCase(item)}</option>)}</select><select className="select filter-select" value={action} onChange={(event) => setAction(event.target.value)} aria-label="Filter by action"><option value="all">All actions</option>{actions.map((item) => <option key={item} value={item}>{titleCase(item)}</option>)}</select></div><span className="results-count">{filtered.length} events</span></div><div className="data-panel"><div className="audit-table-scroll"><table className="data-table audit-table"><colgroup><col className="audit-when-column" /><col className="audit-actor-column" /><col className="audit-entity-column" /><col className="audit-action-column" /><col /><col className="audit-details-column" /></colgroup><thead><tr><th>When</th><th>Actor</th><th>Entity</th><th>Action</th><th>Summary</th><th aria-label="Details" /></tr></thead><tbody>{filtered.map((event) => <AuditRow event={event} entityLabel={entityLabels[event.id] ?? titleCase(event.entity_type)} expanded={expanded === event.id} onToggle={() => setExpanded((current) => current === event.id ? null : event.id)} key={event.id} />)}</tbody></table>{filtered.length === 0 && <div className="empty-state compact">No audit events match those filters.</div>}</div><div className="pagination-footer"><span>{filtered.length} of {events.length} recent events</span><span>Newest first · UTC</span></div></div></>;
 }
 
 function LearningSignals({ insights }: { insights: LearningInsights }) {
@@ -27,11 +27,34 @@ function LearningSignals({ insights }: { insights: LearningInsights }) {
 }
 
 function AuditRow({ event, entityLabel, expanded, onToggle }: { event: AuditLog; entityLabel: string; expanded: boolean; onToggle(): void }) {
-  return <><tr><td>{formatDate(event.timestamp)}</td><td><span className="primary-cell">{event.actor}</span></td><td><span className="primary-cell">{entityLabel}</span><span className="secondary-cell">{titleCase(event.entity_type)}</span></td><td><span className={`badge ${event.action === "created" ? "success" : event.action === "deleted" ? "warning" : "accent"}`}>{titleCase(event.action)}</span></td><td><span className="secondary-cell" style={{ margin: 0 }}>{summarizeChange(event.before, event.after)}</span></td><td><button className="icon-button" onClick={onToggle} aria-label={expanded ? "Hide event payload" : "Show event payload"}>{expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</button></td></tr>{expanded && <tr className="audit-detail-row"><td colSpan={6}><div className="audit-record-reference">Technical reference · {event.entity_type} #{event.entity_id}</div><div className="audit-payload"><div><span className="label">Before</span><pre>{JSON.stringify(event.before, null, 2) || "None"}</pre></div><div><span className="label">After</span><pre>{JSON.stringify(event.after, null, 2) || "None"}</pre></div></div></td></tr>}</>;
+  return <><tr><td><time className="audit-time" dateTime={event.timestamp}><span>{formatDate(event.timestamp)}</span><small>{formatAuditTime(event.timestamp)}</small></time></td><td><span className="primary-cell audit-actor" title={event.actor}>{event.actor}</span></td><td><span className="primary-cell">{entityLabel}</span><span className="secondary-cell">{titleCase(event.entity_type)}</span></td><td><span className={`badge ${event.action === "created" ? "success" : event.action === "deleted" ? "warning" : "accent"}`}>{titleCase(event.action)}</span></td><td><span className="audit-summary">{summarizeChange(event.before, event.after)}</span></td><td><button className="icon-button audit-expand-button" onClick={onToggle} aria-expanded={expanded} aria-label={expanded ? "Hide event payload" : "Show event payload"}>{expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</button></td></tr>{expanded && <tr className="audit-detail-row"><td colSpan={6}><div className="audit-record-reference">Technical reference · {event.entity_type} #{event.entity_id}</div><div className="audit-payload"><div><span className="label">Before</span><pre>{JSON.stringify(event.before, null, 2) || "None"}</pre></div><div><span className="label">After</span><pre>{JSON.stringify(event.after, null, 2) || "None"}</pre></div></div></td></tr>}</>;
 }
 
 function summarizeChange(before: Record<string, unknown> | null, after: Record<string, unknown> | null) {
-  if (!before && after) return Object.entries(after).slice(0, 2).map(([key, value]) => `${titleCase(key)}: ${String(value)}`).join(" · ");
-  if (before && after) { const key = Object.keys(after).find((item) => before[item] !== after[item]); return key ? `${titleCase(key)}: ${String(before[key])} → ${String(after[key])}` : "Metadata updated"; }
+  if (!before && after) return meaningfulEntries(after).slice(0, 2).map(([key, value]) => `${formatAuditKey(key)}: ${formatAuditValue(value)}`).join(" · ");
+  if (before && after) { const key = meaningfulEntries(after).find(([item, value]) => before[item] !== value)?.[0]; return key ? `${formatAuditKey(key)}: ${formatAuditValue(before[key])} → ${formatAuditValue(after[key])}` : "Metadata updated"; }
   return "Record closed";
+}
+
+function meaningfulEntries(record: Record<string, unknown>) {
+  const entries = Object.entries(record);
+  const descriptive = entries.filter(([key]) => key !== "id" && !key.endsWith("_id") && !key.endsWith("_at"));
+  const contextual = descriptive.filter(([key]) => key !== "name" && key !== "version_number");
+  return contextual.length ? contextual : descriptive.length ? descriptive : entries;
+}
+
+function formatAuditKey(key: string) {
+  return titleCase(key).replace(/\bId\b/g, "ID");
+}
+
+function formatAuditValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "None";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (Array.isArray(value)) return `${value.length} ${value.length === 1 ? "item" : "items"}`;
+  if (typeof value === "object") return "Details updated";
+  return String(value);
+}
+
+function formatAuditTime(value: string) {
+  return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }).format(new Date(value));
 }

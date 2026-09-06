@@ -1,0 +1,53 @@
+---
+title: "Separate proposing from authorizing"
+description: "How an author and an independent reviewer control a policy change."
+content_id: "CON21"
+section: "concepts"
+subsection: "Controlled and automated access"
+order: 210
+audiences: ["new learner"]
+permissions: []
+owner: "change approvals"
+status: "draft"
+last_verified: "2026-09-06"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/app/routers/change_previews.py", "backend/app/services/approval_requests.py", "backend/app/services/policy_access.py", "backend/tests/test_phase6_access_approvals.py"]
+reading_time: 3
+prerequisites: ["Access to your own information"]
+---
+
+Morgan is ready to author a new version of the vacation policy. The company does not want the person who proposes that production change to authorize it alone.
+
+It gives Morgan policy-reading, version-authoring, and preview permissions. Jordan receives the separate responsibility to review approval requests and execute approved changes, together with the policy authority needed for the proposal.
+
+The responsibilities are deliberately different:
+
+| Responsibility | What it controls |
+| --- | --- |
+| Authoring | What the policy definition says |
+| Activation authority | Whether policy behavior may enter or change production |
+| Approval | Whether another person's exact proposal may proceed |
+| Execution | Committing the approved proposal |
+
+One user may hold several of these permissions, but an ordinary author still cannot approve or reject their own request. Independent review requires a different person.
+
+## One proposal from start to finish
+
+1. Morgan prepares the policy version and previews its resolved assignment and access impact.
+2. PolicyOS records a pending request containing the exact proposal, preview, requester, and expiration.
+3. Morgan gives Jordan the request ID through the team's normal handoff process. PolicyOS provides an approval queue and request details, but it does not assign an arbitrary reviewer or send a built-in message or email.
+4. Jordan finds the request in the queue, examines the exact change and impact, then approves or rejects it.
+5. If Jordan approves, Jordan ordinarily executes the approved request. Jordan needs both execution permission and the policy authority required by the change.
+6. Execution verifies that the proposal and relevant state still match what was reviewed, then commits the change.
+
+Approval alone changes nothing. If the committed version starts in the future, execution creates it now, but its effective date still determines when future policy behavior begins. Reconciliation must also run when that date arrives before stored current assignments reflect it.
+
+An expired request or changed target state can make the approval unusable. Morgan must preview the current proposal again and obtain a fresh review. Rejection likewise ends that request; editing the idea does not revive it.
+
+This persisted independent-approval workflow is intentionally narrow. For ordinary signed-in users, it covers policy-version creation and policy lifecycle changes made through the supported preview path. Employee edits, group membership changes, and overrides may have preview-and-confirm flows, but they do not automatically become approval requests. Lacking permission for an arbitrary action never means “submit it for approval instead.”
+
+Root is the privileged exception: Root's policy preview can produce a directly executable approval token instead of a pending human request, and Root can execute an approved request. That exception does not relax data validation, stale-preview protection, authentication, or configured security requirements.
+
+The [Review controlled changes](/learn/policyos/review-controlled-changes) walkthrough follows this lifecycle in the application.
+
+Next, we'll connect policy eligibility to the roles we already understand.

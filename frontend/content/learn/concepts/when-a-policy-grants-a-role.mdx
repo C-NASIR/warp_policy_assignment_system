@@ -1,0 +1,42 @@
+---
+title: "When a policy grants a role"
+description: "How eligibility can add and remove PolicyOS access."
+content_id: "CON22"
+section: "concepts"
+subsection: "Controlled and automated access"
+order: 220
+audiences: ["new learner"]
+permissions: []
+owner: "automated access"
+status: "draft"
+last_verified: "2026-09-06"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/app/services/automated_access.py", "backend/app/services/access_control.py", "backend/app/services/policy_authoring.py", "backend/tests/test_phase6_access_approvals.py"]
+reading_time: 3
+prerequisites: ["Separate proposing from authorizing"]
+---
+
+Explicit role assignment works well when an administrator knows exactly who should receive a responsibility. Sometimes the same eligibility rule already exists in a policy.
+
+Suppose the company has an **Engineering assignment reader** role. An access administrator marks that configured role as eligible for policy automation. A policy author can then include it as an automated role granted by an Engineering policy.
+
+For Rachel to receive that role, the chain must be complete:
+
+> Rachel's employee facts or group route make the policy apply → the policy grants an eligible role → Rachel's active user account is linked to her employee record
+
+The policy does not create Rachel's account. Without a linked user account, Rachel can receive normal employee assignments from the policy but there is no PolicyOS user to receive the role.
+
+Policy-derived and explicit grants remain separate:
+
+- **Explicit grant:** an administrator assigns the role directly to Rachel's user account.
+- **Policy-derived grant:** reconciliation grants the role because the linked employee currently reaches an effective policy version that supplies it.
+
+If Rachel stops qualifying, reconciliation removes the policy-derived grant. If an administrator also assigned the same role explicitly, that explicit grant remains. Effective permissions and scopes are the union of both sources.
+
+Only roles marked policy eligible appear for policy authoring. PolicyOS rejects automation for roles containing protected Root, access-management, access-review, or credential-management authority. Ordinary users' versions and lifecycle changes still follow the independent approval workflow, where reviewers can inspect projected role grants and removals.
+
+An assignment value called “Company email” and a PolicyOS access role are also different. The first is an employee assignment result. The second authorizes actions inside PolicyOS. Neither provisions an account or permission in an external service.
+
+Use policy-derived roles when access should follow policy eligibility inside PolicyOS. Use explicit roles when an administrator intends the grant to remain independent of that eligibility.
+
+You can now explain how a workspace grows from one Root account into an organization of employees, users, roles, scopes, managers, authors, and reviewers. The PolicyOS section shows how these ideas appear in the application.
