@@ -9,7 +9,7 @@ import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 type EmployeeInput = Omit<Employee, "id">;
 type PreviewItem = { field: string; value: string; source: string; change: "added" | "changed" | "unchanged" };
 
-const blankEmployee: EmployeeInput = { name: "", state: "", department: "", employee_type: "Full-time", location: "", start_date: new Date().toISOString().slice(0, 10), manager_id: null };
+const createBlankEmployee = (): EmployeeInput => ({ name: "", state: "", department: "", employee_type: "Full-time", location: "", start_date: new Date().toISOString().slice(0, 10), manager_id: null });
 
 export function EmployeeEditor({
   employee,
@@ -30,10 +30,11 @@ export function EmployeeEditor({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(!compact);
-  const [data, setData] = useState<EmployeeInput>(employee ? { name: employee.name, state: employee.state, department: employee.department, employee_type: employee.employee_type, location: employee.location, start_date: employee.start_date, manager_id: employee.manager_id } : blankEmployee);
+  const [data, setData] = useState<EmployeeInput>(() => employee ? { name: employee.name, state: employee.state, department: employee.department, employee_type: employee.employee_type, location: employee.location, start_date: employee.start_date, manager_id: employee.manager_id } : createBlankEmployee());
   const [preview, setPreview] = useState<PreviewItem[] | null>(null);
   const [approval, setApproval] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   useModalAccessibility(compact && open, () => setOpen(false));
@@ -70,7 +71,8 @@ export function EmployeeEditor({
   const change = employee ? { type: "employee_update", employee_id: employee.id, changes: payload } : { type: "employee_create", employee: payload };
 
   async function review() {
-    if (!payload.name || !payload.state || !payload.department || !payload.employee_type || !payload.start_date) {
+    setValidationAttempted(true);
+    if (!payload.name.trim() || !payload.state.trim() || !payload.department || !payload.employee_type || !payload.start_date) {
       setError("Complete every required employee field before reviewing assignments.");
       return;
     }
@@ -94,6 +96,7 @@ export function EmployeeEditor({
     setSubmitting(true); setError("");
     if (!apiConfigured) {
       setSuccess(employee ? "Employee updated in demo mode. The assignment preview reflects the new profile." : "Employee created in demo mode with the assignments shown.");
+      if (!employee) { setData(createBlankEmployee()); setPreview(null); setApproval(null); setValidationAttempted(false); }
       setSubmitting(false); return;
     }
     try {
@@ -102,6 +105,7 @@ export function EmployeeEditor({
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error?.message ?? "The employee change could not be saved.");
       setSuccess(employee ? "Employee and downstream assignments updated." : "Employee created and assignments resolved.");
+      if (!employee) { setData(createBlankEmployee()); setPreview(null); setApproval(null); setValidationAttempted(false); }
       router.refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to save this change."); }
     finally { setSubmitting(false); }
@@ -113,12 +117,12 @@ export function EmployeeEditor({
         <div className="form-section"><div className="form-section-title">Employment details</div><div className="form-section-description">These facts are evaluated against every active policy rule.</div>
           {error && <div className="error-banner">{error}</div>}{success && <div className="success-banner"><Check size={14} />{success}</div>}
           <div className="field-grid">
-            <label className="field full"><span className="field-label">Full name <span className="required">Required</span></span><input className="input" value={data.name} onChange={(e) => update("name", e.target.value)} placeholder="e.g. Avery Chen" /></label>
-            <label className="field"><span className="field-label">Department <span className="required">Required</span></span><select className="select" value={data.department} onChange={(e) => update("department", e.target.value)}><option value="">Select department</option>{departments.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="field"><span className="field-label">Employment type <span className="required">Required</span></span><select className="select" value={data.employee_type} onChange={(e) => update("employee_type", e.target.value)}><option>Full-time</option><option>Part-time</option><option>Contractor</option><option>Intern</option></select></label>
-            <label className="field"><span className="field-label">State or region <span className="required">Required</span></span><input className="input" value={data.state} onChange={(e) => update("state", e.target.value)} placeholder="e.g. California" /></label>
+            <label className="field full"><span className="field-label">Full name <span className="required">Required</span></span><input className={`input${validationAttempted && !data.name.trim() ? " field-invalid" : ""}`} required aria-invalid={validationAttempted && !data.name.trim()} value={data.name} onChange={(e) => update("name", e.target.value)} placeholder="e.g. Avery Chen" /></label>
+            <label className="field"><span className="field-label">Department <span className="required">Required</span></span><select className={`select${validationAttempted && !data.department ? " field-invalid" : ""}`} required aria-invalid={validationAttempted && !data.department} value={data.department} onChange={(e) => update("department", e.target.value)}><option value="">Select department</option>{departments.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="field"><span className="field-label">Employment type <span className="required">Required</span></span><select className={`select${validationAttempted && !data.employee_type ? " field-invalid" : ""}`} required aria-invalid={validationAttempted && !data.employee_type} value={data.employee_type} onChange={(e) => update("employee_type", e.target.value)}><option>Full-time</option><option>Part-time</option><option>Contractor</option><option>Intern</option></select></label>
+            <label className="field"><span className="field-label">State or region <span className="required">Required</span></span><input className={`input${validationAttempted && !data.state.trim() ? " field-invalid" : ""}`} required aria-invalid={validationAttempted && !data.state.trim()} value={data.state} onChange={(e) => update("state", e.target.value)} placeholder="e.g. California" /></label>
             <label className="field"><span className="field-label">Work location</span><input className="input" value={data.location ?? ""} onChange={(e) => update("location", e.target.value)} placeholder="e.g. San Francisco" /></label>
-            <label className="field"><span className="field-label">Start date <span className="required">Required</span></span><input className="input" type="date" value={data.start_date} onChange={(e) => update("start_date", e.target.value)} /></label>
+            <label className="field"><span className="field-label">Start date <span className="required">Required</span></span><input className={`input${validationAttempted && !data.start_date ? " field-invalid" : ""}`} required aria-invalid={validationAttempted && !data.start_date} type="date" value={data.start_date} onChange={(e) => update("start_date", e.target.value)} /></label>
             <label className="field"><span className="field-label">Manager</span><select className="select" value={data.manager_id ?? ""} onChange={(e) => update("manager_id", e.target.value ? Number(e.target.value) : null)}><option value="">No manager</option>{managers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           </div>
         </div>
