@@ -317,11 +317,17 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
 .access-form-dialog .modal-body { overflow-y: auto; }
 .access-form-dialog .modal-head { flex: 0 0 auto; }
 .access-form-dialog .modal-head .eyebrow { margin-bottom: 4px; }
+.access-form-dialog .sensitive-confirmation { flex: 0 0 auto; display: grid; grid-template-columns: 1fr; gap: 12px; padding: 12px 20px 0; border-top: 1px solid var(--border); background: var(--surface-subtle); }
+.access-form-dialog .sensitive-confirmation.with-mfa { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.access-form-dialog .dialog-error { flex: 0 0 auto; margin: 12px 20px 0; }
 .access-form-dialog .form-footer { flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--surface-subtle); }
+.access-form-dialog .form-footer > .form-hint { flex: 1 1 auto; min-width: 0; }
+.access-form-dialog .form-footer .heading-actions { flex: 0 0 auto; flex-wrap: nowrap; justify-content: flex-end; }
 .permission-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
 .permission-groups fieldset, .role-options { display: grid; align-content: start; gap: 6px; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
 .permission-groups legend, .role-options legend { padding: 0 5px; color: var(--muted); font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
 .role-options { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 20px; }
+.role-required-message { display: flex; align-items: center; gap: 6px; margin: 16px 0 -10px; color: var(--danger); font-size: 10px; font-weight: 650; }
 .permission-option { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 9px; padding: 9px; border-radius: 8px; cursor: pointer; }
 .permission-option:hover { background: var(--surface-subtle); }
 .permission-option input { margin-top: 2px; accent-color: var(--accent); }
@@ -579,7 +585,9 @@ h1 { margin-bottom: 6px; font-size: 28px; line-height: 1.2; letter-spacing: -0.0
   .auth-card { padding: 24px 20px; }
   .security-footer { align-items: stretch; flex-direction: column; }
   .permission-groups, .role-options { grid-template-columns: 1fr; }
+  .access-form-dialog .sensitive-confirmation.with-mfa { grid-template-columns: 1fr; }
   .access-form-dialog .form-footer { align-items: stretch; flex-direction: column; }
+  .access-form-dialog .form-footer .heading-actions { width: 100%; }
   .article-feedback, .article-feedback-form, .article-feedback form { align-items: stretch; flex-direction: column; }
   .article-feedback form .select { width: 100%; }
 }

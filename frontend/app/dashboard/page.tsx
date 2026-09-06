@@ -5,7 +5,7 @@ import { titleCase } from "@/lib/format";
 
 export default async function OverviewPage() {
   const [summary, policies, auditLogs, user] = await Promise.all([getAssignmentSummary(), getPolicies(), getAuditLogs(), getCurrentUser()]);
-  const activity = [...auditLogs].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()).slice(0, 4).map((event) => ({ title: titleCase(event.entity_type), copy: `${titleCase(event.action)} by ${event.actor}`, time: relativeTime(event.timestamp) }));
+  const activity = [...auditLogs].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()).slice(0, 4).map((event) => ({ id: event.id, title: titleCase(event.entity_type), copy: `${titleCase(event.action)} by ${event.actor}`, time: relativeTime(event.timestamp) }));
   const today = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
   const coverage = summary.fields.slice(0, 4).map((item) => ({ name: item.assignment_field_definition.name, caption: `${item.assigned_employee_count} of ${summary.employee_count} employees`, value: summary.employee_count ? Math.round((item.assigned_employee_count / summary.employee_count) * 100) : 0 }));
   const metrics = [
@@ -42,7 +42,7 @@ export default async function OverviewPage() {
         <article className="panel">
           <div className="panel-header"><h2 className="panel-title">Recent changes</h2><Link className="panel-link" href="/audit">Audit log <ArrowRight size={13} /></Link></div>
           <div className="activity-list">{activity.map((item) => (
-            <div className="activity-item" key={`${item.title}-${item.time}`}><div className="activity-icon"><CircleCheckBig size={13} /></div><div><div className="activity-copy"><strong>{item.title}</strong> {item.copy}</div><div className="activity-time">{item.time}</div></div></div>
+            <div className="activity-item" key={item.id}><div className="activity-icon"><CircleCheckBig size={13} /></div><div><div className="activity-copy"><strong>{item.title}</strong> {item.copy}</div><div className="activity-time">{item.time}</div></div></div>
           ))}{activity.length === 0 && <div className="empty-state compact">No changes have been recorded yet.</div>}</div>
         </article>
       </section>

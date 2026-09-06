@@ -19,7 +19,7 @@ export default function LandingPage() {
     <a className={styles.skipLink} href="#main">Skip to content</a>
     <header className={styles.header}>
       <Link className={styles.brand} href="/" aria-label="PolicyOS home"><span className={styles.brandMark}>P</span>PolicyOS</Link>
-      <nav className={styles.navigation} aria-label="Main navigation"><a href="#platform">Platform</a><a href="#how-it-works">How it works</a><Link href="/learn">Learn</Link></nav>
+      <nav className={styles.navigation} aria-label="Main navigation"><a href="#platform">Platform</a><a href="#how-it-works">How it works</a><Link href="/learn" target="_blank" rel="noopener noreferrer">Learn<span className="sr-only"> (opens in a new tab)</span></Link></nav>
       <div className={styles.headerActions}><Link className={styles.signIn} href="/login">Sign in</Link><Link className={styles.primaryButton} href="/signup">Sign up <ArrowRight size={16} /></Link></div>
     </header>
     <main id="main">
@@ -52,7 +52,7 @@ export default function LandingPage() {
           <p>Explore a curriculum that starts with the domain, connects each concept to PolicyOS, and makes room to experiment. Read the Concepts and PolicyOS lessons now; practice activities are coming soon.</p>
           <div className={styles.docsTopics} aria-label="Learning sections"><span>Concepts</span><span>PolicyOS</span><span>Practice</span></div>
         </div>
-        <Link className={styles.docsButton} href="/learn">Explore the curriculum <ArrowRight size={17} /></Link>
+        <Link className={styles.docsButton} href="/learn" target="_blank" rel="noopener noreferrer">Explore the curriculum <ArrowRight size={17} /><span className="sr-only"> (opens in a new tab)</span></Link>
       </section>
       <section className={styles.cta} aria-labelledby="cta-title"><div><p className={styles.eyebrow}>MAKE EVERY ASSIGNMENT MAKE SENSE</p><h2 id="cta-title">Bring clarity to your policies.</h2><p>One place for your rules, your people, and the decisions that connect them.</p></div><Link className={styles.primaryButton} href="/signup">Sign up <ArrowRight size={18} /></Link></section>
     </main>

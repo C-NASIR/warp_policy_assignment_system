@@ -15,5 +15,5 @@ export default async function AccessPage() {
     getUsers(),
     canReadEmployees ? getEmployees() : Promise.resolve([]),
   ]);
-  return <AccessManager initialUsers={users} initialRoles={roles} employees={employees} permissions={permissions} assignmentFields={assignmentFields} canManage={hasPermission(currentUser, "access:manage")} canReadEmployees={canReadEmployees} apiConfigured={apiConfigured} />;
+  return <AccessManager initialUsers={users} initialRoles={roles} employees={employees} permissions={permissions} assignmentFields={assignmentFields} canManage={hasPermission(currentUser, "access:manage")} canReadEmployees={canReadEmployees} mfaEnabled={currentUser?.mfa_enabled ?? false} apiConfigured={apiConfigured} />;
 }
