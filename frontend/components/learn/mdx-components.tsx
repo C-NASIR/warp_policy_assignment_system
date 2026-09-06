@@ -26,9 +26,9 @@ function PolicyLink({ currentUser, href, permission, children }: PolicyLinkProps
   }
 
   return (
-    <Link className="learn-policy-link" href={href}>
+    <Link className="learn-policy-link" href={href} target="_blank" rel="noopener noreferrer">
       <span><MoveUpRight size={15} /></span>
-      <span><strong>{children}</strong><small>Open in PolicyOS</small></span>
+      <span><strong>{children}</strong><small>Open in PolicyOS · New tab</small></span>
     </Link>
   );
 }

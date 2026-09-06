@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, BookOpenCheck } from "lucide-react";
+import { KeepActiveLessonVisible } from "@/components/learn/active-lesson-scroll";
 import { getLearnNavigation } from "@/lib/learn-source";
 
 export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
@@ -30,6 +31,7 @@ export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
   return (
     <>
       <aside className="learn-sidebar" aria-label="Learning center navigation">
+        <KeepActiveLessonVisible currentUrl={currentUrl} />
         <Link className="learn-app-link" href="/">
           <span className="learn-app-mark">P</span>
           <span><strong>PolicyOS</strong><small>Back to the app</small></span>
