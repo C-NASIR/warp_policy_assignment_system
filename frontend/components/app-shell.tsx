@@ -30,7 +30,7 @@ const commands = [
   { label: "Configure assignment fields", description: "One-value and many-value categories", href: "/settings", keywords: "setup cardinality", icon: Settings, permission: "settings:read" },
   { label: "Manage access", description: "Users, roles, and permissions", href: "/access", keywords: "authorization accounts", icon: ShieldCheck, permission: "access:read" },
   { label: "Review privileged access", description: "MFA, stale users, and broad roles", href: "/access/review", keywords: "security permissions report", icon: ShieldCheck, permission: "access:review" },
-  { label: "Learn PolicyOS", description: "Courses, concepts, guides, and answers", href: "/learn", keywords: "help docs documentation training", icon: BookOpenCheck, permission: null },
+  { label: "Learn PolicyOS", description: "Concepts, PolicyOS, and Practice", href: "/learn", keywords: "help learn curriculum concepts practice training", icon: BookOpenCheck, permission: null },
 ];
 
 const activity = [
@@ -40,21 +40,21 @@ const activity = [
 ];
 
 function contextualHelp(pathname: string) {
-  if (pathname === "/employees/new") return { label: "Employee onboarding help", href: "/learn/guides/onboard-an-employee" };
-  if (/^\/employees\/[^/]+/.test(pathname)) return { label: "Employee assignment help", href: "/learn/guides/investigate-an-assignment" };
-  if (pathname === "/employees") return { label: "Employee directory help", href: "/learn/reference/employee-directory" };
-  if (pathname === "/policies/new") return { label: "Policy builder help", href: "/learn/reference/policy-builder" };
-  if (/^\/policies\/[^/]+/.test(pathname)) return { label: "Policy version help", href: "/learn/guides/create-and-schedule-a-policy-version" };
-  if (pathname === "/policies") return { label: "Policy reference", href: "/learn/reference/policy-detail-and-lifecycle" };
-  if (/^\/groups\/[^/]+/.test(pathname)) return { label: "Group membership help", href: "/learn/guides/add-or-remove-a-group-member" };
-  if (pathname === "/groups") return { label: "Group management help", href: "/learn/guides/create-and-manage-a-group" };
-  if (pathname === "/approvals") return { label: "Approval help", href: "/learn/guides/review-approve-and-execute" };
-  if (pathname === "/audit") return { label: "Audit help", href: "/learn/guides/search-and-compare-audit-events" };
-  if (pathname === "/settings") return { label: "Assignment field help", href: "/learn/guides/create-an-assignment-field" };
-  if (pathname === "/access/review") return { label: "Access review help", href: "/learn/guides/review-privileged-access" };
-  if (pathname === "/access") return { label: "Access control help", href: "/learn/guides/create-a-least-privilege-role" };
-  if (pathname === "/account/security") return { label: "Account security help", href: "/learn/guides/enroll-mfa-and-manage-sessions" };
-  if (pathname === "/dashboard") return { label: "Overview help", href: "/learn/reference/overview" };
+  if (pathname === "/employees/new") return { label: "Employee onboarding help", href: "/learn/policyos/meet-your-first-employee" };
+  if (/^\/employees\/[^/]+/.test(pathname)) return { label: "Employee assignment help", href: "/learn/policyos/read-an-employees-assignments" };
+  if (pathname === "/employees") return { label: "Employee directory help", href: "/learn/policyos/meet-your-first-employee" };
+  if (pathname === "/policies/new") return { label: "Policy builder help", href: "/learn/policyos/create-your-first-policy" };
+  if (/^\/policies\/[^/]+/.test(pathname)) return { label: "Policy version help", href: "/learn/policyos/schedule-a-policy-change" };
+  if (pathname === "/policies") return { label: "Policy reference", href: "/learn/policyos/preview-and-activate-a-policy" };
+  if (/^\/groups\/[^/]+/.test(pathname)) return { label: "Group membership help", href: "/learn/policyos/use-groups" };
+  if (pathname === "/groups") return { label: "Group management help", href: "/learn/policyos/use-groups" };
+  if (pathname === "/approvals") return { label: "Approval help", href: "/learn/policyos/review-controlled-changes" };
+  if (pathname === "/audit") return { label: "Audit help", href: "/learn/policyos/investigate-past-decisions" };
+  if (pathname === "/settings") return { label: "Assignment field help", href: "/learn/policyos/define-an-assignment-field" };
+  if (pathname === "/access/review") return { label: "Access review help", href: "/learn/policyos/manage-access" };
+  if (pathname === "/access") return { label: "Access control help", href: "/learn/policyos/manage-access" };
+  if (pathname === "/account/security") return { label: "Account security help", href: "/learn/policyos/manage-access" };
+  if (pathname === "/dashboard") return { label: "Overview help", href: "/learn/policyos/find-your-way-around" };
   return null;
 }
 
@@ -69,7 +69,7 @@ export function AppShell({ children, connected, currentUser, securityEvents, lea
   const [loggingOut, setLoggingOut] = useState(false);
   const recordedSearchMisses = useRef(new Set<string>());
   const visibleActivity = connected ? securityEvents.filter((item) => item.severity !== "info" && !item.acknowledged_at).slice(0, 5).map((item) => ({ title: item.event_type.replaceAll("_", " "), detail: String(item.details.ip ?? "Account security event"), time: item.created_at.slice(0, 10) })) : activity;
-  const isPublicPage = ["/", "/login", "/signup", "/setup", "/recover"].includes(pathname);
+  const isStandalonePage = ["/", "/login", "/signup", "/setup", "/recover"].includes(pathname) || pathname.startsWith("/learn");
   const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
   const currentPage = navigation.find((item) => isActive(item.href))?.label ?? (pathname.startsWith("/settings") ? "Assignment fields" : pathname.startsWith("/access") ? "Access control" : pathname.startsWith("/account") ? "Account security" : "PolicyOS");
   const help = contextualHelp(pathname);
@@ -90,7 +90,7 @@ export function AppShell({ children, connected, currentUser, securityEvents, lea
   const filteredCommands = [...visibleCommands, ...matchingArticles].filter((item) => `${item.label} ${item.description} ${item.keywords}`.toLowerCase().includes(normalizedQuery));
 
   useEffect(() => {
-    if (isPublicPage) return;
+    if (isStandalonePage) return;
     function onKeyDown(event: globalThis.KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault(); setCommandOpen((current) => !current); setActivityOpen(false);
@@ -99,7 +99,7 @@ export function AppShell({ children, connected, currentUser, securityEvents, lea
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isPublicPage]);
+  }, [isStandalonePage]);
 
   useEffect(() => {
     if (!commandOpen && !menuOpen) return;
@@ -147,7 +147,7 @@ export function AppShell({ children, connected, currentUser, securityEvents, lea
     }
   }
 
-  if (isPublicPage) return <>{children}</>;
+  if (isStandalonePage) return <>{children}</>;
 
   return (
     <div className="app-layout">

@@ -1,0 +1,48 @@
+---
+title: "Explaining what happened"
+description: "Assignment explanations, history, and audit records."
+content_id: "CON15"
+section: "concepts"
+order: 150
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_assignment_explanations.py", "backend/tests/test_assignment_history.py", "backend/tests/test_audit_logs.py"]
+reading_time: 2
+prerequisites: ["Changing things safely"]
+---
+
+The scheduled vacation increase has been processed. Rachel now sees an annual allowance of 22 days.
+
+She asks three questions:
+
+> Why do I have 22 days? What did I have before? Who changed the rule?
+
+These questions need different kinds of evidence.
+
+An **assignment explanation** answers why a particular result was selected. For Rachel, it can show that she met the service requirement, that Experienced Employee Vacation supplied 22 days, and that its priority beat Standard Vacation's 15 days.
+
+It also identifies the policy version used. If a group supplied a policy or an override replaced its values, the explanation can show that route instead.
+
+**Assignment history** answers what Rachel had over time. It preserves the earlier 20-day assignment and the later 22-day assignment, together with their time boundaries and sources.
+
+An **audit log** answers what changed, when it changed, and which actor caused it. It can show who created the new policy version and the system's later assignment updates.
+
+| Question | Evidence to inspect |
+| --- | --- |
+| Why was this value selected? | Assignment explanation |
+| What was assigned at a past time? | Assignment history |
+| Who performed a change, and when? | Audit log |
+
+The person who approved a rule and the system process that updated assignments can be different actors. Both events matter when reconstructing what happened.
+
+Preserving the explanation with the assignment is essential. Re-running today's rules won't necessarily explain yesterday's result, because the facts and policies may have changed.
+
+Even an unchanged value can have a new history entry if its source or explanation changes. Rachel could keep 22 days while a different policy becomes responsible for that result.
+
+Together, these records let you follow a decision from its cause to its outcome.
+
+One question remains: who should be allowed to see or change those records?

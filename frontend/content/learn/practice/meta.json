@@ -1,5 +1,18 @@
 {
   "title": "Practice",
-  "description": "Isolated exercises using fictional PolicyOS data.",
-  "pages": ["avery-assignment-lab", "priority-and-cardinality-lab", "effective-date-lab", "avery-knowledge-check"]
+  "description": "Experiment with the application in a safe practice workspace.",
+  "pages": [
+    "make-your-first-assignment",
+    "who-matches",
+    "build-all-and-any-rules",
+    "one-result-or-several",
+    "make-policies-compete",
+    "assign-through-a-group",
+    "make-an-exception",
+    "move-an-employee",
+    "change-a-policy-over-time",
+    "review-a-proposed-change",
+    "solve-an-assignment-mystery",
+    "run-your-growing-company"
+  ]
 }

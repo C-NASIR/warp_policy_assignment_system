@@ -1,0 +1,21 @@
+{
+  "title": "PolicyOS",
+  "description": "Apply the concepts using the application.",
+  "pages": [
+    "find-your-way-around",
+    "meet-your-first-employee",
+    "define-an-assignment-field",
+    "create-your-first-policy",
+    "build-richer-conditions",
+    "preview-and-activate-a-policy",
+    "read-an-employees-assignments",
+    "handle-competing-policies",
+    "use-groups",
+    "manage-an-exception",
+    "schedule-a-policy-change",
+    "update-employee-facts",
+    "review-controlled-changes",
+    "investigate-past-decisions",
+    "manage-access"
+  ]
+}

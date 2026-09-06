@@ -1,0 +1,48 @@
+---
+title: "When several policies apply"
+description: "Matching rules versus selecting results."
+content_id: "CON07"
+section: "concepts"
+order: 70
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_services.py"]
+reading_time: 2
+prerequisites: ["Combining conditions"]
+---
+
+Rachel can match more than one policy at a time.
+
+Your company already has a pay policy and a vacation policy. You also have a rule for design-tool access. Each answers a different question about Rachel's employment, so all three can contribute to her assignments.
+
+Now the company introduces another vacation rule:
+
+> Employees with at least two years of service get 20 vacation days each year.
+
+Suppose Rachel has now worked at the company for two years. She is still full-time, so she matches both vacation policies:
+
+| Matching policy | Annual vacation allowance it supplies |
+| --- | --- |
+| Standard Vacation: full-time employees | 15 days |
+| Experienced Employee Vacation: at least two years of service | 20 days |
+
+We have answered **which rules cover Rachel**, but we still need to decide her final vacation allowance.
+
+The two matching policies supply **candidate values**. A candidate is a possible result that must be considered before the final assignment is selected.
+
+This gives us two separate steps:
+
+1. **Matching:** Find the policies whose conditions Rachel meets.
+2. **Resolution:** Decide which candidate values become her assignments.
+
+A policy can match Rachel without supplying the value ultimately selected for a field. “This policy applies to her” therefore doesn't always mean “this policy determines her final allowance.”
+
+We also consider each assignment field separately. A vacation-policy disagreement is about the vacation allowance. The pay schedule answers a different question.
+
+Before choosing between 15 and 20 days, we need to establish what kind of answer the vacation field accepts. Should it contain one allowance, or can it contain several values?
+
+That is the next lesson.

@@ -1,0 +1,42 @@
+---
+title: "Making an exception"
+description: "Manual overrides and their relationship to policy results."
+content_id: "CON11"
+section: "concepts"
+order: 110
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_overrides.py"]
+reading_time: 2
+prerequisites: ["Assigning through groups"]
+---
+
+Rachel's vacation policies resolve to 20 days. The company makes an individual arrangement to give her 25 days.
+
+The general rules still express what the company wants for everyone else. This decision is specific to Rachel.
+
+You record a **manual override** for her annual vacation allowance:
+
+> Rachel → Annual vacation allowance → 25 days.
+
+**An override is an explicit employee-specific value that replaces the policy result for its field.**
+
+PolicyOS first resolves the policies, then applies the override. Rachel's final allowance is 25 days, and its source is the override. The underlying 20-day policy result can still be explained.
+
+Her pay schedule and application access are separate fields. This vacation override doesn't change them.
+
+Overrides also work on many-value fields, but their replacement behavior matters. Suppose Rachel's policies supply company email and the design tool. If her application-access override contains only a launch tool, the final set for that field contains only the launch tool. To keep all three through an override, its values must include all three.
+
+An override can also supply a field that currently has no policy result.
+
+When you remove the vacation override, the system uses the policies that apply **at that time**. If they still resolve to 20 days, Rachel returns to 20. If the rules have changed, the new result may be different.
+
+An override doesn't resolve a conflict between policies. Conflicting policy values must still be corrected before resolution can succeed.
+
+For the next lessons, assume Rachel's individual arrangement has ended and her vacation override has been removed. Her policies once again determine her allowance.
+
+Next, we'll see how to change those policies without losing track of their earlier meaning.

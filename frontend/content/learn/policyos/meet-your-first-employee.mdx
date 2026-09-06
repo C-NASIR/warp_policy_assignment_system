@@ -1,0 +1,50 @@
+---
+title: "Meet your first employee"
+description: "Read an employee record and identify the facts policies use."
+content_id: "APP02"
+section: "policyos"
+order: 20
+audiences: ["new learner"]
+permissions: ["employees:read", "assignments:read", "employees:create", "settings:read", "changes:preview", "changes:execute"]
+owner: "employee operations"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/employee-directory.tsx", "frontend/components/employee-form.tsx", "frontend/app/employees/[id]/page.tsx", "backend/tests/test_change_previews.py"]
+reading_time: 2
+prerequisites: ["Find your way around"]
+---
+
+In Concepts, Rachel's employment type was a fact used to decide whether a policy applied. Now find where that fact lives.
+
+1. Open **Employees** and use **Search employees** to find Rachel if a training record already exists.
+2. Clear department or employment-type filters if the expected record is missing.
+3. Select her name to open the employee detail page.
+4. Read **Employee profile**: Department, Employment type, Work location, Start date, Manager, and Employee ID.
+5. Compare that profile with **Current assignments**, when your account can read assignments. The profile contains inputs; the assignment cards contain resolved outputs.
+
+The directory's assignment badges are display summaries. Use the employee detail's actual assignment cards to verify a result.
+
+If Rachel isn't present, someone with employee-creation and preview permissions can prepare her in a connected training deployment. Choose **Add employee** and enter this fictional profile:
+
+| Form field | Teaching value |
+| --- | --- |
+| Full name | Rachel |
+| Department | Design |
+| Employment type | Full-time |
+| State or region | Illinois |
+| Work location | Chicago |
+| Start date | January 15, 2024 |
+| Manager | No manager |
+
+Choose **Review assignments**. This calculates a proposed result without saving the employee. Review the values, then choose **Create employee** to commit the profile. Return to Employees, search for Rachel, and open the saved record. Reload it to check that it persists.
+
+An empty assignment list can be correct before your training policies exist. If the workspace already has rules, Rachel may receive additional values; the later examples assume you account for those rules.
+
+Reading the profile requires employee access. Creating this example also needs access to the field catalog, employee creation, change preview, and the applicable execution authority. An administrator can prepare the record if your role only permits reading.
+
+Keep the displayed value **Full-time** consistent when writing a condition. The policy builder's condition catalog calls this input **Employee type**.
+
+<PolicyLink href="/employees" permission="employees:read">Find Rachel's employee record</PolicyLink>
+
+[Review employee facts and conditions](/learn/concepts/who-does-a-policy-apply-to).

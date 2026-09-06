@@ -1,0 +1,53 @@
+---
+title: "Manage access"
+description: "Link accounts and configure roles and permissions."
+content_id: "APP15"
+section: "policyos"
+order: 150
+audiences: ["new learner"]
+permissions: ["access:read", "access:manage", "employees:read"]
+owner: "access control"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/access-manager.tsx", "backend/app/services/access_control.py", "backend/tests/test_access_control.py", "backend/tests/test_employee_visibility.py", "backend/tests/test_assignment_field_visibility.py"]
+reading_time: 2
+prerequisites: ["Investigate past decisions"]
+---
+
+Rachel has an employee record. Now give her a user account that can read her own assignments, using an authorized administrator in a connected training deployment.
+
+Open **Access control** through Quick find's **Manage access** command or the link below. The page separates **Users** from **Roles**.
+
+Start with the role:
+
+1. Select **Roles**, then **Create role**.
+2. Name it **Employee assignment reader** and describe its purpose.
+3. Set **Employee visibility** to **Linked employee only**.
+4. Set **Assignment field access** to **Selected assignment fields** and select **Annual vacation allowance**.
+5. Select **View employees** and **View assignments** in the permission list.
+6. Leave **Allow policies to grant this role** unchecked for this explicit assignment, then choose **Save role**.
+
+The permissions allow the actions; the scopes limit which employee and fields those actions can reach. Selecting a field scope alone doesn't grant a read permission.
+
+Then prepare the account:
+
+1. Select **Users** and choose **Create user**, or edit Rachel's existing training account.
+2. Enter the account's name and intended email when creating it. Supply a temporary password of at least 12 characters through your organization's account-provisioning process.
+3. Choose Rachel under **Linked employee**. This selector requires permission to read her employee record.
+4. Select **Employee assignment reader** under **Assigned roles**, then choose **Save user**.
+5. Check the Users row for the correct **Employee link**, role, and active status.
+
+A new user must change the temporary password at first sign-in. Rachel can then open her employee detail and read the allowed vacation assignment. Other assignment fields should remain outside this role's scope. Test with the intended account rather than inferring its view from an administrator's screen.
+
+When editing an existing account, review all its roles. Allowed permissions and scopes combine, so a broad existing role can still grant access beyond this new role's limits.
+
+Roles marked **Policy eligible** can be selected as automated policy outputs. Their grants appear with a **Policy** label on user rows and are distinct from explicit roles. Administrative roles are restricted from automation.
+
+This lesson requires access-management authority. Demo mode disables saving users and roles. The role and user forms save directly; they don't use the policy approval queue described in the preceding lessons.
+
+You've now applied the domain from employee facts through rules, assignments, changes, evidence, and access. The Practice section is the next part of the curriculum; its exercises are still being prepared.
+
+<PolicyLink href="/access" permission="access:read">Open Access control</PolicyLink>
+
+[Review accounts, roles, permissions, and scope](/learn/concepts/who-can-do-what).

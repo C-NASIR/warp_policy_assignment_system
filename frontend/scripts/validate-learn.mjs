@@ -7,7 +7,7 @@ import { parse } from "yaml";
 const frontendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(frontendRoot, "..");
 const contentRoot = path.join(frontendRoot, "content", "learn");
-const sections = ["start-here", "concepts", "practice", "guides", "reference", "troubleshooting"];
+const sections = ["concepts", "policyos", "practice"];
 const statuses = ["outline", "draft", "technical-review", "product-review", "approved", "retired"];
 const required = ["title", "description", "content_id", "section", "order", "audiences", "permissions", "owner", "status", "last_verified", "review_by", "verified_by", "reading_time", "prerequisites"];
 const failures = [];
@@ -70,6 +70,7 @@ for (const article of articles) {
   if (!Array.isArray(data.permissions)) fail(file, "permissions must be a list");
   if (!Array.isArray(data.verified_by) || data.verified_by.length === 0) fail(file, "verified_by must not be empty");
   if (!Array.isArray(data.prerequisites)) fail(file, "prerequisites must be a list");
+  if (!Number.isInteger(data.reading_time) || data.reading_time < 0 || (data.status !== "outline" && data.reading_time === 0)) fail(file, "reading_time must be positive for authored articles or zero for outlines");
   for (const prerequisite of data.prerequisites ?? []) if (!titles.has(prerequisite)) fail(file, `unknown prerequisite title ${JSON.stringify(prerequisite)}`);
   for (const evidence of data.verified_by ?? []) {
     if (path.isAbsolute(evidence) || evidence.includes("..")) fail(file, `unsafe verified_by path ${evidence}`);
@@ -98,6 +99,13 @@ for (const article of articles) {
 }
 
 for (const { file, links = [] } of articles) for (const link of links) if (!routes.has(link)) fail(file, `broken learning link ${link}`);
+
+const redirectsFile = path.join(frontendRoot, "lib", "learn-redirects.json");
+const redirects = JSON.parse(fs.readFileSync(redirectsFile, "utf8"));
+for (const [source, destination] of Object.entries(redirects)) {
+  if (routes.has(source)) fail(redirectsFile, `redirect shadows a current lesson: ${source}`);
+  if (!routes.has(destination)) fail(redirectsFile, `redirect destination does not exist: ${destination}`);
+}
 
 for (const section of sections) {
   const metaFile = path.join(contentRoot, section, "meta.json");

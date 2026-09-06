@@ -1,0 +1,46 @@
+---
+title: "One value or many?"
+description: "Why pay schedules and application access resolve differently."
+content_id: "CON08"
+section: "concepts"
+order: 80
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_services.py"]
+reading_time: 2
+prerequisites: ["When several policies apply"]
+---
+
+Rachel's two vacation policies offer 15 days and 20 days. You need one annual allowance that people can use when planning her time off.
+
+For this field, the intended result is **one value**.
+
+Application access is different. Rachel may need both company email and the design tool. Those are separate, useful answers to the same question: which applications can she use?
+
+For that field, the intended result is **many values**.
+
+The word **cardinality** describes this choice: how many values a field can hold for one employee.
+
+| Assignment field | Cardinality | Example result for Rachel |
+| --- | --- | --- |
+| Pay schedule | One | Every two weeks |
+| Annual vacation allowance | One | 20 days |
+| Application access | Many | Company email, design tool |
+
+The 20-day allowance here illustrates the shape of a result. We'll explain how it wins in the next lesson.
+
+For a **one-value field**, competing candidates must be resolved into a single answer. We don't add 15 and 20 together to make 35 vacation days.
+
+For a **many-value field**, PolicyOS combines distinct policy values. If one policy supplies company email and another supplies the design tool, Rachel receives both. If two policies supply company email, it appears only once in her result.
+
+This also means a higher-priority email policy doesn't remove a different design-tool value from a many-value field. Both can remain.
+
+“One” is a limit on the result, not a guarantee that a policy supplies one. If no policy or exception provides a pay schedule, that field can have no assignment. The company would need to address that missing coverage.
+
+Before writing rules, decide what a sensible answer looks like for each field. That decision tells the system whether to select one value or combine several.
+
+Next, we'll choose between Rachel's competing vacation allowances.

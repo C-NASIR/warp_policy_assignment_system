@@ -1,0 +1,44 @@
+---
+title: "Create your first policy"
+description: "Connect a simple condition to an assignment value."
+content_id: "APP04"
+section: "policyos"
+order: 40
+audiences: ["new learner"]
+permissions: ["policies:read", "policies:create", "settings:read", "employees:read"]
+owner: "policy authoring"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/policy-builder.tsx", "frontend/app/policies/new/page.tsx", "backend/app/routers/policies.py", "backend/tests/test_policy_versions.py"]
+reading_time: 2
+prerequisites: ["Define an assignment field"]
+---
+
+Let's express the rule you already understand:
+
+> Full-time employees get 15 vacation days each year.
+
+Use Rachel's connected training record and the **Annual vacation allowance** field from the preceding lessons.
+
+1. Open **Policies** and choose **Create policy**.
+2. Under **Policy basics**, enter **Standard Vacation**, set Priority to **10**, and choose today's date for **Effective from**. Leave **Effective until** blank for an open-ended version.
+3. Under **Who this applies to**, keep **ALL** and configure one row: **Employee type**, **=**, **Full-time**. Replace the builder's initial example condition.
+4. Under **What gets assigned**, select **Annual vacation allowance** and enter **15 days**. Remove any unintended output rows.
+5. Leave **Automated access roles** unselected for this example.
+6. Choose **Preview impact** and check the displayed condition, sample employees, and assignment value.
+7. Once the rule expresses the intended decision, choose **Create policy**.
+
+The initial-policy preview is a browser-side population estimate over loaded employees. It doesn't prove that every matching employee will receive 15 days after competing policies and overrides are considered. Verify the final result on Rachel's employee page after saving and, if necessary, activation.
+
+A saved policy can be **active** immediately when the creator has activation authority and no automated roles were selected. Otherwise it may be a **draft** awaiting activation. The builder's “Draft” badge describes the form; inspect the saved policy's actual status.
+
+Creating a draft doesn't change Rachel's assignments. An active policy with a current effective version can participate immediately. The next lessons explain how to inspect and activate it.
+
+Policy authoring requires permission to create policies, read the condition and assignment catalogs, and access the relevant records. If a required control or field is missing, have an administrator review those permissions and scopes.
+
+The saved detail page should show the intended condition and **Assignments provided: Annual vacation allowance — 15 days**. That is the definition; Rachel's assignment is the result.
+
+<PolicyLink href="/policies" permission="policies:read">Open Policies</PolicyLink>
+
+[Review how decisions become policies](/learn/concepts/from-decisions-to-policies).

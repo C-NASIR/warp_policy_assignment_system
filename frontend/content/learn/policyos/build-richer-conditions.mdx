@@ -1,0 +1,44 @@
+---
+title: "Build richer conditions"
+description: "Use nested condition groups and derived facts."
+content_id: "APP05"
+section: "policyos"
+order: 50
+audiences: ["new learner"]
+permissions: ["policies:read", "policies:create", "settings:read", "employees:read"]
+owner: "policy authoring"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/policy-builder.tsx", "backend/app/services/condition_fields.py", "backend/tests/test_policy_compiler.py", "backend/tests/test_tenure_rules.py"]
+reading_time: 2
+prerequisites: ["Create your first policy"]
+---
+
+Now express a rule with a narrower population:
+
+> Give the design tool to full-time employees in Design or Engineering.
+
+Use a separate training policy called **Design Tools** so Standard Vacation keeps its original purpose.
+
+1. Open **Create policy**, name the policy, and choose its priority and effective date.
+2. Set the outer **Employees matching** selector to **ALL**.
+3. Make the outer condition **Employee type = Full-time**.
+4. Choose **Add nested group** and set that group's selector to **ANY**.
+5. Set its first condition to **Department = Design**.
+6. Choose **Add nested condition** and add **Department = Engineering**.
+7. Under **What gets assigned**, choose the many-value **Application access** field and enter **Design tool**.
+
+Read the structure aloud: full-time **AND** (Design **OR** Engineering). Rachel matches because she is full-time and belongs to Design. A part-time designer doesn't match.
+
+You can also use derived inputs. **Tenure >= 2 years** describes completed calendar service based on the employee's start date and the evaluation date. You don't enter a separate tenure value on Rachel's employee record. Manager-related inputs are also available through the condition catalog.
+
+The current visual builder supports outer conditions and one nested group of conditions. It offers ALL/ANY and the comparisons allowed for each selected input; it has no general NOT control. More deeply nested existing rules aren't fully represented by this editor, so don't use it to recreate such a rule unless its entire structure is accounted for.
+
+Choose **Preview impact** before saving, following the previous lesson's save and status checks. For a new policy, the browser's match estimate simplifies derived facts such as tenure and reporting relationships. Check the saved connected result, especially around anniversaries or indirect reporting relationships.
+
+If you open **New version** on an existing policy instead, previewing follows the connected version-review workflow described later. Inspect every prefilled condition rather than assuming the editor copied an arbitrary rule tree completely.
+
+<PolicyLink href="/policies" permission="policies:read">Open the policy directory</PolicyLink>
+
+[Review combining conditions](/learn/concepts/combining-conditions).

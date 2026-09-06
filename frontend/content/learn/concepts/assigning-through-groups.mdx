@@ -1,0 +1,47 @@
+---
+title: "Assigning through groups"
+description: "Applying shared policies through explicit membership."
+content_id: "CON10"
+section: "concepts"
+order: 100
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_groups.py"]
+reading_time: 2
+prerequisites: ["When policies disagree"]
+---
+
+Rachel joins a product-launch team with people from several departments.
+
+Their shared responsibility isn't captured by a single department condition. You need to name the people taking part.
+
+You create a group called **Product Launch** and explicitly add its members, including Rachel.
+
+**A group is a named collection of employees.** In PolicyOS, membership is managed explicitly. Giving a group the name “Design” does not automatically fill it with everyone whose department is Design.
+
+You then attach a Launch Tools policy to Product Launch.
+
+That connection gives the group's members another route to the policy:
+
+> Rachel → Product Launch membership → attached Launch Tools policy.
+
+We've now encountered two routes:
+
+- **Direct match:** Rachel's facts satisfy a policy's conditions.
+- **Group membership:** Rachel belongs to a group with that policy attached.
+
+In PolicyOS, an attached policy becomes a candidate for every member even if they don't meet its direct conditions. This makes attaching a policy to a group a meaningful decision about who it covers.
+
+The group itself supplies membership. The attached policy supplies the assignment values.
+
+Those values still go through the same resolution rules. A group policy doesn't automatically outrank a directly matched policy. One-value fields still use priority, and many-value fields still combine distinct values.
+
+If Rachel reaches the same policy directly and through two groups, the system considers that policy once, while retaining the reasons it reached her.
+
+When the launch ends, removing her membership removes that route. She may still receive the same value through another group or a direct match, so the remaining sources must be considered again.
+
+Next, we'll look at a decision intended for Rachel alone: an explicit exception.

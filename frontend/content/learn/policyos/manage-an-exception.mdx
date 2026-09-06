@@ -1,0 +1,43 @@
+---
+title: "Manage an exception"
+description: "Add, inspect, and remove an override."
+content_id: "APP10"
+section: "policyos"
+order: 100
+audiences: ["new learner"]
+permissions: ["employees:read", "assignments:read", "assignments:manage", "settings:read", "changes:preview", "changes:execute"]
+owner: "overrides"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/override-manager.tsx", "backend/tests/test_overrides.py", "backend/tests/test_change_previews.py"]
+reading_time: 2
+prerequisites: ["Use groups"]
+---
+
+Rachel's policies currently provide 20 vacation days. Her individual arrangement calls for 25 days. Record that difference as an override on her employee record.
+
+In a connected training deployment:
+
+1. Open Rachel and find **Manual overrides**.
+2. Choose **Add override**.
+3. Select **Annual vacation allowance** as the Assignment field and enter **25 days** as the Manual value.
+4. Choose **Review impact**. Read the counts of added, changed, and removed assignment values.
+5. Choose **Confirm and reconcile** to apply the override.
+6. Revisit **Current assignments** and expand the vacation card. Expect **25 days**, an **Override** badge, and an explanation of the policy result it replaced.
+
+The override editor requires assignment-management permission. Reading the field catalog and access to the selected field are needed to choose the output. If the selector is empty, resolve catalog access before proceeding.
+
+To amend an existing exception, use its **Edit** control, change the Manual value, and repeat the review and confirmation. A one-value field permits one active override per employee; edit that override rather than creating a second one.
+
+To end the arrangement, use the **Delete** control beside the override, review the impact, and confirm. The removed override stops determining current values, while historical assignment records retain their source. Rachel's allowance returns to whatever today's rules resolve, which may differ from the value she had when the exception began.
+
+For a many-value field, override values replace the entire policy-derived set. Adding one application override doesn't simply add that application alongside all policy values. Review the intended final set before using this behavior.
+
+This editor has no reason or expiration-date input. An exception remains active until changed or removed; don't assume it will expire automatically. Overrides also cannot suppress policy conflicts.
+
+Remove Rachel's training vacation override before continuing, so the later versioning lesson can demonstrate a change supplied by a policy.
+
+<PolicyLink href="/employees" permission="employees:read">Open employee overrides</PolicyLink>
+
+[Review explicit exceptions](/learn/concepts/making-an-exception).

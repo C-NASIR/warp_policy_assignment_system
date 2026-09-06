@@ -1,0 +1,49 @@
+---
+title: "Who can do what?"
+description: "Employee records, user accounts, roles, and permissions."
+content_id: "CON16"
+section: "concepts"
+order: 160
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_access_control.py", "backend/tests/test_employee_visibility.py", "backend/tests/test_assignment_field_visibility.py", "backend/tests/test_phase6_access_approvals.py"]
+reading_time: 2
+prerequisites: ["Explaining what happened"]
+---
+
+Rachel has an employee record because the company needs to make decisions about her employment.
+
+Does that mean she can sign in and edit company policies?
+
+To answer that, we need to separate an **employee record** from a **user account**.
+
+The employee record holds facts used in policy decisions. A user account represents someone who can sign in. They can be linked, but creating an employee record alone doesn't create a login or give someone administrative authority.
+
+Once Rachel has a user account, two questions follow:
+
+1. Who is signing in?
+2. What is that person allowed to do?
+
+**Authentication** establishes identity. **Authorization** controls permitted actions and access to data.
+
+A **permission** allows a particular action, such as reading assignments, editing employee facts, or approving a change.
+
+A **role** bundles permissions for a responsibility. An employee role might allow Rachel to read her own assignments. A people-operations role might allow a colleague to manage employee records.
+
+The action is only part of the decision. **Scope** describes which records or assignment fields that access covers.
+
+“Can read assignments” might mean Rachel's own assignments, her team's assignments, or everyone's. Access may also be limited to particular fields, such as application access. A role needs the appropriate permissions and data scope together.
+
+In PolicyOS, users can have several roles. Their allowed permissions and scopes combine, so adding a broad role can expand access. A narrower role doesn't cancel a broader grant.
+
+Some roles can be granted through policies to linked user accounts. These are distinct from roles assigned explicitly by an administrator. Losing a policy-derived grant doesn't remove an independently assigned role.
+
+An assignment saying “company email” also doesn't itself create an email account. Actual access requires the corresponding provisioning or authorization mechanism.
+
+You've now followed the domain from one decision for Rachel to reusable rules, resolved assignments, controlled changes, and explainable history.
+
+The PolicyOS section will connect these concepts to the application's screens and workflows, beginning with finding your way around.

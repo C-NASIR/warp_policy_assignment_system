@@ -1,0 +1,43 @@
+---
+title: "Preview and activate a policy"
+description: "Inspect its effect before putting it into use."
+content_id: "APP06"
+section: "policyos"
+order: 60
+audiences: ["new learner"]
+permissions: ["policies:read", "policies:activate", "changes:preview"]
+owner: "policy lifecycle"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/policy-lifecycle.tsx", "frontend/app/policies/[id]/page.tsx", "backend/tests/test_policy_access.py", "backend/tests/test_phase6_access_approvals.py"]
+reading_time: 2
+prerequisites: ["Build richer conditions"]
+---
+
+A policy definition only affects assignments when its status and effective dates allow it to participate.
+
+Open **Standard Vacation** from Policies and inspect its status, effective date, **Who this applies to**, and **Assignments provided**.
+
+If it is already **active** and effective today, continue to Rachel's assignments. There is no second activation step to perform.
+
+If it is **draft** and you have activation authority:
+
+1. Check that its condition and 15-day value express the intended rule.
+2. Choose **Activate**.
+3. Read the confirmation dialog. For an ordinary policy without automated roles, **Activate and reconcile** applies the change immediately.
+4. Confirm when the definition is ready, then check the saved status and Rachel's current assignments.
+
+Ordinary activation doesn't have a separate detailed impact-preview screen in this flow. The confirmation describes the action; it is not a list of every before-and-after assignment.
+
+For a policy containing automated access roles, the lifecycle dialog instead offers **Preview and request approval**. That submits a request; the policy remains in its existing status until the approved change is executed. Continue through [Review controlled changes](/learn/policyos/review-controlled-changes).
+
+The policy detail also distinguishes **Employees match the rule** from the number who **receive assignments from this policy**. These can differ when other rules or overrides determine the final values. The impact panel describes resolved behavior, not just the policy's intended output.
+
+Check dates carefully. An active policy with only a future effective version need not change anyone today. The detail header shows the latest version, which may be future-dated; it isn't proof that this version is currently supplying assignments.
+
+The related **Archive** and **Reactivate** actions change whether a policy participates. Archiving can cause employees to fall back to other policies or lose a value, so it is a substantive change, not a way to hide a row.
+
+Missing lifecycle controls mean the record's current state or your permissions don't allow the action. An authorized colleague can complete activation without changing the rule's business meaning.
+
+<PolicyLink href="/policies" permission="policies:read">Inspect policy status and impact</PolicyLink>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, Check, CheckCheck, GitBranch, History, Layers3, ShieldCheck, SlidersHorizontal, Users } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpenCheck, Check, CheckCheck, GitBranch, History, Layers3, ShieldCheck, SlidersHorizontal, Users } from "lucide-react";
 import styles from "./landing.module.css";
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export default function LandingPage() {
     <a className={styles.skipLink} href="#main">Skip to content</a>
     <header className={styles.header}>
       <Link className={styles.brand} href="/" aria-label="PolicyOS home"><span className={styles.brandMark}>P</span>PolicyOS</Link>
-      <nav className={styles.navigation} aria-label="Main navigation"><a href="#platform">Platform</a><a href="#how-it-works">How it works</a></nav>
+      <nav className={styles.navigation} aria-label="Main navigation"><a href="#platform">Platform</a><a href="#how-it-works">How it works</a><Link href="/learn">Learn</Link></nav>
       <div className={styles.headerActions}><Link className={styles.signIn} href="/login">Sign in</Link><Link className={styles.primaryButton} href="/signup">Sign up <ArrowRight size={16} /></Link></div>
     </header>
     <main id="main">
@@ -44,6 +44,16 @@ export default function LandingPage() {
       <div className={styles.useCases}><span>ONE ENGINE. ACROSS YOUR ORGANIZATION.</span><div><span><Users size={19} /> People operations</span><span><ShieldCheck size={19} /> IT & access</span><span><Layers3 size={19} /> Payroll & benefits</span></div></div>
       <section id="platform" className={styles.platform} aria-labelledby="platform-title"><div className={styles.sectionHeading}><p className={styles.eyebrow}>LESS MANUAL WORK. MORE CLARITY.</p><h2 id="platform-title">From scattered rules<br />to a single source of truth.</h2><p>Give your teams a shared system for defining, reviewing, and explaining employee policy assignments.</p></div><div className={styles.features}>{features.map(({ icon: Icon, title, copy }, index) => <article key={title}><div className={styles.featureTop}><Icon size={24} strokeWidth={1.6} /><span>0{index + 1}</span></div><h3>{title}</h3><p>{copy}</p></article>)}</div></section>
       <section id="how-it-works" className={styles.workflow} aria-labelledby="workflow-title"><div><p className={styles.eyebrow}>A CLEAR PATH FROM RULE TO RESULT</p><h2 id="workflow-title">Set the rules.<br />Know the outcome.</h2></div><ol>{[{ title: "Define your policies", copy: "Choose employee conditions, assignment values, and priorities." }, { title: "Preview and review", copy: "Understand the impact and get approval for sensitive changes." }, { title: "Apply with confidence", copy: "Resolve assignments and inspect the explanation behind each result." }].map((step, index) => <li key={step.title}><span>0{index + 1}</span><div><h3>{step.title}</h3><p>{step.copy}</p></div></li>)}</ol></section>
+      <section className={styles.docsSection} aria-labelledby="docs-title">
+        <span className={styles.docsIcon}><BookOpenCheck size={28} strokeWidth={1.7} /></span>
+        <div className={styles.docsContent}>
+          <p className={styles.eyebrow}>LEARN FROM FIRST PRINCIPLES</p>
+          <h2 id="docs-title">Learn PolicyOS at your own pace.</h2>
+          <p>Explore a curriculum that starts with the domain, connects each concept to PolicyOS, and makes room to experiment. Read the Concepts and PolicyOS lessons now; practice activities are coming soon.</p>
+          <div className={styles.docsTopics} aria-label="Learning sections"><span>Concepts</span><span>PolicyOS</span><span>Practice</span></div>
+        </div>
+        <Link className={styles.docsButton} href="/learn">Explore the curriculum <ArrowRight size={17} /></Link>
+      </section>
       <section className={styles.cta} aria-labelledby="cta-title"><div><p className={styles.eyebrow}>MAKE EVERY ASSIGNMENT MAKE SENSE</p><h2 id="cta-title">Bring clarity to your policies.</h2><p>One place for your rules, your people, and the decisions that connect them.</p></div><Link className={styles.primaryButton} href="/signup">Sign up <ArrowRight size={18} /></Link></section>
     </main>
     <footer className={styles.footer}><Link className={styles.brand} href="/"><span className={styles.brandMark}>P</span>PolicyOS</Link><span>Every employee policy assignment, resolved and explained.</span><div><Link href="/login">Sign in</Link><Link href="/signup">Sign up</Link></div></footer>

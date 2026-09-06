@@ -4,12 +4,9 @@ import { defineDocs } from "fumadocs-mdx/macro";
 import { z } from "zod";
 
 export const learnSections = [
-  "start-here",
   "concepts",
+  "policyos",
   "practice",
-  "guides",
-  "reference",
-  "troubleshooting",
 ] as const;
 
 export type LearnSection = (typeof learnSections)[number];
@@ -32,7 +29,7 @@ const articleSchema = pageSchema.extend({
   last_verified: z.string().date(),
   review_by: z.string().date(),
   verified_by: z.array(z.string()).min(1),
-  reading_time: z.number().int().positive(),
+  reading_time: z.number().int().nonnegative(),
   prerequisites: z.array(z.string()).default([]),
 });
 
@@ -59,12 +56,9 @@ export type LearnSearchEntry = {
 };
 
 const sectionLabels: Record<LearnSection, string> = {
-  "start-here": "Start here",
-  concepts: "Core concepts",
+  concepts: "Concepts",
+  policyos: "PolicyOS",
   practice: "Practice",
-  guides: "How-to guides",
-  reference: "Feature reference",
-  troubleshooting: "Troubleshooting",
 };
 
 export function labelForLearnSection(section: LearnSection) {

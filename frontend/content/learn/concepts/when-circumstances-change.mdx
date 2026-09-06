@@ -1,0 +1,50 @@
+---
+title: "When circumstances change"
+description: "Recalculating assignments through reconciliation."
+content_id: "CON13"
+section: "concepts"
+order: 130
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_assignment_history.py", "backend/tests/test_scheduled_reconciliations.py", "backend/tests/test_reconciliation_worker.py"]
+reading_time: 2
+prerequisites: ["Policies over time"]
+---
+
+Rachel moves from Design to Operations. Her employee record now reflects the new department.
+
+Before the move, her assignments included company email and the design tool. The design-tool policy requires membership in the Design department; the email policy covers all employees.
+
+What should her assignments look like now?
+
+**Reconciliation means calculating what the assignments should be, comparing that with what is recorded, and applying the differences.**
+
+For this example, suppose no group or override supplies the design tool:
+
+| Assignment | After the department change |
+| --- | --- |
+| Company email | Keep: the employee policy still covers Rachel |
+| Design tool | End: the Design condition no longer matches |
+
+If Rachel still belongs to Product Launch, that explicit membership continues until it is changed. Moving departments doesn't automatically remove her from every group.
+
+The system must consider all the remaining routes before removing a value. Losing one source doesn't necessarily mean losing the assignment.
+
+Reconciliation can be needed after several kinds of change:
+
+- An employee fact changes.
+- A policy, group membership, or override changes.
+- A policy version reaches an effective-date boundary.
+- An employee reaches a service anniversary used by a condition.
+
+That last case matters: Rachel can complete two years of service without anyone editing her start date. Time itself changes the answer.
+
+A system therefore needs both reactions to edits and processing for scheduled events. PolicyOS provides a worker for due events; a deployment must arrange for it to run regularly. A stored schedule alone doesn't update an assignment.
+
+If the calculated result, source, and explanation are unchanged, reconciliation keeps the existing record. When they change, it preserves the previous record in history and records the new state.
+
+Next, we'll consider how to inspect the effect of a change before applying it.

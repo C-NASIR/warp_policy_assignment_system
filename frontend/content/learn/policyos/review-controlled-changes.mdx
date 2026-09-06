@@ -1,0 +1,45 @@
+---
+title: "Review controlled changes"
+description: "Work through approval and execution where required."
+content_id: "APP13"
+section: "policyos"
+order: 130
+audiences: ["new learner"]
+permissions: ["changes:approve", "changes:execute"]
+owner: "change approvals"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/approval-queue.tsx", "backend/app/routers/change_previews.py", "backend/app/services/approval_requests.py", "backend/tests/test_phase6_access_approvals.py"]
+reading_time: 2
+prerequisites: ["Update employee facts"]
+---
+
+You submitted the future vacation version, but Rachel's policy has not changed yet. A pending request records a proposal for another person to review.
+
+For an ordinary signed-in author, creating a policy version uses this approval workflow. Automated-access lifecycle changes also use it. A normal employee edit or override review doesn't necessarily produce an item in the approval queue.
+
+After **Preview impact** returns a request, note its request ID. An eligible reviewer opens **Approvals**:
+
+1. Find the request using its type, requester, time, and **Request ID**. The page lists request cards; it has no dedicated request-search box.
+2. Check **Assignment impact**, **Access impact**, and **Expires**.
+3. Expand **View exact proposed change**. Verify the intended policy, effective dates, priority, conditions, values, and any automated roles in the displayed proposal.
+4. Review any **Automated role changes** shown on the card.
+5. Choose **Approve** if the proposal is correct, or **Reject** if it should not proceed.
+6. After approval, the approving user chooses **Execute approved change** when ready to commit it.
+
+The author cannot approve their own request. The approving person must also hold execution permission and be the person who executes it. Approving alone doesn't save the new policy version.
+
+After execution, check that the request status is **executed**, then return to the policy's **Version history**. For a future version, today's assignments may legitimately remain unchanged until its date arrives and reconciliation runs.
+
+Impact counts summarize affected records. They don't replace reviewing the exact proposal or checking individual results. The card displays only a limited set of automated-role chips when many changes exist.
+
+If the request is expired or its reviewed state is stale, return to the originating workflow and create a fresh preview and request. Don't treat an old approval as authorization for an edited proposal.
+
+Buttons reflect the account's permissions, request status, and relationship to the request. The queue requires approval-reading authority; authors without that access can give the request ID to the authorized reviewer through their team's normal process.
+
+Demo mode cannot complete this workflow. Use separate authorized accounts in a connected training deployment to observe independent review.
+
+<PolicyLink href="/approvals" permission="changes:approve">Open Change approvals</PolicyLink>
+
+[Review preview, approval, and execution](/learn/concepts/changing-things-safely).

@@ -1,0 +1,41 @@
+---
+title: "Investigate past decisions"
+description: "Use assignment history and the audit log."
+content_id: "APP14"
+section: "policyos"
+order: 140
+audiences: ["new learner"]
+permissions: ["employees:read", "assignments:read", "audit:read"]
+owner: "assignment history"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/override-manager.tsx", "frontend/components/audit-log-explorer.tsx", "frontend/lib/backend.ts", "frontend/lib/format.ts", "backend/tests/test_assignment_history.py", "backend/tests/test_audit_logs.py"]
+reading_time: 2
+prerequisites: ["Review controlled changes"]
+---
+
+Rachel asks why her allowance changed. Start with the employee result, then follow the evidence back to the change that caused it.
+
+1. Open Rachel's **Current assignments** and expand **Annual vacation allowance**. Note the current value, source, and any override or group explanation.
+2. Scroll to **Assignment history**. Compare the field, value, **Policy** or **Override** source type, and effective period across rows.
+3. Find the transition you want to understand: for example, an override ending or a policy-supplied allowance changing.
+4. Open **Audit log** and use **Search actor or change** to narrow the recent events. Search a policy name, an actor, or a known record ID from the relevant data.
+5. Use the entity and action filters to focus on policy, override, employee, or assignment events.
+6. Expand a row with **Show event payload** and compare **Before** with **After**. Use the displayed entity reference to connect it to the correct record.
+
+For the scheduled vacation increase, you may find an event for creating the future policy version and later system events ending and creating assignment records. Those are different actions, potentially performed by different actors.
+
+The history table shows dates and source types. It doesn't expose the full stored explanation for every old row or a precise historical-time query form. The audit table likewise formats its When column as a UTC date. Use the backend evidence through an authorized operator when you need exact timestamps or details beyond these screens.
+
+Audit search filters the recent events already loaded into the page. No matches doesn't establish that an older event never happened; narrowing filters does not fetch the entire archive.
+
+A new history row can be correct even when its value is unchanged: its source or explanation may have changed. A removed override can remain referenced by historical records without being active today.
+
+Reading assignments and reading audit events are separate permissions. If you can see Rachel's current result but cannot open Audit log, ask the appropriate reviewer to inspect that part of the evidence.
+
+Your aim is to reconstruct three answers: what Rachel had, why that result was selected, and which recorded changes led to it.
+
+<PolicyLink href="/audit" permission="audit:read">Open Audit log</PolicyLink>
+
+[Review explanations, history, and audit evidence](/learn/concepts/explaining-what-happened).

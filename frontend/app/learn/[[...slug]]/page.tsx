@@ -34,6 +34,7 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
   const next = pageIndex >= 0 && pageIndex < orderedPages.length - 1 ? orderedPages[pageIndex + 1] : null;
   const related = getRelatedLearnPages(page);
   const isHome = page.slugs.length === 0;
+  const isOutline = page.data.status === "outline";
 
   return (
     <div className="learn-layout">
@@ -44,20 +45,20 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
           <h1>{page.data.title}</h1>
           {page.data.description && <p className="learn-description">{page.data.description}</p>}
           <ArticleMeta page={page} />
-          {!isHome && <LessonProgress articleId={page.data.content_id} total={orderedPages.length} />}
+          {!isHome && !isOutline && <LessonProgress articleId={page.data.content_id} total={orderedPages.filter((item) => item.data.status !== "outline").length} />}
           {page.data.prerequisites.length > 0 && <p className="learn-prerequisites"><strong>Before you start:</strong> {page.data.prerequisites.join(" · ")}</p>}
         </header>
         {page.data.toc.length > 0 && <details className="learn-mobile-toc"><summary><ListTree size={14} /> On this page</summary><TocList items={page.data.toc} /></details>}
         <div className="learn-body prose"><Body components={getLearnMdxComponents(currentUser)} /></div>
-        {!isHome && <ArticleFeedback articleId={page.data.content_id} path={page.url} connected={apiConfigured} />}
-        {!isHome && related.length > 0 && <section className="learn-related" aria-labelledby="related-articles-title"><h2 id="related-articles-title">Related articles</h2><div>{related.map((item) => <Link href={item.url} key={item.url}><strong>{item.data.title}</strong><span>{item.data.description}</span></Link>)}</div></section>}
+        {!isHome && !isOutline && <ArticleFeedback articleId={page.data.content_id} path={page.url} connected={apiConfigured} />}
+        {!isHome && !isOutline && related.length > 0 && <section className="learn-related" aria-labelledby="related-articles-title"><h2 id="related-articles-title">Related lessons</h2><div>{related.map((item) => <Link href={item.url} key={item.url}><strong>{item.data.title}</strong><span>{item.data.description}</span></Link>)}</div></section>}
         {!isHome && <nav className="learn-pagination" aria-label="Lesson navigation">
           {previous ? <Link href={previous.url}><ArrowLeft size={15} /><span><small>Previous</small><strong>{previous.data.title}</strong></span></Link> : <span />}
           {next ? <Link className="next" href={next.url}><span><small>Next</small><strong>{next.data.title}</strong></span><ArrowRight size={15} /></Link> : <span />}
         </nav>}
       </article>
       <aside className="learn-toc" aria-label="On this page">
-        <div><strong>On this page</strong>{page.data.toc.length ? <TocList items={page.data.toc} /> : <p>This overview has no subsections.</p>}</div>
+        {page.data.toc.length > 0 && <div><strong>On this page</strong><TocList items={page.data.toc} /></div>}
       </aside>
     </div>
   );

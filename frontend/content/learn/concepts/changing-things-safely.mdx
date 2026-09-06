@@ -1,0 +1,50 @@
+---
+title: "Changing things safely"
+description: "Previewing impact, approving changes, and executing them."
+content_id: "CON14"
+section: "concepts"
+order: 140
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_change_previews.py", "backend/tests/test_phase6_access_approvals.py"]
+reading_time: 2
+prerequisites: ["When circumstances change"]
+---
+
+Before putting a vacation increase into effect, you want to understand whom it will affect.
+
+Rachel may be one of many employees covered by the policy. Some may have overrides. Others may match a higher-priority rule.
+
+Simply counting matching employees won't tell you whose final allowance changes.
+
+A **preview** calculates the effect of a proposed change without committing it. It helps answer questions such as:
+
+- Which assignments would be added, ended, or replaced?
+- Whose final values would stay the same?
+- Would the change create a conflict?
+
+For a change effective today, suppose the preview shows Rachel moving from 20 days to 22. Another employee's 25-day override remains in place. Both employees can match the changed policy while their final results behave differently.
+
+Some changes also require **approval**: an authorized person reviews the proposal and decides whether it may proceed.
+
+**Execution** is the step that actually commits the approved change. Approval alone doesn't change Rachel's assignment. If execution creates a future version, its future date still governs when its values apply.
+
+These steps answer different questions:
+
+| Step | Question |
+| --- | --- |
+| Preview | What would happen? |
+| Approval | May this proposed change proceed? |
+| Execution | Has the change actually been committed? |
+
+In PolicyOS, ordinary signed-in authors use independent approval for new policy versions and automated-access lifecycle changes. Employee edits and override reviews have their own preview-and-confirm flows. Where independent approval applies, the author cannot approve their own request, and the approving user must execute it with the required authority.
+
+A preview also depends on the state that was reviewed. If relevant data changes, or an approval expires, the system may reject execution and require a fresh preview and approval.
+
+**Review the proposed effect, then make sure the committed change is the one that was reviewed.**
+
+Next, we'll look at the evidence left behind after a change.

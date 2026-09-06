@@ -1,0 +1,46 @@
+---
+title: "Policies over time"
+description: "Effective dates, versions, and scheduled changes."
+content_id: "CON12"
+section: "concepts"
+order: 120
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_policy_versions.py", "backend/tests/test_assignment_queries.py"]
+reading_time: 2
+prerequisites: ["Making an exception"]
+---
+
+The company decides to increase the experienced-employee vacation allowance from 20 days to 22 days, starting January 1, 2027.
+
+Two questions now have different answers:
+
+- What should the policy provide on December 31?
+- What should it provide on January 1?
+
+An **effective date** says when a rule starts to apply. Writing the new rule today doesn't mean it should take effect today.
+
+To keep both definitions, we introduce a **policy version**.
+
+The policy keeps its identity: Experienced Employee Vacation. Each version contains the conditions, values, priority, and dates for one period.
+
+| Version | Annual allowance | Effective period |
+| --- | --- | --- |
+| Version 1 | 20 days | Through December 31, 2026 |
+| Version 2 | 22 days | From January 1, 2027 |
+
+Assuming Rachel still qualifies, this remains the winning policy, and she has no override, the rule produces 20 days before the boundary and 22 days from January 1.
+
+PolicyOS treats a version's end date as inclusive: Version 1 still applies on December 31. Versions of the same policy cannot overlap. If there is a gap between them, that policy contributes no result during the gap.
+
+This is different from having two separate policies compete. Versions answer which definition of **one policy** applies on the date being considered.
+
+We should also distinguish a prediction from a record. A future calculation tells us what the rules would produce using the facts currently known. It doesn't record that Rachel has already received 22 days, and it can't anticipate an employee change that hasn't been entered.
+
+When January 1 arrives, the system needs to process the scheduled change and update current assignments. The date defines when the rule applies; reconciliation does the work of bringing the stored results up to date.
+
+That is our next lesson.

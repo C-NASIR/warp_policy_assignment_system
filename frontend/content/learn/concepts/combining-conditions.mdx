@@ -1,0 +1,51 @@
+---
+title: "Combining conditions"
+description: "Expressing “all,” “any,” and “not.”"
+content_id: "CON06"
+section: "concepts"
+order: 60
+audiences: ["new learner"]
+permissions: []
+owner: "product education"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_policy_compiler.py"]
+reading_time: 2
+prerequisites: ["What is an assignment?"]
+---
+
+Rachel works full time in the Design department. You want a policy that gives the design tool to people who meet both of those requirements:
+
+> If an employee works full time AND belongs to Design, give them access to the design tool.
+
+**AND means every condition must be true.** Rachel qualifies because both facts match. A part-time designer meets only one requirement, so this rule doesn't match them.
+
+Now suppose the tool should be available to anyone in Design or Engineering:
+
+> If department is Design OR department is Engineering, give access to the design tool.
+
+**OR means at least one condition must be true.** Meeting either requirement is enough. OR also allows both to be true when the conditions can overlap.
+
+You can combine these ideas:
+
+> Full-time AND (Design OR Engineering).
+
+The parentheses put a box around the department choices. First ask whether the person belongs to either department. Then require that they also work full time.
+
+| Employee facts | Does this combined condition match? |
+| --- | --- |
+| Full-time, Design | Yes |
+| Full-time, Engineering | Yes |
+| Part-time, Design | No |
+| Full-time, Operations | No |
+
+There is one more useful idea: **NOT reverses a condition**. “NOT in Design” means the statement “in Design” must be false. Rachel would not match it while she works in Design.
+
+NOT describes a logical idea. PolicyOS currently supports AND/OR groups and comparisons; it has no general NOT group in its rule builder.
+
+These connections describe the conditions **inside a policy**. They don't decide which policy wins when several policies apply.
+
+Try reading a combined condition aloud before using it. “Full-time employees in either Design or Engineering” makes the intended meaning easy to check.
+
+Next, we'll see what happens when Rachel matches several different policies.

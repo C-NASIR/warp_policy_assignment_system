@@ -1,0 +1,43 @@
+---
+title: "Schedule a policy change"
+description: "Create a version with a future effective date."
+content_id: "APP11"
+section: "policyos"
+order: 110
+audiences: ["new learner"]
+permissions: ["policies:read", "policies:version:create", "policies:activate", "settings:read", "employees:read", "changes:preview"]
+owner: "policy versions"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/policy-builder.tsx", "frontend/app/policies/[id]/page.tsx", "backend/tests/test_policy_versions.py", "backend/tests/test_reconciliation_worker.py", "backend/app/routers/change_previews.py"]
+reading_time: 2
+prerequisites: ["Manage an exception"]
+---
+
+The company wants Experienced Employee Vacation to provide 22 days from a future date. Keep the policy's identity and create a new version of its definition.
+
+Open **Experienced Employee Vacation**, review **Version history**, and choose **New version** if your account has that capability.
+
+1. Confirm the policy name. It is fixed because this is a version of the existing policy.
+2. Set **Effective from** to a future date, such as January 1 next year, after the existing version's start.
+3. Keep Priority at **20** and verify the **Tenure >= 2 years** condition.
+4. Set **Annual vacation allowance** to **22 days**. Inspect every assignment row and any automated roles carried into the form.
+5. Leave **Effective until** blank unless the new version should end on a specified date.
+6. Choose **Preview impact** and follow the returned review path.
+
+For ordinary signed-in authors, the connected version preview submits an independent approval request. Use **Open approvals** and follow [Review controlled changes](/learn/policyos/review-controlled-changes). Where the account's authority permits direct execution of the preview, the builder exposes **Create version** instead.
+
+The connected preview describes the effect of saving the proposed version on current state. A future version can therefore show no assignment-value changes today. That doesn't establish that its future impact is zero.
+
+After execution, verify that **Version history** contains the new version and its intended start date. When a later version follows an open-ended one, the earlier version ends on the preceding day. Overlapping versions of the same policy are rejected.
+
+The detail header and rule summary show the latest version, even when it starts in the future. Use Rachel's **Current assignments** to verify today's result. Before the boundary, she should keep the earlier allowance if its policy still wins and no override applies.
+
+When the date arrives, scheduled reconciliation must run before stored current assignments reflect the new rule. This is a deployment responsibility; the application has no “run scheduler” control in this workflow. An operator can check the scheduled worker if the result is delayed.
+
+This screen also has no future-date assignment-query control. A future projection and a current stored assignment are separate kinds of evidence.
+
+<PolicyLink href="/policies" permission="policies:read">Open policy version history</PolicyLink>
+
+[Review policies over time](/learn/concepts/policies-over-time).

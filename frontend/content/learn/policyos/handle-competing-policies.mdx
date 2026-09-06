@@ -1,0 +1,48 @@
+---
+title: "Handle competing policies"
+description: "Configure priority and investigate conflicts."
+content_id: "APP08"
+section: "policyos"
+order: 80
+audiences: ["new learner"]
+permissions: ["policies:read", "policies:create", "policies:version:create", "settings:read", "employees:read", "assignments:read", "changes:preview"]
+owner: "assignment resolution"
+status: "draft"
+last_verified: "2026-09-05"
+review_by: "2026-12-05"
+verified_by: ["docs/learn/content-map.md", "frontend/components/policy-builder.tsx", "frontend/app/policies/[id]/page.tsx", "backend/tests/test_services.py", "backend/tests/test_change_previews.py"]
+reading_time: 2
+prerequisites: ["Read an employee’s assignments"]
+---
+
+Rachel has at least two years of service, so let's add the experienced-employee vacation rule alongside Standard Vacation.
+
+In your connected training deployment, create **Experienced Employee Vacation** with these settings:
+
+| Setting | Value |
+| --- | --- |
+| Priority | 20 |
+| Effective from | Today |
+| Condition | Tenure >= 2 years |
+| Assignment field | Annual vacation allowance |
+| Assignment value | 20 days |
+
+Use **Preview impact**, save, and complete activation if needed. Standard Vacation should remain active at priority 10 with its 15-day value.
+
+Rachel's start date must be at least two completed calendar years before today. Use the connected result to verify tenure; the new-policy browser estimate isn't authoritative around anniversaries.
+
+Open Rachel's **Current assignments**. With both rules effective and no override, the expected allowance is **20 days**. Expand the card and identify **Experienced Employee Vacation** as its source.
+
+Then open Standard Vacation's detail. It can still match Rachel even though it no longer supplies her vacation value. The impact totals reflect that distinction across the visible population; they aren't a named list of every losing candidate.
+
+When two different values tie at the highest priority for a one-value field, the backend rejects the conflicting change. Read the error's field and priority information, then inspect the relevant rules. Resolve the business disagreement by correcting priorities, values, or overlapping conditions.
+
+Changing an existing priority is a **New version** workflow. Open the policy, select **New version**, inspect all carried-over settings, change Priority, choose a valid effective date, and preview again. An ordinary signed-in author's version change goes through independent approval; [Review controlled changes](/learn/policyos/review-controlled-changes) covers the remaining steps.
+
+Don't introduce a tied conflict into shared records merely to test the message. The Practice section will provide experiments separately. Here, the goal is to recognize the cause and express the intended precedence correctly.
+
+A manual override doesn't make a policy conflict valid. Repair the competing rule configuration first.
+
+<PolicyLink href="/policies" permission="policies:read">Compare the vacation policies</PolicyLink>
+
+[Review priority and conflicts](/learn/concepts/when-policies-disagree).
