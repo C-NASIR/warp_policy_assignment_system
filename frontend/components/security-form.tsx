@@ -2,6 +2,7 @@
 
 import { Check, CircleAlert, KeyRound, Laptop, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import { FormEvent, useState } from "react";
 import type { AccountSecurity } from "@/lib/types";
 
@@ -19,6 +20,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
   const [confirmation, setConfirmation] = useState("");
   const [mfaPassword, setMfaPassword] = useState("");
   const [mfaSecret, setMfaSecret] = useState("");
+  const [mfaProvisioningUri, setMfaProvisioningUri] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [stepPassword, setStepPassword] = useState("");
@@ -54,7 +56,8 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
       const result = await call("/auth/mfa/setup", "POST", { current_password: mfaPassword });
-      setMfaSecret(String(result.secret)); setNotice("Add the key to your authenticator, then verify a code.");
+      setMfaSecret(String(result.secret)); setMfaProvisioningUri(String(result.provisioning_uri));
+      setNotice("Scan the QR code with your authenticator, then verify a code.");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "MFA setup could not start."); }
     finally { setBusy(false); }
   }
@@ -64,7 +67,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
     try {
       const result = await call("/auth/mfa/confirm", "POST", { code: mfaCode });
       setRecoveryCodes(result.recovery_codes as string[]); setSecurity((value) => ({ ...value, mfa_enabled: true }));
-      setMfaSecret(""); setMfaCode(""); setMfaPassword(""); setNotice("MFA is enabled. Save the recovery codes now; they are shown only once."); router.refresh();
+      setMfaSecret(""); setMfaProvisioningUri(""); setMfaCode(""); setMfaPassword(""); setNotice("MFA is enabled. Save the recovery codes now; they are shown only once."); router.refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "The code could not be confirmed."); }
     finally { setBusy(false); }
   }
@@ -116,7 +119,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
       {notice && <div className="success-banner" role="status"><Check size={14} />{notice}</div>}
       {security.mfa_required && !security.mfa_enabled && <div className="error-banner" role="alert"><TriangleAlert size={14} />Root access requires MFA before privileged changes can be made.</div>}
       <section className="panel security-panel"><div className="panel-header"><div><h2 className="panel-title">Multi-factor authentication</h2><div className="panel-caption">Protect privileged access with a TOTP authenticator and one-time recovery codes.</div></div><span className={`badge ${security.mfa_enabled ? "success" : "warning"}`}><ShieldCheck size={11} />{security.mfa_enabled ? "Enabled" : "Not enabled"}</span></div><div className="panel-body">
-        {!security.mfa_enabled ? !mfaSecret ? <form className="security-form" onSubmit={startMfa}><label className="field"><span className="field-label">Current password</span><input className="input" required type="password" autoComplete="current-password" value={mfaPassword} onChange={(event) => setMfaPassword(event.target.value)} /></label><button className="button" disabled={busy} type="submit">Set up authenticator</button></form> : <form className="security-form" onSubmit={confirmMfa}><div className="auth-requirement">Authenticator setup key: <strong>{mfaSecret}</strong></div><label className="field"><span className="field-label">6-digit authenticator code</span><input className="input" required inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} /></label><button className="button" disabled={busy} type="submit">Verify and enable</button></form> : <form className="security-form" onSubmit={disableMfa}><label className="field"><span className="field-label">Current password</span><input className="input" required type="password" value={mfaPassword} onChange={(event) => setMfaPassword(event.target.value)} /></label><label className="field"><span className="field-label">Authenticator code</span><input className="input" required inputMode="numeric" value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} /></label><button className="button danger" disabled={busy} type="submit">Disable MFA</button></form>}
+        {!security.mfa_enabled ? !mfaSecret ? <form className="security-form" onSubmit={startMfa}><label className="field"><span className="field-label">Current password</span><input className="input" required type="password" autoComplete="current-password" value={mfaPassword} onChange={(event) => setMfaPassword(event.target.value)} /></label><button className="button" disabled={busy} type="submit">Set up authenticator</button></form> : <form className="security-form" onSubmit={confirmMfa}>{mfaProvisioningUri && <div className="mfa-qr"><QRCodeSVG value={mfaProvisioningUri} size={200} level="M" title="PolicyOS authenticator setup QR code" /><span>Scan with your authenticator app</span></div>}<div className="auth-requirement">Can&apos;t scan it? Enter this setup key manually: <strong>{mfaSecret}</strong></div><label className="field"><span className="field-label">6-digit authenticator code</span><input className="input" required inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} /></label><button className="button" disabled={busy} type="submit">Verify and enable</button></form> : <form className="security-form" onSubmit={disableMfa}><label className="field"><span className="field-label">Current password</span><input className="input" required type="password" value={mfaPassword} onChange={(event) => setMfaPassword(event.target.value)} /></label><label className="field"><span className="field-label">Authenticator code</span><input className="input" required inputMode="numeric" value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} /></label><button className="button danger" disabled={busy} type="submit">Disable MFA</button></form>}
         {recoveryCodes.length > 0 && <div className="auth-requirement"><strong>Recovery codes</strong><pre>{recoveryCodes.join("\n")}</pre></div>}
       </div></section>
       <section className="panel security-panel"><div className="panel-header"><div><h2 className="panel-title">Password</h2><div className="panel-caption">Changing your password signs out every other active session.</div></div><span className="badge accent"><KeyRound size={11} />Protected</span></div><div className="panel-body"><form className="security-form" onSubmit={changePassword}><label className="field"><span className="field-label">Current password</span><input className="input" required type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label><label className="field"><span className="field-label">New password</span><input className="input" required type="password" minLength={12} maxLength={128} autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label><label className="field"><span className="field-label">Confirm new password</span><input className="input" required type="password" minLength={12} maxLength={128} autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></label><button className="button" disabled={busy} type="submit">Change password</button></form></div></section>
