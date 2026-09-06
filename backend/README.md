@@ -100,6 +100,7 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are expected.
 
 ```bash
 uv sync
+export DATABASE_MODE=real
 export DATABASE_URL=postgresql+psycopg:///policy_assignments
 export CHANGE_APPROVAL_SECRET="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_TOKEN="$(openssl rand -hex 32)"
@@ -123,6 +124,7 @@ Use this only when both the Root password and MFA recovery methods are lost. Run
 
 ```bash
 cd backend
+export DATABASE_MODE=real
 export DATABASE_URL=postgresql+psycopg:///policy_assignments
 export AUTH_ROOT_RECOVERY_KEY='value-from-your-secret-manager'
 uv run python scripts/emergency_root_recovery.py root@example.com
@@ -146,6 +148,35 @@ createdb -U postgres policy_assignments_test
 TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments_test \
 uv run pytest
 ```
+
+### Persistent test seed
+
+To evaluate the complete application with realistic, related records, run the
+repository helper from the project root:
+
+```bash
+./scripts/load_test_data.sh
+```
+
+The helper creates `policy_assignments_demo` when needed. The seed operation is
+atomic, refuses databases containing tenant data, and is safe to repeat after
+this exact seed has completed. It includes employee and reporting
+relationships, users and scoped roles, dated policies and assignments, groups,
+overrides, approvals, schedules, security history, API credentials, and audit
+logs. See [the company guide](../docs/seed-data-company.md) and
+[plaintext test credentials](../docs/seed-data-credentials.txt). MFA is left
+unenrolled intentionally so each tester can configure it manually.
+
+Select which database the backend uses in `.env`:
+
+```dotenv
+DATABASE_MODE=demo
+DATABASE_URL=postgresql+psycopg:///policy_assignments
+DEMO_DATABASE_URL=postgresql+psycopg:///policy_assignments_demo
+```
+
+`real` selects `DATABASE_URL`; `demo` selects `DEMO_DATABASE_URL`. Invalid mode
+names fail at startup instead of silently connecting to the wrong database.
 
 Tests create and drop all application tables, so `TEST_DATABASE_URL` must point to a dedicated disposable PostgreSQL database. It defaults to the local `policy_assignments_test` database shown above.
 
@@ -469,7 +500,7 @@ The service creates employee tenure-threshold events and also defines dispatch t
 The project includes a PostgreSQL-only, one-shot worker command:
 
 ```bash
-DATABASE_URL=postgresql+psycopg://user:password@host/database \
+DATABASE_MODE=real DATABASE_URL=postgresql+psycopg://user:password@host/database \
 uv run python -m app.workers.reconciliation
 ```
 

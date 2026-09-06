@@ -48,6 +48,7 @@ See the component guides for deeper technical and operational detail:
 - [Backend documentation](backend/README.md)
 - [Frontend documentation](frontend/README.md)
 - [Learning center plan](docs/learn/README.md)
+- [Persistent test seed and fictional company](docs/seed-data-company.md)
 
 ## Prerequisites
 
@@ -99,6 +100,30 @@ Open <http://localhost:3000>. Authentication submissions are disabled in demo mo
    ```
 
 4. Open <http://localhost:3000/signup> to create the one-time Root account. After the workspace is initialized, additional users are provisioned by an administrator from **Access control**.
+
+To explore a populated persistent workspace instead, load the test-only Cedar
+Harbor Wind Systems tenant before starting the backend:
+
+```bash
+./scripts/load_test_data.sh
+```
+
+The script creates the disposable `policy_assignments_demo` database when it is
+missing and then loads the complete seed atomically.
+
+The backend selects its database through `backend/.env`:
+
+```dotenv
+DATABASE_MODE=demo
+DATABASE_URL=postgresql+psycopg:///policy_assignments
+DEMO_DATABASE_URL=postgresql+psycopg:///policy_assignments_demo
+```
+
+Change only `DATABASE_MODE` to `real` or `demo`; the two databases remain
+separate.
+
+Read the [company scenario](docs/seed-data-company.md) and use the
+[test credentials](docs/seed-data-credentials.txt) to compare roles and workflows.
 
 The API is available at <http://127.0.0.1:8000>, with interactive OpenAPI documentation at <http://127.0.0.1:8000/docs>. The backend creates missing tables at startup; the current Alembic setup does not yet contain migration revisions.
 

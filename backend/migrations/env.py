@@ -1,19 +1,16 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app import models  # noqa: F401
-from app.database import Base, postgresql_url
+from app.database import Base, database_url_for_mode, postgresql_url
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
-if database_url is None:
-    raise RuntimeError("DATABASE_URL or sqlalchemy.url must be configured")
+database_url = database_url_for_mode()
 database_url = postgresql_url(database_url).render_as_string(hide_password=False)
 config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 target_metadata = Base.metadata

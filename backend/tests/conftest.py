@@ -9,8 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
 DEFAULT_TEST_DATABASE_URL = (
-    "postgresql+psycopg://postgres:postgres@localhost:5432/"
-    "policy_assignments_test"
+    "postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments_test"
 )
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", DEFAULT_TEST_DATABASE_URL)
 test_database_url = make_url(TEST_DATABASE_URL)
@@ -21,6 +20,7 @@ if test_database_url.drivername == "postgresql":
 
 # The application engine is initialized at import time. Point it at the same
 # dedicated database used by the test fixtures before importing the app.
+os.environ["DATABASE_MODE"] = "real"
 os.environ["DATABASE_URL"] = test_database_url.render_as_string(hide_password=False)
 TEST_BOOTSTRAP_TOKEN = "test-bootstrap-token-with-at-least-32-bytes"
 os.environ["AUTH_BOOTSTRAP_TOKEN"] = TEST_BOOTSTRAP_TOKEN
@@ -62,9 +62,7 @@ def client(session_factory):
 
     app.dependency_overrides[get_db] = override_db
     with TestClient(app) as test_client:
-        test_client.headers.update(
-            {"Authorization": f"Bearer {TEST_BOOTSTRAP_TOKEN}"}
-        )
+        test_client.headers.update({"Authorization": f"Bearer {TEST_BOOTSTRAP_TOKEN}"})
         yield test_client
     app.dependency_overrides.clear()
 

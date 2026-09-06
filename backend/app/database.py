@@ -1,5 +1,5 @@
 import os
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -21,6 +21,19 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 # expose a Unix socket. Production and remote environments should set
 # DATABASE_URL explicitly.
 DEFAULT_DATABASE_URL = "postgresql+psycopg:///policy_assignments"
+DEFAULT_DEMO_DATABASE_URL = "postgresql+psycopg:///policy_assignments_demo"
+DATABASE_MODES = frozenset({"real", "demo"})
+
+
+def database_url_for_mode(environment: Mapping[str, str] | None = None) -> str:
+    """Select the real or demo connection without changing either URL."""
+    values = environment if environment is not None else os.environ
+    mode = values.get("DATABASE_MODE", "real").strip().lower()
+    if mode not in DATABASE_MODES:
+        raise RuntimeError("DATABASE_MODE must be either 'real' or 'demo'")
+    if mode == "demo":
+        return values.get("DEMO_DATABASE_URL", DEFAULT_DEMO_DATABASE_URL)
+    return values.get("DATABASE_URL", DEFAULT_DATABASE_URL)
 
 
 def postgresql_url(value: str) -> URL:
@@ -32,7 +45,8 @@ def postgresql_url(value: str) -> URL:
     return url
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+DATABASE_MODE = os.getenv("DATABASE_MODE", "real").strip().lower()
+DATABASE_URL = database_url_for_mode()
 engine = create_engine(postgresql_url(DATABASE_URL), pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
