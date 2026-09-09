@@ -10,7 +10,7 @@ owner: "policy lifecycle"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/policy-lifecycle.tsx", "frontend/app/policies/[id]/page.tsx", "backend/tests/test_policy_access.py", "backend/tests/test_phase6_access_approvals.py"]
+verified_by: ["docs/learn/content-map.md", "frontend/components/policy-lifecycle.tsx", "frontend/app/policies/[id]/page.tsx", "backend/tests/test_policy_access.py", "backend/tests/test_policy_change_reconciliation.py"]
 reading_time: 2
 prerequisites: ["Build richer conditions"]
 ---
@@ -25,12 +25,10 @@ If it is **draft** and you have activation authority:
 
 1. Check that its condition and 15-day value express the intended rule.
 2. Choose **Activate**.
-3. Read the confirmation dialog. For an ordinary policy without automated roles, **Activate and reconcile** applies the change immediately.
+3. Read the confirmation dialog. **Activate and reconcile** applies the change immediately.
 4. Confirm when the definition is ready, then check the saved status and Rachel's current assignments.
 
 Ordinary activation doesn't have a separate detailed impact-preview screen in this flow. The confirmation describes the action; it is not a list of every before-and-after assignment.
-
-For a policy containing automated access roles, the lifecycle dialog instead offers **Preview and request approval**. That submits a request; the policy remains in its existing status until the approved change is executed. Continue through [Review controlled changes](/learn/policyos/review-controlled-changes).
 
 The policy detail also distinguishes **Employees match the rule** from the number who **receive assignments from this policy**. These can differ when other rules or overrides determine the final values. The impact panel describes resolved behavior, not just the policy's intended output.
 

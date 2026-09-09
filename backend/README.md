@@ -15,7 +15,6 @@ Employee
 → Conflict Resolution
 → Employee Overrides
 → Temporal Employee Assignments
-→ Policy-derived User Roles
 ```
 
 Read-only assignment queries distinguish three questions. A past date reads the
@@ -85,7 +84,6 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **User:** a human account with a normalized email, Argon2id password hash, lifecycle status, one or more assigned roles, and an optional employee link. Administratively reset passwords are temporary and must be changed at the next login.
 - **Role:** a reusable, named bundle of application permissions plus an employee-data scope, assigned many-to-many to non-Root users.
 - **Role permission:** one allow-only capability such as `employees:read`, `policies:version:create`, `policies:activate`, or `access:manage`. Effective permissions are the union of every assigned role. `policies:update` remains a combined legacy grant for roles created before fine-grained policy actions were introduced.
-- **Automated role grant:** a policy-version consequence that grants an automation-eligible, non-administrative role to a linked user while that employee matches. These grants are stored separately from protected explicit role assignments, reconciled with employee changes, and audited on grant and revocation.
 - **Change approval request:** a persisted human workflow containing the exact proposed change and preview, its requester, expiry, decision, approving user, and execution status. The author cannot approve their own request, and the approving user must execute it.
 - **Employee-data scope:** a role-level visibility boundary of `all`, `reporting_tree`, `self`, or `none`. A user's effective employee visibility is the union of every assigned role; reporting-tree access starts from the employee linked to that user and includes every direct and indirect report.
 - **Assignment-field scope:** a separate role-level data boundary of `all`, `selected`, or `none`. Selected roles name the assignment domains they can access, such as Application Access or Pay Schedule. Effective access is the union across roles, while any `all` role grants every assignment field.
@@ -259,7 +257,6 @@ state-changing cookie-authenticated requests.
 | GET | `/condition-fields` | List system-supported condition fields and dependencies |
 | GET | `/condition-fields/{key}` | Read one system-supported condition field |
 | POST / GET | `/policies` | Create policies with version 1 or list them |
-| GET | `/policies/automatable-roles` | List roles eligible for policy-derived assignment |
 | GET / PATCH | `/policies/{id}` | Read or update stable policy metadata |
 | GET / POST | `/policies/{id}/versions` | List or create policy versions |
 | GET | `/policies/{id}/versions/{version_id}` | Read one policy version |
@@ -390,16 +387,14 @@ timestamps, and digests—the submitted employee or policy data is not embedded
 in it. Call `POST /change-executions` with that token and the exact same
 discriminated `change` object.
 
-A successful non-Root human preview of a policy version or automated-access
-lifecycle change instead creates a persisted pending request and returns
+A successful non-Root human preview of a policy version or policy lifecycle
+change instead creates a persisted pending request and returns
 `approval_request_id`. A user with `changes:approve` can review and
 approve or reject it through `/approval-requests`; the author cannot decide
 their own request. Approval creates the signed capability internally, and the
 same approving user submits `/change-executions` with only the request ID.
-Active policy versions and automated-access policy lifecycle changes use this
-workflow. Roles must explicitly opt into policy automation, and roles named Root
-or containing wildcard, access-administration, or credential-administration
-permissions are ineligible.
+Active policy versions use this workflow. User-role assignment and revocation
+remain explicit access-administration actions outside policy reconciliation.
 
 Execution verifies the signature and expiry, rejects altered input, locks and
 checks the target-state precondition, applies the change and reconciliation in

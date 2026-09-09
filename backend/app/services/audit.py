@@ -57,9 +57,6 @@ def snapshot_policy_version(version: PolicyVersion) -> dict[str, Any]:
         ),
         key=lambda item: (item["assignment_field_definition_id"], item["value"]),
     )
-    snapshot["automated_role_ids"] = sorted(
-        grant.role_id for grant in version.role_grants
-    )
     snapshot["compiled_clauses"] = [
         [
             {

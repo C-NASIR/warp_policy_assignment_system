@@ -29,8 +29,8 @@ owner and an audience representative sign off.
 Give a new operator the Rachel scenario and ask them to explain why an employee
 record is not a user, how Morgan receives authority, what limits Rachel to her
 reporting tree, and why Jordan rather than Morgan approves and executes the
-supported proposal. Then ask them to distinguish an explicit role from a
-policy-derived grant. Do not coach. Record completion, wrong turns, terms
+supported proposal. Then ask them to explain why policies do not change user
+roles. Do not coach. Record completion, wrong turns, terms
 searched, and the learner's explanation—not customer or employee data.
 
 Success means the reader completes all five explanations, distinguishes action

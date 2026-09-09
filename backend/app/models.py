@@ -99,11 +99,6 @@ class Role(Base):
     assignment_field_scope: Mapped[Literal["all", "selected", "none"]] = mapped_column(
         String(20), default="none", server_default="none"
     )
-    automation_eligible: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        server_default="false",
-    )
     created_by: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -121,14 +116,6 @@ class Role(Base):
         cascade="all, delete-orphan",
     )
     assignment_field_links: Mapped[list[RoleAssignmentFieldScope]] = relationship(
-        back_populates="role",
-        cascade="all, delete-orphan",
-    )
-    policy_grants: Mapped[list[PolicyRoleGrant]] = relationship(
-        back_populates="role",
-        cascade="all, delete-orphan",
-    )
-    automated_user_links: Mapped[list[AutomatedUserRole]] = relationship(
         back_populates="role",
         cascade="all, delete-orphan",
     )
@@ -244,10 +231,6 @@ class User(Base):
     roles: Mapped[list[Role]] = relationship(
         secondary="user_roles",
         back_populates="users",
-    )
-    automated_role_links: Mapped[list[AutomatedUserRole]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
     )
 
 
@@ -383,39 +366,6 @@ class UserRole(Base):
     role_id: Mapped[int] = mapped_column(
         ForeignKey("roles.id", ondelete="RESTRICT"),
         primary_key=True,
-    )
-    # Explicit assignments are protected from automated reconciliation.
-    protected: Mapped[bool] = mapped_column(
-        Boolean,
-        default=True,
-        server_default="true",
-    )
-
-
-class AutomatedUserRole(Base):
-    __tablename__ = "automated_user_roles"
-
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    role_id: Mapped[int] = mapped_column(
-        ForeignKey("roles.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    source_policy_version_id: Mapped[int] = mapped_column(
-        ForeignKey("policy_versions.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=current_datetime,
-        server_default=func.now(),
-    )
-    user: Mapped[User] = relationship(back_populates="automated_role_links")
-    role: Mapped[Role] = relationship(back_populates="automated_user_links")
-    source_policy_version: Mapped[PolicyVersion] = relationship(
-        back_populates="automated_user_roles"
     )
 
 
@@ -726,14 +676,6 @@ class PolicyVersion(Base):
         back_populates="policy_version",
         cascade="all, delete-orphan",
     )
-    role_grants: Mapped[list[PolicyRoleGrant]] = relationship(
-        back_populates="policy_version",
-        cascade="all, delete-orphan",
-    )
-    automated_user_roles: Mapped[list[AutomatedUserRole]] = relationship(
-        back_populates="source_policy_version",
-        cascade="all, delete-orphan",
-    )
 
     @property
     def condition_group(self) -> ConditionGroup:
@@ -746,26 +688,6 @@ class PolicyVersion(Base):
                 f"PolicyVersion {self.id} must have exactly one root condition group"
             )
         return roots[0]
-
-    @property
-    def automated_role_ids(self) -> list[int]:
-        return sorted(grant.role_id for grant in self.role_grants)
-
-
-class PolicyRoleGrant(Base):
-    __tablename__ = "policy_role_grants"
-
-    policy_version_id: Mapped[int] = mapped_column(
-        ForeignKey("policy_versions.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    role_id: Mapped[int] = mapped_column(
-        ForeignKey("roles.id", ondelete="RESTRICT"),
-        primary_key=True,
-    )
-    policy_version: Mapped[PolicyVersion] = relationship(back_populates="role_grants")
-    role: Mapped[Role] = relationship(back_populates="policy_grants")
-
 
 class ConditionFieldDefinition(Base):
     __tablename__ = "condition_field_definitions"

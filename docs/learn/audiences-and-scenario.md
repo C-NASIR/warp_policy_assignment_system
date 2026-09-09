@@ -13,7 +13,7 @@ PolicyOS is an administrative assignment system with scoped user access. It does
 | Group manager | Maintain explicit populations | Add or remove members, attach policies, and predict reconciliation | `groups:read`, `groups:create`, `groups:update`, plus related read permissions |
 | Reviewer | Review supported sensitive changes independently | Inspect the exact request and impact, approve or reject another author's proposal, and execute an approved request | `changes:approve`, `changes:execute`, plus the policy authority needed by the change |
 | Assignment investigator | Explain unexpected outcomes | Distinguish match from selection, read evidence and priority, identify overrides, and compare history with audit | `employees:read`, `assignments:read`, `policies:read`, `audit:read` as needed |
-| Access administrator | Manage human access | Create scoped roles and users, link accounts to employees, review privileged access, and distinguish explicit from policy-derived roles | `access:read`, `access:manage`, `access:review`, often `employees:read` |
+| Access administrator | Manage human access | Create scoped roles and users, link accounts to employees, assign roles explicitly, and review privileged access | `access:read`, `access:manage`, `access:review`, often `employees:read` |
 | Scoped reader | Read only an allowed population or assignment domain | Explain why action permissions, employee scope, and assignment-field scope must all line up | Appropriate read permissions plus configured scopes |
 
 These permission sets are illustrative, not built-in roles. Machine API operators remain a later reference audience; the current frontend has no UI for machine credentials and assignment queries.
@@ -42,7 +42,7 @@ Use reserved `.test` email addresses in fixtures. Never use a real address in co
 5. Rachel's reporting-tree access includes Rachel, direct report Devon, and indirect report Sam only because Rachel's account is linked and an assigned role supplies both the read permissions and reporting-tree scope.
 6. Rachel can instead receive a limited view of her own record through the same application when a linked account has suitable read permissions, self scope, and the intended field scope.
 7. Morgan proposes a policy version. Jordan uses a separate account to inspect, approve or reject, and ordinarily execute the exact supported request. PolicyOS has no arbitrary reviewer assignment, built-in handoff message, or general approval fallback for every mutation.
-8. An eligible role may later be supplied by an effective policy to a linked user. Policy-derived grants change with reconciliation; explicit grants remain independent.
+8. User roles are assigned and revoked only through explicit access administration. Policy eligibility and employee reconciliation never change application access.
 
 ## Assignment scenario
 
@@ -58,12 +58,10 @@ Product Launch remains an explicit employee group. It is not populated from a de
 
 ## Verification invariants
 
-- A user account receives a policy-derived role only when it is linked to the employee reaching the effective policy.
-- Explicit and policy-derived role grants remain separate; removing policy eligibility does not erase an explicit grant.
-- Scopes from all explicit and policy-derived roles are unioned. A narrow role cannot deny a broader grant.
+- User roles are assigned and revoked explicitly; policies never change a user's roles.
+- Scopes from all assigned roles are unioned. A narrow role cannot deny a broader grant.
 - Reporting-tree scope includes the linked employee plus direct and indirect descendants. Being recorded as a manager does not create an account, permission, or role.
 - Ordinary human policy-version previews and supported lifecycle previews create independent approval requests. Root uses the privileged direct path.
 - Approval alone commits nothing. The ordinary approving user executes; Root may execute an approved request. Stale or expired approvals require a fresh preview and review.
 - Future effective dates still govern future policy behavior after execution, and scheduled reconciliation remains a deployment responsibility.
-- PolicyOS role automation does not provision accounts or permissions in external services.
 - Demo-mode success messages are not persistence guarantees. Course screenshots and connected fixtures use fictional data only.

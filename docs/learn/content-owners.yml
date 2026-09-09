@@ -7,7 +7,6 @@ owners:
   - { name: assignment queries, area: current and dated queries, cadence: semiannual }
   - { name: assignment resolution, area: "candidate selection and explanations", cadence: quarterly }
   - { name: audit, area: audit events and investigations, cadence: quarterly }
-  - { name: automated access, area: policy-derived roles, cadence: quarterly }
   - { name: change approvals, area: "preview, approval, and execution", cadence: quarterly }
   - { name: configuration, area: "assignment and condition fields", cadence: quarterly }
   - { name: employee operations, area: employee records and onboarding, cadence: quarterly }

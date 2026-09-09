@@ -185,7 +185,6 @@ class RoleCreate(BaseModel):
     # an explicit least-privilege choice for every new role.
     assignment_field_scope: Literal["all", "selected", "none"] = "all"
     assignment_field_ids: list[int] = Field(default_factory=list)
-    automation_eligible: bool = False
 
     @model_validator(mode="after")
     def validate_assignment_field_scope(self) -> RoleCreate:
@@ -207,7 +206,6 @@ class RoleUpdate(BaseModel):
     employee_scope: Literal["all", "reporting_tree", "self", "none"] | None = None
     assignment_field_scope: Literal["all", "selected", "none"] | None = None
     assignment_field_ids: list[int] | None = None
-    automation_eligible: bool | None = None
 
 
 class RoleRead(ORMModel):
@@ -217,7 +215,6 @@ class RoleRead(ORMModel):
     employee_scope: Literal["all", "reporting_tree", "self", "none"]
     assignment_field_scope: Literal["all", "selected", "none"]
     assignment_field_ids: list[int]
-    automation_eligible: bool
     permissions: list[str]
     user_count: int
     created_by: str
@@ -263,7 +260,6 @@ class UserRead(ORMModel):
     created_at: datetime
     last_login_at: datetime | None
     roles: list[RoleSummaryRead] = Field(default_factory=list)
-    automated_roles: list[RoleSummaryRead] = Field(default_factory=list)
     permissions: list[str] = Field(default_factory=list)
 
 
@@ -423,13 +419,14 @@ class ConditionGroupCreate(BaseModel):
 
 
 class PolicyVersionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     priority: int
     effective_from: date = Field(default_factory=current_date)
     effective_until: date | None = None
     created_by: str | None = Field(default=None, min_length=1, max_length=200)
     condition_group: ConditionGroupCreate
-    values: list[PolicyValueCreate] = Field(default_factory=list)
-    automated_role_ids: list[int] = Field(default_factory=list)
+    values: list[PolicyValueCreate] = Field(min_length=1)
 
     @model_validator(mode="after")
     def require_a_valid_effective_range(self) -> PolicyVersionCreate:
@@ -480,7 +477,6 @@ class PolicyVersionRead(ORMModel):
     created_by: str | None
     condition_group: ConditionGroupRead
     values: list[PolicyValueRead]
-    automated_role_ids: list[int] = Field(default_factory=list)
 
 
 class PolicyCapabilitiesRead(BaseModel):
@@ -954,24 +950,11 @@ class ChangeApprovalRead(BaseModel):
         return ensure_utc(value)
 
 
-class AutomatedRolePreviewChangeRead(BaseModel):
-    user_id: int
-    employee_id: int
-    employee_name: str
-    role_id: int
-    role_name: str
-    action: Literal["grant", "revoke"]
-    source_policy_version_id: int | None
-    source_is_proposed: bool = False
-
-
 class ChangePreviewRead(BaseModel):
     change_type: str
     valid: bool
     affected_employee_count: int
-    affected_user_count: int = 0
     changes: list[EmployeeAssignmentPreviewChangeRead]
-    access_changes: list[AutomatedRolePreviewChangeRead] = Field(default_factory=list)
     conflicts: list[ChangePreviewConflictRead]
     warnings: list[str]
     approval: ChangeApprovalRead | None = None
@@ -1044,9 +1027,7 @@ class ApprovedChangeExecutionRead(BaseModel):
     executed_at: datetime
     executed_by: str
     affected_employee_count: int
-    affected_user_count: int = 0
     changes: list[EmployeeAssignmentPreviewChangeRead]
-    access_changes: list[AutomatedRolePreviewChangeRead] = Field(default_factory=list)
     resources: dict[str, int]
 
     @field_validator("executed_at", mode="before")

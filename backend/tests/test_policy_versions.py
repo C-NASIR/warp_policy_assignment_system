@@ -124,6 +124,9 @@ def test_policy_api_creates_version_one_and_schedules_later_versions(client):
             "priority": 30,
             "effective_from": (today + timedelta(days=1)).isoformat(),
             "condition_group": condition_group(),
+            "values": [
+                {"assignment_field_definition_id": field["id"], "value": "4 weeks"}
+            ],
         },
     )
     assert overlap.status_code == 409

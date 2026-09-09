@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy import select
 
 from app.dependencies import DatabaseSession, HumanSession
-from app.models import AuthSession, AutomatedUserRole, Role, SecurityEvent
+from app.models import AuthSession, SecurityEvent
 from app.schemas import (
     AccountSecurityRead,
     AuthSessionRead,
@@ -78,15 +78,6 @@ def _clear_session_cookie(response: Response) -> None:
 
 
 def _user_read(session: DatabaseSession, user) -> UserRead:
-    automated_roles = list(
-        session.scalars(
-            select(Role)
-            .join(AutomatedUserRole, AutomatedUserRole.role_id == Role.id)
-            .where(AutomatedUserRole.user_id == user.id)
-            .distinct()
-            .order_by(Role.name)
-        )
-    )
     return UserRead(
         id=user.id,
         email=user.email,
@@ -101,9 +92,6 @@ def _user_read(session: DatabaseSession, user) -> UserRead:
         roles=[
             RoleSummaryRead.model_validate(role)
             for role in sorted(user.roles, key=lambda item: item.name)
-        ],
-        automated_roles=[
-            RoleSummaryRead.model_validate(role) for role in automated_roles
         ],
         permissions=sorted(effective_permissions(session, user)),
     )

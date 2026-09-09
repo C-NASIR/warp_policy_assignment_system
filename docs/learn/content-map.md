@@ -1,10 +1,10 @@
 # Learn curriculum map
 
-The curriculum has 51 ordered lessons in three sections. All 22 Concepts lessons and 17 PolicyOS walkthroughs are drafted. The 12 Practice lesson bodies remain exactly `Empty for Now`; their titles and descriptions define scope only. Practice activities have not been authored.
+The curriculum has 49 ordered lessons in three sections. All 21 Concepts lessons and 16 PolicyOS walkthroughs are drafted. The 12 Practice lesson bodies remain exactly `Empty for Now`; their titles and descriptions define scope only. Practice activities have not been authored.
 
-The learning story begins with a company hiring Rachel and gradually turning individual decisions into policies. After the assignment model is established, an organizational sequence follows the same company from one Root user through delegated responsibilities, scoped visibility, independent review, and policy-derived access. PolicyOS walkthroughs then apply both stories in the application.
+The learning story begins with a company hiring Rachel and gradually turning individual decisions into policies. After the assignment model is established, an organizational sequence follows the same company from one Root user through delegated responsibilities, scoped visibility, and independent review. PolicyOS walkthroughs then apply both stories in the application.
 
-## Concepts — 22 lessons
+## Concepts — 21 lessons
 
 ### From decisions to assignments
 
@@ -41,14 +41,13 @@ The learning story begins with a company hiring Rachel and gradually turning ind
 19. **Access through the reporting tree:** Linked manager accounts, direct and indirect reports, and the mechanisms that remain separate.
 20. **Access to your own information:** Combining a linked account, read permissions, and self scope in the existing application.
 
-### Controlled and automated access
+### Controlled access
 
 21. **Separate proposing from authorizing:** Policy authorship, activation, approval, execution, and the full supported request lifecycle.
-22. **When a policy grants a role:** Explicit versus policy-derived PolicyOS access and the linked-account requirement.
 
-Lessons 16–22 are one connected organizational sequence. `CON16` retains the existing `who-can-do-what` URL and content ID while becoming the entry point rather than carrying the whole access model alone. The approval material formerly concentrated in **Changing things safely** now introduces only preview safety there; independent organizational review has its primary conceptual home in lesson 21.
+Lessons 16–21 are one connected organizational sequence. `CON16` retains the existing `who-can-do-what` URL and content ID while becoming the entry point rather than carrying the whole access model alone. The approval material formerly concentrated in **Changing things safely** now introduces only preview safety there; independent organizational review has its primary conceptual home in lesson 21.
 
-## PolicyOS — 17 lessons
+## PolicyOS — 16 lessons
 
 1. **Find your way around:** Where employees, policies, assignments, and evidence live.
 2. **Meet your first employee:** Read an employee record and identify the facts policies use.
@@ -66,9 +65,8 @@ Lessons 16–22 are one connected organizational sequence. `CON16` retains the e
 14. **Manage access:** Give Morgan a configured People operator role and user account.
 15. **Limit access with scopes:** Configure reporting-tree, selected-field, and self access and verify their combination.
 16. **Review controlled changes:** Follow Morgan's exact policy proposal through Jordan's decision and execution.
-17. **Grant roles through policy:** Make an eligible role follow employee policy eligibility while preserving explicit grants.
 
-The existing `manage-access` and `review-controlled-changes` URLs and content IDs remain stable. **Review controlled changes** moves after explicit access configuration so readers understand how Morgan and Jordan receive their different responsibilities before using them. **Grant roles through policy** comes last because it combines the policy model, linked accounts, roles, scopes, reconciliation, and approval.
+The existing `manage-access` and `review-controlled-changes` URLs and content IDs remain stable. **Review controlled changes** follows explicit access configuration so readers understand how Morgan and Jordan receive their different responsibilities before using them.
 
 ## Practice — 12 lessons
 

@@ -10,7 +10,6 @@ from app.models import (
     ConditionGroup,
     Policy,
     PolicyFieldValue,
-    PolicyRoleGrant,
     PolicyVersion,
 )
 from app.services.audit import record_audit_log, snapshot_policy_version
@@ -59,7 +58,6 @@ def create_policy_version(
     effective_until: date | None,
     created_by: str | None,
     values: list[PolicyFieldValue],
-    role_grants: list[PolicyRoleGrant],
     condition_groups: list[ConditionGroup],
     compiled_clauses: list[CompiledPolicyClause],
     actor: str = "system",
@@ -104,7 +102,6 @@ def create_policy_version(
         effective_until=effective_until,
         created_by=created_by,
         values=values,
-        role_grants=role_grants,
         condition_groups=condition_groups,
         compiled_clauses=compiled_clauses,
     )

@@ -17,7 +17,7 @@ Employee facts and reporting relationships
   -> candidate values per assignment field
   -> cardinality and priority resolution
   -> field-level manual overrides
-  -> temporal employee assignments and automated user roles
+  -> temporal employee assignments
   -> assignment explanation, assignment history, and audit events
 ```
 
@@ -32,11 +32,11 @@ Employee facts and reporting relationships
 | Review history | `/employees/{id}` | Shows open and retired assignment rows with source and effective interval | `frontend/components/override-manager.tsx`, `backend/tests/test_assignment_history.py` | Verified |
 | Manage overrides | `/employees/{id}` | Previews create, update, or removal; an active override replaces all policy values for that field and reconciliation is audited | `frontend/components/override-manager.tsx`, `backend/tests/test_overrides.py`, `backend/tests/test_audit_logs.py` | Verified |
 | Browse policy impact | `/policies`, `/policies/{id}` | Separates matched employees from employees and values actually selected after resolution | `frontend/app/policies/[id]/page.tsx`, `backend/tests/test_impact_summaries.py` | Verified |
-| Create a policy | `/policies/new` | Builds conditions, values, priority, dates, and optional automated roles; a newly created policy may be active or draft depending on authority and automated access | `frontend/components/policy-builder.tsx`, `backend/tests/test_policy_versions.py`, `backend/tests/test_phase6_access_approvals.py` | UI verified |
-| Create a policy version | `/policies/new?policyId={id}` | Uses the connected preview contract; active-policy versions require activation authority and can create a persisted human approval request | `frontend/components/policy-builder.tsx`, `backend/tests/test_policy_access.py`, `backend/tests/test_phase6_access_approvals.py` | Verified |
-| Activate or archive | `/policies/{id}` | Uses record capabilities; ordinary lifecycle changes reconcile immediately, while lifecycle changes with automated access require preview and independent approval | `frontend/components/policy-lifecycle.tsx`, `backend/tests/test_policy_change_reconciliation.py`, `backend/tests/test_phase6_access_approvals.py` | Verified |
+| Create a policy | `/policies/new` | Builds conditions, one or more assignment values, priority, and dates; a newly created policy may be active or draft depending on authority | `frontend/components/policy-builder.tsx`, `backend/tests/test_policy_versions.py` | UI verified |
+| Create a policy version | `/policies/new?policyId={id}` | Uses the connected preview contract; active-policy versions require activation authority and can create a persisted human approval request | `frontend/components/policy-builder.tsx`, `backend/tests/test_policy_access.py`, `backend/tests/test_change_executions.py` | Verified |
+| Activate or archive | `/policies/{id}` | Uses record capabilities and reconciles affected employee assignments immediately | `frontend/components/policy-lifecycle.tsx`, `backend/tests/test_policy_change_reconciliation.py` | Verified |
 | Manage groups | `/groups`, `/groups/{id}` | Groups are explicit; membership changes are previewed, while policy attachment and detachment reconcile members immediately | `frontend/components/group-manager.tsx`, `backend/tests/test_groups.py` | Verified |
-| Review approvals | `/approvals` | Another user can approve or reject a pending request; the ordinary approving user executes it; Root may execute an approved request; the author cannot approve it | `frontend/components/approval-queue.tsx`, `backend/app/services/approval_requests.py`, `backend/tests/test_phase6_access_approvals.py` | Verified |
+| Review approvals | `/approvals` | Another user can approve or reject a pending request; the ordinary approving user executes it; Root may execute an approved request; the author cannot approve it | `frontend/components/approval-queue.tsx`, `backend/app/services/approval_requests.py`, `backend/tests/test_change_executions.py` | Verified |
 | Configure assignment fields | `/settings` | Creates named `one` or `many` output fields; cardinality is fixed after creation | `frontend/components/assignment-field-manager.tsx`, `backend/app/models.py` | UI verified |
 | Inspect audit | `/audit` | Filters recent append-only events and exposes actor, entity, action, timestamp, and before/after snapshots | `frontend/components/audit-log-explorer.tsx`, `backend/tests/test_audit_logs.py` | Verified |
 | Manage users and roles | `/access` | Provisions users, links employees, assigns roles, and defines permission, employee, and assignment-field scopes | `frontend/components/access-manager.tsx`, `backend/tests/test_access_control.py`, `backend/tests/test_employee_visibility.py`, `backend/tests/test_assignment_field_visibility.py` | Verified |
@@ -65,7 +65,7 @@ Employee facts and reporting relationships
 | An employee record does not create a user; a user may link to an employee, and a non-Root user must have at least one explicit role at creation | `backend/app/services/access_control.py`, `backend/tests/test_access_control.py` |
 | Human access is the union of allow-only role permissions plus separately unioned employee and assignment-field scopes | `backend/app/services/access_control.py`, `backend/app/services/employee_visibility.py`, `backend/app/services/assignment_field_visibility.py`, `backend/tests/test_access_control.py`, `backend/tests/test_employee_visibility.py`, `backend/tests/test_assignment_field_visibility.py` |
 | Reporting-tree scope includes the linked employee plus direct and indirect descendants; a manager relationship alone grants no account or permission | `backend/app/services/employee_visibility.py`, `backend/app/services/org_chart.py`, `backend/tests/test_employee_visibility.py` |
-| Policy-derived roles require an eligible role and linked employee account; explicit roles are preserved | `backend/tests/test_phase6_access_approvals.py`, `backend/app/services/access_control.py` |
+| Policies produce employee assignments only; user roles are assigned and revoked explicitly through access administration | `backend/app/models.py`, `backend/app/services/access_control.py`, `backend/tests/test_access_control.py` |
 
 ## Route and permission map
 

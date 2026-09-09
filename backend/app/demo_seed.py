@@ -661,7 +661,6 @@ def _create_roles(
             "all",
             "all",
             [],
-            False,
         ),
         (
             "Policy Author",
@@ -679,7 +678,6 @@ def _create_roles(
             "all",
             "all",
             [],
-            False,
         ),
         (
             "Change Approver",
@@ -696,7 +694,6 @@ def _create_roles(
             "all",
             "all",
             [],
-            False,
         ),
         (
             "People Operations",
@@ -718,7 +715,6 @@ def _create_roles(
                 field_ids["Benefits Plan"],
                 field_ids["Compliance Training"],
             ],
-            False,
         ),
         (
             "Department Manager",
@@ -740,7 +736,6 @@ def _create_roles(
                 field_ids["Safety Equipment"],
                 field_ids["On-call Rotation"],
             ],
-            False,
         ),
         (
             "Compliance Auditor",
@@ -758,7 +753,6 @@ def _create_roles(
             "all",
             "all",
             [],
-            False,
         ),
         (
             "Employee Self Service",
@@ -772,7 +766,6 @@ def _create_roles(
                 field_ids["Application Access"],
                 field_ids["Compliance Training"],
             ],
-            True,
         ),
         (
             "Contractor Self Service",
@@ -786,25 +779,22 @@ def _create_roles(
                 field_ids["Facility Access"],
                 field_ids["Compliance Training"],
             ],
-            False,
         ),
         (
             "Engineering Workspace",
-            "Policy-granted access to engineering assignment details.",
+            "Access to engineering assignment details.",
             ["employees:read", "policies:read", "assignments:read"],
             "self",
             "selected",
             [field_ids["Application Access"], field_ids["Data Classification"]],
-            True,
         ),
         (
             "Incident Responder",
-            "Policy-granted visibility for on-call responders.",
+            "Visibility for on-call responders.",
             ["employees:read", "assignments:read"],
             "self",
             "selected",
             [field_ids["Application Access"], field_ids["On-call Rotation"]],
-            True,
         ),
     )
     roles: dict[str, Role] = {}
@@ -815,7 +805,6 @@ def _create_roles(
         employee_scope,
         field_scope,
         selected_ids,
-        eligible,
     ) in enumerate(specs):
         before_id = _max_audit_id(session)
         role = create_role(
@@ -826,7 +815,6 @@ def _create_roles(
             employee_scope=employee_scope,
             assignment_field_scope=field_scope,
             assignment_field_ids=selected_ids,
-            automation_eligible=eligible,
             actor="nadia.okafor@cedarharbor.example",
         )
         created_at = now - timedelta(days=620 - index * 7)
@@ -977,10 +965,6 @@ def _create_policies(
                     created_by=created_by,
                     condition_group=version["conditions"],
                     values=values,
-                    automated_role_ids=[
-                        roles[role_name].id
-                        for role_name in version.get("automated_roles", [])
-                    ],
                 ),
                 created_by,
             )
@@ -1090,7 +1074,6 @@ def _create_policies(
                     ("Application Access", "AWS Sandbox"),
                     ("Data Classification", "Confidential Engineering"),
                 ],
-                "automated_roles": ["Engineering Workspace"],
             }
         ],
     )
@@ -1232,7 +1215,6 @@ def _create_policies(
                     ("On-call Rotation", "Wind Platform Primary"),
                     ("Facility Access", "Network Operations Room"),
                 ],
-                "automated_roles": ["Incident Responder"],
             }
         ],
     )
@@ -1496,16 +1478,12 @@ def _preview(
     change_type: str,
     *,
     affected_employees: int,
-    affected_users: int = 0,
-    access_changes: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     return {
         "change_type": change_type,
         "valid": True,
         "affected_employee_count": affected_employees,
-        "affected_user_count": affected_users,
         "changes": [],
-        "access_changes": access_changes or [],
         "conflicts": [],
         "warnings": [],
     }
@@ -1551,9 +1529,7 @@ def _create_approval_history(
         change_type=pending_change_model.type,
         valid=True,
         affected_employee_count=0,
-        affected_user_count=0,
         changes=pending_changes,
-        access_changes=[],
         conflicts=[],
         warnings=[],
     )

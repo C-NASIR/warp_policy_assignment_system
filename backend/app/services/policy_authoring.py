@@ -13,13 +13,9 @@ from app.models import (
     Employee,
     Policy,
     PolicyFieldValue,
-    PolicyRoleGrant,
     PolicyVersion,
-    Role,
-    RolePermission,
 )
 from app.schemas import ConditionGroupCreate, PolicyVersionCreate
-from app.services.access_control import AUTOMATION_FORBIDDEN_PERMISSIONS
 from app.services.condition_fields import (
     ConditionFieldError,
     get_condition_field_definitions,
@@ -41,7 +37,6 @@ def create_policy_version_from_input(
 ) -> PolicyVersion:
     """Validate and persist the canonical representation of a policy version."""
     _validate_assignment_field_definitions(session, data.values)
-    _validate_automated_roles(session, data.automated_role_ids)
     try:
         definitions = get_condition_field_definitions(
             session,
@@ -71,10 +66,6 @@ def create_policy_version_from_input(
         effective_until=data.effective_until,
         created_by=data.created_by or actor,
         values=[PolicyFieldValue(**item.model_dump()) for item in data.values],
-        role_grants=[
-            PolicyRoleGrant(role_id=role_id)
-            for role_id in sorted(set(data.automated_role_ids))
-        ],
         condition_groups=_collect_condition_groups(canonical_root),
         compiled_clauses=compiled_clauses,
         actor=actor,
@@ -82,40 +73,6 @@ def create_policy_version_from_input(
     sync_policy_version_schedules(session, policy)
     sync_all_employee_tenure_schedules(session)
     return version
-
-
-def _validate_automated_roles(session: Session, role_ids: list[int]) -> None:
-    unique_ids = sorted(set(role_ids))
-    if not unique_ids:
-        return
-    roles = list(
-        session.scalars(select(Role).where(Role.id.in_(unique_ids)).order_by(Role.id))
-    )
-    found_ids = {role.id for role in roles}
-    missing = [role_id for role_id in unique_ids if role_id not in found_ids]
-    if missing:
-        raise HTTPException(status_code=404, detail=f"Roles not found: {missing}")
-    ineligible = [role.name for role in roles if not role.automation_eligible]
-    if ineligible:
-        raise HTTPException(
-            status_code=422,
-            detail="Roles are not eligible for policy automation: "
-            + ", ".join(ineligible),
-        )
-    forbidden = set(
-        session.scalars(
-            select(RolePermission.permission).where(
-                RolePermission.role_id.in_(unique_ids),
-                RolePermission.permission.in_(AUTOMATION_FORBIDDEN_PERMISSIONS),
-            )
-        )
-    )
-    if forbidden:
-        raise HTTPException(
-            status_code=422,
-            detail="Automated roles contain protected permissions: "
-            + ", ".join(sorted(forbidden)),
-        )
 
 
 def _validate_assignment_field_definitions(session: Session, values) -> None:

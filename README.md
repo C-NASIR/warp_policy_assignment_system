@@ -13,7 +13,7 @@ The repository contains a Next.js web application and a FastAPI API backed by Po
 - Supports employee groups, manual overrides, future assignment projections, and scheduled reconciliation.
 - Provides preview-and-approval workflows for sensitive changes and an append-only audit trail.
 - Enforces role-based permissions, employee visibility scopes, assignment-field scopes, session security, and MFA for privileged users.
-- Can grant eligible application roles automatically from policy results.
+- Keeps application-role assignment and revocation as explicit access-administration actions.
 
 ## Architecture
 

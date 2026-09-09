@@ -5,14 +5,12 @@ from sqlalchemy import func, select
 
 from app.demo_seed import READ_ONLY_API_TOKEN, TEST_USERS, seed_demo_company
 from app.models import (
-    AutomatedUserRole,
     ChangeApprovalRequest,
     Employee,
     EmployeeAssignment,
     EmployeeOverride,
     ScheduledReconciliation,
     SecurityEvent,
-    User,
 )
 from app.services.auth import authenticate_token
 from app.services.human_auth import authenticate_human
@@ -53,16 +51,6 @@ def test_demo_seed_populates_a_connected_company_and_authentication(db):
     assert principal.subject == "cedar-harbor-bi"
     assert principal.scopes == frozenset({"read", "audit"})
 
-    kai = db.scalar(select(User).where(User.email == "kai.chen@cedarharbor.example"))
-    assert kai is not None
-    assert (
-        db.scalar(
-            select(func.count())
-            .select_from(AutomatedUserRole)
-            .where(AutomatedUserRole.user_id == kai.id)
-        )
-        == 2
-    )
     assert (
         db.scalar(
             select(func.count())

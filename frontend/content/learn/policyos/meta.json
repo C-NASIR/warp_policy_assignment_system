@@ -17,7 +17,6 @@
     "investigate-past-decisions",
     "manage-access",
     "limit-access-with-scopes",
-    "review-controlled-changes",
-    "grant-roles-through-policy"
+    "review-controlled-changes"
   ]
 }

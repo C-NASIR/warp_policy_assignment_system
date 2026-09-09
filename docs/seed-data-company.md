@@ -32,8 +32,7 @@ The seed creates 25 employees, 12 human accounts, 10 roles, 8 employee groups,
   demonstrate deterministic conflict resolution;
 - Incident Response and Blade Inspection policies arrive through group
   membership and show group origins in assignment explanations;
-- Engineering Workspace and Incident Responder roles are granted automatically
-  by policies while explicit roles remain protected;
+- all user roles are assigned explicitly and remain independent of policy results;
 - a revised full-time package creates real assignment history, and a scheduled
   manager-policy version demonstrates a future effective date;
 - active and retired overrides document approved exceptions for travel,
@@ -63,8 +62,8 @@ write. Then compare these accounts:
 4. Rafael Morales and Amara Nwosu see their own reporting trees and selected
    operational domains.
 5. Renee Wallace has company-wide read-only audit and access-review visibility.
-6. Kai Chen sees only himself, plus Engineering Workspace and Incident
-   Responder roles supplied by policy.
+6. Kai Chen sees only himself through the explicitly assigned Employee Self
+   Service role.
 7. Luca Romano shows contractor rules and a hardware override. The approval
    queue also contains a pending leadership-cohort membership request for Imani
    Reed that is safe to approve and execute during testing.

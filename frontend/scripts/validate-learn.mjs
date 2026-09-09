@@ -14,7 +14,7 @@ const conceptSubsections = new Set([
   "Groups and exceptions",
   "Change, time, and evidence",
   "People, accounts, and access",
-  "Controlled and automated access",
+  "Controlled access",
 ]);
 const statuses = ["outline", "draft", "technical-review", "product-review", "approved", "retired"];
 const required = ["title", "description", "content_id", "section", "order", "audiences", "permissions", "owner", "status", "last_verified", "review_by", "verified_by", "reading_time", "prerequisites"];

@@ -75,6 +75,30 @@ def test_root_can_manage_roles_and_users(client):
     assert cannot_delete.status_code == 409
 
 
+def test_root_manually_replaces_a_users_roles(client):
+    _setup_root(client)
+    original_role = _create_role(client, ["employees:read"])
+    replacement_role = _create_role(
+        client,
+        ["policies:read"],
+        name="Policy viewer",
+    )
+    user = _create_user(client, original_role["id"])
+
+    updated = client.patch(
+        f"/users/{user['id']}",
+        json={"role_ids": [replacement_role["id"]]},
+    )
+
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["roles"] == [
+        {"id": replacement_role["id"], "name": replacement_role["name"]}
+    ]
+    assert updated.json()["permissions"] == ["policies:read"]
+    assert client.get(f"/roles/{original_role['id']}").json()["user_count"] == 0
+    assert client.get(f"/roles/{replacement_role['id']}").json()["user_count"] == 1
+
+
 def test_temporary_password_is_forced_and_role_permissions_are_enforced(client):
     _setup_root(client)
     role = _create_role(client, ["employees:read"])
@@ -214,3 +238,50 @@ def test_role_and_user_validation(client):
     cannot_disable_root = client.delete(f"/users/{root_user['id']}")
     assert cannot_disable_root.status_code == 409
     assert role["id"] > 0
+
+
+def test_automatic_role_assignment_fields_are_not_accepted(client):
+    _setup_root(client)
+    role = client.post(
+        "/roles",
+        json={
+            "name": "No policy automation",
+            "permissions": ["employees:read"],
+            "automation_eligible": True,
+        },
+    )
+    assert role.status_code == 422
+
+    field = client.post(
+        "/assignment-fields",
+        json={
+            "name": "Pay schedule",
+            "cardinality": "one",
+            "conflict_resolution": "priority",
+        },
+    ).json()
+    policy = client.post(
+        "/policies",
+        json={
+            "name": "Assignments only",
+            "priority": 10,
+            "condition_group": {
+                "logical_operator": "and",
+                "conditions": [
+                    {
+                        "field": "department",
+                        "operator": "=",
+                        "value": "Engineering",
+                    }
+                ],
+            },
+            "values": [
+                {
+                    "assignment_field_definition_id": field["id"],
+                    "value": "Biweekly",
+                }
+            ],
+            "automated_role_ids": [1],
+        },
+    )
+    assert policy.status_code == 422

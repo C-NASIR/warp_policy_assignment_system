@@ -31,24 +31,20 @@ export function ApprovalQueue({ initialRequests, apiConfigured }: { initialReque
 
   return <div className="section-stack">
     {error && <div className="error-banner"><CircleAlert size={14} />{error}</div>}
-    {requests.map((request) => {
-      const accessChanges = request.preview.access_changes ?? [];
-      return <section className="panel" key={request.id}>
+    {requests.map((request) => <section className="panel" key={request.id}>
         <div className="panel-header"><div><h2 className="panel-title">{labelFor(request.change_type)}</h2><span className="secondary-cell">Requested by {request.requested_by} · {formatTimestamp(request.created_at)}</span></div><span className={`badge ${request.status === "approved" || request.status === "executed" ? "success" : request.status === "pending" ? "accent" : ""}`}>{request.status}</span></div>
         <div className="panel-body">
           <div className="field-grid">
             <div><span className="field-label">Assignment impact</span><span className="primary-cell">{request.preview.affected_employee_count ?? 0} employees</span></div>
-            <div><span className="field-label">Access impact</span><span className="primary-cell">{request.preview.affected_user_count ?? 0} users</span></div>
             <div><span className="field-label">Expires</span><span className="primary-cell">{formatTimestamp(request.expires_at)}</span></div>
             <div><span className="field-label">Request ID</span><span className="secondary-cell">{request.id}</span></div>
           </div>
-          {accessChanges.length > 0 && <div style={{ marginTop: 18 }}><div className="field-label">Automated role changes</div><div className="permission-chip-list">{accessChanges.slice(0, 12).map((change, index) => <span className={`badge ${change.action === "grant" ? "success" : ""}`} key={`${change.user_id}-${change.role_id}-${index}`}>{change.action === "grant" ? "+" : "−"} {change.role_name} · {change.employee_name}</span>)}{accessChanges.length > 12 && <span className="badge accent">+{accessChanges.length - 12} more</span>}</div></div>}
           <details style={{ marginTop: 18 }}><summary className="text-button">View exact proposed change</summary><div className="audit-payload" style={{ marginTop: 10 }}><div><span className="label">Change payload</span><pre>{JSON.stringify(request.change, null, 2)}</pre></div></div></details>
           {request.approved_by && <p className="form-hint" style={{ marginTop: 16 }}>Approved by {request.approved_by}{request.approved_at ? ` on ${formatTimestamp(request.approved_at)}` : ""}. The approving user must execute it.</p>}
         </div>
-        {(request.can_approve || request.can_reject || request.can_execute) && <div className="form-footer"><span className="form-hint">Review the previewed assignment and access impact before deciding.</span><div className="heading-actions">{request.can_reject && <button className="button secondary" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "reject")}><X size={14} />Reject</button>}{request.can_approve && <button className="button" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "approve")}><Check size={14} />{busyId === request.id ? "Working…" : "Approve"}</button>}{request.can_execute && <button className="button" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "execute")}><Play size={14} />{busyId === request.id ? "Executing…" : "Execute approved change"}</button>}</div></div>}
-      </section>;
-    })}
+        {(request.can_approve || request.can_reject || request.can_execute) && <div className="form-footer"><span className="form-hint">Review the previewed assignment impact before deciding.</span><div className="heading-actions">{request.can_reject && <button className="button secondary" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "reject")}><X size={14} />Reject</button>}{request.can_approve && <button className="button" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "approve")}><Check size={14} />{busyId === request.id ? "Working…" : "Approve"}</button>}{request.can_execute && <button className="button" disabled={busyId === request.id || !apiConfigured} onClick={() => decide(request, "execute")}><Play size={14} />{busyId === request.id ? "Executing…" : "Execute approved change"}</button>}</div></div>}
+      </section>
+    )}
     {requests.length === 0 && <div className="empty-state panel"><div className="empty-icon"><ShieldCheck size={18} /></div><strong>No approval requests</strong><span>New human-authored change previews will appear here.</span></div>}
   </div>;
 }

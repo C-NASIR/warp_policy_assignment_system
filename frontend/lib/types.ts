@@ -56,7 +56,6 @@ export type PolicyVersion = {
   created_by: string | null;
   condition_group: ConditionGroup;
   values: { assignment_field_definition_id: number; value: string }[];
-  automated_role_ids: number[];
 };
 
 export type Policy = {
@@ -150,7 +149,6 @@ export type CurrentUser = {
   created_at: string;
   last_login_at: string | null;
   roles: RoleSummary[];
-  automated_roles: RoleSummary[];
   permissions: string[];
 };
 
@@ -170,7 +168,6 @@ export type Role = RoleSummary & {
   employee_scope: "all" | "reporting_tree" | "self" | "none";
   assignment_field_scope: "all" | "selected" | "none";
   assignment_field_ids: number[];
-  automation_eligible: boolean;
   permissions: string[];
   user_count: number;
   created_by: string;
@@ -240,17 +237,6 @@ export type LearningInsights = {
   }[];
 };
 
-export type AutomatedRolePreviewChange = {
-  user_id: number;
-  employee_id: number;
-  employee_name: string;
-  role_id: number;
-  role_name: string;
-  action: "grant" | "revoke";
-  source_policy_version_id: number | null;
-  source_is_proposed: boolean;
-};
-
 export type ChangeApprovalRequest = {
   id: string;
   status: "pending" | "approved" | "rejected" | "executed" | "expired";
@@ -258,8 +244,6 @@ export type ChangeApprovalRequest = {
   change: Record<string, unknown>;
   preview: {
     affected_employee_count?: number;
-    affected_user_count?: number;
-    access_changes?: AutomatedRolePreviewChange[];
     warnings?: string[];
   };
   requested_by: string;

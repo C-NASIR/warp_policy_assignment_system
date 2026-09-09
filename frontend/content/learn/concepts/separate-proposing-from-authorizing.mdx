@@ -3,7 +3,7 @@ title: "Separate proposing from authorizing"
 description: "How an author and an independent reviewer control a policy change."
 content_id: "CON21"
 section: "concepts"
-subsection: "Controlled and automated access"
+subsection: "Controlled access"
 order: 210
 audiences: ["new learner"]
 permissions: []
@@ -11,7 +11,7 @@ owner: "change approvals"
 status: "draft"
 last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/app/routers/change_previews.py", "backend/app/services/approval_requests.py", "backend/app/services/policy_access.py", "backend/tests/test_phase6_access_approvals.py"]
+verified_by: ["docs/learn/content-map.md", "backend/app/routers/change_previews.py", "backend/app/services/approval_requests.py", "backend/app/services/policy_access.py", "backend/tests/test_change_executions.py"]
 reading_time: 3
 prerequisites: ["Access to your own information"]
 ---
@@ -33,7 +33,7 @@ One user may hold several of these permissions, but an ordinary author still can
 
 ## One proposal from start to finish
 
-1. Morgan prepares the policy version and previews its resolved assignment and access impact.
+1. Morgan prepares the policy version and previews its resolved assignment impact.
 2. PolicyOS records a pending request containing the exact proposal, preview, requester, and expiration.
 3. Morgan gives Jordan the request ID through the team's normal handoff process. PolicyOS provides an approval queue and request details, but it does not assign an arbitrary reviewer or send a built-in message or email.
 4. Jordan finds the request in the queue, examines the exact change and impact, then approves or rejects it.
@@ -49,5 +49,3 @@ This persisted independent-approval workflow is intentionally narrow. For ordina
 Root is the privileged exception: Root's policy preview can produce a directly executable approval token instead of a pending human request, and Root can execute an approved request. That exception does not relax data validation, stale-preview protection, authentication, or configured security requirements.
 
 The [Review controlled changes](/learn/policyos/review-controlled-changes) walkthrough follows this lifecycle in the application.
-
-Next, we'll connect policy eligibility to the roles we already understand.

@@ -10,7 +10,6 @@ from app.dates import current_datetime, ensure_utc
 from app.models import (
     AssignmentFieldDefinition,
     AuthSession,
-    AutomatedUserRole,
     Employee,
     Role,
     RoleAssignmentFieldScope,
@@ -26,9 +25,6 @@ from app.services.human_auth import (
 )
 
 WILDCARD_PERMISSION = "*"
-AUTOMATION_FORBIDDEN_PERMISSIONS = frozenset(
-    {WILDCARD_PERMISSION, "access:manage", "access:review", "api_credentials:manage"}
-)
 
 PERMISSIONS: dict[str, tuple[str, str, str]] = {
     "employees:read": (
@@ -229,24 +225,13 @@ def required_permissions(method: str, path: str) -> set[str]:
 def effective_permissions(session: Session, user: User) -> frozenset[str]:
     if user.is_root:
         return frozenset({WILDCARD_PERMISSION})
-    explicit_values = set(
+    return frozenset(
         session.scalars(
             select(RolePermission.permission)
             .join(UserRole, UserRole.role_id == RolePermission.role_id)
             .where(UserRole.user_id == user.id)
         )
     )
-    automated_values = set(
-        session.scalars(
-            select(RolePermission.permission)
-            .join(
-                AutomatedUserRole,
-                AutomatedUserRole.role_id == RolePermission.role_id,
-            )
-            .where(AutomatedUserRole.user_id == user.id)
-        )
-    )
-    return frozenset(explicit_values | automated_values)
 
 
 def access_review(session: Session) -> dict:
@@ -257,7 +242,6 @@ def access_review(session: Session) -> dict:
             .options(
                 selectinload(Role.permission_links),
                 selectinload(Role.users),
-                selectinload(Role.automated_user_links),
             )
             .order_by(Role.name)
         )
@@ -311,10 +295,7 @@ def access_review(session: Session) -> dict:
 
     unused_roles = 0
     for role in roles:
-        user_count = len(
-            {user.id for user in role.users}
-            | {link.user_id for link in role.automated_user_links}
-        )
+        user_count = len(role.users)
         permissions = {link.permission for link in role.permission_links}
         if user_count == 0:
             unused_roles += 1
@@ -378,8 +359,6 @@ def role_by_id(session: Session, role_id: int) -> Role:
         .options(
             selectinload(Role.permission_links),
             selectinload(Role.assignment_field_links),
-            selectinload(Role.policy_grants),
-            selectinload(Role.automated_user_links),
             selectinload(Role.users),
         )
         .where(Role.id == role_id)
@@ -406,7 +385,6 @@ def create_role(
     employee_scope: Literal["all", "reporting_tree", "self", "none"],
     assignment_field_scope: Literal["all", "selected", "none"],
     assignment_field_ids: Iterable[int],
-    automation_eligible: bool,
     actor: str,
 ) -> Role:
     normalized_name = name.strip()
@@ -417,17 +395,11 @@ def create_role(
     ):
         raise ValueError("A role with this name already exists")
     normalized_permissions = validate_permissions(permissions)
-    _validate_automation_eligibility(
-        normalized_name,
-        normalized_permissions,
-        automation_eligible,
-    )
     role = Role(
         name=normalized_name,
         description=description.strip() if description else None,
         employee_scope=employee_scope,
         assignment_field_scope=assignment_field_scope,
-        automation_eligible=automation_eligible,
         created_by=actor,
     )
     role.permission_links = [
@@ -462,7 +434,6 @@ def update_role(
     employee_scope: Literal["all", "reporting_tree", "self", "none"] | None,
     assignment_field_scope: Literal["all", "selected", "none"] | None,
     assignment_field_ids: Iterable[int] | None,
-    automation_eligible: bool | None,
     description_supplied: bool,
     actor: str,
 ) -> Role:
@@ -487,22 +458,6 @@ def update_role(
             RolePermission(permission=permission)
             for permission in validate_permissions(permissions)
         ]
-    resulting_name = role.name
-    resulting_permissions = [link.permission for link in role.permission_links]
-    resulting_automation_eligible = (
-        role.automation_eligible if automation_eligible is None else automation_eligible
-    )
-    if automation_eligible is False and role.policy_grants:
-        raise ValueError(
-            "A role referenced by an automated policy cannot disable automation"
-        )
-    _validate_automation_eligibility(
-        resulting_name,
-        resulting_permissions,
-        resulting_automation_eligible,
-    )
-    if automation_eligible is not None:
-        role.automation_eligible = automation_eligible
     if employee_scope is not None:
         role.employee_scope = employee_scope
     resulting_field_scope = assignment_field_scope or role.assignment_field_scope
@@ -539,10 +494,6 @@ def update_role(
 def delete_role(session: Session, role: Role, *, actor: str) -> None:
     if role.users:
         raise ValueError("A role assigned to users cannot be deleted")
-    if role.automated_user_links:
-        raise ValueError("A role assigned by an automated policy cannot be deleted")
-    if role.policy_grants:
-        raise ValueError("A role referenced by an automated policy cannot be deleted")
     before = role_snapshot(role)
     role_id = role.id
     session.delete(role)
@@ -619,10 +570,6 @@ def create_user(
     )
     session.add(user)
     session.flush()
-    if employee_id is not None:
-        from app.services.reconciliation import reconcile_employees
-
-        reconcile_employees(session, [employee_id], actor=actor)
     record_audit_log(
         session,
         actor=actor,
@@ -669,21 +616,8 @@ def update_user(
             raise ValueError("A non-Root user must have at least one role")
         user.roles = roles
     if employee_id_supplied:
-        from app.services.automated_access import clear_automated_roles_for_user
-        from app.services.reconciliation import reconcile_employees
-
         _validate_employee_link(session, employee_id, user_id=user.id)
-        if user.employee_id is not None and employee_id is None:
-            clear_automated_roles_for_user(
-                session,
-                user,
-                actor=actor,
-                timestamp=current_datetime(),
-            )
         user.employee_id = employee_id
-        session.flush()
-        if employee_id is not None:
-            reconcile_employees(session, [employee_id], actor=actor)
     session.flush()
     record_audit_log(
         session,
@@ -775,7 +709,6 @@ def role_snapshot(role: Role) -> dict:
         "assignment_field_ids": sorted(
             link.assignment_field_definition_id for link in role.assignment_field_links
         ),
-        "automation_eligible": role.automation_eligible,
         "permissions": sorted(link.permission for link in role.permission_links),
     }
 
@@ -804,23 +737,6 @@ def _assignment_field_links(
         RoleAssignmentFieldScope(assignment_field_definition_id=field_id)
         for field_id in unique_ids
     ]
-
-
-def _validate_automation_eligibility(
-    name: str,
-    permissions: Iterable[str],
-    automation_eligible: bool,
-) -> None:
-    if not automation_eligible:
-        return
-    if name.casefold() == "root":
-        raise ValueError("The Root role cannot be granted by policy")
-    forbidden = sorted(set(permissions) & AUTOMATION_FORBIDDEN_PERMISSIONS)
-    if forbidden:
-        raise ValueError(
-            "Roles granted by policy cannot contain protected permissions: "
-            + ", ".join(forbidden)
-        )
 
 
 def user_snapshot(user: User) -> dict:

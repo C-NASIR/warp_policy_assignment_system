@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { assignmentFields, assignmentSummary, assignmentsByEmployee, auditLogs, conditionFields, employees, groupEmployeeIds, groupPolicyIds, groups, overridesByEmployee, policies, policyImpacts } from "./demo-data";
-import type { AccessReview, AccountSecurity, Assignment, AssignmentField, AssignmentSummary, AuditLog, ChangeApprovalRequest, ConditionField, CurrentUser, Employee, EmployeeDirectoryItem, EmployeeOverride, Group, LearningInsights, Permission, Policy, PolicyImpact, Role, RoleSummary, RootSetupStatus, User } from "./types";
+import type { AccessReview, AccountSecurity, Assignment, AssignmentField, AssignmentSummary, AuditLog, ChangeApprovalRequest, ConditionField, CurrentUser, Employee, EmployeeDirectoryItem, EmployeeOverride, Group, LearningInsights, Permission, Policy, PolicyImpact, Role, RootSetupStatus, User } from "./types";
 
 const configuredApiUrl = process.env.POLICY_API_URL?.replace(/\/$/, "");
 const sessionCookieName = "policyos_session";
@@ -62,7 +62,6 @@ export const getPermissions = () => read<Permission[]>("/authorization/permissio
 export const getAuthorizationAssignmentFields = () => read<AssignmentField[]>("/authorization/assignment-fields", assignmentFields);
 export const getRoles = () => read<Role[]>("/roles?limit=500", []);
 export const getUsers = () => read<User[]>("/users?limit=500", []);
-export const getAutomatableRoles = () => read<RoleSummary[]>("/policies/automatable-roles", []);
 export const getApprovalRequests = () => read<ChangeApprovalRequest[]>("/approval-requests", []);
 export const getAccountSecurity = () => read<AccountSecurity>("/auth/security", { mfa_enabled: false, mfa_required: false, sessions: [], events: [] });
 export const getAccessReview = () => read<AccessReview | null>("/authorization/access-review", null);

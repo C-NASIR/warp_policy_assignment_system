@@ -22,7 +22,6 @@
     "permissions-and-scopes-work-together",
     "access-through-the-reporting-tree",
     "access-to-your-own-information",
-    "separate-proposing-from-authorizing",
-    "when-a-policy-grants-a-role"
+    "separate-proposing-from-authorizing"
   ]
 }

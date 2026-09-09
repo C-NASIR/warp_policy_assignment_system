@@ -19,7 +19,6 @@ from app.models import (
     ConditionGroupCondition,
     Policy,
     PolicyVersion,
-    Role,
 )
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
@@ -29,7 +28,6 @@ from app.schemas import (
     PolicyUpdate,
     PolicyVersionCreate,
     PolicyVersionRead,
-    RoleSummaryRead,
 )
 from app.services.access_control import WILDCARD_PERMISSION
 from app.services.assignment_field_visibility import (
@@ -55,7 +53,6 @@ router = APIRouter(prefix="/policies", tags=["policies"])
 def _query():
     return select(Policy).options(
         selectinload(Policy.versions).selectinload(PolicyVersion.values),
-        selectinload(Policy.versions).selectinload(PolicyVersion.role_grants),
         selectinload(Policy.versions)
         .selectinload(PolicyVersion.condition_groups)
         .selectinload(ConditionGroup.child_groups),
@@ -70,7 +67,6 @@ def _query():
 def _version_query():
     return select(PolicyVersion).options(
         selectinload(PolicyVersion.values),
-        selectinload(PolicyVersion.role_grants),
         selectinload(PolicyVersion.condition_groups).selectinload(
             ConditionGroup.child_groups
         ),
@@ -114,16 +110,6 @@ def create(
         require_policy_permission(principal, "policies:activate")
     elif data.status == "archived":
         require_policy_permission(principal, "policies:archive")
-    if (
-        data.automated_role_ids
-        and principal.authentication_method == "human_session"
-        and WILDCARD_PERMISSION not in principal.permissions
-        and data.status != "draft"
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Policies that grant roles must be created as drafts and activated by another approver",
-        )
     policy = Policy(name=data.name, status=data.status, created_by=actor)
     session.add(policy)
     session.flush()
@@ -174,17 +160,6 @@ def list_all(
         response,
     )
     return [policy_read(principal, policy) for policy in policies]
-
-
-@router.get("/automatable-roles", response_model=list[RoleSummaryRead])
-def list_automatable_roles(session: DatabaseSession) -> list[Role]:
-    return list(
-        session.scalars(
-            select(Role)
-            .where(Role.automation_eligible.is_(True))
-            .order_by(Role.name, Role.id)
-        )
-    )
 
 
 @router.get("/{policy_id}", response_model=PolicyRead)
@@ -248,21 +223,6 @@ def patch(
         require_policy_permission(principal, "policies:archive")
     elif data.status == "draft" and policy.status != "draft":
         require_policy_permission(principal, "policies:update")
-    has_automated_roles = any(version.role_grants for version in policy.versions)
-    if (
-        data.status is not None
-        and data.status != policy.status
-        and has_automated_roles
-        and principal.authentication_method == "human_session"
-        and WILDCARD_PERMISSION not in principal.permissions
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "Automated access policy status changes must be executed through "
-                "an approved change request"
-            ),
-        )
     before = snapshot_entity(policy)
     if data.name is not None:
         policy.name = data.name

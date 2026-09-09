@@ -97,18 +97,6 @@ def create_tables() -> None:
         )
         session.execute(
             text(
-                "ALTER TABLE roles ADD COLUMN IF NOT EXISTS automation_eligible "
-                "BOOLEAN NOT NULL DEFAULT false"
-            )
-        )
-        session.execute(
-            text(
-                "ALTER TABLE user_roles ADD COLUMN IF NOT EXISTS protected "
-                "BOOLEAN NOT NULL DEFAULT true"
-            )
-        )
-        session.execute(
-            text(
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_enabled "
                 "BOOLEAN NOT NULL DEFAULT false"
             )

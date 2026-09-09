@@ -20,21 +20,17 @@ from app.dependencies import (
 from app.error_contract import conflict_issue
 from app.models import (
     ApprovedChangeExecution,
-    AutomatedUserRole,
     ChangeApprovalRequest,
     Employee,
     EmployeeAssignment,
     EmployeeOverride,
     Policy,
-    Role,
-    User,
 )
 from app.schemas import (
     ApprovedChangeExecutionCreate,
     ApprovedChangeExecutionRead,
     AssignmentFieldPreviewChangeRead,
     AssignmentPreviewRead,
-    AutomatedRolePreviewChangeRead,
     ChangePreviewCreate,
     ChangePreviewRead,
     EmployeeAssignmentPreviewChangeRead,
@@ -152,7 +148,6 @@ def preview(
             visibility=visibility,
             field_visibility=field_visibility,
         )
-        before_access = _current_automated_roles(session, visibility)
         context = _MutationContext()
         try:
             _apply_change(
@@ -177,12 +172,6 @@ def preview(
                 after,
                 context,
             )
-            after_access = _current_automated_roles(session, visibility)
-            access_changes = _automated_role_changes(
-                before_access,
-                after_access,
-                context.proposed_policy_version_ids,
-            )
             response = ChangePreviewRead(
                 change_type=data.type,
                 valid=True,
@@ -191,10 +180,6 @@ def preview(
                     for item in changes
                 ),
                 changes=changes,
-                affected_user_count=len(
-                    {item.user_id for item in access_changes}
-                ),
-                access_changes=access_changes,
                 conflicts=[],
                 warnings=[],
             )
@@ -339,7 +324,6 @@ def execute_approved_change(
         visibility=visibility,
         field_visibility=field_visibility,
     )
-    before_access = _current_automated_roles(session, visibility)
     context = _MutationContext()
     _apply_change(
         session,
@@ -364,18 +348,11 @@ def execute_approved_change(
         comparable_after,
         context,
     )
-    comparable_access = _automated_role_changes(
-        before_access,
-        _current_automated_roles(session, visibility),
-        context.proposed_policy_version_ids,
-    )
     comparable_preview = ChangePreviewRead(
         change_type=change.type,
         valid=True,
         affected_employee_count=_affected_employee_count(comparable_changes),
         changes=comparable_changes,
-        affected_user_count=len({item.user_id for item in comparable_access}),
-        access_changes=comparable_access,
         conflicts=[],
         warnings=[],
     )
@@ -409,11 +386,6 @@ def execute_approved_change(
         actual_after,
         actual_context,
     )
-    actual_access = _automated_role_changes(
-        before_access,
-        _current_automated_roles(session, visibility),
-        set(),
-    )
     executed_at = current_datetime()
     response = ApprovedChangeExecutionRead(
         approval_id=claims.approval_id,
@@ -423,9 +395,7 @@ def execute_approved_change(
         executed_at=executed_at,
         executed_by=actor,
         affected_employee_count=_affected_employee_count(actual_changes),
-        affected_user_count=len({item.user_id for item in actual_access}),
         changes=actual_changes,
-        access_changes=actual_access,
         resources=context.resources,
     )
     session.add(
@@ -604,14 +574,6 @@ def _validate_change_scope(
         policy = session.get(Policy, data.policy_id)
         assert policy is not None
         require_policy_version_create(principal, policy)
-        if data.version.automated_role_ids and not employee_visibility.unrestricted:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    "Automated access changes require organization-wide employee "
-                    "visibility so the complete impact can be reviewed"
-                ),
-            )
         validate_assignment_field_ids(
             session,
             field_visibility,
@@ -624,17 +586,6 @@ def _validate_change_scope(
         require_visible_policy(session, field_visibility, data.policy_id)
         policy = session.get(Policy, data.policy_id)
         assert policy is not None
-        if (
-            any(version.role_grants for version in policy.versions)
-            and not employee_visibility.unrestricted
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    "Automated access changes require organization-wide employee "
-                    "visibility so the complete impact can be reviewed"
-                ),
-            )
         require_policy_permission(
             principal,
             (
@@ -679,75 +630,6 @@ def _affected_employee_count(
     changes: list[EmployeeAssignmentPreviewChangeRead],
 ) -> int:
     return sum(bool(item.added or item.removed or item.changed) for item in changes)
-
-
-def _current_automated_roles(
-    session: DatabaseSession,
-    visibility: EmployeeVisibility,
-) -> dict[tuple[int, int, int], tuple[int, str, str]]:
-    statement = (
-        select(
-            AutomatedUserRole.user_id,
-            AutomatedUserRole.role_id,
-            AutomatedUserRole.source_policy_version_id,
-            Employee.id,
-            Employee.name,
-            Role.name,
-        )
-        .join(User, User.id == AutomatedUserRole.user_id)
-        .join(Employee, Employee.id == User.employee_id)
-        .join(Role, Role.id == AutomatedUserRole.role_id)
-    )
-    statement = visibility.apply(statement, Employee.id)
-    return {
-        (user_id, role_id, source_policy_version_id): (
-            employee_id,
-            employee_name,
-            role_name,
-        )
-        for (
-            user_id,
-            role_id,
-            source_policy_version_id,
-            employee_id,
-            employee_name,
-            role_name,
-        ) in session.execute(statement)
-    }
-
-
-def _automated_role_changes(
-    before: dict[tuple[int, int, int], tuple[int, str, str]],
-    after: dict[tuple[int, int, int], tuple[int, str, str]],
-    proposed_policy_version_ids: set[int],
-) -> list[AutomatedRolePreviewChangeRead]:
-    changes: list[AutomatedRolePreviewChangeRead] = []
-    for action, keys, state in (
-        ("revoke", sorted(before.keys() - after.keys()), before),
-        ("grant", sorted(after.keys() - before.keys()), after),
-    ):
-        for user_id, role_id, source_policy_version_id in keys:
-            employee_id, employee_name, role_name = state[
-                (user_id, role_id, source_policy_version_id)
-            ]
-            source_is_proposed = (
-                source_policy_version_id in proposed_policy_version_ids
-            )
-            changes.append(
-                AutomatedRolePreviewChangeRead(
-                    user_id=user_id,
-                    employee_id=employee_id,
-                    employee_name=employee_name,
-                    role_id=role_id,
-                    role_name=role_name,
-                    action=action,
-                    source_policy_version_id=(
-                        None if source_is_proposed else source_policy_version_id
-                    ),
-                    source_is_proposed=source_is_proposed,
-                )
-            )
-    return changes
 
 
 def _current_assignments(
