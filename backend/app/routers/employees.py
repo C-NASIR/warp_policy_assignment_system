@@ -140,7 +140,7 @@ def list_all(
         count_statement,
         EmployeeAssignment.assignment_field_definition_id,
     )
-    counts = dict(session.execute(count_statement).all())
+    counts = dict(session.execute(count_statement).tuples().all())
 
     return [
         EmployeeDirectoryRead(
