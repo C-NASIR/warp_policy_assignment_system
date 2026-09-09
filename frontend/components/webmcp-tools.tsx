@@ -31,7 +31,8 @@ export function WebMcpTools() {
       {
         name: "start_employee_onboarding",
         title: "Start employee onboarding",
-        description: "Open the employee onboarding flow so employment facts can be entered and assignments previewed before saving.",
+        description:
+          "Open the employee onboarding flow so employment facts can be entered and assignments previewed before saving.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true, untrustedContentHint: false },
         async execute() {
@@ -42,7 +43,8 @@ export function WebMcpTools() {
       {
         name: "start_policy_creation",
         title: "Start policy creation",
-        description: "Open the policy builder to define employee conditions, assignment values, priority, and effective dates.",
+        description:
+          "Open the policy builder to define employee conditions, assignment values, priority, and effective dates.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true, untrustedContentHint: false },
         async execute() {
@@ -53,12 +55,22 @@ export function WebMcpTools() {
       {
         name: "open_employee_assignments",
         title: "Open employee assignments",
-        description: "Open an employee detail page to inspect their resolved assignments and policy explanations.",
-        inputSchema: { type: "object", properties: { employeeId: { type: "integer", minimum: 1 } }, required: ["employeeId"], additionalProperties: false },
+        description:
+          "Open an employee detail page to inspect their resolved assignments and policy explanations.",
+        inputSchema: {
+          type: "object",
+          properties: { employeeId: { type: "integer", minimum: 1 } },
+          required: ["employeeId"],
+          additionalProperties: false,
+        },
         annotations: { readOnlyHint: true, untrustedContentHint: false },
         async execute(input) {
-          const employeeId = typeof input === "object" && input !== null && "employeeId" in input ? Number(input.employeeId) : Number.NaN;
-          if (!Number.isInteger(employeeId) || employeeId < 1) throw new Error("employeeId must be a positive integer");
+          const employeeId =
+            typeof input === "object" && input !== null && "employeeId" in input
+              ? Number(input.employeeId)
+              : Number.NaN;
+          if (!Number.isInteger(employeeId) || employeeId < 1)
+            throw new Error("employeeId must be a positive integer");
           const route = `/employees/${employeeId}`;
           router.push(route);
           return { status: "opened", route, employeeId };
@@ -67,12 +79,22 @@ export function WebMcpTools() {
       {
         name: "open_group_management",
         title: "Open group management",
-        description: "Open a group to manage its employees and attached policies with assignment impact previews.",
-        inputSchema: { type: "object", properties: { groupId: { type: "integer", minimum: 1 } }, required: ["groupId"], additionalProperties: false },
+        description:
+          "Open a group to manage its employees and attached policies with assignment impact previews.",
+        inputSchema: {
+          type: "object",
+          properties: { groupId: { type: "integer", minimum: 1 } },
+          required: ["groupId"],
+          additionalProperties: false,
+        },
         annotations: { readOnlyHint: true, untrustedContentHint: false },
         async execute(input) {
-          const groupId = typeof input === "object" && input !== null && "groupId" in input ? Number(input.groupId) : Number.NaN;
-          if (!Number.isInteger(groupId) || groupId < 1) throw new Error("groupId must be a positive integer");
+          const groupId =
+            typeof input === "object" && input !== null && "groupId" in input
+              ? Number(input.groupId)
+              : Number.NaN;
+          if (!Number.isInteger(groupId) || groupId < 1)
+            throw new Error("groupId must be a positive integer");
           const route = `/groups/${groupId}`;
           router.push(route);
           return { status: "opened", route, groupId };
@@ -81,7 +103,8 @@ export function WebMcpTools() {
       {
         name: "open_assignment_field_setup",
         title: "Open assignment field setup",
-        description: "Open the assignment field catalog to create a one-value or many-value policy category.",
+        description:
+          "Open the assignment field catalog to create a one-value or many-value policy category.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true, untrustedContentHint: false },
         async execute() {
@@ -93,7 +116,9 @@ export function WebMcpTools() {
 
     for (const tool of tools) {
       try {
-        void Promise.resolve(context.registerTool(tool, { signal: lifecycle.signal })).catch(() => undefined);
+        void Promise.resolve(context.registerTool(tool, { signal: lifecycle.signal })).catch(
+          () => undefined,
+        );
       } catch {
         // WebMCP is progressive enhancement; the visible interface remains complete.
       }

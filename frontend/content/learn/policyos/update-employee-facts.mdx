@@ -5,12 +5,26 @@ content_id: "APP12"
 section: "policyos"
 order: 120
 audiences: ["new learner"]
-permissions: ["employees:read", "employees:update", "assignments:read", "settings:read", "changes:preview", "changes:execute"]
+permissions:
+  [
+    "employees:read",
+    "employees:update",
+    "assignments:read",
+    "settings:read",
+    "changes:preview",
+    "changes:execute",
+  ]
 owner: "employee operations"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/employee-form.tsx", "backend/tests/test_change_previews.py", "backend/tests/test_policy_change_reconciliation.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/employee-form.tsx",
+    "backend/tests/test_change_previews.py",
+    "backend/tests/test_policy_change_reconciliation.py",
+  ]
 reading_time: 2
 prerequisites: ["Schedule a policy change"]
 ---
@@ -38,6 +52,8 @@ If execution reports that the preview is stale or expired, review the current re
 
 Demo-mode edits and previews are temporary and simplified. Use a connected training record to verify persistence and actual reconciliation.
 
-<PolicyLink href="/employees" permission="employees:read">Open Rachel's employee profile</PolicyLink>
+<PolicyLink href="/employees" permission="employees:read">
+  Open Rachel's employee profile
+</PolicyLink>
 
 [Review reconciliation](/learn/concepts/when-circumstances-change).

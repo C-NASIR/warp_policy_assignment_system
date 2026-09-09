@@ -7,5 +7,11 @@ export const metadata: Metadata = { title: "Assignment fields" };
 
 export default async function SettingsPage() {
   const [fields, user] = await Promise.all([getAssignmentFields(), getCurrentUser()]);
-  return <AssignmentFieldManager initialFields={fields} apiConfigured={apiConfigured} canManage={hasPermission(user, "settings:manage")} />;
+  return (
+    <AssignmentFieldManager
+      initialFields={fields}
+      apiConfigured={apiConfigured}
+      canManage={hasPermission(user, "settings:manage")}
+    />
+  );
 }

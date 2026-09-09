@@ -5,7 +5,12 @@ import type { MDXComponents } from "mdx/types";
 import { apiConfigured } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser } from "@/lib/types";
-import { AveryAssignmentLab, AveryKnowledgeCheck, EffectiveDateLab, PriorityLab } from "@/components/learn/exercises";
+import {
+  AveryAssignmentLab,
+  AveryKnowledgeCheck,
+  EffectiveDateLab,
+  PriorityLab,
+} from "@/components/learn/exercises";
 
 type PolicyLinkProps = {
   href: string;
@@ -13,27 +18,45 @@ type PolicyLinkProps = {
   children: React.ReactNode;
 };
 
-function PolicyLink({ currentUser, href, permission, children }: PolicyLinkProps & { currentUser: CurrentUser | null }) {
+function PolicyLink({
+  currentUser,
+  href,
+  permission,
+  children,
+}: PolicyLinkProps & { currentUser: CurrentUser | null }) {
   const allowed = !apiConfigured || !permission || hasPermission(currentUser, permission);
 
   if (!allowed) {
     return (
       <span className="learn-policy-link locked">
-        <span><LockKeyhole size={15} /></span>
-        <span><strong>{children}</strong><small>Requires {permission}</small></span>
+        <span>
+          <LockKeyhole size={15} />
+        </span>
+        <span>
+          <strong>{children}</strong>
+          <small>Requires {permission}</small>
+        </span>
       </span>
     );
   }
 
   return (
     <Link className="learn-policy-link" href={href} target="_blank" rel="noopener noreferrer">
-      <span><MoveUpRight size={15} /></span>
-      <span><strong>{children}</strong><small>Open in PolicyOS · New tab</small></span>
+      <span>
+        <MoveUpRight size={15} />
+      </span>
+      <span>
+        <strong>{children}</strong>
+        <small>Open in PolicyOS · New tab</small>
+      </span>
     </Link>
   );
 }
 
-export function getLearnMdxComponents(currentUser: CurrentUser | null, components?: MDXComponents): MDXComponents {
+export function getLearnMdxComponents(
+  currentUser: CurrentUser | null,
+  components?: MDXComponents,
+): MDXComponents {
   return {
     ...defaultMdxComponents,
     PolicyLink: (props: PolicyLinkProps) => <PolicyLink currentUser={currentUser} {...props} />,

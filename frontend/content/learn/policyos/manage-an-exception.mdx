@@ -5,12 +5,26 @@ content_id: "APP10"
 section: "policyos"
 order: 100
 audiences: ["new learner"]
-permissions: ["employees:read", "assignments:read", "assignments:manage", "settings:read", "changes:preview", "changes:execute"]
+permissions:
+  [
+    "employees:read",
+    "assignments:read",
+    "assignments:manage",
+    "settings:read",
+    "changes:preview",
+    "changes:execute",
+  ]
 owner: "overrides"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/override-manager.tsx", "backend/tests/test_overrides.py", "backend/tests/test_change_previews.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/override-manager.tsx",
+    "backend/tests/test_overrides.py",
+    "backend/tests/test_change_previews.py",
+  ]
 reading_time: 2
 prerequisites: ["Use groups"]
 ---
@@ -38,6 +52,8 @@ This editor has no reason or expiration-date input. An exception remains active 
 
 Remove Rachel's training vacation override before continuing, so the later versioning lesson can demonstrate a change supplied by a policy.
 
-<PolicyLink href="/employees" permission="employees:read">Open employee overrides</PolicyLink>
+<PolicyLink href="/employees" permission="employees:read">
+  Open employee overrides
+</PolicyLink>
 
 [Review explicit exceptions](/learn/concepts/making-an-exception).

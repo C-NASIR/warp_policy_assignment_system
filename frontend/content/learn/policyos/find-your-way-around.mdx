@@ -10,7 +10,8 @@ owner: "product experience"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/app-shell.tsx", "frontend/lib/backend.ts"]
+verified_by:
+  ["docs/learn/content-map.md", "frontend/components/app-shell.tsx", "frontend/lib/backend.ts"]
 reading_time: 2
 prerequisites: ["Who can do what?"]
 ---
@@ -19,15 +20,15 @@ You already know the journey: employee facts lead to policy matches, which becom
 
 Start with the navigation:
 
-| Area | What you use it for |
-| --- | --- |
-| Employees | Read employee facts, current assignments, overrides, and history |
-| Policies | Define rules and inspect versions and assignment impact |
-| Groups | Manage explicit membership and attached policies |
-| Approvals | Review and execute changes that require another approver |
-| Audit log | Investigate recorded changes and their actors |
-| Assignment fields | Define the categories policies can assign |
-| Access control | Manage user accounts, roles, and data access |
+| Area              | What you use it for                                              |
+| ----------------- | ---------------------------------------------------------------- |
+| Employees         | Read employee facts, current assignments, overrides, and history |
+| Policies          | Define rules and inspect versions and assignment impact          |
+| Groups            | Manage explicit membership and attached policies                 |
+| Approvals         | Review and execute changes that require another approver         |
+| Audit log         | Investigate recorded changes and their actors                    |
+| Assignment fields | Define the categories policies can assign                        |
+| Access control    | Manage user accounts, roles, and data access                     |
 
 Some destinations depend on your permissions. Overview, for example, may be available to an administrator while absent for another user. A missing action doesn't necessarily mean the feature is unavailable to your organization.
 
@@ -41,4 +42,6 @@ We'll return to Rachel as a full-time employee in Design. Rachel, Standard Vacat
 
 First, open Employees and identify the difference between an employee's profile and their assignments.
 
-<PolicyLink href="/employees" permission="employees:read">Open Employees</PolicyLink>
+<PolicyLink href="/employees" permission="employees:read">
+  Open Employees
+</PolicyLink>

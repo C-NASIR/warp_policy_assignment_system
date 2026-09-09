@@ -10,7 +10,16 @@ owner: "assignment history"
 status: "draft"
 last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/override-manager.tsx", "frontend/components/audit-log-explorer.tsx", "frontend/lib/backend.ts", "frontend/lib/format.ts", "backend/tests/test_assignment_history.py", "backend/tests/test_audit_logs.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/override-manager.tsx",
+    "frontend/components/audit-log-explorer.tsx",
+    "frontend/lib/backend.ts",
+    "frontend/lib/format.ts",
+    "backend/tests/test_assignment_history.py",
+    "backend/tests/test_audit_logs.py",
+  ]
 reading_time: 2
 prerequisites: ["Update employee facts"]
 ---
@@ -36,6 +45,8 @@ Reading assignments and reading audit events are separate permissions. If you ca
 
 Your aim is to reconstruct three answers: what Rachel had, why that result was selected, and which recorded changes led to it.
 
-<PolicyLink href="/audit" permission="audit:read">Open Audit log</PolicyLink>
+<PolicyLink href="/audit" permission="audit:read">
+  Open Audit log
+</PolicyLink>
 
 [Review explanations, history, and audit evidence](/learn/concepts/explaining-what-happened).

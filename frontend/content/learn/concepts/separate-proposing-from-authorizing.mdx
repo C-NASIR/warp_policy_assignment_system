@@ -11,7 +11,14 @@ owner: "change approvals"
 status: "draft"
 last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/app/routers/change_previews.py", "backend/app/services/approval_requests.py", "backend/app/services/policy_access.py", "backend/tests/test_change_executions.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "backend/app/routers/change_previews.py",
+    "backend/app/services/approval_requests.py",
+    "backend/app/services/policy_access.py",
+    "backend/tests/test_change_executions.py",
+  ]
 reading_time: 3
 prerequisites: ["Access to your own information"]
 ---
@@ -22,12 +29,12 @@ It gives Morgan policy-reading, version-authoring, and preview permissions. Jord
 
 The responsibilities are deliberately different:
 
-| Responsibility | What it controls |
-| --- | --- |
-| Authoring | What the policy definition says |
+| Responsibility       | What it controls                                       |
+| -------------------- | ------------------------------------------------------ |
+| Authoring            | What the policy definition says                        |
 | Activation authority | Whether policy behavior may enter or change production |
-| Approval | Whether another person's exact proposal may proceed |
-| Execution | Committing the approved proposal |
+| Approval             | Whether another person's exact proposal may proceed    |
+| Execution            | Committing the approved proposal                       |
 
 One user may hold several of these permissions, but an ordinary author still cannot approve or reject their own request. Independent review requires a different person.
 

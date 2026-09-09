@@ -1,9 +1,4 @@
 {
   "title": "Learn PolicyOS",
-  "pages": [
-    "index",
-    "concepts",
-    "policyos",
-    "practice"
-  ]
+  "pages": ["index", "concepts", "policyos", "practice"]
 }

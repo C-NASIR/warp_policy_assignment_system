@@ -35,13 +35,24 @@ export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected
       const response = await fetch(`/api/backend/auth/${isSetup ? "setup-root" : "login"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isSetup ? { name, email, password } : {
-          email,
-          password,
-          ...(factorRequired ? useRecovery ? { recovery_code: factor } : { mfa_code: factor } : {}),
-        }),
+        body: JSON.stringify(
+          isSetup
+            ? { name, email, password }
+            : {
+                email,
+                password,
+                ...(factorRequired
+                  ? useRecovery
+                    ? { recovery_code: factor }
+                    : { mfa_code: factor }
+                  : {}),
+              },
+        ),
       });
-      const result = await response.json().catch(() => ({})) as Partial<CurrentUser> & { error?: { code?: string; issues?: { message?: string }[]; message?: string }; detail?: string };
+      const result = (await response.json().catch(() => ({}))) as Partial<CurrentUser> & {
+        error?: { code?: string; issues?: { message?: string }[]; message?: string };
+        detail?: string;
+      };
       if (!response.ok) {
         if (result.error?.code === "mfa_required") {
           setFactorRequired(true);
@@ -49,7 +60,12 @@ export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected
           return;
         }
         const issue = result.error?.issues?.[0]?.message;
-        throw new Error(issue ?? result.error?.message ?? result.detail ?? "Authentication could not be completed.");
+        throw new Error(
+          issue ??
+            result.error?.message ??
+            result.detail ??
+            "Authentication could not be completed.",
+        );
       }
       router.replace(firstAllowedPath(result as CurrentUser));
       router.refresh();
@@ -60,27 +76,149 @@ export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected
     }
   }
 
-  return <main className="auth-page">
-    <section className="auth-card" aria-labelledby="auth-title">
-      <Link href="/" className="auth-brand" aria-label="PolicyOS home"><span className="brand-mark">P</span><span><strong>PolicyOS</strong><small>Assignment engine</small></span></Link>
-      <div className="auth-icon">{isSetup ? <ShieldCheck size={21} /> : <KeyRound size={21} />}</div>
-      <p className="eyebrow">{isSetup ? "Get started" : "Welcome back"}</p>
-      <h1 id="auth-title">{isSetup ? "Sign up for PolicyOS" : "Sign in to PolicyOS"}</h1>
-      <p className="page-subtitle">{isSetup ? "Create the first administrator account to set up your workspace. You can add your team once you’re inside." : "Use the account created for this PolicyOS workspace."}</p>
-      {!connected && <p className="auth-demo-note">This preview is not connected to an authentication service. <Link href="/dashboard">Explore the demo workspace</Link>.</p>}
-      {error && <div className="error-banner auth-message" role="alert"><CircleAlert size={14} />{error}</div>}
-      <form className="auth-form" onSubmit={submit}>
-        {isSetup && <label className="field"><span className="field-label">Full name</span><input className="input" required autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Priya Shah" /></label>}
-        <label className="field"><span className="field-label">Email address</span><input className="input" required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" /></label>
-        <label className="field"><span className="field-label">Password</span><input className="input" required type="password" minLength={isSetup ? 12 : 1} maxLength={128} autoComplete={isSetup ? "new-password" : "current-password"} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-        {!isSetup && factorRequired && <><label className="field"><span className="field-label">{useRecovery ? "Recovery code" : "Authenticator code"}</span><input className="input" required inputMode={useRecovery ? "text" : "numeric"} autoComplete="one-time-code" value={factor} onChange={(event) => setFactor(event.target.value)} placeholder={useRecovery ? "xxxxxx-xxxxxx" : "000000"} /></label><button className="button secondary" type="button" onClick={() => { setUseRecovery((value) => !value); setFactor(""); }}>{useRecovery ? "Use authenticator code" : "Use a recovery code"}</button></>}
-        {isSetup && <label className="field"><span className="field-label">Confirm password</span><input className="input" required type="password" minLength={12} maxLength={128} autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></label>}
-        {isSetup && <div className="auth-requirement"><Check size={13} /> Use at least 12 characters. The password is stored only as a secure hash.</div>}
-        <button className="button auth-submit" disabled={busy || !connected} type="submit">{busy ? "Please wait…" : isSetup ? "Create account" : "Sign in"}<ArrowRight size={14} /></button>
-      </form>
-      {!isSetup && <Link className="popover-footer" href="/recover">Forgot your password?</Link>}
-      <p className="auth-switch">{isSetup ? "Already have an account? " : "New to PolicyOS? "}<Link href={isSetup ? "/login" : "/signup"}>{isSetup ? "Sign in" : "Sign up"}</Link></p>
-      <div className="auth-security"><LockKeyhole size={13} /><span>{isSetup ? "Root setup closes permanently after this account is created." : "Your session is stored in a secure, HTTP-only cookie."}</span></div>
-    </section>
-  </main>;
+  return (
+    <main className="auth-page">
+      <section className="auth-card" aria-labelledby="auth-title">
+        <Link href="/" className="auth-brand" aria-label="PolicyOS home">
+          <span className="brand-mark">P</span>
+          <span>
+            <strong>PolicyOS</strong>
+            <small>Assignment engine</small>
+          </span>
+        </Link>
+        <div className="auth-icon">
+          {isSetup ? <ShieldCheck size={21} /> : <KeyRound size={21} />}
+        </div>
+        <p className="eyebrow">{isSetup ? "Get started" : "Welcome back"}</p>
+        <h1 id="auth-title">{isSetup ? "Sign up for PolicyOS" : "Sign in to PolicyOS"}</h1>
+        <p className="page-subtitle">
+          {isSetup
+            ? "Create the first administrator account to set up your workspace. You can add your team once you’re inside."
+            : "Use the account created for this PolicyOS workspace."}
+        </p>
+        {!connected && (
+          <p className="auth-demo-note">
+            This preview is not connected to an authentication service.{" "}
+            <Link href="/dashboard">Explore the demo workspace</Link>.
+          </p>
+        )}
+        {error && (
+          <div className="error-banner auth-message" role="alert">
+            <CircleAlert size={14} />
+            {error}
+          </div>
+        )}
+        <form className="auth-form" onSubmit={submit}>
+          {isSetup && (
+            <label className="field">
+              <span className="field-label">Full name</span>
+              <input
+                className="input"
+                required
+                autoComplete="name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="e.g. Priya Shah"
+              />
+            </label>
+          )}
+          <label className="field">
+            <span className="field-label">Email address</span>
+            <input
+              className="input"
+              required
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@company.com"
+            />
+          </label>
+          <label className="field">
+            <span className="field-label">Password</span>
+            <input
+              className="input"
+              required
+              type="password"
+              minLength={isSetup ? 12 : 1}
+              maxLength={128}
+              autoComplete={isSetup ? "new-password" : "current-password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          {!isSetup && factorRequired && (
+            <>
+              <label className="field">
+                <span className="field-label">
+                  {useRecovery ? "Recovery code" : "Authenticator code"}
+                </span>
+                <input
+                  className="input"
+                  required
+                  inputMode={useRecovery ? "text" : "numeric"}
+                  autoComplete="one-time-code"
+                  value={factor}
+                  onChange={(event) => setFactor(event.target.value)}
+                  placeholder={useRecovery ? "xxxxxx-xxxxxx" : "000000"}
+                />
+              </label>
+              <button
+                className="button secondary"
+                type="button"
+                onClick={() => {
+                  setUseRecovery((value) => !value);
+                  setFactor("");
+                }}
+              >
+                {useRecovery ? "Use authenticator code" : "Use a recovery code"}
+              </button>
+            </>
+          )}
+          {isSetup && (
+            <label className="field">
+              <span className="field-label">Confirm password</span>
+              <input
+                className="input"
+                required
+                type="password"
+                minLength={12}
+                maxLength={128}
+                autoComplete="new-password"
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+              />
+            </label>
+          )}
+          {isSetup && (
+            <div className="auth-requirement">
+              <Check size={13} /> Use at least 12 characters. The password is stored only as a
+              secure hash.
+            </div>
+          )}
+          <button className="button auth-submit" disabled={busy || !connected} type="submit">
+            {busy ? "Please wait…" : isSetup ? "Create account" : "Sign in"}
+            <ArrowRight size={14} />
+          </button>
+        </form>
+        {!isSetup && (
+          <Link className="popover-footer" href="/recover">
+            Forgot your password?
+          </Link>
+        )}
+        <p className="auth-switch">
+          {isSetup ? "Already have an account? " : "New to PolicyOS? "}
+          <Link href={isSetup ? "/login" : "/signup"}>{isSetup ? "Sign in" : "Sign up"}</Link>
+        </p>
+        <div className="auth-security">
+          <LockKeyhole size={13} />
+          <span>
+            {isSetup
+              ? "Root setup closes permanently after this account is created."
+              : "Your session is stored in a secure, HTTP-only cookie."}
+          </span>
+        </div>
+      </section>
+    </main>
+  );
 }

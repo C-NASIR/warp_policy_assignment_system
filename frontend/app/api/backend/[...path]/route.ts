@@ -19,7 +19,10 @@ function hasTrustedOrigin(request: NextRequest): boolean {
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   if (!process.env.POLICY_API_URL) {
-    return Response.json({ error: { code: "demo_mode", message: "Configure POLICY_API_URL to persist this change." } }, { status: 503 });
+    return Response.json(
+      { error: { code: "demo_mode", message: "Configure POLICY_API_URL to persist this change." } },
+      { status: 503 },
+    );
   }
 
   const { path } = await context.params;
@@ -29,7 +32,15 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const body = safeMethod ? undefined : await request.text();
   const sessionToken = request.cookies.get(sessionCookieName)?.value;
   if (!safeMethod && !hasTrustedOrigin(request)) {
-    return Response.json({ error: { code: "untrusted_origin", message: "This request did not originate from PolicyOS." } }, { status: 403 });
+    return Response.json(
+      {
+        error: {
+          code: "untrusted_origin",
+          message: "This request did not originate from PolicyOS.",
+        },
+      },
+      { status: 403 },
+    );
   }
   const response = await fetch(target, {
     method: request.method,
@@ -37,15 +48,26 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       Accept: "application/json",
       ...(sessionToken ? { Cookie: `${sessionCookieName}=${sessionToken}` } : {}),
       ...(request.headers.get("origin") ? { Origin: request.headers.get("origin")! } : {}),
-      ...(request.headers.get("user-agent") ? { "User-Agent": request.headers.get("user-agent")!.slice(0, 500) } : {}),
-      ...(body ? { "Content-Type": request.headers.get("content-type") ?? "application/json" } : {}),
+      ...(request.headers.get("user-agent")
+        ? { "User-Agent": request.headers.get("user-agent")!.slice(0, 500) }
+        : {}),
+      ...(body
+        ? { "Content-Type": request.headers.get("content-type") ?? "application/json" }
+        : {}),
     },
     body,
     cache: "no-store",
   });
 
   const headers = new Headers();
-  for (const name of ["content-type", "x-total-count", "x-limit", "x-offset", "www-authenticate", "set-cookie"]) {
+  for (const name of [
+    "content-type",
+    "x-total-count",
+    "x-limit",
+    "x-offset",
+    "www-authenticate",
+    "set-cookie",
+  ]) {
     const value = response.headers.get(name);
     if (value) headers.set(name, value);
   }

@@ -11,15 +11,17 @@ export function KeepActiveLessonVisible({ currentUrl }: { currentUrl: string }) 
     const navigationRect = navigation.getBoundingClientRect();
     const activeRect = activeLink.getBoundingClientRect();
     const edgePadding = 12;
-    const isVisible = activeRect.top >= navigationRect.top + edgePadding
-      && activeRect.bottom <= navigationRect.bottom - edgePadding;
+    const isVisible =
+      activeRect.top >= navigationRect.top + edgePadding &&
+      activeRect.bottom <= navigationRect.bottom - edgePadding;
 
     if (isVisible) return;
 
-    const centeredTop = navigation.scrollTop
-      + activeRect.top
-      - navigationRect.top
-      - (navigation.clientHeight - activeRect.height) / 2;
+    const centeredTop =
+      navigation.scrollTop +
+      activeRect.top -
+      navigationRect.top -
+      (navigation.clientHeight - activeRect.height) / 2;
 
     navigation.scrollTo({ top: Math.max(0, centeredTop), behavior: "auto" });
   }, [currentUrl]);

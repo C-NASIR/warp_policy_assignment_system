@@ -10,7 +10,14 @@ owner: "policy authoring"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/policy-builder.tsx", "backend/app/services/condition_fields.py", "backend/tests/test_policy_compiler.py", "backend/tests/test_tenure_rules.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/policy-builder.tsx",
+    "backend/app/services/condition_fields.py",
+    "backend/tests/test_policy_compiler.py",
+    "backend/tests/test_tenure_rules.py",
+  ]
 reading_time: 2
 prerequisites: ["Create your first policy"]
 ---
@@ -39,6 +46,8 @@ Choose **Preview impact** before saving, following the previous lesson's save an
 
 If you open **New version** on an existing policy instead, previewing follows the connected version-review workflow described later. Inspect every prefilled condition rather than assuming the editor copied an arbitrary rule tree completely.
 
-<PolicyLink href="/policies" permission="policies:read">Open the policy directory</PolicyLink>
+<PolicyLink href="/policies" permission="policies:read">
+  Open the policy directory
+</PolicyLink>
 
 [Review combining conditions](/learn/concepts/combining-conditions).

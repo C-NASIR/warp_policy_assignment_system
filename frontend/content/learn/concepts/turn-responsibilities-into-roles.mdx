@@ -11,7 +11,12 @@ owner: "access control"
 status: "draft"
 last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/app/services/access_control.py", "backend/tests/test_access_control.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "backend/app/services/access_control.py",
+    "backend/tests/test_access_control.py",
+  ]
 reading_time: 2
 prerequisites: ["Who can do what?"]
 ---
@@ -26,12 +31,12 @@ People operator is an example created for our company. It is not a built-in Poli
 
 This distinction matters when responsibilities separate:
 
-| Responsibility | Illustrative actions |
-| --- | --- |
-| People operator | Read, create, and update employee records; preview supported changes |
-| Policy author | Read policies, create policies or versions, and preview their impact |
-| Reviewer | Read the approval queue, approve or reject eligible proposals, and execute an approved change |
-| Assignment reader | Read employee assignment results and explanations |
+| Responsibility    | Illustrative actions                                                                          |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| People operator   | Read, create, and update employee records; preview supported changes                          |
+| Policy author     | Read policies, create policies or versions, and preview their impact                          |
+| Reviewer          | Read the approval queue, approve or reject eligible proposals, and execute an approved change |
+| Assignment reader | Read employee assignment results and explanations                                             |
 
 A user can hold several roles. Morgan might be both a People operator and an Assignment reader. PolicyOS combines the permissions from all of Morgan's roles: if any role allows an action, that action is allowed.
 

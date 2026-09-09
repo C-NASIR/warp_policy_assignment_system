@@ -11,7 +11,8 @@ owner: "product education"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_policy_compiler.py"]
+verified_by:
+  ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_policy_compiler.py"]
 reading_time: 2
 prerequisites: ["What is an assignment?"]
 ---
@@ -34,12 +35,12 @@ You can combine these ideas:
 
 The parentheses put a box around the department choices. First ask whether the person belongs to either department. Then require that they also work full time.
 
-| Employee facts | Does this combined condition match? |
-| --- | --- |
-| Full-time, Design | Yes |
-| Full-time, Engineering | Yes |
-| Part-time, Design | No |
-| Full-time, Operations | No |
+| Employee facts         | Does this combined condition match? |
+| ---------------------- | ----------------------------------- |
+| Full-time, Design      | Yes                                 |
+| Full-time, Engineering | Yes                                 |
+| Part-time, Design      | No                                  |
+| Full-time, Operations  | No                                  |
 
 There is one more useful idea: **NOT reverses a condition**. “NOT in Design” means the statement “in Design” must be false. Rachel would not match it while she works in Design.
 

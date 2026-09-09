@@ -11,7 +11,14 @@ owner: "product education"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_assignment_explanations.py", "backend/tests/test_assignment_history.py", "backend/tests/test_audit_logs.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "backend/README.md",
+    "backend/tests/test_assignment_explanations.py",
+    "backend/tests/test_assignment_history.py",
+    "backend/tests/test_audit_logs.py",
+  ]
 reading_time: 2
 prerequisites: ["Changing things safely"]
 ---
@@ -32,11 +39,11 @@ It also identifies the policy version used. If a group supplied a policy or an o
 
 An **audit log** answers what changed, when it changed, and which actor caused it. It can show who created the new policy version and the system's later assignment updates.
 
-| Question | Evidence to inspect |
-| --- | --- |
-| Why was this value selected? | Assignment explanation |
-| What was assigned at a past time? | Assignment history |
-| Who performed a change, and when? | Audit log |
+| Question                          | Evidence to inspect    |
+| --------------------------------- | ---------------------- |
+| Why was this value selected?      | Assignment explanation |
+| What was assigned at a past time? | Assignment history     |
+| Who performed a change, and when? | Audit log              |
 
 The person who approved a rule and the system process that updated assignments can be different actors. Both events matter when reconstructing what happened.
 

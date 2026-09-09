@@ -5,12 +5,29 @@ content_id: "APP13"
 section: "policyos"
 order: 160
 audiences: ["new learner"]
-permissions: ["policies:read", "policies:version:create", "policies:activate", "changes:preview", "changes:approve", "changes:execute"]
+permissions:
+  [
+    "policies:read",
+    "policies:version:create",
+    "policies:activate",
+    "changes:preview",
+    "changes:approve",
+    "changes:execute",
+  ]
 owner: "change approvals"
 status: "draft"
 last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/policy-builder.tsx", "frontend/components/approval-queue.tsx", "backend/app/routers/change_previews.py", "backend/app/services/approval_requests.py", "backend/app/services/policy_access.py", "backend/tests/test_change_executions.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/policy-builder.tsx",
+    "frontend/components/approval-queue.tsx",
+    "backend/app/routers/change_previews.py",
+    "backend/app/services/approval_requests.py",
+    "backend/app/services/policy_access.py",
+    "backend/tests/test_change_executions.py",
+  ]
 reading_time: 4
 prerequisites: ["Limit access with scopes"]
 ---
@@ -54,6 +71,8 @@ Normal employee edits, group membership changes, policy lifecycle changes, and o
 
 Demo mode cannot complete this workflow.
 
-<PolicyLink href="/approvals" permission="changes:approve">Open Change approvals</PolicyLink>
+<PolicyLink href="/approvals" permission="changes:approve">
+  Open Change approvals
+</PolicyLink>
 
 [Review why authoring, approval, and execution are separate](/learn/concepts/separate-proposing-from-authorizing).

@@ -1,7 +1,9 @@
 import { createMDX } from "fumadocs-mdx/next";
 import { readFileSync } from "node:fs";
 
-const learnRedirects = JSON.parse(readFileSync(new URL("./lib/learn-redirects.json", import.meta.url), "utf8"));
+const learnRedirects = JSON.parse(
+  readFileSync(new URL("./lib/learn-redirects.json", import.meta.url), "utf8"),
+);
 
 /** @type {import("next").NextConfig} */
 const nextConfig = {

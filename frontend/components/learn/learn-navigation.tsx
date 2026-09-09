@@ -12,7 +12,10 @@ export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
           <div className="learn-nav-label">{group.label}</div>
           <div className="learn-nav-subsections">
             {group.subsections.map((subsection, subsectionIndex) => (
-              <div className="learn-nav-subgroup" key={subsection.label ?? `${group.section}-${subsectionIndex}`}>
+              <div
+                className="learn-nav-subgroup"
+                key={subsection.label ?? `${group.section}-${subsectionIndex}`}
+              >
                 {subsection.label && <div className="learn-nav-sublabel">{subsection.label}</div>}
                 <div className="learn-nav-links">
                   {subsection.pages.map((page) => {
@@ -44,19 +47,35 @@ export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
         <KeepActiveLessonVisible currentUrl={currentUrl} />
         <Link className="learn-app-link" href="/">
           <span className="learn-app-mark">P</span>
-          <span><strong>PolicyOS</strong><small>Back to the app</small></span>
+          <span>
+            <strong>PolicyOS</strong>
+            <small>Back to the app</small>
+          </span>
           <ArrowLeft size={15} aria-hidden="true" />
         </Link>
         <Link className="learn-sidebar-home" href="/learn">
-          <span className="learn-sidebar-icon"><BookOpenCheck size={16} /></span>
-          <span><strong>Learn PolicyOS</strong><small>Concepts, application, practice</small></span>
+          <span className="learn-sidebar-icon">
+            <BookOpenCheck size={16} />
+          </span>
+          <span>
+            <strong>Learn PolicyOS</strong>
+            <small>Concepts, application, practice</small>
+          </span>
         </Link>
-        <nav className="learn-sidebar-navigation" aria-label="Learning center articles">{content}</nav>
+        <nav className="learn-sidebar-navigation" aria-label="Learning center articles">
+          {content}
+        </nav>
       </aside>
       <div className="learn-mobile-shell">
-        <Link className="learn-mobile-app-link" href="/"><span className="learn-app-mark">P</span><span>PolicyOS</span><small>Back to app</small></Link>
+        <Link className="learn-mobile-app-link" href="/">
+          <span className="learn-app-mark">P</span>
+          <span>PolicyOS</span>
+          <small>Back to app</small>
+        </Link>
         <details className="learn-mobile-navigation">
-          <summary><BookOpenCheck size={17} /> Browse learning center</summary>
+          <summary>
+            <BookOpenCheck size={17} /> Browse learning center
+          </summary>
           <nav aria-label="Learning center navigation">{content}</nav>
         </details>
       </div>

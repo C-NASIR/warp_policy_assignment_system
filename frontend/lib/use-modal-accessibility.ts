@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 
 export function useModalAccessibility(open: boolean, onClose: () => void) {
   const closeRef = useRef(onClose);
-  useEffect(() => { closeRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;

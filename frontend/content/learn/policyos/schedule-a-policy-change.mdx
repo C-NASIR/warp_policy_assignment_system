@@ -5,12 +5,28 @@ content_id: "APP11"
 section: "policyos"
 order: 110
 audiences: ["new learner"]
-permissions: ["policies:read", "policies:version:create", "policies:activate", "settings:read", "employees:read", "changes:preview"]
+permissions:
+  [
+    "policies:read",
+    "policies:version:create",
+    "policies:activate",
+    "settings:read",
+    "employees:read",
+    "changes:preview",
+  ]
 owner: "policy versions"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/policy-builder.tsx", "frontend/app/policies/[id]/page.tsx", "backend/tests/test_policy_versions.py", "backend/tests/test_reconciliation_worker.py", "backend/app/routers/change_previews.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/policy-builder.tsx",
+    "frontend/app/policies/[id]/page.tsx",
+    "backend/tests/test_policy_versions.py",
+    "backend/tests/test_reconciliation_worker.py",
+    "backend/app/routers/change_previews.py",
+  ]
 reading_time: 2
 prerequisites: ["Manage an exception"]
 ---
@@ -38,6 +54,8 @@ When the date arrives, scheduled reconciliation must run before stored current a
 
 This screen also has no future-date assignment-query control. A future projection and a current stored assignment are separate kinds of evidence.
 
-<PolicyLink href="/policies" permission="policies:read">Open policy version history</PolicyLink>
+<PolicyLink href="/policies" permission="policies:read">
+  Open policy version history
+</PolicyLink>
 
 [Review policies over time](/learn/concepts/policies-over-time).

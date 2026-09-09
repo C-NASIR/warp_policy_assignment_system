@@ -13,15 +13,31 @@ export default async function SignupPage() {
   if (user) redirect(firstAllowedPath(user));
   const setup = apiConfigured ? await getRootSetupStatus() : null;
   if (setup && !setup.setup_required) {
-    return <main className="auth-page"><section className="auth-card" aria-labelledby="signup-title">
-      <Link href="/" className="auth-brand"><span className="brand-mark">P</span><strong>PolicyOS</strong></Link>
-      <div className="auth-icon"><ShieldCheck size={21} /></div>
-      <p className="eyebrow">Join your workspace</p>
-      <h1 id="signup-title">Get access to PolicyOS</h1>
-      <p className="page-subtitle">This workspace is already set up. Ask your PolicyOS administrator to create an account for you, then sign in with the credentials they provide.</p>
-      <Link className="button auth-submit" href="/login">Sign in</Link>
-      <Link className="auth-switch" href="/">Back to home</Link>
-    </section></main>;
+    return (
+      <main className="auth-page">
+        <section className="auth-card" aria-labelledby="signup-title">
+          <Link href="/" className="auth-brand">
+            <span className="brand-mark">P</span>
+            <strong>PolicyOS</strong>
+          </Link>
+          <div className="auth-icon">
+            <ShieldCheck size={21} />
+          </div>
+          <p className="eyebrow">Join your workspace</p>
+          <h1 id="signup-title">Get access to PolicyOS</h1>
+          <p className="page-subtitle">
+            This workspace is already set up. Ask your PolicyOS administrator to create an account
+            for you, then sign in with the credentials they provide.
+          </p>
+          <Link className="button auth-submit" href="/login">
+            Sign in
+          </Link>
+          <Link className="auth-switch" href="/">
+            Back to home
+          </Link>
+        </section>
+      </main>
+    );
   }
   return <AuthForm mode="setup" connected={apiConfigured} />;
 }

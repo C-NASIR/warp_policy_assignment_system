@@ -17,7 +17,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "PolicyOS",
     description: "Every employee policy assignment, resolved and explained.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "PolicyOS policy assignment system" }],
+    images: [
+      { url: "/og.png", width: 1200, height: 630, alt: "PolicyOS policy assignment system" },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -32,8 +34,24 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const accountSecurity = currentUser ? await getAccountSecurity() : null;
   const learnSearchEntries = getLearnSearchEntries();
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-      <body><RootProvider search={{ enabled: false }} theme={{ enabled: false }}><WebMcpTools /><AppShell connected={apiConfigured} currentUser={currentUser} securityEvents={accountSecurity?.events ?? []} learnSearchEntries={learnSearchEntries}>{children}</AppShell></RootProvider></body>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body>
+        <RootProvider search={{ enabled: false }} theme={{ enabled: false }}>
+          <WebMcpTools />
+          <AppShell
+            connected={apiConfigured}
+            currentUser={currentUser}
+            securityEvents={accountSecurity?.events ?? []}
+            learnSearchEntries={learnSearchEntries}
+          >
+            {children}
+          </AppShell>
+        </RootProvider>
+      </body>
     </html>
   );
 }

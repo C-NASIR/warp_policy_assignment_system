@@ -12,5 +12,24 @@ export default async function NewEmployeePage() {
   const user = await getCurrentUser();
   if (apiConfigured && !hasPermission(user, "employees:create")) redirect("/forbidden");
   const [employees, fields] = await Promise.all([getEmployees(), getAssignmentFields()]);
-  return <><Link className="page-back-link" href="/employees"><ArrowLeft size={13} />Back to employees</Link><div className="page-heading"><div><p className="eyebrow">Onboarding</p><h1>Add an employee</h1><p className="page-subtitle">Enter employment facts, preview every matching assignment, then confirm when the result looks right.</p></div><span className="badge accent">Preview required</span></div><EmployeeEditor employees={employees} fields={fields} apiConfigured={apiConfigured} /></>;
+  return (
+    <>
+      <Link className="page-back-link" href="/employees">
+        <ArrowLeft size={13} />
+        Back to employees
+      </Link>
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">Onboarding</p>
+          <h1>Add an employee</h1>
+          <p className="page-subtitle">
+            Enter employment facts, preview every matching assignment, then confirm when the result
+            looks right.
+          </p>
+        </div>
+        <span className="badge accent">Preview required</span>
+      </div>
+      <EmployeeEditor employees={employees} fields={fields} apiConfigured={apiConfigured} />
+    </>
+  );
 }

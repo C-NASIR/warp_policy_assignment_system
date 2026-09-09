@@ -10,7 +10,14 @@ owner: "policy authoring"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/policy-builder.tsx", "frontend/app/policies/new/page.tsx", "backend/app/routers/policies.py", "backend/tests/test_policy_versions.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/policy-builder.tsx",
+    "frontend/app/policies/new/page.tsx",
+    "backend/app/routers/policies.py",
+    "backend/tests/test_policy_versions.py",
+  ]
 reading_time: 2
 prerequisites: ["Define an assignment field"]
 ---
@@ -38,6 +45,8 @@ Policy authoring requires permission to create policies, read the condition and 
 
 The saved detail page should show the intended condition and **Assignments provided: Annual vacation allowance — 15 days**. That is the definition; Rachel's assignment is the result.
 
-<PolicyLink href="/policies" permission="policies:read">Open Policies</PolicyLink>
+<PolicyLink href="/policies" permission="policies:read">
+  Open Policies
+</PolicyLink>
 
 [Review how decisions become policies](/learn/concepts/from-decisions-to-policies).

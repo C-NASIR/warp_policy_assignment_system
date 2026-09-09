@@ -5,12 +5,27 @@ content_id: "APP09"
 section: "policyos"
 order: 90
 audiences: ["new learner"]
-permissions: ["groups:read", "groups:create", "groups:update", "employees:read", "policies:read", "changes:preview", "changes:execute"]
+permissions:
+  [
+    "groups:read",
+    "groups:create",
+    "groups:update",
+    "employees:read",
+    "policies:read",
+    "changes:preview",
+    "changes:execute",
+  ]
 owner: "groups"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/group-directory.tsx", "frontend/components/group-manager.tsx", "backend/tests/test_groups.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/group-directory.tsx",
+    "frontend/components/group-manager.tsx",
+    "backend/tests/test_groups.py",
+  ]
 reading_time: 2
 prerequisites: ["Handle competing policies"]
 ---
@@ -37,6 +52,8 @@ Removing a route doesn't necessarily remove a value. Rachel could still qualify 
 
 Creating groups requires group-creation permission; editing membership and attachments requires group-update permission. The selectors also depend on your ability to read employees and policies. If a policy is absent, check that it is active, visible, and not already attached.
 
-<PolicyLink href="/groups" permission="groups:read">Open Groups</PolicyLink>
+<PolicyLink href="/groups" permission="groups:read">
+  Open Groups
+</PolicyLink>
 
 [Review assignment through groups](/learn/concepts/assigning-through-groups).

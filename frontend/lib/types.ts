@@ -111,7 +111,11 @@ export type AssignmentSummary = {
   field_count: number;
   complete: boolean;
   conflicted_employee_count: number;
-  fields: { assignment_field_definition: AssignmentField; assigned_employee_count: number; assignment_count: number }[];
+  fields: {
+    assignment_field_definition: AssignmentField;
+    assigned_employee_count: number;
+    assignment_count: number;
+  }[];
 };
 
 export type Group = { id: number; name: string };

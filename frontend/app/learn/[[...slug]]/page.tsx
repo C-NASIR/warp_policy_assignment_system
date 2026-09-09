@@ -8,13 +8,20 @@ import { LessonProgress } from "@/components/learn/exercises";
 import { LearnNavigation } from "@/components/learn/learn-navigation";
 import { getLearnMdxComponents } from "@/components/learn/mdx-components";
 import { apiConfigured, getCurrentUser } from "@/lib/backend";
-import { getOrderedLearnPages, getRelatedLearnPages, labelForLearnSection, learnSource } from "@/lib/learn-source";
+import {
+  getOrderedLearnPages,
+  getRelatedLearnPages,
+  labelForLearnSection,
+  learnSource,
+} from "@/lib/learn-source";
 
 export function generateStaticParams() {
   return learnSource.generateParams();
 }
 
-export async function generateMetadata({ params }: PageProps<"/learn/[[...slug]]">): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<"/learn/[[...slug]]">): Promise<Metadata> {
   const { slug } = await params;
   const page = learnSource.getPage(slug);
   if (!page) return {};
@@ -31,7 +38,8 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
   const orderedPages = getOrderedLearnPages();
   const pageIndex = orderedPages.findIndex((item) => item.url === page.url);
   const previous = pageIndex > 0 ? orderedPages[pageIndex - 1] : null;
-  const next = pageIndex >= 0 && pageIndex < orderedPages.length - 1 ? orderedPages[pageIndex + 1] : null;
+  const next =
+    pageIndex >= 0 && pageIndex < orderedPages.length - 1 ? orderedPages[pageIndex + 1] : null;
   const related = getRelatedLearnPages(page);
   const isHome = page.slugs.length === 0;
   const isOutline = page.data.status === "outline";
@@ -41,29 +49,102 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
       <LearnNavigation currentUrl={page.url} />
       <article className="learn-article-column">
         <header className="learn-article-header">
-          <p className="eyebrow">{isHome ? "Learning center" : labelForLearnSection(page.data.section)}</p>
+          <p className="eyebrow">
+            {isHome ? "Learning center" : labelForLearnSection(page.data.section)}
+          </p>
           <h1>{page.data.title}</h1>
           {page.data.description && <p className="learn-description">{page.data.description}</p>}
           <ArticleMeta page={page} />
-          {!isHome && !isOutline && <LessonProgress articleId={page.data.content_id} total={orderedPages.filter((item) => item.data.status !== "outline").length} />}
-          {page.data.prerequisites.length > 0 && <p className="learn-prerequisites"><strong>Before you start:</strong> {page.data.prerequisites.join(" · ")}</p>}
+          {!isHome && !isOutline && (
+            <LessonProgress
+              articleId={page.data.content_id}
+              total={orderedPages.filter((item) => item.data.status !== "outline").length}
+            />
+          )}
+          {page.data.prerequisites.length > 0 && (
+            <p className="learn-prerequisites">
+              <strong>Before you start:</strong> {page.data.prerequisites.join(" · ")}
+            </p>
+          )}
         </header>
-        {page.data.toc.length > 0 && <details className="learn-mobile-toc"><summary><ListTree size={14} /> On this page</summary><TocList items={page.data.toc} /></details>}
-        <div className="learn-body prose"><Body components={getLearnMdxComponents(currentUser)} /></div>
-        {!isHome && !isOutline && <ArticleFeedback articleId={page.data.content_id} path={page.url} connected={apiConfigured} />}
-        {!isHome && !isOutline && related.length > 0 && <section className="learn-related" aria-labelledby="related-articles-title"><h2 id="related-articles-title">Related lessons</h2><div>{related.map((item) => <Link href={item.url} key={item.url}><strong>{item.data.title}</strong><span>{item.data.description}</span></Link>)}</div></section>}
-        {!isHome && <nav className="learn-pagination" aria-label="Lesson navigation">
-          {previous ? <Link href={previous.url}><ArrowLeft size={15} /><span><small>Previous</small><strong>{previous.data.title}</strong></span></Link> : <span />}
-          {next ? <Link className="next" href={next.url}><span><small>Next</small><strong>{next.data.title}</strong></span><ArrowRight size={15} /></Link> : <span />}
-        </nav>}
+        {page.data.toc.length > 0 && (
+          <details className="learn-mobile-toc">
+            <summary>
+              <ListTree size={14} /> On this page
+            </summary>
+            <TocList items={page.data.toc} />
+          </details>
+        )}
+        <div className="learn-body prose">
+          <Body components={getLearnMdxComponents(currentUser)} />
+        </div>
+        {!isHome && !isOutline && (
+          <ArticleFeedback
+            articleId={page.data.content_id}
+            path={page.url}
+            connected={apiConfigured}
+          />
+        )}
+        {!isHome && !isOutline && related.length > 0 && (
+          <section className="learn-related" aria-labelledby="related-articles-title">
+            <h2 id="related-articles-title">Related lessons</h2>
+            <div>
+              {related.map((item) => (
+                <Link href={item.url} key={item.url}>
+                  <strong>{item.data.title}</strong>
+                  <span>{item.data.description}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+        {!isHome && (
+          <nav className="learn-pagination" aria-label="Lesson navigation">
+            {previous ? (
+              <Link href={previous.url}>
+                <ArrowLeft size={15} />
+                <span>
+                  <small>Previous</small>
+                  <strong>{previous.data.title}</strong>
+                </span>
+              </Link>
+            ) : (
+              <span />
+            )}
+            {next ? (
+              <Link className="next" href={next.url}>
+                <span>
+                  <small>Next</small>
+                  <strong>{next.data.title}</strong>
+                </span>
+                <ArrowRight size={15} />
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        )}
       </article>
       <aside className="learn-toc" aria-label="On this page">
-        {page.data.toc.length > 0 && <div><strong>On this page</strong><TocList items={page.data.toc} /></div>}
+        {page.data.toc.length > 0 && (
+          <div>
+            <strong>On this page</strong>
+            <TocList items={page.data.toc} />
+          </div>
+        )}
       </aside>
     </div>
   );
 }
 
 function TocList({ items }: { items: { url: string; title: React.ReactNode; depth: number }[] }) {
-  return <ol>{items.map((item) => <li style={{ paddingLeft: `${Math.max(0, item.depth - 2) * 12}px` }} key={item.url}><a href={item.url}>{item.title}</a></li>)}</ol>;
+  return (
+    <ol>
+      {items.map((item) => (
+        <li style={{ paddingLeft: `${Math.max(0, item.depth - 2) * 12}px` }} key={item.url}>
+          <a href={item.url}>{item.title}</a>
+        </li>
+      ))}
+    </ol>
+  );
 }

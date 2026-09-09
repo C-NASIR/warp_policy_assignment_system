@@ -6,7 +6,11 @@ export function hasPermission(user: CurrentUser | null, permission: string): boo
 
 export function firstAllowedPath(user: CurrentUser): string {
   if (user.password_change_required) return "/account/security";
-  const privileged = user.is_root || ["access:manage", "api_credentials:manage", "changes:approve", "changes:execute"].some((permission) => hasPermission(user, permission));
+  const privileged =
+    user.is_root ||
+    ["access:manage", "api_credentials:manage", "changes:approve", "changes:execute"].some(
+      (permission) => hasPermission(user, permission),
+    );
   if (privileged && !user.mfa_enabled) return "/account/security";
   if (user.permissions.includes("*")) return "/dashboard";
   const destinations: [string, string][] = [
@@ -17,5 +21,7 @@ export function firstAllowedPath(user: CurrentUser): string {
     ["settings:read", "/settings"],
     ["access:read", "/access"],
   ];
-  return destinations.find(([permission]) => hasPermission(user, permission))?.[1] ?? "/account/security";
+  return (
+    destinations.find(([permission]) => hasPermission(user, permission))?.[1] ?? "/account/security"
+  );
 }

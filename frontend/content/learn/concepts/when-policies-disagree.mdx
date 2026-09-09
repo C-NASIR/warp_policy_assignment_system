@@ -11,7 +11,13 @@ owner: "product education"
 status: "draft"
 last_verified: "2026-09-05"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/README.md", "backend/tests/test_services.py", "backend/app/services/policy_engine.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "backend/README.md",
+    "backend/tests/test_services.py",
+    "backend/app/services/policy_engine.py",
+  ]
 reading_time: 2
 prerequisites: ["One value or many?"]
 ---
@@ -20,10 +26,10 @@ Rachel matches two policies that supply different annual vacation allowances. Th
 
 Your company intends the experienced-employee allowance to take precedence over the standard allowance. You express that choice using **priority**.
 
-| Policy | Candidate allowance | Priority |
-| --- | --- | --- |
-| Standard Vacation | 15 days | 10 |
-| Experienced Employee Vacation | 20 days | 20 |
+| Policy                        | Candidate allowance | Priority |
+| ----------------------------- | ------------------- | -------- |
+| Standard Vacation             | 15 days             | 10       |
+| Experienced Employee Vacation | 20 days             | 20       |
 
 In PolicyOS, a higher priority number takes precedence. With these priorities, Rachel receives 20 days.
 

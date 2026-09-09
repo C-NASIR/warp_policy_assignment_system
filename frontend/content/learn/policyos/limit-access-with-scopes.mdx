@@ -10,7 +10,15 @@ owner: "access control"
 status: "draft"
 last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/access-manager.tsx", "backend/app/services/employee_visibility.py", "backend/app/services/assignment_field_visibility.py", "backend/tests/test_employee_visibility.py", "backend/tests/test_assignment_field_visibility.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/access-manager.tsx",
+    "backend/app/services/employee_visibility.py",
+    "backend/app/services/assignment_field_visibility.py",
+    "backend/tests/test_employee_visibility.py",
+    "backend/tests/test_assignment_field_visibility.py",
+  ]
 reading_time: 4
 prerequisites: ["Manage access"]
 ---
@@ -53,6 +61,8 @@ Reporting relationships, policy groups, and access roles remain separate:
 
 Role and user changes save directly after the administrator's sensitive-action confirmation. They do not create approval requests.
 
-<PolicyLink href="/access" permission="access:read">Review roles and users</PolicyLink>
+<PolicyLink href="/access" permission="access:read">
+  Review roles and users
+</PolicyLink>
 
 [Review how permissions and scopes combine](/learn/concepts/permissions-and-scopes-work-together).

@@ -3,11 +3,7 @@ import { pageSchema } from "fumadocs-core/source/schema";
 import { defineDocs } from "fumadocs-mdx/macro";
 import { z } from "zod";
 
-export const learnSections = [
-  "concepts",
-  "policyos",
-  "practice",
-] as const;
+export const learnSections = ["concepts", "policyos", "practice"] as const;
 
 export type LearnSection = (typeof learnSections)[number];
 
@@ -19,14 +15,7 @@ const articleSchema = pageSchema.extend({
   audiences: z.array(z.string()).min(1),
   permissions: z.array(z.string()),
   owner: z.string().min(1),
-  status: z.enum([
-    "outline",
-    "draft",
-    "technical-review",
-    "product-review",
-    "approved",
-    "retired",
-  ]),
+  status: z.enum(["outline", "draft", "technical-review", "product-review", "approved", "retired"]),
   last_verified: z.string().date(),
   review_by: z.string().date(),
   verified_by: z.array(z.string()).min(1),
@@ -67,11 +56,17 @@ export function labelForLearnSection(section: LearnSection) {
 }
 
 export function getOrderedLearnPages() {
-  return learnSource.getPages()
+  return learnSource
+    .getPages()
     .filter((page) => page.slugs.length > 0 && page.data.status !== "retired")
     .sort((left, right) => {
-      const sectionDelta = learnSections.indexOf(left.data.section) - learnSections.indexOf(right.data.section);
-      return sectionDelta || left.data.order - right.data.order || left.data.title.localeCompare(right.data.title);
+      const sectionDelta =
+        learnSections.indexOf(left.data.section) - learnSections.indexOf(right.data.section);
+      return (
+        sectionDelta ||
+        left.data.order - right.data.order ||
+        left.data.title.localeCompare(right.data.title)
+      );
     });
 }
 
@@ -79,10 +74,12 @@ export function getLearnNavigation() {
   const pages = getOrderedLearnPages();
   return learnSections.map((section) => {
     const sectionPages = pages.filter((page) => page.data.section === section);
-    const subsections = sectionPages.reduce<Array<{
-      label: string | null;
-      pages: typeof sectionPages;
-    }>>((groups, page) => {
+    const subsections = sectionPages.reduce<
+      Array<{
+        label: string | null;
+        pages: typeof sectionPages;
+      }>
+    >((groups, page) => {
       const label = page.data.subsection ?? null;
       const current = groups.at(-1);
       if (current?.label === label) current.pages.push(page);
@@ -110,12 +107,17 @@ export function getLearnSearchEntries(): LearnSearchEntry[] {
       page.data.description,
       ...page.data.structuredData.headings.map((heading) => heading.content),
       ...page.data.structuredData.contents.map((content) => content.content),
-    ].filter(Boolean).join(" ").toLowerCase(),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
   }));
 }
 
 export function getRelatedLearnPages(page: LearnPage, limit = 3) {
-  const sectionPages = getOrderedLearnPages().filter((item) => item.data.section === page.data.section);
+  const sectionPages = getOrderedLearnPages().filter(
+    (item) => item.data.section === page.data.section,
+  );
   const index = sectionPages.findIndex((item) => item.url === page.url);
   if (index < 0) return [];
 

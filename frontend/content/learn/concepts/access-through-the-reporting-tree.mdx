@@ -11,7 +11,13 @@ owner: "access control"
 status: "draft"
 last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "backend/app/services/employee_visibility.py", "backend/app/services/org_chart.py", "backend/tests/test_employee_visibility.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "backend/app/services/employee_visibility.py",
+    "backend/app/services/org_chart.py",
+    "backend/tests/test_employee_visibility.py",
+  ]
 reading_time: 2
 prerequisites: ["Permissions and scopes work together"]
 ---
@@ -34,11 +40,11 @@ The reporting relationship supplies the population, but it does not supply autho
 
 It also helps to keep three different mechanisms apart:
 
-| Mechanism | What it expresses |
-| --- | --- |
-| Reporting relationship | Who manages whom in the employee hierarchy; it can define access scope |
-| Employee group | An explicit collection used to give members another route to attached policies |
-| Access role | Which PolicyOS actions and data scopes a user receives |
+| Mechanism              | What it expresses                                                              |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| Reporting relationship | Who manages whom in the employee hierarchy; it can define access scope         |
+| Employee group         | An explicit collection used to give members another route to attached policies |
+| Access role            | Which PolicyOS actions and data scopes a user receives                         |
 
 Putting Devon in the Product Launch group does not make Rachel Devon's manager. Calling a role “Product Launch manager” does not add anyone to that group. Each mechanism has its own job.
 

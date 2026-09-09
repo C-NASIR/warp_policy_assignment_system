@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import { AccessManager } from "@/components/access-manager";
-import { apiConfigured, getAuthorizationAssignmentFields, getCurrentUser, getEmployees, getPermissions, getRoles, getUsers } from "@/lib/backend";
+import {
+  apiConfigured,
+  getAuthorizationAssignmentFields,
+  getCurrentUser,
+  getEmployees,
+  getPermissions,
+  getRoles,
+  getUsers,
+} from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Access control" };
@@ -15,5 +23,17 @@ export default async function AccessPage() {
     getUsers(),
     canReadEmployees ? getEmployees() : Promise.resolve([]),
   ]);
-  return <AccessManager initialUsers={users} initialRoles={roles} employees={employees} permissions={permissions} assignmentFields={assignmentFields} canManage={hasPermission(currentUser, "access:manage")} canReadEmployees={canReadEmployees} mfaEnabled={currentUser?.mfa_enabled ?? false} apiConfigured={apiConfigured} />;
+  return (
+    <AccessManager
+      initialUsers={users}
+      initialRoles={roles}
+      employees={employees}
+      permissions={permissions}
+      assignmentFields={assignmentFields}
+      canManage={hasPermission(currentUser, "access:manage")}
+      canReadEmployees={canReadEmployees}
+      mfaEnabled={currentUser?.mfa_enabled ?? false}
+      apiConfigured={apiConfigured}
+    />
+  );
 }

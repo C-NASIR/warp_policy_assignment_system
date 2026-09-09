@@ -2,8 +2,42 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { assignmentFields, assignmentSummary, assignmentsByEmployee, auditLogs, conditionFields, employees, groupEmployeeIds, groupPolicyIds, groups, overridesByEmployee, policies, policyImpacts } from "./demo-data";
-import type { AccessReview, AccountSecurity, Assignment, AssignmentField, AssignmentSummary, AuditLog, ChangeApprovalRequest, ConditionField, CurrentUser, Employee, EmployeeDirectoryItem, EmployeeOverride, Group, LearningInsights, Permission, Policy, PolicyImpact, Role, RootSetupStatus, User } from "./types";
+import {
+  assignmentFields,
+  assignmentSummary,
+  assignmentsByEmployee,
+  auditLogs,
+  conditionFields,
+  employees,
+  groupEmployeeIds,
+  groupPolicyIds,
+  groups,
+  overridesByEmployee,
+  policies,
+  policyImpacts,
+} from "./demo-data";
+import type {
+  AccessReview,
+  AccountSecurity,
+  Assignment,
+  AssignmentField,
+  AssignmentSummary,
+  AuditLog,
+  ChangeApprovalRequest,
+  ConditionField,
+  CurrentUser,
+  Employee,
+  EmployeeDirectoryItem,
+  EmployeeOverride,
+  Group,
+  LearningInsights,
+  Permission,
+  Policy,
+  PolicyImpact,
+  Role,
+  RootSetupStatus,
+  User,
+} from "./types";
 
 const configuredApiUrl = process.env.POLICY_API_URL?.replace(/\/$/, "");
 const sessionCookieName = "policyos_session";
@@ -53,26 +87,49 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
 export const getEmployees = () => read<EmployeeDirectoryItem[]>("/employees?limit=500", employees);
 export const getPolicies = () => read<Policy[]>("/policies?limit=500", policies);
-export const getAssignmentFields = () => read<AssignmentField[]>("/assignment-fields?limit=500", assignmentFields);
-export const getConditionFields = () => read<ConditionField[]>("/condition-fields?limit=500", conditionFields);
-export const getAssignmentSummary = () => read<AssignmentSummary>("/assignment-summary", assignmentSummary);
+export const getAssignmentFields = () =>
+  read<AssignmentField[]>("/assignment-fields?limit=500", assignmentFields);
+export const getConditionFields = () =>
+  read<ConditionField[]>("/condition-fields?limit=500", conditionFields);
+export const getAssignmentSummary = () =>
+  read<AssignmentSummary>("/assignment-summary", assignmentSummary);
 export const getGroups = () => read<Group[]>("/groups?limit=500", groups);
 export const getAuditLogs = () => read<AuditLog[]>("/audit-logs?limit=100&sort=desc", auditLogs);
 export const getPermissions = () => read<Permission[]>("/authorization/permissions?limit=500", []);
-export const getAuthorizationAssignmentFields = () => read<AssignmentField[]>("/authorization/assignment-fields", assignmentFields);
+export const getAuthorizationAssignmentFields = () =>
+  read<AssignmentField[]>("/authorization/assignment-fields", assignmentFields);
 export const getRoles = () => read<Role[]>("/roles?limit=500", []);
 export const getUsers = () => read<User[]>("/users?limit=500", []);
 export const getApprovalRequests = () => read<ChangeApprovalRequest[]>("/approval-requests", []);
-export const getAccountSecurity = () => read<AccountSecurity>("/auth/security", { mfa_enabled: false, mfa_required: false, sessions: [], events: [] });
-export const getAccessReview = () => read<AccessReview | null>("/authorization/access-review", null);
-export const getLearningInsights = () => read<LearningInsights>("/learning-insights", { total_feedback: 0, helpful_percentage: null, article_feedback: [], unsuccessful_searches: [] });
+export const getAccountSecurity = () =>
+  read<AccountSecurity>("/auth/security", {
+    mfa_enabled: false,
+    mfa_required: false,
+    sessions: [],
+    events: [],
+  });
+export const getAccessReview = () =>
+  read<AccessReview | null>("/authorization/access-review", null);
+export const getLearningInsights = () =>
+  read<LearningInsights>("/learning-insights", {
+    total_feedback: 0,
+    helpful_percentage: null,
+    article_feedback: [],
+    unsuccessful_searches: [],
+  });
 
 export async function getEmployee(id: number) {
-  return read<Employee | null>(`/employees/${id}`, employees.find((item) => item.id === id) ?? null);
+  return read<Employee | null>(
+    `/employees/${id}`,
+    employees.find((item) => item.id === id) ?? null,
+  );
 }
 
 export async function getEmployeeAssignments(id: number) {
-  return read<Assignment[]>(`/employees/${id}/assignments?limit=500`, assignmentsByEmployee[id] ?? []);
+  return read<Assignment[]>(
+    `/employees/${id}/assignments?limit=500`,
+    assignmentsByEmployee[id] ?? [],
+  );
 }
 
 export async function getPolicy(id: number) {
@@ -88,17 +145,29 @@ export async function getGroup(id: number) {
 }
 
 export async function getGroupEmployees(id: number) {
-  return read<Employee[]>(`/groups/${id}/employees?limit=500`, employees.filter((item) => groupEmployeeIds[id]?.includes(item.id)));
+  return read<Employee[]>(
+    `/groups/${id}/employees?limit=500`,
+    employees.filter((item) => groupEmployeeIds[id]?.includes(item.id)),
+  );
 }
 
 export async function getGroupPolicies(id: number) {
-  return read<Policy[]>(`/groups/${id}/policies?limit=500`, policies.filter((item) => groupPolicyIds[id]?.includes(item.id)));
+  return read<Policy[]>(
+    `/groups/${id}/policies?limit=500`,
+    policies.filter((item) => groupPolicyIds[id]?.includes(item.id)),
+  );
 }
 
 export async function getEmployeeOverrides(id: number) {
-  return read<EmployeeOverride[]>(`/employees/${id}/overrides?limit=500`, overridesByEmployee[id] ?? []);
+  return read<EmployeeOverride[]>(
+    `/employees/${id}/overrides?limit=500`,
+    overridesByEmployee[id] ?? [],
+  );
 }
 
 export async function getEmployeeAssignmentHistory(id: number) {
-  return read<Assignment[]>(`/employees/${id}/assignments/history?limit=500`, assignmentsByEmployee[id] ?? []);
+  return read<Assignment[]>(
+    `/employees/${id}/assignments/history?limit=500`,
+    assignmentsByEmployee[id] ?? [],
+  );
 }

@@ -10,7 +10,14 @@ owner: "access control"
 status: "draft"
 last_verified: "2026-09-06"
 review_by: "2026-12-05"
-verified_by: ["docs/learn/content-map.md", "frontend/components/access-manager.tsx", "backend/app/services/access_control.py", "backend/tests/test_access_control.py", "backend/tests/test_security_hardening.py"]
+verified_by:
+  [
+    "docs/learn/content-map.md",
+    "frontend/components/access-manager.tsx",
+    "backend/app/services/access_control.py",
+    "backend/tests/test_access_control.py",
+    "backend/tests/test_security_hardening.py",
+  ]
 reading_time: 3
 prerequisites: ["Investigate past decisions"]
 ---
@@ -52,6 +59,8 @@ An account's name and email identify the user. Morgan's authority comes from all
 
 Demo mode disables saving users and roles. Use a connected training deployment for this walkthrough.
 
-<PolicyLink href="/access" permission="access:read">Open Access control</PolicyLink>
+<PolicyLink href="/access" permission="access:read">
+  Open Access control
+</PolicyLink>
 
 [Review why accounts and roles are separate](/learn/concepts/who-can-do-what).
