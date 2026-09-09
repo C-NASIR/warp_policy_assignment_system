@@ -111,7 +111,7 @@ class Role(Base):
         server_default=func.now(),
         onupdate=current_datetime,
     )
-    permission_links: Mapped[list[RolePermission]] = relationship(
+    role_permissions: Mapped[list[RolePermission]] = relationship(
         back_populates="role",
         cascade="all, delete-orphan",
     )
@@ -133,7 +133,7 @@ class RolePermission(Base):
         primary_key=True,
     )
     permission: Mapped[str] = mapped_column(String(100), primary_key=True)
-    role: Mapped[Role] = relationship(back_populates="permission_links")
+    role: Mapped[Role] = relationship(back_populates="role_permissions")
 
 
 class RoleAssignmentFieldScope(Base):

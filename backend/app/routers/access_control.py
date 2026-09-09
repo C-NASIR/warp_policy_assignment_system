@@ -84,7 +84,7 @@ def list_roles(
     search: Annotated[str | None, Query(max_length=100)] = None,
 ) -> list[RoleRead]:
     statement = select(Role).options(
-        selectinload(Role.permission_links),
+        selectinload(Role.role_permissions),
         selectinload(Role.assignment_field_links),
         selectinload(Role.users),
     )
@@ -183,7 +183,7 @@ def list_users(
     role_id: Annotated[int | None, Query(gt=0)] = None,
 ) -> list[UserRead]:
     statement = select(User).options(
-        selectinload(User.roles).selectinload(Role.permission_links)
+        selectinload(User.roles).selectinload(Role.role_permissions)
     )
     if search:
         pattern = f"%{search.strip()}%"
@@ -319,7 +319,7 @@ def _role_read(role: Role) -> RoleRead:
         assignment_field_ids=sorted(
             link.assignment_field_definition_id for link in role.assignment_field_links
         ),
-        permissions=sorted(link.permission for link in role.permission_links),
+        permissions=sorted(link.permission for link in role.role_permissions),
         user_count=len(role.users),
         created_by=role.created_by,
         created_at=role.created_at,

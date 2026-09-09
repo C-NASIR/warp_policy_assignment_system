@@ -240,7 +240,7 @@ def access_review(session: Session) -> dict:
         session.scalars(
             select(Role)
             .options(
-                selectinload(Role.permission_links),
+                selectinload(Role.role_permissions),
                 selectinload(Role.users),
             )
             .order_by(Role.name)
@@ -296,7 +296,7 @@ def access_review(session: Session) -> dict:
     unused_roles = 0
     for role in roles:
         user_count = len(role.users)
-        permissions = {link.permission for link in role.permission_links}
+        permissions = {link.permission for link in role.role_permissions}
         if user_count == 0:
             unused_roles += 1
             findings.append(
@@ -357,7 +357,7 @@ def role_by_id(session: Session, role_id: int) -> Role:
     role = session.scalar(
         select(Role)
         .options(
-            selectinload(Role.permission_links),
+            selectinload(Role.role_permissions),
             selectinload(Role.assignment_field_links),
             selectinload(Role.users),
         )
@@ -402,7 +402,7 @@ def create_role(
         assignment_field_scope=assignment_field_scope,
         created_by=actor,
     )
-    role.permission_links = [
+    role.role_permissions = [
         RolePermission(permission=permission) for permission in normalized_permissions
     ]
     role.assignment_field_links = _assignment_field_links(
@@ -454,7 +454,7 @@ def update_role(
     if description_supplied:
         role.description = description.strip() if description else None
     if permissions is not None:
-        role.permission_links = [
+        role.role_permissions = [
             RolePermission(permission=permission)
             for permission in validate_permissions(permissions)
         ]
@@ -512,7 +512,7 @@ def delete_role(session: Session, role: Role, *, actor: str) -> None:
 def user_by_id(session: Session, user_id: int) -> User:
     user = session.scalar(
         select(User)
-        .options(selectinload(User.roles).selectinload(Role.permission_links))
+        .options(selectinload(User.roles).selectinload(Role.role_permissions))
         .where(User.id == user_id)
     )
     if user is None:
@@ -709,7 +709,7 @@ def role_snapshot(role: Role) -> dict:
         "assignment_field_ids": sorted(
             link.assignment_field_definition_id for link in role.assignment_field_links
         ),
-        "permissions": sorted(link.permission for link in role.permission_links),
+        "permissions": sorted(link.permission for link in role.role_permissions),
     }
 
 
