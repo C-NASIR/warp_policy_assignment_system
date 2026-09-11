@@ -3,16 +3,14 @@
 import { ChevronDown, ChevronUp, Search, ScrollText } from "lucide-react";
 import { useState } from "react";
 import { formatDate, titleCase } from "@/lib/format";
-import type { AuditLog, LearningInsights } from "@/lib/types";
+import type { AuditLog } from "@/lib/types";
 
 export function AuditLogExplorer({
   events,
   entityLabels,
-  learningInsights,
 }: {
   events: AuditLog[];
   entityLabels: Record<number, string>;
-  learningInsights: LearningInsights;
 }) {
   const [search, setSearch] = useState("");
   const [entity, setEntity] = useState("all");
@@ -44,7 +42,6 @@ export function AuditLogExplorer({
           <ScrollText size={11} /> Append-only
         </span>
       </div>
-      <LearningSignals insights={learningInsights} />
       <div className="toolbar">
         <div className="toolbar-left">
           <label className="search-box">
@@ -133,66 +130,6 @@ export function AuditLogExplorer({
         </div>
       </div>
     </>
-  );
-}
-
-function LearningSignals({ insights }: { insights: LearningInsights }) {
-  const topFeedback = insights.article_feedback.slice(0, 5);
-  const misses = insights.unsuccessful_searches.slice(0, 5);
-  return (
-    <section className="learning-signals" aria-labelledby="learning-signals-title">
-      <div className="learning-signals-head">
-        <div>
-          <p className="eyebrow">Learning quality</p>
-          <h2 id="learning-signals-title">Onboarding signals</h2>
-        </div>
-        <span className="badge">Aggregate only</span>
-      </div>
-      <div className="learning-signal-grid">
-        <div className="learning-signal-score">
-          <strong>
-            {insights.helpful_percentage === null ? "—" : `${insights.helpful_percentage}%`}
-          </strong>
-          <span>helpful</span>
-          <small>{insights.total_feedback} article responses</small>
-        </div>
-        <div>
-          <h3>Articles needing attention</h3>
-          {topFeedback.length === 0 ? (
-            <p className="learning-signal-empty">No article feedback yet.</p>
-          ) : (
-            <ol className="learning-signal-list">
-              {topFeedback.map((item) => (
-                <li key={item.article_id}>
-                  <span>{item.article_id}</span>
-                  <small>
-                    {item.not_helpful_count} not yet · {item.helpful_count} helpful
-                  </small>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-        <div>
-          <h3>Unsuccessful Quick Find searches</h3>
-          {misses.length === 0 ? (
-            <p className="learning-signal-empty">No zero-result searches yet.</p>
-          ) : (
-            <ol className="learning-signal-list">
-              {misses.map((item) => (
-                <li key={item.query}>
-                  <span>{item.query}</span>
-                  <small>
-                    {item.count} {item.count === 1 ? "miss" : "misses"} · last{" "}
-                    {formatDate(item.last_seen_at)}
-                  </small>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-      </div>
-    </section>
   );
 }
 

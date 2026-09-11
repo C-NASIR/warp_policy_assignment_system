@@ -3,8 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 const sessionCookieName = "policyos_session";
 const publicPaths = new Set(["/", "/login", "/signup", "/setup", "/recover"]);
 
+function isPublicPath(pathname: string) {
+  return publicPaths.has(pathname) || pathname === "/learn" || pathname.startsWith("/learn/");
+}
+
 export function proxy(request: NextRequest) {
-  if (!process.env.POLICY_API_URL || publicPaths.has(request.nextUrl.pathname)) {
+  if (!process.env.POLICY_API_URL || isPublicPath(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
   if (request.cookies.has(sessionCookieName)) return NextResponse.next();

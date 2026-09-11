@@ -245,13 +245,11 @@ export default function LandingPage() {
             <h2 id="docs-title">Learn PolicyOS at your own pace.</h2>
             <p>
               Explore a curriculum that starts with the domain, connects each concept to PolicyOS,
-              and makes room to experiment. Read the Concepts and PolicyOS lessons now; practice
-              activities are coming soon.
+              and explains how the application puts those concepts into practice.
             </p>
             <div className={styles.docsTopics} aria-label="Learning sections">
               <span>Concepts</span>
               <span>PolicyOS</span>
-              <span>Practice</span>
             </div>
           </div>
           <Link

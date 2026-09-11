@@ -24,30 +24,22 @@ attempts the task without coaching before the article moves to `approved`.
 
 ## Accessibility and usability checklist
 
-For every new or changed interaction:
+For every new or changed documentation page:
 
-1. Complete the task using keyboard only, including visible focus and Escape.
-2. Confirm buttons, fields, fieldsets, status updates, tables, landmarks, and
-   navigation have usable accessible names and semantics.
+1. Navigate the page using keyboard only, including visible focus.
+2. Confirm links, tables, landmarks, and navigation have usable accessible names
+   and semantics.
 3. Check zoom at 200%, narrow mobile layout, reduced motion, and text wrapping.
-4. Verify errors do not rely on color alone and async feedback is announced.
-5. Ask one reader from the primary audience to complete the documented task
+4. Ask one reader from the primary audience to complete the documented task
    without coaching and record the result in the review report.
 
-## Measurement and action
+## Read-only boundary
 
-Connected deployments collect a fixed-choice helpfulness response per article
-and zero-result Quick Find queries. They do not collect free-text article
-feedback or store the submitting user's identity. Obvious email addresses and
-long numbers are masked before a missed query is stored. The Audit page shows
-only aggregate counts to users with `audit:read`. Demo mode saves neither signal.
-
-Review the aggregate panel monthly. Investigate an article when it has at least
-five responses and more unhelpful than helpful votes. Add an alias, article, or
-heading when the same unsuccessful query occurs three times and expresses an
-in-scope task. Document the action in the review report and compare the next
-month's counts. Apply the deployment's normal retention policy to learning
-events; delete or aggregate old raw events when that policy requires it.
+Documentation pages do not collect completion state, article reactions, search
+queries, or other usage analytics. Content improvements come from the scheduled
+owner review and moderated reader review described above. The UI may link between
+articles and to relevant application pages, but it does not generate personalized
+or related-article recommendations.
 
 ## Incident path
 

@@ -59,7 +59,7 @@ export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
           </span>
           <span>
             <strong>Learn PolicyOS</strong>
-            <small>Concepts, application, practice</small>
+            <small>Concepts and application</small>
           </span>
         </Link>
         <nav className="learn-sidebar-navigation" aria-label="Learning center articles">

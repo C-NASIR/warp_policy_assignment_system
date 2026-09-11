@@ -23,7 +23,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useState } from "react";
 import type { LearnSearchEntry } from "@/lib/learn-source";
 import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser, SecurityEvent } from "@/lib/types";
@@ -129,9 +129,9 @@ const commands = [
   },
   {
     label: "Learn PolicyOS",
-    description: "Concepts, PolicyOS, and Practice",
+    description: "Concepts and PolicyOS walkthroughs",
     href: "/learn",
-    keywords: "help learn curriculum concepts practice training",
+    keywords: "help learn curriculum concepts documentation",
     icon: BookOpenCheck,
     permission: null,
   },
@@ -205,7 +205,6 @@ export function AppShell({
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
-  const recordedSearchMisses = useRef(new Set<string>());
   const visibleActivity = connected
     ? securityEvents
         .filter((item) => item.severity !== "info" && !item.acknowledged_at)
@@ -299,36 +298,6 @@ export function AppShell({
       document.body.style.overflow = previous;
     };
   }, [commandOpen, menuOpen]);
-
-  useEffect(() => {
-    if (
-      !connected ||
-      !currentUser ||
-      !commandOpen ||
-      normalizedQuery.length < 2 ||
-      filteredCommands.length > 0 ||
-      recordedSearchMisses.current.has(normalizedQuery)
-    )
-      return;
-    const timeout = window.setTimeout(async () => {
-      recordedSearchMisses.current.add(normalizedQuery);
-      try {
-        const response = await fetch("/api/backend/learning-events", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            event_type: "search_miss",
-            query: normalizedQuery,
-            path: pathname,
-          }),
-        });
-        if (!response.ok) throw new Error("search measurement request failed");
-      } catch {
-        recordedSearchMisses.current.delete(normalizedQuery);
-      }
-    }, 900);
-    return () => window.clearTimeout(timeout);
-  }, [commandOpen, connected, currentUser, filteredCommands.length, normalizedQuery, pathname]);
 
   function runCommand(href: string) {
     setCommandOpen(false);

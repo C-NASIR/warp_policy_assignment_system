@@ -41,8 +41,8 @@ The seed creates 25 employees, 12 human accounts, 10 roles, 8 employee groups,
 - pending, rejected, executed, and expired approval requests populate the
   approval workflow;
 - expired and revoked sessions, acknowledged security events, active and
-  revoked API credentials, learning signals, scheduled reconciliations, and a
-  substantial audit trail make operational views useful.
+  revoked API credentials, scheduled reconciliations, and a substantial audit
+  trail make operational views useful.
 
 Employee start dates and policy boundaries are generated relative to the day the
 seed runs. Consequently, tenure and future-schedule examples remain meaningful

@@ -6,7 +6,6 @@ import {
   getCurrentUser,
   getEmployees,
   getGroups,
-  getLearningInsights,
   getPolicies,
 } from "@/lib/backend";
 import { titleCase } from "@/lib/format";
@@ -17,22 +16,17 @@ export const metadata: Metadata = { title: "Audit log" };
 
 export default async function AuditPage() {
   const user = await getCurrentUser();
-  const [events, employees, policies, groups, learningInsights] = await Promise.all([
+  const [events, employees, policies, groups] = await Promise.all([
     getAuditLogs(),
     !apiConfigured || hasPermission(user, "employees:read") ? getEmployees() : [],
     !apiConfigured || hasPermission(user, "policies:read") ? getPolicies() : [],
     !apiConfigured || hasPermission(user, "groups:read") ? getGroups() : [],
-    getLearningInsights(),
   ]);
   const entityLabels = Object.fromEntries(
     events.map((event) => [event.id, auditEntityLabel(event, employees, policies, groups)]),
   );
   return (
-    <AuditLogExplorer
-      events={events}
-      entityLabels={entityLabels}
-      learningInsights={learningInsights}
-    />
+    <AuditLogExplorer events={events} entityLabels={entityLabels} />
   );
 }
 

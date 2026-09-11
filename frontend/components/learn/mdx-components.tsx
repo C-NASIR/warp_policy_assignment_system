@@ -5,12 +5,6 @@ import type { MDXComponents } from "mdx/types";
 import { apiConfigured } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser } from "@/lib/types";
-import {
-  AveryAssignmentLab,
-  AveryKnowledgeCheck,
-  EffectiveDateLab,
-  PriorityLab,
-} from "@/components/learn/exercises";
 
 type PolicyLinkProps = {
   href: string;
@@ -60,10 +54,6 @@ export function getLearnMdxComponents(
   return {
     ...defaultMdxComponents,
     PolicyLink: (props: PolicyLinkProps) => <PolicyLink currentUser={currentUser} {...props} />,
-    AveryAssignmentLab,
-    PriorityLab,
-    EffectiveDateLab,
-    AveryKnowledgeCheck,
     ...components,
   };
 }

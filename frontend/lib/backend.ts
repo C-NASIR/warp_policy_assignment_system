@@ -30,7 +30,6 @@ import type {
   EmployeeDirectoryItem,
   EmployeeOverride,
   Group,
-  LearningInsights,
   Permission,
   Policy,
   PolicyImpact,
@@ -110,14 +109,6 @@ export const getAccountSecurity = () =>
   });
 export const getAccessReview = () =>
   read<AccessReview | null>("/authorization/access-review", null);
-export const getLearningInsights = () =>
-  read<LearningInsights>("/learning-insights", {
-    total_feedback: 0,
-    helpful_percentage: null,
-    article_feedback: [],
-    unsuccessful_searches: [],
-  });
-
 export async function getEmployee(id: number) {
   return read<Employee | null>(
     `/employees/${id}`,

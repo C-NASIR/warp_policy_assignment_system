@@ -23,7 +23,6 @@ from app.models import (
     EmployeeOverride,
     Group,
     GroupPolicy,
-    LearningEvent,
     Policy,
     Role,
     ScheduledReconciliation,
@@ -211,10 +210,6 @@ def seed_demo_company(
             select(func.count()).select_from(ScheduledReconciliation)
         )
         or 0,
-        "learning events": session.scalar(
-            select(func.count()).select_from(LearningEvent)
-        )
-        or 0,
     }
     nonempty = [f"{name}={count}" for name, count in populated.items() if count]
     if nonempty:
@@ -256,7 +251,6 @@ def seed_demo_company(
     _create_api_credentials(session, now)
     _create_approval_history(session, users, employees, groups, fields, policies, now)
     _create_operational_history(session, users, employees, policies, now)
-    _create_learning_events(session, now)
     _create_schedule_history(session, policies, now)
     session.flush()
     return _summary(session)
@@ -1712,38 +1706,6 @@ def _create_operational_history(
             after=after,
             timestamp=now - timedelta(days=days),
         )
-
-
-def _create_learning_events(session: Session, now: datetime) -> None:
-    session.add_all(
-        (
-            LearningEvent(
-                event_type="article_feedback",
-                article_id="policyos-create-your-first-policy",
-                path="/learn/policyos/create-your-first-policy",
-                helpful=True,
-                reason=None,
-                created_at=now - timedelta(days=11),
-            ),
-            LearningEvent(
-                event_type="article_feedback",
-                article_id="policyos-manage-access",
-                path="/learn/policyos/manage-access",
-                helpful=False,
-                reason="needed_example",
-                created_at=now - timedelta(days=6),
-            ),
-            LearningEvent(
-                event_type="search_miss",
-                article_id=None,
-                path="/learn",
-                query="contractor laptop override",
-                helpful=None,
-                reason=None,
-                created_at=now - timedelta(days=3),
-            ),
-        )
-    )
 
 
 def _create_schedule_history(

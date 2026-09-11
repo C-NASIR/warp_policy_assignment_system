@@ -67,6 +67,8 @@ def create_tables() -> None:
 
     Base.metadata.create_all(bind=engine)
     with SessionLocal.begin() as session:
+        # Learning analytics were removed; discard previously collected signals.
+        session.execute(text("DROP TABLE IF EXISTS learning_events"))
         # Multiple Uvicorn processes may start together. Serialize the small
         # system-catalog upsert so the unique field keys remain race-free.
         session.execute(text("SELECT pg_advisory_xact_lock(762341908)"))

@@ -29,7 +29,6 @@ from app.routers import (
     groups,
     human_auth,
     impact_summaries,
-    learning,
     policies,
 )
 from app.schemas import APIErrorResponseRead
@@ -181,8 +180,6 @@ app = PolicyAssignmentAPI(
 configure_browser_access(app)
 app.include_router(human_auth.public_router)
 app.include_router(human_auth.session_router)
-app.include_router(learning.submission_router)
-
 for protected_router in (
     employees.router,
     assignment_queries.router,
@@ -191,7 +188,6 @@ for protected_router in (
     policies.router,
     groups.router,
     impact_summaries.router,
-    learning.insights_router,
     audit_logs.router,
     change_previews.router,
     change_previews.execution_router,

@@ -7,7 +7,7 @@ import { parse } from "yaml";
 const frontendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(frontendRoot, "..");
 const contentRoot = path.join(frontendRoot, "content", "learn");
-const sections = ["concepts", "policyos", "practice"];
+const sections = ["concepts", "policyos"];
 const conceptSubsections = new Set([
   "From decisions to assignments",
   "How policies combine",

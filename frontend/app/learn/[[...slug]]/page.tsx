@@ -3,17 +3,10 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ListTree } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ArticleMeta } from "@/components/learn/article-meta";
-import { ArticleFeedback } from "@/components/learn/article-feedback";
-import { LessonProgress } from "@/components/learn/exercises";
 import { LearnNavigation } from "@/components/learn/learn-navigation";
 import { getLearnMdxComponents } from "@/components/learn/mdx-components";
-import { apiConfigured, getCurrentUser } from "@/lib/backend";
-import {
-  getOrderedLearnPages,
-  getRelatedLearnPages,
-  labelForLearnSection,
-  learnSource,
-} from "@/lib/learn-source";
+import { getCurrentUser } from "@/lib/backend";
+import { getOrderedLearnPages, labelForLearnSection, learnSource } from "@/lib/learn-source";
 
 export function generateStaticParams() {
   return learnSource.generateParams();
@@ -40,9 +33,7 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
   const previous = pageIndex > 0 ? orderedPages[pageIndex - 1] : null;
   const next =
     pageIndex >= 0 && pageIndex < orderedPages.length - 1 ? orderedPages[pageIndex + 1] : null;
-  const related = getRelatedLearnPages(page);
   const isHome = page.slugs.length === 0;
-  const isOutline = page.data.status === "outline";
 
   return (
     <div className="learn-layout">
@@ -55,12 +46,6 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
           <h1>{page.data.title}</h1>
           {page.data.description && <p className="learn-description">{page.data.description}</p>}
           <ArticleMeta page={page} />
-          {!isHome && !isOutline && (
-            <LessonProgress
-              articleId={page.data.content_id}
-              total={orderedPages.filter((item) => item.data.status !== "outline").length}
-            />
-          )}
           {page.data.prerequisites.length > 0 && (
             <p className="learn-prerequisites">
               <strong>Before you start:</strong> {page.data.prerequisites.join(" · ")}
@@ -78,26 +63,6 @@ export default async function LearnPage({ params }: PageProps<"/learn/[[...slug]
         <div className="learn-body prose">
           <Body components={getLearnMdxComponents(currentUser)} />
         </div>
-        {!isHome && !isOutline && (
-          <ArticleFeedback
-            articleId={page.data.content_id}
-            path={page.url}
-            connected={apiConfigured}
-          />
-        )}
-        {!isHome && !isOutline && related.length > 0 && (
-          <section className="learn-related" aria-labelledby="related-articles-title">
-            <h2 id="related-articles-title">Related lessons</h2>
-            <div>
-              {related.map((item) => (
-                <Link href={item.url} key={item.url}>
-                  <strong>{item.data.title}</strong>
-                  <span>{item.data.description}</span>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
         {!isHome && (
           <nav className="learn-pagination" aria-label="Lesson navigation">
             {previous ? (

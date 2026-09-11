@@ -3,7 +3,7 @@ import { pageSchema } from "fumadocs-core/source/schema";
 import { defineDocs } from "fumadocs-mdx/macro";
 import { z } from "zod";
 
-export const learnSections = ["concepts", "policyos", "practice"] as const;
+export const learnSections = ["concepts", "policyos"] as const;
 
 export type LearnSection = (typeof learnSections)[number];
 
@@ -48,7 +48,6 @@ export type LearnSearchEntry = {
 const sectionLabels: Record<LearnSection, string> = {
   concepts: "Concepts",
   policyos: "PolicyOS",
-  practice: "Practice",
 };
 
 export function labelForLearnSection(section: LearnSection) {
@@ -112,21 +111,4 @@ export function getLearnSearchEntries(): LearnSearchEntry[] {
       .join(" ")
       .toLowerCase(),
   }));
-}
-
-export function getRelatedLearnPages(page: LearnPage, limit = 3) {
-  const sectionPages = getOrderedLearnPages().filter(
-    (item) => item.data.section === page.data.section,
-  );
-  const index = sectionPages.findIndex((item) => item.url === page.url);
-  if (index < 0) return [];
-
-  return sectionPages
-    .filter((_, candidateIndex) => candidateIndex !== index)
-    .sort((left, right) => {
-      const leftIndex = sectionPages.indexOf(left);
-      const rightIndex = sectionPages.indexOf(right);
-      return Math.abs(leftIndex - index) - Math.abs(rightIndex - index) || leftIndex - rightIndex;
-    })
-    .slice(0, limit);
 }

@@ -1,6 +1,6 @@
 # Learn curriculum map
 
-The curriculum has 49 ordered lessons in three sections. All 21 Concepts lessons and 16 PolicyOS walkthroughs are drafted. The 12 Practice lesson bodies remain exactly `Empty for Now`; their titles and descriptions define scope only. Practice activities have not been authored.
+The curriculum has 37 ordered lessons in two sections. All 21 Concepts lessons and 16 PolicyOS walkthroughs are drafted.
 
 The learning story begins with a company hiring Rachel and gradually turning individual decisions into policies. After the assignment model is established, an organizational sequence follows the same company from one Root user through delegated responsibilities, scoped visibility, and independent review. PolicyOS walkthroughs then apply both stories in the application.
 
@@ -67,18 +67,3 @@ Lessons 16–21 are one connected organizational sequence. `CON16` retains the e
 16. **Review controlled changes:** Follow Morgan's exact policy proposal through Jordan's decision and execution.
 
 The existing `manage-access` and `review-controlled-changes` URLs and content IDs remain stable. **Review controlled changes** follows explicit access configuration so readers understand how Morgan and Jordan receive their different responsibilities before using them.
-
-## Practice — 12 lessons
-
-1. **Make your first assignment:** Create a simple policy and inspect its result.
-2. **Who matches?:** Predict which employees qualify, then test your conditions.
-3. **Build “all” and “any” rules:** Compare how small condition changes affect eligibility.
-4. **One result or several?:** Experiment with pay schedules and application access.
-5. **Make policies compete:** Change priorities and create an equal-priority conflict.
-6. **Assign through a group:** Add and remove membership, then inspect the consequences.
-7. **Make an exception:** Apply an override and discover what happens when you remove it.
-8. **Move an employee:** Change their location and trace the updated assignments.
-9. **Change a policy over time:** Compare results before and after a version boundary.
-10. **Review a proposed change:** Predict its impact, preview it, and complete the applicable review steps.
-11. **Solve an assignment mystery:** Diagnose an unexpected result using explanations and history.
-12. **Run your growing company:** Combine policies, groups, an exception, and a scheduled change in one final scenario.
