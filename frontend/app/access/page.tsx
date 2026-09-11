@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { AccessManager } from "@/components/access-manager";
 import {
-  apiConfigured,
   getAuthorizationAssignmentFields,
   getCurrentUser,
   getEmployees,
@@ -33,7 +32,6 @@ export default async function AccessPage() {
       canManage={hasPermission(currentUser, "access:manage")}
       canReadEmployees={canReadEmployees}
       mfaEnabled={currentUser?.mfa_enabled ?? false}
-      apiConfigured={apiConfigured}
     />
   );
 }

@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { AppShell } from "@/components/app-shell";
 import { WebMcpTools } from "@/components/webmcp-tools";
-import { apiConfigured, getAccountSecurity, getCurrentUser } from "@/lib/backend";
+import { getAccountSecurity, getBackendStatus, getCurrentUser } from "@/lib/backend";
 import { getLearnSearchEntries } from "@/lib/learn-source";
 import "./globals.css";
 
@@ -30,8 +30,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const currentUser = apiConfigured ? await getCurrentUser() : null;
-  const accountSecurity = currentUser ? await getAccountSecurity() : null;
+  const [backendStatus, currentUser] = await Promise.all([
+    getBackendStatus().catch(() => null),
+    getCurrentUser().catch(() => null),
+  ]);
+  const accountSecurity = currentUser ? await getAccountSecurity().catch(() => null) : null;
   const learnSearchEntries = getLearnSearchEntries();
   return (
     <html
@@ -43,7 +46,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <RootProvider search={{ enabled: false }} theme={{ enabled: false }}>
           <WebMcpTools />
           <AppShell
-            connected={apiConfigured}
+            backendReady={backendStatus?.status === "ok" && backendStatus.database === "ready"}
             currentUser={currentUser}
             securityEvents={accountSecurity?.events ?? []}
             learnSearchEntries={learnSearchEntries}

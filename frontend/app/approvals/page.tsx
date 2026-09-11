@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ApprovalQueue } from "@/components/approval-queue";
-import { apiConfigured, getApprovalRequests, getCurrentUser } from "@/lib/backend";
+import { getApprovalRequests, getCurrentUser } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Approvals" };
 
 export default async function ApprovalsPage() {
   const user = await getCurrentUser();
-  if (apiConfigured && !hasPermission(user, "changes:approve")) redirect("/forbidden");
+  if (!hasPermission(user, "changes:approve")) redirect("/forbidden");
   const requests = await getApprovalRequests();
   return (
     <>
@@ -25,7 +25,7 @@ export default async function ApprovalsPage() {
           {requests.filter((request) => request.status === "pending").length} pending
         </span>
       </div>
-      <ApprovalQueue initialRequests={requests} apiConfigured={apiConfigured} />
+      <ApprovalQueue initialRequests={requests} />
     </>
   );
 }

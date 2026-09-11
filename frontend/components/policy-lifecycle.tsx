@@ -6,13 +6,7 @@ import { useState } from "react";
 import type { Policy } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
-export function PolicyLifecycle({
-  policy,
-  apiConfigured,
-}: {
-  policy: Policy;
-  apiConfigured: boolean;
-}) {
+export function PolicyLifecycle({ policy }: { policy: Policy }) {
   const router = useRouter();
   const [status, setStatus] = useState(policy.status);
   const [confirming, setConfirming] = useState(false);
@@ -28,18 +22,16 @@ export function PolicyLifecycle({
     setBusy(true);
     setError("");
     try {
-      if (apiConfigured) {
-        const response = await fetch(`/api/backend/policies/${policy.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(
-            result.error?.message ?? result.detail ?? "The policy status could not be changed.",
-          );
-      }
+      const response = await fetch(`/api/backend/policies/${policy.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          result.error?.message ?? result.detail ?? "The policy status could not be changed.",
+        );
       setStatus(nextStatus);
       setConfirming(false);
       setNotice(

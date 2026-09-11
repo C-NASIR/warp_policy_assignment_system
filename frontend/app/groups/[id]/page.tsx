@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { GroupManager } from "@/components/group-manager";
 import {
-  apiConfigured,
   getCurrentUser,
   getEmployees,
   getGroup,
@@ -33,8 +32,8 @@ export default async function GroupDetailPage({ params }: PageProps<"/groups/[id
     getGroup(groupId),
     getGroupEmployees(groupId),
     getGroupPolicies(groupId),
-    !apiConfigured || hasPermission(user, "employees:read") ? getEmployees() : [],
-    !apiConfigured || hasPermission(user, "policies:read") ? getPolicies() : [],
+    hasPermission(user, "employees:read") ? getEmployees() : [],
+    hasPermission(user, "policies:read") ? getPolicies() : [],
   ]);
   if (!group) notFound();
   return (
@@ -49,7 +48,6 @@ export default async function GroupDetailPage({ params }: PageProps<"/groups/[id
         initialPolicies={attachedPolicies}
         employees={employees}
         policies={policies}
-        apiConfigured={apiConfigured}
         canManage={hasPermission(user, "groups:update")}
       />
     </>

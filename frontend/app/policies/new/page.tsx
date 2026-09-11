@@ -4,7 +4,6 @@ import { ChevronRight } from "lucide-react";
 import { redirect } from "next/navigation";
 import { PolicyBuilder } from "@/components/policy-builder";
 import {
-  apiConfigured,
   getAssignmentFields,
   getConditionFields,
   getCurrentUser,
@@ -25,10 +24,7 @@ export default async function NewPolicyPage({ searchParams }: PageProps<"/polici
     getEmployees(),
     id ? getPolicy(id) : null,
   ]);
-  if (
-    apiConfigured &&
-    (id ? !basePolicy?.capabilities.can_create_version : !hasPermission(user, "policies:create"))
-  )
+  if (id ? !basePolicy?.capabilities.can_create_version : !hasPermission(user, "policies:create"))
     redirect("/forbidden");
   const activateOnCreate =
     hasPermission(user, "policies:activate") || hasPermission(user, "policies:update");
@@ -54,7 +50,6 @@ export default async function NewPolicyPage({ searchParams }: PageProps<"/polici
         conditionFields={conditionFields}
         assignmentFields={assignmentFields}
         employees={employees}
-        apiConfigured={apiConfigured}
         basePolicy={basePolicy}
         activateOnCreate={activateOnCreate}
       />

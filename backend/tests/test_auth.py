@@ -28,7 +28,13 @@ def _authorization(token: str) -> dict[str, str]:
 
 
 def test_health_is_public_but_business_endpoints_require_authentication(client):
-    assert client.get("/", headers={"Authorization": ""}).status_code == 200
+    health = client.get("/", headers={"Authorization": ""})
+    assert health.status_code == 200
+    assert health.json() == {
+        "status": "ok",
+        "service": "policy-assignment-system",
+        "database": "ready",
+    }
 
     missing = client.get("/employees", headers={"Authorization": ""})
     assert missing.status_code == 401

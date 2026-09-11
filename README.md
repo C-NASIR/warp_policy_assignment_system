@@ -40,7 +40,7 @@ The backend is the source of truth for authentication, authorization, policy eva
 ```text
 .
 ├── backend/    FastAPI application, domain services, worker, tests, and Alembic scaffold
-└── frontend/   Next.js application, UI components, demo data, and API integration
+└── frontend/   Next.js application, UI components, and API integration
 ```
 
 See the component guides for deeper technical and operational detail:
@@ -59,19 +59,7 @@ See the component guides for deeper technical and operational detail:
 
 ## Quick start
 
-### Explore the frontend in demo mode
-
-The UI includes non-persistent demo data and can run without the backend:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open <http://localhost:3000>. Authentication submissions are disabled in demo mode, but the dashboard and primary workflows can be explored.
-
-### Run the complete application
+### Run the application
 
 1. Create the local PostgreSQL database:
 
@@ -164,4 +152,4 @@ npm run build
 - Use stable, independently generated secrets and share the same values across all API instances.
 - Set `CORS_ALLOWED_ORIGINS` and `NEXT_PUBLIC_SITE_URL` to the exact production frontend origin.
 - Run the reconciliation worker through an external scheduler; the API does not start an internal timer.
-- Demo mode is intentionally non-persistent and must not be treated as a production data store.
+- The frontend requires `POLICY_API_URL` and has no offline operational-data or mutation mode.

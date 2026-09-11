@@ -231,6 +231,7 @@ state-changing cookie-authenticated requests.
 | POST / GET | `/auth/credentials` | Issue a credential once or list safe credential metadata |
 | DELETE | `/auth/credentials/{id}` | Revoke a credential |
 | POST / GET | `/employees` | Create or list employees |
+| GET | `/employees/reference-data` | Read distinct department and employee-type values visible to the caller |
 | GET / PATCH / DELETE | `/employees/{id}` | Read, update, or delete an employee |
 | GET | `/employees/{id}/assignments` | Read current assignments, or assignments at an optional `as_of` UTC timestamp |
 | GET | `/employees/{id}/assignments/history` | Read complete assignment history |
@@ -262,6 +263,7 @@ state-changing cookie-authenticated requests.
 | GET | `/policies/{id}/versions/{version_id}` | Read one policy version |
 | GET | `/policies/{id}/impact-summary` | Explain a policy's matching and selected-assignment impact |
 | GET | `/audit-logs` | Read authorized, filterable audit events |
+| GET | `/audit-logs/facets` | Read distinct visible audit entity types and actions for filter controls |
 
 ### Collection filtering and pagination
 
@@ -369,10 +371,11 @@ new, unpersisted snapshot for the requested evaluation date.
 `POST /change-previews` accepts a discriminated change request and runs the same
 domain mutation and reconciliation services used by real writes inside a
 database savepoint that is always rolled back. It supports employee creation and
-updates, policy-version creation, policy lifecycle changes, group membership changes, and override
-creation, updates, and deletion. The response contains per-employee before and
-after assignments, added and removed assignments, field-level changes, automated
-role grants and revocations, warnings, and conflicts. Proposed employees have a null employee ID; assignments supplied
+updates, policy creation, policy-version creation, policy lifecycle changes,
+group membership changes, and override creation, updates, and deletion. The
+response contains per-employee before and after assignments, added and removed
+assignments, field-level changes, warnings, and conflicts. Proposed employees have
+a null employee ID; assignments supplied
 by a proposed policy version or override have a null source ID and
 `source_is_proposed: true`. Domain rows, policy links, assignment history, audit
 logs, and scheduled reconciliation records are not retained after a preview.

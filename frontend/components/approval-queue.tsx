@@ -4,13 +4,7 @@ import { Check, CircleAlert, Play, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import type { ChangeApprovalRequest } from "@/lib/types";
 
-export function ApprovalQueue({
-  initialRequests,
-  apiConfigured,
-}: {
-  initialRequests: ChangeApprovalRequest[];
-  apiConfigured: boolean;
-}) {
+export function ApprovalQueue({ initialRequests }: { initialRequests: ChangeApprovalRequest[] }) {
   const [requests, setRequests] = useState(initialRequests);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -34,6 +28,8 @@ export function ApprovalQueue({
         throw new Error(
           result.error?.message ?? result.detail ?? `Unable to ${action} this request.`,
         );
+      if (action === "execute" && typeof result.executed_at !== "string")
+        throw new Error("The backend did not return the execution timestamp.");
       setRequests((current) =>
         current.map((item) =>
           item.id === request.id
@@ -42,7 +38,7 @@ export function ApprovalQueue({
                   ...item,
                   status: "executed",
                   can_execute: false,
-                  executed_at: result.executed_at ?? new Date().toISOString(),
+                  executed_at: result.executed_at,
                 }
               : result
             : item,
@@ -121,7 +117,7 @@ export function ApprovalQueue({
                 {request.can_reject && (
                   <button
                     className="button secondary"
-                    disabled={busyId === request.id || !apiConfigured}
+                    disabled={busyId === request.id}
                     onClick={() => decide(request, "reject")}
                   >
                     <X size={14} />
@@ -131,7 +127,7 @@ export function ApprovalQueue({
                 {request.can_approve && (
                   <button
                     className="button"
-                    disabled={busyId === request.id || !apiConfigured}
+                    disabled={busyId === request.id}
                     onClick={() => decide(request, "approve")}
                   >
                     <Check size={14} />
@@ -141,7 +137,7 @@ export function ApprovalQueue({
                 {request.can_execute && (
                   <button
                     className="button"
-                    disabled={busyId === request.id || !apiConfigured}
+                    disabled={busyId === request.id}
                     onClick={() => decide(request, "execute")}
                   >
                     <Play size={14} />

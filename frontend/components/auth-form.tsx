@@ -9,7 +9,7 @@ import type { CurrentUser } from "@/lib/types";
 
 type AuthMode = "login" | "setup";
 
-export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected?: boolean }) {
+export function AuthForm({ mode }: { mode: AuthMode }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,7 +24,6 @@ export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!connected) return;
     if (isSetup && password !== confirmation) {
       setError("The passwords do not match.");
       return;
@@ -96,12 +95,6 @@ export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected
             ? "Create the first administrator account to set up your workspace. You can add your team once you’re inside."
             : "Use the account created for this PolicyOS workspace."}
         </p>
-        {!connected && (
-          <p className="auth-demo-note">
-            This preview is not connected to an authentication service.{" "}
-            <Link href="/dashboard">Explore the demo workspace</Link>.
-          </p>
-        )}
         {error && (
           <div className="error-banner auth-message" role="alert">
             <CircleAlert size={14} />
@@ -118,7 +111,7 @@ export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected
                 autoComplete="name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="e.g. Priya Shah"
+                placeholder="e.g. Avery Chen"
               />
             </label>
           )}
@@ -196,7 +189,7 @@ export function AuthForm({ mode, connected = true }: { mode: AuthMode; connected
               secure hash.
             </div>
           )}
-          <button className="button auth-submit" disabled={busy || !connected} type="submit">
+          <button className="button auth-submit" disabled={busy} type="submit">
             {busy ? "Please wait…" : isSetup ? "Create account" : "Sign in"}
             <ArrowRight size={14} />
           </button>

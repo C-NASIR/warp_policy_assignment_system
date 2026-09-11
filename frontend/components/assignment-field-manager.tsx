@@ -7,11 +7,9 @@ import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
 export function AssignmentFieldManager({
   initialFields,
-  apiConfigured,
   canManage = true,
 }: {
   initialFields: AssignmentField[];
-  apiConfigured: boolean;
   canManage?: boolean;
 }) {
   const [fields, setFields] = useState(initialFields);
@@ -47,29 +45,21 @@ export function AssignmentFieldManager({
     setSaving(true);
     setError("");
     try {
-      let created: AssignmentField = {
-        id: Math.max(...fields.map((item) => item.id), 0) + 1,
-        name: normalized,
-        cardinality: newCardinality,
-        conflict_resolution: "priority",
-      };
-      if (apiConfigured) {
-        const response = await fetch("/api/backend/assignment-fields", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: normalized,
-            cardinality: newCardinality,
-            conflict_resolution: "priority",
-          }),
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(
-            result.error?.message ?? result.detail ?? "The assignment field could not be created.",
-          );
-        created = result;
-      }
+      const response = await fetch("/api/backend/assignment-fields", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: normalized,
+          cardinality: newCardinality,
+          conflict_resolution: "priority",
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          result.error?.message ?? result.detail ?? "The assignment field could not be created.",
+        );
+      const created = result as AssignmentField;
       setFields((current) => [...current, created]);
       setOpen(false);
       setName("");

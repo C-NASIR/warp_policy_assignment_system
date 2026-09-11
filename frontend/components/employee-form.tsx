@@ -3,7 +3,7 @@
 import { Check, Eye, Info, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReactNode, useMemo, useState } from "react";
-import type { Assignment, AssignmentField, Employee } from "@/lib/types";
+import type { AssignmentField, Employee, EmployeeReferenceData } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
 type EmployeeInput = Omit<Employee, "id">;
@@ -14,11 +14,11 @@ type PreviewItem = {
   change: "added" | "changed" | "unchanged";
 };
 
-const createBlankEmployee = (): EmployeeInput => ({
+const createBlankEmployee = (referenceData: EmployeeReferenceData): EmployeeInput => ({
   name: "",
   state: "",
   department: "",
-  employee_type: "Full-time",
+  employee_type: referenceData.employee_types[0] ?? "",
   location: "",
   start_date: new Date().toISOString().slice(0, 10),
   manager_id: null,
@@ -28,16 +28,14 @@ export function EmployeeEditor({
   employee,
   employees,
   fields,
-  currentAssignments = [],
-  apiConfigured,
+  referenceData,
   compact = false,
   trigger,
 }: {
   employee?: Employee;
   employees: Employee[];
   fields: AssignmentField[];
-  currentAssignments?: Assignment[];
-  apiConfigured: boolean;
+  referenceData: EmployeeReferenceData;
   compact?: boolean;
   trigger?: ReactNode;
 }) {
@@ -54,7 +52,7 @@ export function EmployeeEditor({
           start_date: employee.start_date,
           manager_id: employee.manager_id,
         }
-      : createBlankEmployee(),
+      : createBlankEmployee(referenceData),
   );
   const [preview, setPreview] = useState<PreviewItem[] | null>(null);
   const [approval, setApproval] = useState<string | null>(null);
@@ -65,17 +63,8 @@ export function EmployeeEditor({
   useModalAccessibility(compact && open, () => setOpen(false));
 
   const managers = employees.filter((item) => item.id !== employee?.id);
-  const departments = [
-    ...new Set([
-      ...employees.map((item) => item.department),
-      "Engineering",
-      "Product",
-      "Sales",
-      "Design",
-      "Support",
-      "People",
-    ]),
-  ].sort();
+  const departments = referenceData.departments;
+  const employeeTypes = referenceData.employee_types;
   const payload = useMemo(
     () => ({
       ...data,
@@ -91,44 +80,6 @@ export function EmployeeEditor({
     setApproval(null);
     setSuccess("");
     setError("");
-  }
-
-  function localAssignments(): PreviewItem[] {
-    const items: Omit<PreviewItem, "change">[] = [];
-    if (payload.state.toLowerCase().includes("california")) {
-      items.push({ field: "Pay schedule", value: "Bi-weekly", source: "California Pay Schedule" });
-      items.push({
-        field: "Compliance training",
-        value: "CA Workplace Harassment",
-        source: "California Compliance",
-      });
-    } else if (payload.employee_type === "Full-time") {
-      items.push({ field: "Pay schedule", value: "Bi-weekly", source: "US Employee Pay" });
-    } else {
-      items.push({ field: "Pay schedule", value: "Monthly", source: "Contractor Pay Schedule" });
-    }
-    if (payload.employee_type === "Full-time")
-      items.push({ field: "Vacation policy", value: "Standard PTO", source: "Standard PTO" });
-    if (payload.department === "Engineering") {
-      items.push({ field: "Application access", value: "GitHub", source: "Engineering Access" });
-      items.push({ field: "Application access", value: "Linear", source: "Engineering Access" });
-      items.push({
-        field: "Equipment stipend",
-        value: "$1,000 annual",
-        source: "Engineering Equipment",
-      });
-    }
-    const currentByField = new Map(
-      currentAssignments.map((item) => [item.assignment_field_definition.name, item.value]),
-    );
-    return items.map((item) => ({
-      ...item,
-      change: !currentByField.has(item.field)
-        ? "added"
-        : currentByField.get(item.field) !== item.value
-          ? "changed"
-          : "unchanged",
-    }));
   }
 
   const change = employee
@@ -149,11 +100,6 @@ export function EmployeeEditor({
     }
     setError("");
     setSubmitting(true);
-    if (!apiConfigured) {
-      setPreview(localAssignments());
-      setSubmitting(false);
-      return;
-    }
     try {
       const response = await fetch("/api/backend/change-previews", {
         method: "POST",
@@ -195,22 +141,6 @@ export function EmployeeEditor({
   async function confirm() {
     setSubmitting(true);
     setError("");
-    if (!apiConfigured) {
-      setSuccess(
-        employee
-          ? "Employee updated in demo mode. The assignment preview reflects the new profile."
-          : "Employee created in demo mode with the assignments shown.",
-      );
-      if (!employee) {
-        setData(createBlankEmployee());
-        setPreview(null);
-        setApproval(null);
-        setValidationAttempted(false);
-        router.push("/employees");
-      }
-      setSubmitting(false);
-      return;
-    }
     try {
       const endpoint = approval
         ? "/api/backend/change-executions"
@@ -231,7 +161,7 @@ export function EmployeeEditor({
           : "Employee created and assignments resolved.",
       );
       if (!employee) {
-        setData(createBlankEmployee());
+        setData(createBlankEmployee(referenceData));
         setPreview(null);
         setApproval(null);
         setValidationAttempted(false);
@@ -277,35 +207,39 @@ export function EmployeeEditor({
               <span className="field-label">
                 Department <span className="required">Required</span>
               </span>
-              <select
-                className={`select${validationAttempted && !data.department ? " field-invalid" : ""}`}
+              <input
+                className={`input${validationAttempted && !data.department ? " field-invalid" : ""}`}
                 required
                 aria-invalid={validationAttempted && !data.department}
+                list="department-options"
                 value={data.department}
                 onChange={(e) => update("department", e.target.value)}
-              >
-                <option value="">Select department</option>
+                placeholder="Enter or choose a department"
+              />
+              <datalist id="department-options">
                 {departments.map((item) => (
-                  <option key={item}>{item}</option>
+                  <option key={item} value={item} />
                 ))}
-              </select>
+              </datalist>
             </label>
             <label className="field">
               <span className="field-label">
                 Employment type <span className="required">Required</span>
               </span>
-              <select
-                className={`select${validationAttempted && !data.employee_type ? " field-invalid" : ""}`}
+              <input
+                className={`input${validationAttempted && !data.employee_type ? " field-invalid" : ""}`}
                 required
                 aria-invalid={validationAttempted && !data.employee_type}
+                list="employee-type-options"
                 value={data.employee_type}
                 onChange={(e) => update("employee_type", e.target.value)}
-              >
-                <option>Full-time</option>
-                <option>Part-time</option>
-                <option>Contractor</option>
-                <option>Intern</option>
-              </select>
+                placeholder="Enter or choose an employment type"
+              />
+              <datalist id="employee-type-options">
+                {employeeTypes.map((item) => (
+                  <option key={item} value={item} />
+                ))}
+              </datalist>
             </label>
             <label className="field">
               <span className="field-label">
@@ -424,9 +358,7 @@ export function EmployeeEditor({
               <div className="callout">
                 <Info size={14} />
                 <span>
-                  {apiConfigured
-                    ? "This preview was calculated by the policy engine and can be safely approved."
-                    : "Demo preview uses the same employee facts the connected policy engine evaluates."}
+                  This preview was calculated by the policy engine and can be safely approved.
                 </span>
               </div>
             </div>

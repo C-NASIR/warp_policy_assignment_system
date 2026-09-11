@@ -10,21 +10,22 @@ curriculum and authoring workflow live in `../docs/learn`.
 
 ## Run locally
 
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-The interface starts in a complete demo mode when no API URL is configured. To connect it to the FastAPI backend, copy `.env.example` to `.env.local` and set:
+Configure the FastAPI backend URL before starting the frontend:
 
 ```dotenv
 POLICY_API_URL=http://127.0.0.1:8000
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-The public homepage at `/` introduces PolicyOS. Visitors choose **Sign in** (`/login`) or **Sign up** (`/signup`); the workspace overview lives at `/dashboard`. Sign up uses the existing one-time Root account setup when the workspace is uninitialized. After initialization, the signup page directs people to their administrator for an account. The legacy `/setup` URL redirects to `/signup`. In demo mode, both authentication pages remain visible with submission disabled and a link to the demo dashboard.
+```bash
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). `POLICY_API_URL` is required; the frontend does not contain an offline data source or local mutation path. Directory filters and pagination are executed by the backend, employee form suggestions and audit facets come from backend reference endpoints, and both new-policy and new-version previews run through the backend policy engine.
+
+The public homepage at `/` introduces PolicyOS. Visitors choose **Sign in** (`/login`) or **Sign up** (`/signup`); the workspace overview lives at `/dashboard`. Sign up uses the existing one-time Root account setup when the workspace is uninitialized. After initialization, the signup page directs people to their administrator for an account. The legacy `/setup` URL redirects to `/signup`.
 
 Root can create least-privilege roles and provision users under **Access control**. Each role combines action permissions with two independent data boundaries: employee visibility (`all`, reporting tree, linked employee, or none) and assignment-field access (`all`, selected fields, or none). This lets an IT administrator work only with Application Access while a payroll administrator works only with Pay Schedule, even when both can perform the same actions. Roles are assigned to and revoked from users only through explicit access-administration actions; policies produce employee assignments only. Policy drafting, version creation, activation, and archiving are separate grants. Human previews create approval requests, and the **Approvals** page enforces author/approver separation before the approving user executes the exact reviewed change. Policy responses supply record-specific capabilities so the interface does not duplicate lifecycle and scope decisions in React. User accounts can be linked to an employee record so self and reporting-tree scopes have a clear anchor. New users receive a temporary password and must replace it on first login. Navigation and mutation controls reflect effective role permissions, while connected data is filtered by the backend. Browser requests use the same-origin `/api/backend/*` proxy, and the backend session token remains in an HTTP-only cookie rather than client-side JavaScript.
 
@@ -35,4 +36,4 @@ npm run lint
 npm run build
 ```
 
-The backend remains the source of truth for authentication, assignment resolution, reconciliation, approval tokens, and audit records. Demo mode is intentionally non-persistent and exists so the frontend can be explored without provisioning Postgres.
+The backend is the source of truth for all operational data, authentication, authorization, reference values, assignment resolution, reconciliation, approval tokens, readiness, and audit records. The frontend owns presentation concerns such as labels, navigation, form state, and current-page display sorting.

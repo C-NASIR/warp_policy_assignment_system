@@ -2,7 +2,6 @@ import Link from "next/link";
 import { LockKeyhole, MoveUpRight } from "lucide-react";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
-import { apiConfigured } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser } from "@/lib/types";
 
@@ -18,7 +17,7 @@ function PolicyLink({
   permission,
   children,
 }: PolicyLinkProps & { currentUser: CurrentUser | null }) {
-  const allowed = !apiConfigured || !permission || hasPermission(currentUser, permission);
+  const allowed = !permission || hasPermission(currentUser, permission);
 
   if (!allowed) {
     return (

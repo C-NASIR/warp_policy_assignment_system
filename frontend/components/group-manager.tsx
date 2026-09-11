@@ -21,7 +21,6 @@ export function GroupManager({
   initialPolicies,
   employees,
   policies,
-  apiConfigured,
   canManage = true,
 }: {
   group: Group;
@@ -29,7 +28,6 @@ export function GroupManager({
   initialPolicies: Policy[];
   employees: Employee[];
   policies: Policy[];
-  apiConfigured: boolean;
   canManage?: boolean;
 }) {
   const router = useRouter();
@@ -66,18 +64,16 @@ export function GroupManager({
     setBusy("rename");
     setError("");
     try {
-      if (apiConfigured) {
-        const response = await fetch(`/api/backend/groups/${group.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: next }),
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(
-            result.error?.message ?? result.detail ?? "The group could not be renamed.",
-          );
-      }
+      const response = await fetch(`/api/backend/groups/${group.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: next }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          result.error?.message ?? result.detail ?? "The group could not be renamed.",
+        );
       setEditingName(false);
       setNotice("Group name updated.");
       router.refresh();
@@ -99,15 +95,6 @@ export function GroupManager({
       employee_id: employee.id,
     };
     try {
-      if (!apiConfigured) {
-        setPending({
-          action,
-          employee,
-          approvalToken: null,
-          affectedCount: action === "add" ? 2 : 1,
-        });
-        return;
-      }
       const response = await fetch("/api/backend/change-previews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -150,23 +137,21 @@ export function GroupManager({
       employee_id: pending.employee.id,
     };
     try {
-      if (apiConfigured) {
-        const endpoint = pending.approvalToken
-          ? "/api/backend/change-executions"
-          : `/api/backend/groups/${group.id}/employees/${pending.employee.id}`;
-        const response = await fetch(endpoint, {
-          method: pending.approvalToken ? "POST" : pending.action === "add" ? "POST" : "DELETE",
-          headers: pending.approvalToken ? { "Content-Type": "application/json" } : undefined,
-          body: pending.approvalToken
-            ? JSON.stringify({ approval_token: pending.approvalToken, change })
-            : undefined,
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(
-            result.error?.message ?? result.detail ?? "The membership could not be updated.",
-          );
-      }
+      const endpoint = pending.approvalToken
+        ? "/api/backend/change-executions"
+        : `/api/backend/groups/${group.id}/employees/${pending.employee.id}`;
+      const response = await fetch(endpoint, {
+        method: pending.approvalToken ? "POST" : pending.action === "add" ? "POST" : "DELETE",
+        headers: pending.approvalToken ? { "Content-Type": "application/json" } : undefined,
+        body: pending.approvalToken
+          ? JSON.stringify({ approval_token: pending.approvalToken, change })
+          : undefined,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          result.error?.message ?? result.detail ?? "The membership could not be updated.",
+        );
       setMembers((current) =>
         pending.action === "add"
           ? [...current, pending.employee]
@@ -191,16 +176,14 @@ export function GroupManager({
     setBusy("policy");
     setError("");
     try {
-      if (apiConfigured) {
-        const response = await fetch(`/api/backend/groups/${group.id}/policies/${policy.id}`, {
-          method: "POST",
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(
-            result.error?.message ?? result.detail ?? "The policy could not be attached.",
-          );
-      }
+      const response = await fetch(`/api/backend/groups/${group.id}/policies/${policy.id}`, {
+        method: "POST",
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          result.error?.message ?? result.detail ?? "The policy could not be attached.",
+        );
       setAttachedPolicies((current) => [...current, policy]);
       setPolicyId("");
       setNotice(`${policy.name} attached. Member assignments were reconciled.`);
@@ -216,16 +199,14 @@ export function GroupManager({
     setBusy(`policy-${policy.id}`);
     setError("");
     try {
-      if (apiConfigured) {
-        const response = await fetch(`/api/backend/groups/${group.id}/policies/${policy.id}`, {
-          method: "DELETE",
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(
-            result.error?.message ?? result.detail ?? "The policy could not be detached.",
-          );
-      }
+      const response = await fetch(`/api/backend/groups/${group.id}/policies/${policy.id}`, {
+        method: "DELETE",
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          result.error?.message ?? result.detail ?? "The policy could not be detached.",
+        );
       setAttachedPolicies((current) => current.filter((item) => item.id !== policy.id));
       setNotice(`${policy.name} detached. Member assignments were reconciled.`);
       router.refresh();

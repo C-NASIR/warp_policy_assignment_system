@@ -9,25 +9,28 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { getAssignmentSummary, getAuditLogs, getCurrentUser, getPolicies } from "@/lib/backend";
+import {
+  getAssignmentSummary,
+  getAuditLogPage,
+  getCurrentUser,
+  getPolicyPage,
+} from "@/lib/backend";
 import { titleCase } from "@/lib/format";
 
 export default async function OverviewPage() {
-  const [summary, policies, auditLogs, user] = await Promise.all([
+  const [summary, activePolicies, archivedPolicies, auditPage, user] = await Promise.all([
     getAssignmentSummary(),
-    getPolicies(),
-    getAuditLogs(),
+    getPolicyPage({ status: "active", limit: 1, offset: 0 }),
+    getPolicyPage({ status: "archived", limit: 1, offset: 0 }),
+    getAuditLogPage({ limit: 4, offset: 0 }),
     getCurrentUser(),
   ]);
-  const activity = [...auditLogs]
-    .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
-    .slice(0, 4)
-    .map((event) => ({
-      id: event.id,
-      title: titleCase(event.entity_type),
-      copy: `${titleCase(event.action)} by ${event.actor}`,
-      time: relativeTime(event.timestamp),
-    }));
+  const activity = auditPage.items.map((event) => ({
+    id: event.id,
+    title: titleCase(event.entity_type),
+    copy: `${titleCase(event.action)} by ${event.actor}`,
+    time: relativeTime(event.timestamp),
+  }));
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
@@ -49,8 +52,8 @@ export default async function OverviewPage() {
     },
     {
       label: "Active policies",
-      value: policies.filter((item) => item.status === "active").length.toLocaleString(),
-      delta: `${policies.filter((item) => item.status === "archived").length} archived`,
+      value: activePolicies.total.toLocaleString(),
+      delta: `${archivedPolicies.total.toLocaleString()} archived`,
       icon: BookOpenCheck,
     },
     {
@@ -71,10 +74,11 @@ export default async function OverviewPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">{today}</p>
-          <h1>Good morning, {user?.name.split(" ")[0] ?? "Priya"}</h1>
+          <h1>Good morning{user ? `, ${user.name.split(" ")[0]}` : ""}</h1>
           <p className="page-subtitle">
-            Your policy assignments are healthy. Three future changes are scheduled and no conflicts
-            need attention.
+            {summary.employees_with_assignments.toLocaleString()} of{" "}
+            {summary.employee_count.toLocaleString()} employees currently have assignments across{" "}
+            {summary.field_count.toLocaleString()} fields.
           </p>
         </div>
         <Link className="button" href="/policies/new">

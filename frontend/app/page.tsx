@@ -105,10 +105,10 @@ export default function LandingPage() {
               <span>Example workflow</span>
             </div>
             <div className={styles.personCard}>
-              <div className={styles.avatar}>JL</div>
+              <div className={styles.avatar}>ER</div>
               <div>
-                <strong>Jordan Lee</strong>
-                <span>Engineering · Full-time</span>
+                <strong>Employee record</strong>
+                <span>Facts supplied by your system</span>
               </div>
               <span className={styles.personLabel}>Employee</span>
             </div>

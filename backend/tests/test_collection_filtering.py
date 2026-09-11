@@ -118,6 +118,38 @@ def test_employee_filters_compose_with_pagination_and_total_count(client):
     )
     assert [employee["name"] for employee in page] == ["Carol"]
 
+
+def test_employee_reference_data_returns_distinct_sorted_values(client):
+    _employee(
+        client,
+        "Alice",
+        state="California",
+        department="Engineering",
+        employee_type="Full-time",
+    )
+    _employee(
+        client,
+        "Bob",
+        state="Texas",
+        department="Sales",
+        employee_type="Contractor",
+    )
+    _employee(
+        client,
+        "Carol",
+        state="Wisconsin",
+        department="Engineering",
+        employee_type="Full-time",
+    )
+
+    response = client.get("/employees/reference-data")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "departments": ["Engineering", "Sales"],
+        "employee_types": ["Contractor", "Full-time"],
+    }
+
     search = _assert_page(
         client.get("/employees", params={"search": "alice"}),
         total=1,
@@ -148,6 +180,15 @@ def test_policy_group_and_metadata_collections_filter_and_page(client):
     assert client.post(
         f"/groups/{group['id']}/policies/{active['id']}"
     ).status_code == 201
+
+    groups = _assert_page(
+        client.get("/groups", params={"search": "engineer"}),
+        total=1,
+        limit=100,
+        offset=0,
+    )
+    assert groups[0]["member_count"] == 1
+    assert groups[0]["policy_count"] == 1
 
     policies = _assert_page(
         client.get("/policies", params={"status": "archived", "search": "old"}),
@@ -261,6 +302,19 @@ def test_assignment_override_and_audit_collections_support_filters(client):
     assert audits.status_code == 200
     assert int(audits.headers["X-Total-Count"]) >= 1
     assert len(audits.json()) == 1
+
+    facets = client.get("/audit-logs/facets")
+    assert facets.status_code == 200
+    assert {"Employee", "EmployeeOverride", "Policy"} <= set(
+        facets.json()["entity_types"]
+    )
+    assert "created" in facets.json()["actions"]
+
+    override_audits = client.get(
+        "/audit-logs",
+        params={"entity_type": "EmployeeOverride", "sort": "desc"},
+    ).json()
+    assert override_audits[0]["entity_label"] == "Alice · Manual override"
 
 
 def test_credentials_and_scope_catalog_filter_without_exposing_secrets(client):

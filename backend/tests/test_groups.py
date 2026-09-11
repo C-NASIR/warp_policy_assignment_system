@@ -55,7 +55,10 @@ def test_group_crud_and_missing_group_validation(client):
     sales = create_group(client, "Sales")
 
     assert client.get(f"/groups/{engineering['id']}").json() == engineering
-    assert client.get("/groups").json() == [engineering, sales]
+    assert client.get("/groups").json() == [
+        {**engineering, "member_count": 0, "policy_count": 0},
+        {**sales, "member_count": 0, "policy_count": 0},
+    ]
 
     response = client.patch(f"/groups/{sales['id']}", json={"name": "Revenue"})
     assert response.status_code == 200

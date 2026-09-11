@@ -1,32 +1,40 @@
 "use client";
 
 import { ChevronDown, ChevronUp, Search, ScrollText } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { PaginationControls } from "@/components/pagination-controls";
 import { formatDate, titleCase } from "@/lib/format";
-import type { AuditLog } from "@/lib/types";
+import type { AuditLog, AuditLogFacets } from "@/lib/types";
 
 export function AuditLogExplorer({
   events,
-  entityLabels,
+  facets,
+  total,
+  limit,
+  offset,
+  filters,
 }: {
   events: AuditLog[];
-  entityLabels: Record<number, string>;
+  facets: AuditLogFacets;
+  total: number;
+  limit: number;
+  offset: number;
+  filters: { search: string; entityType: string; action: string };
 }) {
-  const [search, setSearch] = useState("");
-  const [entity, setEntity] = useState("all");
-  const [action, setAction] = useState("all");
+  const router = useRouter();
+  const [search, setSearch] = useState(filters.search);
+  const [entity, setEntity] = useState(filters.entityType);
+  const [action, setAction] = useState(filters.action);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const entityTypes = [...new Set(events.map((event) => event.entity_type))].sort();
-  const actions = [...new Set(events.map((event) => event.action))].sort();
-  const filtered = events.filter((event) => {
-    const haystack =
-      `${event.actor} ${entityLabels[event.id]} ${event.entity_type} ${event.action} ${JSON.stringify(event.before)} ${JSON.stringify(event.after)}`.toLowerCase();
-    return (
-      haystack.includes(search.toLowerCase()) &&
-      (entity === "all" || event.entity_type === entity) &&
-      (action === "all" || event.action === action)
-    );
-  });
+  function applyFilters(event: FormEvent) {
+    event.preventDefault();
+    const query = new URLSearchParams();
+    if (search.trim()) query.set("search", search.trim());
+    if (entity) query.set("entity_type", entity);
+    if (action) query.set("action", action);
+    router.push(query.size ? `/audit?${query}` : "/audit");
+  }
 
   return (
     <>
@@ -42,7 +50,7 @@ export function AuditLogExplorer({
           <ScrollText size={11} /> Append-only
         </span>
       </div>
-      <div className="toolbar">
+      <form className="toolbar" onSubmit={applyFilters}>
         <div className="toolbar-left">
           <label className="search-box">
             <Search size={14} />
@@ -60,8 +68,8 @@ export function AuditLogExplorer({
             onChange={(event) => setEntity(event.target.value)}
             aria-label="Filter by entity"
           >
-            <option value="all">All entities</option>
-            {entityTypes.map((item) => (
+            <option value="">All entities</option>
+            {facets.entity_types.map((item) => (
               <option key={item} value={item}>
                 {titleCase(item)}
               </option>
@@ -73,16 +81,19 @@ export function AuditLogExplorer({
             onChange={(event) => setAction(event.target.value)}
             aria-label="Filter by action"
           >
-            <option value="all">All actions</option>
-            {actions.map((item) => (
+            <option value="">All actions</option>
+            {facets.actions.map((item) => (
               <option key={item} value={item}>
                 {titleCase(item)}
               </option>
             ))}
           </select>
+          <button className="button secondary" type="submit">
+            Apply
+          </button>
         </div>
-        <span className="results-count">{filtered.length} events</span>
-      </div>
+        <span className="results-count">{total} events</span>
+      </form>
       <div className="data-panel">
         <div className="audit-table-scroll">
           <table className="data-table audit-table">
@@ -105,10 +116,10 @@ export function AuditLogExplorer({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((event) => (
+              {events.map((event) => (
                 <AuditRow
                   event={event}
-                  entityLabel={entityLabels[event.id] ?? titleCase(event.entity_type)}
+                  entityLabel={event.entity_label}
                   expanded={expanded === event.id}
                   onToggle={() =>
                     setExpanded((current) => (current === event.id ? null : event.id))
@@ -118,16 +129,22 @@ export function AuditLogExplorer({
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && (
+          {events.length === 0 && (
             <div className="empty-state compact">No audit events match those filters.</div>
           )}
         </div>
-        <div className="pagination-footer">
-          <span>
-            {filtered.length} of {events.length} recent events
-          </span>
-          <span>Newest first · UTC</span>
-        </div>
+        <PaginationControls
+          path="/audit"
+          params={{
+            search: filters.search,
+            entity_type: filters.entityType,
+            action: filters.action,
+          }}
+          total={total}
+          limit={limit}
+          offset={offset}
+          itemLabel="events"
+        />
       </div>
     </>
   );

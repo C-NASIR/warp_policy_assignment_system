@@ -64,4 +64,4 @@ Product Launch remains an explicit employee group. It is not populated from a de
 - Ordinary human policy-version previews and supported lifecycle previews create independent approval requests. Root uses the privileged direct path.
 - Approval alone commits nothing. The ordinary approving user executes; Root may execute an approved request. Stale or expired approvals require a fresh preview and review.
 - Future effective dates still govern future policy behavior after execution, and scheduled reconciliation remains a deployment responsibility.
-- Demo-mode success messages are not persistence guarantees. Course screenshots and connected fixtures use fictional data only.
+- Course screenshots and training fixtures use fictional data; application state still comes from the configured backend.

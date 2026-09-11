@@ -6,10 +6,11 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from app.browser_access import configure_browser_access
 from app.database import create_tables
-from app.dependencies import authorize_operation
+from app.dependencies import DatabaseSession, authorize_operation
 from app.error_contract import (
     conflict_response,
     error_response,
@@ -509,5 +510,10 @@ def _http_error_message(detail) -> str:
 
 
 @app.get("/")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "policy-assignment-system"}
+def health(session: DatabaseSession) -> dict[str, str]:
+    session.execute(text("SELECT 1"))
+    return {
+        "status": "ok",
+        "service": "policy-assignment-system",
+        "database": "ready",
+    }

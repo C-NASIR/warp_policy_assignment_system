@@ -6,12 +6,12 @@ import { AssignmentCard } from "@/components/assignment-card";
 import { EmployeeEditor } from "@/components/employee-form";
 import { OverrideManager } from "@/components/override-manager";
 import {
-  apiConfigured,
   getAssignmentFields,
   getCurrentUser,
   getEmployee,
   getEmployeeAssignmentHistory,
   getEmployeeAssignments,
+  getEmployeeReferenceData,
   getEmployeeOverrides,
   getEmployees,
 } from "@/lib/backend";
@@ -34,16 +34,18 @@ export async function generateMetadata({
 export default async function EmployeeDetailPage({ params }: PageProps<"/employees/[id]">) {
   const { id } = await params;
   const user = await getCurrentUser();
-  const canReadAssignments = !apiConfigured || hasPermission(user, "assignments:read");
-  const canReadSettings = !apiConfigured || hasPermission(user, "settings:read");
-  const [employee, assignments, allEmployees, fields, overrides, history] = await Promise.all([
-    getEmployee(Number(id)),
-    canReadAssignments ? getEmployeeAssignments(Number(id)) : [],
-    getEmployees(),
-    canReadSettings ? getAssignmentFields() : [],
-    canReadAssignments ? getEmployeeOverrides(Number(id)) : [],
-    canReadAssignments ? getEmployeeAssignmentHistory(Number(id)) : [],
-  ]);
+  const canReadAssignments = hasPermission(user, "assignments:read");
+  const canReadSettings = hasPermission(user, "settings:read");
+  const [employee, assignments, allEmployees, fields, overrides, history, referenceData] =
+    await Promise.all([
+      getEmployee(Number(id)),
+      canReadAssignments ? getEmployeeAssignments(Number(id)) : [],
+      getEmployees(),
+      canReadSettings ? getAssignmentFields() : [],
+      canReadAssignments ? getEmployeeOverrides(Number(id)) : [],
+      canReadAssignments ? getEmployeeAssignmentHistory(Number(id)) : [],
+      getEmployeeReferenceData(),
+    ]);
   if (!employee) notFound();
   const manager = allEmployees.find((item) => item.id === employee.manager_id);
   const policyCount = new Set(
@@ -72,8 +74,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
             employee={employee}
             employees={allEmployees}
             fields={fields}
-            currentAssignments={assignments}
-            apiConfigured={apiConfigured}
+            referenceData={referenceData}
             trigger={
               <>
                 <Pencil size={14} /> Edit employee
@@ -144,7 +145,6 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
               fields={fields}
               initialOverrides={overrides}
               history={history}
-              apiConfigured={apiConfigured}
               canManage={hasPermission(user, "assignments:manage")}
             />
           )}

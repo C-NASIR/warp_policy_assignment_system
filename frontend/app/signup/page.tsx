@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { AuthForm } from "@/components/auth-form";
-import { apiConfigured, getCurrentUser, getRootSetupStatus } from "@/lib/backend";
+import { getCurrentUser, getRootSetupStatus } from "@/lib/backend";
 import { firstAllowedPath } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Sign up" };
@@ -11,8 +11,8 @@ export const metadata: Metadata = { title: "Sign up" };
 export default async function SignupPage() {
   const user = await getCurrentUser();
   if (user) redirect(firstAllowedPath(user));
-  const setup = apiConfigured ? await getRootSetupStatus() : null;
-  if (setup && !setup.setup_required) {
+  const setup = await getRootSetupStatus();
+  if (!setup.setup_required) {
     return (
       <main className="auth-page">
         <section className="auth-card" aria-labelledby="signup-title">
@@ -39,5 +39,5 @@ export default async function SignupPage() {
       </main>
     );
   }
-  return <AuthForm mode="setup" connected={apiConfigured} />;
+  return <AuthForm mode="setup" />;
 }

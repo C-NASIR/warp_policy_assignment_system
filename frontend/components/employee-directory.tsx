@@ -2,30 +2,36 @@
 
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { PaginationControls } from "@/components/pagination-controls";
 import { initials } from "@/lib/format";
-import type { EmployeeDirectoryItem } from "@/lib/types";
+import type { EmployeeDirectoryItem, EmployeeReferenceData } from "@/lib/types";
 
-export function EmployeeDirectory({ employees }: { employees: EmployeeDirectoryItem[] }) {
-  const [search, setSearch] = useState("");
-  const [department, setDepartment] = useState("all");
-  const [type, setType] = useState("all");
+export function EmployeeDirectory({
+  employees,
+  referenceData,
+  total,
+  limit,
+  offset,
+  filters,
+}: {
+  employees: EmployeeDirectoryItem[];
+  referenceData: EmployeeReferenceData;
+  total: number;
+  limit: number;
+  offset: number;
+  filters: { search: string; department: string; employeeType: string };
+}) {
+  const router = useRouter();
+  const [search, setSearch] = useState(filters.search);
+  const [department, setDepartment] = useState(filters.department);
+  const [type, setType] = useState(filters.employeeType);
   const [sort, setSort] = useState<{
     key: "name" | "department" | "location" | "employee_type";
     direction: "asc" | "desc";
   }>({ key: "name", direction: "asc" });
-  const departments = [...new Set(employees.map((item) => item.department))].sort();
-  const types = [...new Set(employees.map((item) => item.employee_type))].sort();
-  const filtered = employees.filter((employee) => {
-    const haystack =
-      `${employee.name} ${employee.department} ${employee.location} ${employee.state}`.toLowerCase();
-    return (
-      haystack.includes(search.toLowerCase()) &&
-      (department === "all" || employee.department === department) &&
-      (type === "all" || employee.employee_type === type)
-    );
-  });
-  const sorted = [...filtered].sort((left, right) => {
+  const sorted = [...employees].sort((left, right) => {
     const leftValue = sort.key === "location" ? (left.location ?? left.state) : left[sort.key];
     const rightValue = sort.key === "location" ? (right.location ?? right.state) : right[sort.key];
     return (
@@ -41,15 +47,25 @@ export function EmployeeDirectory({ employees }: { employees: EmployeeDirectoryI
     );
   }
 
+  function applyFilters(event: FormEvent) {
+    event.preventDefault();
+    const query = new URLSearchParams();
+    if (search.trim()) query.set("search", search.trim());
+    if (department) query.set("department", department);
+    if (type) query.set("employee_type", type);
+    router.push(query.size ? `/employees?${query}` : "/employees");
+  }
+
   function resetFilters() {
     setSearch("");
-    setDepartment("all");
-    setType("all");
+    setDepartment("");
+    setType("");
+    router.push("/employees");
   }
 
   return (
     <>
-      <div className="toolbar">
+      <form className="toolbar" onSubmit={applyFilters}>
         <div className="toolbar-left">
           <label className="search-box">
             <Search size={14} />
@@ -67,8 +83,8 @@ export function EmployeeDirectory({ employees }: { employees: EmployeeDirectoryI
             onChange={(event) => setDepartment(event.target.value)}
             aria-label="Filter by department"
           >
-            <option value="all">All departments</option>
-            {departments.map((item) => (
+            <option value="">All departments</option>
+            {referenceData.departments.map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
@@ -78,17 +94,20 @@ export function EmployeeDirectory({ employees }: { employees: EmployeeDirectoryI
             onChange={(event) => setType(event.target.value)}
             aria-label="Filter by employment type"
           >
-            <option value="all">All worker types</option>
-            {types.map((item) => (
+            <option value="">All worker types</option>
+            {referenceData.employee_types.map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
+          <button className="button secondary" type="submit">
+            Apply
+          </button>
         </div>
-        <div className="results-count">{sorted.length} employees</div>
-      </div>
+        <div className="results-count">{total} employees</div>
+      </form>
 
       <div className="data-panel">
-        {filtered.length ? (
+        {sorted.length ? (
           <table className="data-table">
             <thead>
               <tr>
@@ -150,12 +169,18 @@ export function EmployeeDirectory({ employees }: { employees: EmployeeDirectoryI
             </button>
           </div>
         )}
-        <div className="pagination-footer">
-          <span>
-            Showing {sorted.length} of {employees.length}
-          </span>
-          <span>Updated just now</span>
-        </div>
+        <PaginationControls
+          path="/employees"
+          params={{
+            search: filters.search,
+            department: filters.department,
+            employee_type: filters.employeeType,
+          }}
+          total={total}
+          limit={limit}
+          offset={offset}
+          itemLabel="employees"
+        />
       </div>
     </>
   );

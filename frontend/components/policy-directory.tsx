@@ -2,33 +2,35 @@
 
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, BookOpenCheck, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { PaginationControls } from "@/components/pagination-controls";
 import { formatDate } from "@/lib/format";
 import type { Policy, PolicyImpact } from "@/lib/types";
 
 export function PolicyDirectory({
   policies,
   impacts,
+  total,
+  limit,
+  offset,
+  filters,
 }: {
   policies: Policy[];
   impacts: Record<number, PolicyImpact | null>;
+  total: number;
+  limit: number;
+  offset: number;
+  filters: { search: string; status: string };
 }) {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("active");
+  const router = useRouter();
+  const [search, setSearch] = useState(filters.search);
+  const [status, setStatus] = useState(filters.status);
   const [sort, setSort] = useState<{
     key: "name" | "priority" | "effective" | "impact" | "status";
     direction: "asc" | "desc";
   }>({ key: "name", direction: "asc" });
-  const filtered = useMemo(
-    () =>
-      policies.filter(
-        (policy) =>
-          policy.name.toLowerCase().includes(search.toLowerCase()) &&
-          (status === "all" || policy.status === status),
-      ),
-    [policies, search, status],
-  );
-  const sorted = [...filtered].sort((left, right) => {
+  const sorted = [...policies].sort((left, right) => {
     const leftVersion = left.versions.at(-1);
     const rightVersion = right.versions.at(-1);
     const values = {
@@ -54,9 +56,21 @@ export function PolicyDirectory({
         : { key, direction: "asc" },
     );
   }
+  function applyFilters(event: FormEvent) {
+    event.preventDefault();
+    const query = new URLSearchParams();
+    if (search.trim()) query.set("search", search.trim());
+    if (status) query.set("status", status);
+    router.push(query.size ? `/policies?${query}` : "/policies");
+  }
+  function resetFilters() {
+    setSearch("");
+    setStatus("all");
+    router.push("/policies?status=all");
+  }
   return (
     <>
-      <div className="toolbar">
+      <form className="toolbar" onSubmit={applyFilters}>
         <div className="toolbar-left">
           <label className="search-box">
             <Search size={14} />
@@ -79,9 +93,12 @@ export function PolicyDirectory({
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
           </select>
+          <button className="button secondary" type="submit">
+            Apply
+          </button>
         </div>
-        <div className="results-count">{sorted.length} policies</div>
-      </div>
+        <div className="results-count">{total} policies</div>
+      </form>
       <div className="data-panel">
         {sorted.length ? (
           <table className="data-table">
@@ -151,23 +168,19 @@ export function PolicyDirectory({
             </div>
             <strong>No policies match</strong>
             <span>Try another search or include archived policies.</span>
-            <button
-              className="text-button"
-              onClick={() => {
-                setSearch("");
-                setStatus("all");
-              }}
-            >
+            <button className="text-button" onClick={resetFilters}>
               <X size={13} /> Clear filters
             </button>
           </div>
         )}
-        <div className="pagination-footer">
-          <span>
-            Showing {sorted.length} of {policies.length}
-          </span>
-          <span>Priority determines single-value winners</span>
-        </div>
+        <PaginationControls
+          path="/policies"
+          params={{ search: filters.search, status: filters.status }}
+          total={total}
+          limit={limit}
+          offset={offset}
+          itemLabel="policies"
+        />
       </div>
     </>
   );

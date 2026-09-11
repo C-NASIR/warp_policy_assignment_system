@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AssignmentFieldManager } from "@/components/assignment-field-manager";
-import { apiConfigured, getAssignmentFields, getCurrentUser } from "@/lib/backend";
+import { getAssignmentFields, getCurrentUser } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Assignment fields" };
@@ -10,7 +10,6 @@ export default async function SettingsPage() {
   return (
     <AssignmentFieldManager
       initialFields={fields}
-      apiConfigured={apiConfigured}
       canManage={hasPermission(user, "settings:manage")}
     />
   );

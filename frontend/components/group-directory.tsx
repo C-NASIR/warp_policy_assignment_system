@@ -1,54 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CircleAlert, Network, Plus, Users } from "lucide-react";
+import { ArrowRight, CircleAlert, Network, Plus, Search, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import type { Group } from "@/lib/types";
-
-type GroupRow = Group & { memberCount: number; policyCount: number };
+import { FormEvent, useState } from "react";
+import { PaginationControls } from "@/components/pagination-controls";
+import type { GroupDirectoryItem } from "@/lib/types";
 
 export function GroupDirectory({
   initialGroups,
-  apiConfigured,
   canCreate = true,
+  total,
+  limit,
+  offset,
+  searchFilter,
 }: {
-  initialGroups: GroupRow[];
-  apiConfigured: boolean;
+  initialGroups: GroupDirectoryItem[];
   canCreate?: boolean;
+  total: number;
+  limit: number;
+  offset: number;
+  searchFilter: string;
 }) {
   const router = useRouter();
-  const [groups, setGroups] = useState(initialGroups);
+  const groups = initialGroups;
   const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState(searchFilter);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const normalized = name.trim();
-  const duplicate = useMemo(
-    () => groups.some((group) => group.name.toLowerCase() === normalized.toLowerCase()),
-    [groups, normalized],
-  );
 
   async function createGroup() {
-    if (!normalized || duplicate) {
-      setError(duplicate ? "A group with this name already exists." : "Enter a group name.");
+    if (!normalized) {
+      setError("Enter a group name.");
       return;
     }
     setSaving(true);
     setError("");
-    if (!apiConfigured) {
-      const group = {
-        id: Math.max(...groups.map((item) => item.id), 0) + 1,
-        name: normalized,
-        memberCount: 0,
-        policyCount: 0,
-      };
-      setGroups((current) => [...current, group]);
-      setName("");
-      setCreating(false);
-      setSaving(false);
-      return;
-    }
     try {
       const response = await fetch("/api/backend/groups", {
         method: "POST",
@@ -67,6 +56,12 @@ export function GroupDirectory({
     } finally {
       setSaving(false);
     }
+  }
+
+  function applySearch(event: FormEvent) {
+    event.preventDefault();
+    const value = search.trim();
+    router.push(value ? `/groups?search=${encodeURIComponent(value)}` : "/groups");
   }
 
   return (
@@ -134,6 +129,24 @@ export function GroupDirectory({
           )}
         </section>
       )}
+      <form className="toolbar" onSubmit={applySearch}>
+        <div className="toolbar-left">
+          <label className="search-box">
+            <Search size={14} />
+            <input
+              className="input"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search groups"
+              aria-label="Search groups"
+            />
+          </label>
+          <button className="button secondary" type="submit">
+            Apply
+          </button>
+        </div>
+        <div className="results-count">{total} groups</div>
+      </form>
       <div className="management-grid">
         {groups.map((group) => (
           <Link className="management-card" href={`/groups/${group.id}`} key={group.id}>
@@ -145,10 +158,10 @@ export function GroupDirectory({
               <div className="management-card-meta">
                 <span>
                   <Users size={12} />
-                  {group.memberCount} members
+                  {group.member_count} members
                 </span>
                 <span>
-                  {group.policyCount} attached {group.policyCount === 1 ? "policy" : "policies"}
+                  {group.policy_count} attached {group.policy_count === 1 ? "policy" : "policies"}
                 </span>
               </div>
             </div>
@@ -156,6 +169,14 @@ export function GroupDirectory({
           </Link>
         ))}
       </div>
+      <PaginationControls
+        path="/groups"
+        params={{ search: searchFilter }}
+        total={total}
+        limit={limit}
+        offset={offset}
+        itemLabel="groups"
+      />
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-const apiUrl = process.env.POLICY_API_URL ?? "http://127.0.0.1:8000";
+const apiUrl = process.env.POLICY_API_URL?.replace(/\/$/, "");
 const sessionCookieName = "policyos_session";
 
 function hasTrustedOrigin(request: NextRequest): boolean {
@@ -18,15 +18,20 @@ function hasTrustedOrigin(request: NextRequest): boolean {
 }
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
-  if (!process.env.POLICY_API_URL) {
+  if (!apiUrl) {
     return Response.json(
-      { error: { code: "demo_mode", message: "Configure POLICY_API_URL to persist this change." } },
+      {
+        error: {
+          code: "backend_not_configured",
+          message: "POLICY_API_URL is required to connect the frontend to PolicyOS.",
+        },
+      },
       { status: 503 },
     );
   }
 
   const { path } = await context.params;
-  const target = new URL(path.map(encodeURIComponent).join("/"), `${apiUrl.replace(/\/$/, "")}/`);
+  const target = new URL(path.map(encodeURIComponent).join("/"), `${apiUrl}/`);
   target.search = request.nextUrl.search;
   const safeMethod = ["GET", "HEAD", "OPTIONS"].includes(request.method);
   const body = safeMethod ? undefined : await request.text();

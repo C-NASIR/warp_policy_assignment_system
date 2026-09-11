@@ -90,26 +90,6 @@ The backend is authoritative. Out-of-scope direct resources can return 404 to
 avoid disclosing their existence. Documentation should say “you may not have
 access” rather than promising that every inaccessible record returns 403.
 
-## Demo-mode audit
-
-Demo mode is available when `POLICY_API_URL` is unset. It is useful for reading
-screens and trying controls, but it differs from connected behavior:
-
-- Mutations update local component state or show a success message and are lost
-  on refresh.
-- Employee previews use a small hard-coded matcher in
-  `frontend/components/employee-form.tsx`.
-- The new-policy preview counts matches in the browser. Connected version
-  previews use the backend change-preview contract.
-- Approval buttons are disabled and the demo has no persisted approval queue.
-- Demo assignments are curated samples and are not a complete recalculation of
-  every listed employee, policy, and group relationship.
-- The dashboard sentence about scheduled changes and conflicts is static copy;
-  do not cite it as system state.
-
-Content must label demo-only walkthroughs and must never claim that a demo
-mutation persisted or exercised separation of duties.
-
 ## Current gaps and content constraints
 
 | Gap | Content decision |
@@ -118,10 +98,9 @@ mutation persisted or exercised separation of duties.
 | No built-in approval notification, arbitrary reviewer assignment, or request-search box | Use the request ID and the team's normal handoff process; do not promise messaging |
 | No frontend workflow for batch future assignment queries | Teach the distinction between future calculation and current stored assignments; reserve an API procedure for later reference |
 | No frontend UI for scheduled reconciliation operations or machine credentials | Do not promise UI steps; cover only verified concepts or later API reference |
-| First-policy preview is not the same connected engine preview used by a new version | Describe it as a population estimate and verify the saved result |
 | Group membership is previewed, but policy attach/detach is immediate | Keep the steps distinct; do not say every group change has a preview |
 | Persisted approval is limited to supported human policy flows | Do not imply that every preview or denied mutation enters the approval queue |
-| Demo data is not the curriculum fixture | Use an isolated Rachel/Morgan/Jordan training fixture and do not infer connected behavior from demo state |
+| Curriculum records are not automatically provisioned | Use an isolated Rachel/Morgan/Jordan training fixture and verify all results against backend state |
 
 ## Reverification triggers
 
@@ -131,6 +110,6 @@ Reaudit affected content when any of these change:
 - the permission catalog or record capability calculation;
 - assignment cardinality, priority, conflict, group, or override semantics;
 - preview or approval request types;
-- the demo-data contract;
+- backend API response contracts;
 - effective-date or scheduled reconciliation behavior;
 - employee, policy, group, assignment, audit, access, or security UI controls.

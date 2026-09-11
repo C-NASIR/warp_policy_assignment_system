@@ -287,6 +287,11 @@ class EmployeeRead(EmployeeCreate, ORMModel):
     id: int
 
 
+class EmployeeReferenceDataRead(BaseModel):
+    departments: list[str]
+    employee_types: list[str]
+
+
 class EmployeeDirectoryRead(EmployeeRead):
     active_assignment_count: int = Field(ge=0)
 
@@ -301,6 +306,11 @@ class GroupUpdate(BaseModel):
 
 class GroupRead(GroupCreate, ORMModel):
     id: int
+
+
+class GroupDirectoryRead(GroupRead):
+    member_count: int = Field(ge=0)
+    policy_count: int = Field(ge=0)
 
 
 class AssignmentFieldDefinitionCreate(BaseModel):
@@ -643,11 +653,17 @@ class AuditLogRead(ORMModel):
     before: dict[str, Any] | list[Any] | None
     after: dict[str, Any] | list[Any] | None
     timestamp: datetime
+    entity_label: str = ""
 
     @field_validator("timestamp", mode="before")
     @classmethod
     def return_utc_timestamp(cls, value: datetime) -> datetime:
         return ensure_utc(value)
+
+
+class AuditLogFacetsRead(BaseModel):
+    entity_types: list[str]
+    actions: list[str]
 
 
 class OperationScopeRead(BaseModel):
@@ -753,6 +769,11 @@ class EmployeeUpdateChangePreview(_ChangePreviewBase):
     changes: EmployeeUpdate
 
 
+class PolicyCreateChangePreview(_ChangePreviewBase):
+    type: Literal["policy_create"]
+    policy: PolicyCreate
+
+
 class PolicyVersionCreateChangePreview(_ChangePreviewBase):
     type: Literal["policy_version_create"]
     policy_id: int = Field(gt=0)
@@ -806,6 +827,7 @@ class EmployeeOverrideChangePreview(_ChangePreviewBase):
 ChangePreviewCreate = Annotated[
     EmployeeCreateChangePreview
     | EmployeeUpdateChangePreview
+    | PolicyCreateChangePreview
     | PolicyVersionCreateChangePreview
     | PolicyStatusChangePreview
     | GroupMembershipChangePreview

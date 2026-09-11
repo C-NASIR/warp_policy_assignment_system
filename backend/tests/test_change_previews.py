@@ -159,6 +159,41 @@ def test_policy_version_preview_reconciles_population_without_persisting(client)
     assert client.get(f"/employees/{bob['id']}/assignments").json() == []
 
 
+def test_policy_create_preview_uses_engine_without_persisting(client):
+    field = _assignment_field(client)
+    alice = _employee(client)
+    bob = _employee(client, name="Bob", state="Texas")
+
+    preview = _preview(
+        client,
+        {
+            "type": "policy_create",
+            "policy": {
+                "name": "California payroll",
+                "status": "active",
+                "priority": 20,
+                "condition_group": _condition("state", "California"),
+                "values": [
+                    {
+                        "assignment_field_definition_id": field["id"],
+                        "value": "biweekly",
+                    }
+                ],
+            },
+        },
+    )
+
+    assert preview["valid"] is True
+    assert preview["affected_employee_count"] == 1
+    assert preview["changes"][0]["employee_id"] == alice["id"]
+    assert preview["changes"][0]["employee_name"] == "Alice"
+    assert preview["changes"][0]["added"][0]["value"] == "biweekly"
+    assert preview["changes"][0]["added"][0]["source_is_proposed"] is True
+    assert client.get("/policies").json() == []
+    assert client.get(f"/employees/{alice['id']}/assignments").json() == []
+    assert client.get(f"/employees/{bob['id']}/assignments").json() == []
+
+
 def test_group_membership_and_override_previews_do_not_persist(client):
     access_field = _assignment_field(client, "application_access", "many")
     policy = _policy(

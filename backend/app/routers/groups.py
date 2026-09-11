@@ -1,7 +1,7 @@
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, Response, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import (
@@ -20,7 +20,14 @@ from app.models import (
     PolicyVersion,
 )
 from app.pagination import Pagination, paginate_scalars
-from app.schemas import EmployeeRead, GroupCreate, GroupRead, GroupUpdate, PolicyRead
+from app.schemas import (
+    EmployeeRead,
+    GroupCreate,
+    GroupDirectoryRead,
+    GroupRead,
+    GroupUpdate,
+    PolicyRead,
+)
 from app.services.assignment_field_visibility import (
     require_visible_policy,
     visible_policy_condition,
@@ -45,22 +52,57 @@ def create(data: GroupCreate, session: DatabaseSession, actor: AuditActor) -> Gr
     return create_group(session, data.name, actor)
 
 
-@router.get("", response_model=list[GroupRead])
+@router.get("", response_model=list[GroupDirectoryRead])
 def list_all(
     session: DatabaseSession,
     response: Response,
     pagination: Pagination,
+    visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
     search: Annotated[str | None, Query(max_length=200)] = None,
-) -> list[Group]:
+) -> list[GroupDirectoryRead]:
     statement = select(Group)
     if search:
         statement = statement.where(Group.name.ilike(f"%{search.strip()}%"))
-    return paginate_scalars(
+    groups = paginate_scalars(
         session,
         statement.order_by(Group.id),
         pagination,
         response,
     )
+    if not groups:
+        return []
+    group_ids = [group.id for group in groups]
+    member_statement = (
+        select(
+            EmployeeGroupMembership.group_id,
+            func.count(EmployeeGroupMembership.employee_id),
+        )
+        .join(Employee, Employee.id == EmployeeGroupMembership.employee_id)
+        .where(EmployeeGroupMembership.group_id.in_(group_ids))
+        .group_by(EmployeeGroupMembership.group_id)
+    )
+    member_statement = visibility.apply(member_statement, Employee.id)
+    member_counts = dict(session.execute(member_statement).tuples().all())
+    policy_statement = (
+        select(GroupPolicy.group_id, func.count(GroupPolicy.policy_id))
+        .join(Policy, Policy.id == GroupPolicy.policy_id)
+        .where(
+            GroupPolicy.group_id.in_(group_ids),
+            visible_policy_condition(field_visibility),
+        )
+        .group_by(GroupPolicy.group_id)
+    )
+    policy_counts = dict(session.execute(policy_statement).tuples().all())
+    return [
+        GroupDirectoryRead(
+            id=group.id,
+            name=group.name,
+            member_count=int(member_counts.get(group.id, 0)),
+            policy_count=int(policy_counts.get(group.id, 0)),
+        )
+        for group in groups
+    ]
 
 
 @router.get("/{group_id}", response_model=GroupRead)

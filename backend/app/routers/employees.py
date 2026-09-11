@@ -22,6 +22,7 @@ from app.schemas import (
     EmployeeOverrideRead,
     EmployeeOverrideUpdate,
     EmployeeRead,
+    EmployeeReferenceDataRead,
     EmployeeUpdate,
 )
 from app.services.assignment_field_visibility import (
@@ -149,6 +150,22 @@ def list_all(
         )
         for employee in employees
     ]
+
+
+@router.get("/reference-data", response_model=EmployeeReferenceDataRead)
+def reference_data(
+    session: DatabaseSession,
+    visibility: EmployeeScope,
+) -> EmployeeReferenceDataRead:
+    statement = visibility.apply(
+        select(Employee.department, Employee.employee_type),
+        Employee.id,
+    ).distinct()
+    rows = session.execute(statement).all()
+    return EmployeeReferenceDataRead(
+        departments=sorted({department for department, _ in rows}),
+        employee_types=sorted({employee_type for _, employee_type in rows}),
+    )
 
 
 @router.get("/{employee_id}", response_model=EmployeeRead)

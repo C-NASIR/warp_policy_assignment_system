@@ -24,14 +24,12 @@ export function OverrideManager({
   fields,
   initialOverrides,
   history,
-  apiConfigured,
   canManage = true,
 }: {
   employee: Employee;
   fields: AssignmentField[];
   initialOverrides: EmployeeOverride[];
   history: Assignment[];
-  apiConfigured: boolean;
   canManage?: boolean;
 }) {
   const router = useRouter();
@@ -98,20 +96,6 @@ export function OverrideManager({
     setError("");
     const change = buildChange(action, override, selectedField, selectedValue);
     try {
-      if (!apiConfigured) {
-        setPending({
-          action,
-          override,
-          fieldId: selectedField,
-          value: selectedValue,
-          approvalToken: null,
-          added: action === "create" ? 1 : 0,
-          removed: action === "delete" ? 1 : 0,
-          changed: action === "update" ? 1 : 0,
-        });
-        setEditing(null);
-        return;
-      }
       const response = await fetch("/api/backend/change-previews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,43 +133,39 @@ export function OverrideManager({
     setError("");
     const change = buildChange(pending.action, pending.override, pending.fieldId, pending.value);
     try {
-      let createdId = Math.max(...overrides.map((item) => item.id), 40) + 1;
-      if (apiConfigured) {
-        const directEndpoint =
-          pending.action === "create"
-            ? `/api/backend/employees/${employee.id}/overrides`
-            : `/api/backend/employees/${employee.id}/overrides/${pending.override?.id}`;
-        const endpoint = pending.approvalToken ? "/api/backend/change-executions" : directEndpoint;
-        const method = pending.approvalToken
+      const directEndpoint =
+        pending.action === "create"
+          ? `/api/backend/employees/${employee.id}/overrides`
+          : `/api/backend/employees/${employee.id}/overrides/${pending.override?.id}`;
+      const endpoint = pending.approvalToken ? "/api/backend/change-executions" : directEndpoint;
+      const method = pending.approvalToken
+        ? "POST"
+        : pending.action === "create"
           ? "POST"
-          : pending.action === "create"
-            ? "POST"
-            : pending.action === "update"
-              ? "PATCH"
-              : "DELETE";
-        const directBody =
-          pending.action === "delete"
-            ? undefined
-            : JSON.stringify({
-                assignment_field_definition_id: pending.fieldId,
-                value: pending.value,
-              });
-        const body = pending.approvalToken
-          ? JSON.stringify({ approval_token: pending.approvalToken, change })
-          : directBody;
-        const response = await fetch(endpoint, {
-          method,
-          headers: body ? { "Content-Type": "application/json" } : undefined,
-          body,
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(
-            result.error?.message ?? result.detail ?? "The override could not be applied.",
-          );
-        if (result.resources?.override_id) createdId = result.resources.override_id;
-        else if (!pending.approvalToken && result.id) createdId = result.id;
-      }
+          : pending.action === "update"
+            ? "PATCH"
+            : "DELETE";
+      const directBody =
+        pending.action === "delete"
+          ? undefined
+          : JSON.stringify({
+              assignment_field_definition_id: pending.fieldId,
+              value: pending.value,
+            });
+      const body = pending.approvalToken
+        ? JSON.stringify({ approval_token: pending.approvalToken, change })
+        : directBody;
+      const response = await fetch(endpoint, {
+        method,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          result.error?.message ?? result.detail ?? "The override could not be applied.",
+        );
+      const createdId = result.resources?.override_id ?? result.id;
       if (pending.action === "delete")
         setOverrides((current) => current.filter((item) => item.id !== pending.override?.id));
       else {

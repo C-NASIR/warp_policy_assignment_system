@@ -13,6 +13,29 @@ export type EmployeeDirectoryItem = Employee & {
   active_assignment_count: number;
 };
 
+export type EmployeeReferenceData = {
+  departments: string[];
+  employee_types: string[];
+};
+
+export type CollectionPage<T> = {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type BackendStatus = {
+  status: string;
+  service: string;
+  database: string;
+};
+
+export type AuditLogFacets = {
+  entity_types: string[];
+  actions: string[];
+};
+
 export type AssignmentField = {
   id: number;
   name: string;
@@ -120,6 +143,11 @@ export type AssignmentSummary = {
 
 export type Group = { id: number; name: string };
 
+export type GroupDirectoryItem = Group & {
+  member_count: number;
+  policy_count: number;
+};
+
 export type EmployeeOverride = {
   id: number;
   employee_id: number;
@@ -138,6 +166,7 @@ export type AuditLog = {
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
   timestamp: string;
+  entity_label: string;
 };
 
 export type CurrentUser = {

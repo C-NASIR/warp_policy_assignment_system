@@ -22,7 +22,6 @@ type Props = {
   canManage: boolean;
   canReadEmployees: boolean;
   mfaEnabled: boolean;
-  apiConfigured: boolean;
 };
 
 const employeeScopeLabels: Record<Role["employee_scope"], string> = {
@@ -47,7 +46,6 @@ export function AccessManager({
   canManage,
   canReadEmployees,
   mfaEnabled,
-  apiConfigured,
 }: Props) {
   const [tab, setTab] = useState<"users" | "roles">("users");
   const [users, setUsers] = useState(initialUsers);
@@ -140,7 +138,6 @@ export function AccessManager({
           permissions={permissions}
           assignmentFields={assignmentFields}
           mfaEnabled={mfaEnabled}
-          apiConfigured={apiConfigured}
           onClose={() => setEditingRole(undefined)}
           onSaved={(role) => {
             setRoles((current) =>
@@ -160,7 +157,6 @@ export function AccessManager({
           employees={employees}
           canReadEmployees={canReadEmployees}
           mfaEnabled={mfaEnabled}
-          apiConfigured={apiConfigured}
           onClose={() => setEditingUser(undefined)}
           onSaved={(user) => {
             setUsers((current) =>
@@ -401,7 +397,6 @@ function RoleForm({
   permissions,
   assignmentFields,
   mfaEnabled,
-  apiConfigured,
   onClose,
   onSaved,
 }: {
@@ -409,7 +404,6 @@ function RoleForm({
   permissions: Permission[];
   assignmentFields: AssignmentField[];
   mfaEnabled: boolean;
-  apiConfigured: boolean;
   onClose(): void;
   onSaved(role: Role): void;
 }) {
@@ -627,9 +621,7 @@ function RoleForm({
             <button
               className="button"
               disabled={
-                busy ||
-                !apiConfigured ||
-                (assignmentFieldScope === "selected" && assignmentFieldIds.length === 0)
+                busy || (assignmentFieldScope === "selected" && assignmentFieldIds.length === 0)
               }
             >
               {busy ? "Saving…" : "Save role"}
@@ -647,7 +639,6 @@ function UserForm({
   employees,
   canReadEmployees,
   mfaEnabled,
-  apiConfigured,
   onClose,
   onSaved,
 }: {
@@ -656,7 +647,6 @@ function UserForm({
   employees: Employee[];
   canReadEmployees: boolean;
   mfaEnabled: boolean;
-  apiConfigured: boolean;
   onClose(): void;
   onSaved(user: User): void;
 }) {
@@ -900,7 +890,7 @@ function UserForm({
             </button>
             <button
               className="button"
-              disabled={busy || !apiConfigured || roles.length === 0 || roleIds.length === 0}
+              disabled={busy || roles.length === 0 || roleIds.length === 0}
             >
               {busy ? "Saving…" : "Save user"}
             </button>

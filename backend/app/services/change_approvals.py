@@ -32,6 +32,7 @@ from app.schemas import (
     EmployeeOverrideChangePreview,
     EmployeeUpdateChangePreview,
     GroupMembershipChangePreview,
+    PolicyCreateChangePreview,
     PolicyStatusChangePreview,
     PolicyVersionCreateChangePreview,
 )
@@ -230,7 +231,7 @@ def change_precondition_digest(
     *,
     lock: bool,
 ) -> str:
-    if isinstance(change, EmployeeCreateChangePreview):
+    if isinstance(change, (EmployeeCreateChangePreview, PolicyCreateChangePreview)):
         state: Any = {"change_type": change.type}
     elif isinstance(change, EmployeeUpdateChangePreview):
         statement = select(Employee).where(Employee.id == change.employee_id)

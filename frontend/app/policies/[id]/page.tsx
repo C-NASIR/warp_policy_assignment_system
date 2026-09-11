@@ -3,13 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, CircleCheckBig, Info, Pencil, Users } from "lucide-react";
 import { notFound } from "next/navigation";
 import { PolicyLifecycle } from "@/components/policy-lifecycle";
-import {
-  apiConfigured,
-  getAssignmentFields,
-  getCurrentUser,
-  getPolicy,
-  getPolicyImpact,
-} from "@/lib/backend";
+import { getAssignmentFields, getCurrentUser, getPolicy, getPolicyImpact } from "@/lib/backend";
 import { formatDate, titleCase } from "@/lib/format";
 import { hasPermission } from "@/lib/permissions";
 import type { ConditionGroup } from "@/lib/types";
@@ -31,7 +25,7 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
   const [policy, impact, fields] = await Promise.all([
     getPolicy(Number(id)),
     getPolicyImpact(Number(id)),
-    !apiConfigured || hasPermission(user, "settings:read") ? getAssignmentFields() : [],
+    hasPermission(user, "settings:read") ? getAssignmentFields() : [],
   ]);
   if (!policy) notFound();
   const current = policy.versions.at(-1);
@@ -54,7 +48,7 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
           </div>
         </div>
         <div className="heading-actions">
-          <PolicyLifecycle policy={policy} apiConfigured={apiConfigured} />
+          <PolicyLifecycle policy={policy} />
           {policy.capabilities.can_create_version && (
             <Link className="button secondary" href={`/policies/new?policyId=${policy.id}`}>
               <Pencil size={14} /> New version

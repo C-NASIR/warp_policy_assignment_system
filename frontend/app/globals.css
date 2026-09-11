@@ -2389,22 +2389,11 @@ h1 {
   text-align: center;
   font-size: 14px;
 }
-.auth-switch a,
-.auth-demo-note a {
+.auth-switch a {
   color: var(--accent-ink);
   font-weight: 650;
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-.auth-demo-note {
-  margin: 20px 0 0;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-subtle);
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
 }
 .auth-submit svg {
   margin-left: auto;

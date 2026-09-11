@@ -137,16 +137,6 @@ const commands = [
   },
 ];
 
-const activity = [
-  {
-    title: "Policy reconciliation complete",
-    detail: "Engineering Access updated 4 employees",
-    time: "12m",
-  },
-  { title: "Employee profile changed", detail: "Jordan Lee moved to Product", time: "1h" },
-  { title: "Override needs review", detail: "Devon Moore · Monthly pay schedule", time: "1d" },
-];
-
 function contextualHelp(pathname: string) {
   if (pathname === "/employees/new")
     return { label: "Employee onboarding help", href: "/learn/policyos/meet-your-first-employee" };
@@ -186,13 +176,13 @@ function contextualHelp(pathname: string) {
 
 export function AppShell({
   children,
-  connected,
+  backendReady,
   currentUser,
   securityEvents,
   learnSearchEntries,
 }: {
   children: React.ReactNode;
-  connected: boolean;
+  backendReady: boolean;
   currentUser: CurrentUser | null;
   securityEvents: SecurityEvent[];
   learnSearchEntries: LearnSearchEntry[];
@@ -205,16 +195,14 @@ export function AppShell({
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
-  const visibleActivity = connected
-    ? securityEvents
-        .filter((item) => item.severity !== "info" && !item.acknowledged_at)
-        .slice(0, 5)
-        .map((item) => ({
-          title: item.event_type.replaceAll("_", " "),
-          detail: String(item.details.ip ?? "Account security event"),
-          time: item.created_at.slice(0, 10),
-        }))
-    : activity;
+  const visibleActivity = securityEvents
+    .filter((item) => item.severity !== "info" && !item.acknowledged_at)
+    .slice(0, 5)
+    .map((item) => ({
+      title: item.event_type.replaceAll("_", " "),
+      detail: String(item.details.ip ?? "Account security event"),
+      time: item.created_at.slice(0, 10),
+    }));
   const isStandalonePage =
     ["/", "/login", "/signup", "/setup", "/recover"].includes(pathname) ||
     pathname.startsWith("/learn");
@@ -230,11 +218,11 @@ export function AppShell({
           : "PolicyOS");
   const help = contextualHelp(pathname);
   const visibleNavigation = navigation.filter(
-    (item) => item.permission === null || !connected || hasPermission(currentUser, item.permission),
+    (item) => item.permission === null || hasPermission(currentUser, item.permission),
   );
   const normalizedQuery = query.trim().toLowerCase();
   const visibleCommands = commands.filter(
-    (item) => item.permission === null || !connected || hasPermission(currentUser, item.permission),
+    (item) => item.permission === null || hasPermission(currentUser, item.permission),
   );
   const matchingArticles = normalizedQuery
     ? learnSearchEntries
@@ -386,7 +374,7 @@ export function AppShell({
         </nav>
         <div className="nav-label">Manage</div>
         <nav className="nav-list" aria-label="Settings navigation">
-          {(!connected || hasPermission(currentUser, "settings:read")) && (
+          {hasPermission(currentUser, "settings:read") && (
             <Link
               className={`nav-item${isActive("/settings") ? " active" : ""}`}
               href="/settings"
@@ -471,15 +459,7 @@ export function AppShell({
                 <LogOut size={15} />
               </button>
             </div>
-          ) : (
-            <div className="company-switcher">
-              <div className="company-avatar">AC</div>
-              <div>
-                <div className="company-name">Acme, Inc.</div>
-                <div className="company-role">Demo workspace</div>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </aside>
       <div className="main-column">
@@ -494,8 +474,10 @@ export function AppShell({
             </button>
             <span className="topbar-page">{currentPage}</span>
             <span className="topbar-divider" />
-            <span className="system-dot" data-connected={connected} />
-            <span className="system-copy">{connected ? "Engine current" : "Demo mode"}</span>
+            <span className="system-dot" data-connected={backendReady} />
+            <span className="system-copy">
+              {backendReady ? "Engine ready" : "Engine unavailable"}
+            </span>
           </div>
           <div className="topbar-actions">
             {help && (
@@ -643,9 +625,7 @@ export function AppShell({
               <span>
                 <kbd>↵</kbd> open
               </span>
-              <span>
-                {connected ? "Zero-result searches improve Learn" : "Searches article text"}
-              </span>
+              <span>Zero-result searches improve Learn</span>
             </div>
           </section>
         </div>

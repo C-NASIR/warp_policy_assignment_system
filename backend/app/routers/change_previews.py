@@ -38,6 +38,7 @@ from app.schemas import (
     EmployeeOverrideChangePreview,
     EmployeeUpdateChangePreview,
     GroupMembershipChangePreview,
+    PolicyCreateChangePreview,
     PolicyStatusChangePreview,
     PolicyVersionCreateChangePreview,
 )
@@ -109,6 +110,8 @@ class _MutationContext:
     included_employee_ids: set[int] = field(default_factory=set)
     proposed_employee_ids: set[int] = field(default_factory=set)
     proposed_policy_version_ids: set[int] = field(default_factory=set)
+    proposed_policy_ids: set[int] = field(default_factory=set)
+    proposed_condition_clause_ids: set[int] = field(default_factory=set)
     proposed_override_ids: set[int] = field(default_factory=set)
     resources: dict[str, int] = field(default_factory=dict)
 
@@ -161,6 +164,8 @@ def preview(
             after = _current_assignments(
                 session,
                 proposed_policy_version_ids=context.proposed_policy_version_ids,
+                proposed_policy_ids=context.proposed_policy_ids,
+                proposed_condition_clause_ids=context.proposed_condition_clause_ids,
                 proposed_override_ids=context.proposed_override_ids,
                 visibility=visibility,
                 field_visibility=field_visibility,
@@ -337,6 +342,8 @@ def execute_approved_change(
     comparable_after = _current_assignments(
         session,
         proposed_policy_version_ids=context.proposed_policy_version_ids,
+        proposed_policy_ids=context.proposed_policy_ids,
+        proposed_condition_clause_ids=context.proposed_condition_clause_ids,
         proposed_override_ids=context.proposed_override_ids,
         visibility=visibility,
         field_visibility=field_visibility,
@@ -456,6 +463,39 @@ def _apply_change(
         context.resources["employee_id"] = employee.id
         return
 
+    if isinstance(data, PolicyCreateChangePreview):
+        policy = Policy(
+            name=data.policy.name,
+            status=data.policy.status,
+            created_by=actor,
+        )
+        session.add(policy)
+        session.flush()
+        record_audit_log(
+            session,
+            actor=actor,
+            entity_type="Policy",
+            entity_id=policy.id,
+            action="created",
+            before=None,
+            after=snapshot_entity(policy),
+        )
+        version = create_policy_version_from_input(
+            session,
+            policy,
+            data.policy,
+            actor,
+        )
+        context.proposed_policy_version_ids.add(version.id)
+        context.proposed_policy_ids.add(policy.id)
+        context.proposed_condition_clause_ids.update(
+            clause.id for clause in version.compiled_clauses
+        )
+        context.resources["policy_id"] = policy.id
+        context.resources["policy_version_id"] = version.id
+        refresh_employees_affected_by_policy(session, policy)
+        return
+
     if isinstance(data, PolicyVersionCreateChangePreview):
         policy = session.get(Policy, data.policy_id)
         assert policy is not None
@@ -466,6 +506,9 @@ def _apply_change(
             actor,
         )
         context.proposed_policy_version_ids.add(version.id)
+        context.proposed_condition_clause_ids.update(
+            clause.id for clause in version.compiled_clauses
+        )
         context.resources["policy_id"] = policy.id
         context.resources["policy_version_id"] = version.id
         refresh_employees_affected_by_policy(session, policy)
@@ -569,7 +612,21 @@ def _validate_change_scope(
     employee_visibility: EmployeeVisibility,
     principal: Authenticated,
 ) -> None:
-    if isinstance(data, PolicyVersionCreateChangePreview):
+    if isinstance(data, PolicyCreateChangePreview):
+        require_policy_permission(principal, "policies:create")
+        if data.policy.status == "active":
+            require_policy_permission(principal, "policies:activate")
+        elif data.policy.status == "archived":
+            require_policy_permission(principal, "policies:archive")
+        validate_assignment_field_ids(
+            session,
+            field_visibility,
+            (
+                value.assignment_field_definition_id
+                for value in data.policy.values
+            ),
+        )
+    elif isinstance(data, PolicyVersionCreateChangePreview):
         require_visible_policy(session, field_visibility, data.policy_id)
         policy = session.get(Policy, data.policy_id)
         assert policy is not None
@@ -636,12 +693,16 @@ def _current_assignments(
     session: DatabaseSession,
     *,
     proposed_policy_version_ids: set[int] | None = None,
+    proposed_policy_ids: set[int] | None = None,
+    proposed_condition_clause_ids: set[int] | None = None,
     proposed_override_ids: set[int] | None = None,
     visibility: EmployeeVisibility,
     field_visibility: AssignmentFieldVisibility,
     proposed_employee_ids: set[int] | None = None,
 ) -> dict[int, list[AssignmentPreviewRead]]:
     proposed_policy_version_ids = proposed_policy_version_ids or set()
+    proposed_policy_ids = proposed_policy_ids or set()
+    proposed_condition_clause_ids = proposed_condition_clause_ids or set()
     proposed_override_ids = proposed_override_ids or set()
     statement = (
         select(EmployeeAssignment)
@@ -692,6 +753,8 @@ def _current_assignments(
                 explanation=_sanitize_explanation(
                     assignment.explanation or {},
                     proposed_policy_version_ids,
+                    proposed_policy_ids,
+                    proposed_condition_clause_ids,
                     proposed_override_ids,
                 ),
             )
@@ -818,6 +881,8 @@ def _assignment_key(assignment: AssignmentPreviewRead) -> str:
 def _sanitize_explanation(
     value: Any,
     proposed_policy_version_ids: set[int],
+    proposed_policy_ids: set[int],
+    proposed_condition_clause_ids: set[int],
     proposed_override_ids: set[int],
     *,
     parent_key: str | None = None,
@@ -827,6 +892,8 @@ def _sanitize_explanation(
             _sanitize_explanation(
                 item,
                 proposed_policy_version_ids,
+                proposed_policy_ids,
+                proposed_condition_clause_ids,
                 proposed_override_ids,
                 parent_key=parent_key,
             )
@@ -841,8 +908,18 @@ def _sanitize_explanation(
             key in {"policy_version_id", "source_policy_version_id"}
             and item in proposed_policy_version_ids
         ) or (
+            key == "policy_id"
+            and item in proposed_policy_ids
+        ) or (
+            key == "clause_id"
+            and item in proposed_condition_clause_ids
+        ) or (
             key in {"override_id", "source_override_id"}
             and item in proposed_override_ids
+        ) or (
+            key == "id"
+            and parent_key == "policy"
+            and item in proposed_policy_ids
         ) or (
             key == "id"
             and parent_key == "policy_version"
@@ -858,6 +935,8 @@ def _sanitize_explanation(
             else _sanitize_explanation(
                 item,
                 proposed_policy_version_ids,
+                proposed_policy_ids,
+                proposed_condition_clause_ids,
                 proposed_override_ids,
                 parent_key=key,
             )
