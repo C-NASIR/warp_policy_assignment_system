@@ -117,6 +117,9 @@
   color: var(--muted);
   font-size: 10px;
 }
+.productScope :global(.secondary-cell.flush) {
+  margin-top: 0;
+}
 .productScope :global(.avatar) {
   width: 32px;
   height: 32px;

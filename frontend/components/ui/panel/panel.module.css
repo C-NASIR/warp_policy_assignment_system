@@ -5,6 +5,10 @@
   box-shadow: var(--shadow-sm);
 }
 
+.clipped {
+  overflow: hidden;
+}
+
 .header {
   min-height: 3.625rem;
   display: flex;

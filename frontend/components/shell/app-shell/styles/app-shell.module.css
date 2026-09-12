@@ -425,8 +425,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
-.productScope :global(.metric-card),
-.productScope :global(.panel) {
+.productScope :global(.metric-card) {
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
@@ -471,9 +470,6 @@
   grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.75fr);
   gap: 14px;
   margin-top: 14px;
-}
-.productScope :global(.panel) {
-  border-radius: 12px;
 }
 .productScope :global(.panel-header) {
   min-height: 58px;

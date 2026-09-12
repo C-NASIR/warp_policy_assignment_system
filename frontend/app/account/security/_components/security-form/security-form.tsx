@@ -4,7 +4,7 @@ import { Check, CircleAlert, KeyRound, Laptop, ShieldCheck, TriangleAlert } from
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { FormEvent, useState } from "react";
-import { Badge, Button } from "@/components/ui";
+import { Badge, Button, Panel } from "@/components/ui";
 import type { AccountSecurity } from "@/lib/types";
 import styles from "./security-form.module.css";
 
@@ -209,7 +209,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
             Root access requires MFA before privileged changes can be made.
           </div>
         )}
-        <section className="panel security-panel">
+        <Panel className="security-panel">
           <div className="panel-header">
             <div>
               <h2 className="panel-title">Multi-factor authentication</h2>
@@ -307,8 +307,8 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
               </div>
             )}
           </div>
-        </section>
-        <section className="panel security-panel">
+        </Panel>
+        <Panel className="security-panel">
           <div className="panel-header">
             <div>
               <h2 className="panel-title">Password</h2>
@@ -365,8 +365,8 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
               </Button>
             </form>
           </div>
-        </section>
-        <section className="panel security-panel">
+        </Panel>
+        <Panel className="security-panel">
           <div className="panel-header">
             <div>
               <h2 className="panel-title">Confirm your identity</h2>
@@ -404,10 +404,10 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
               </Button>
             </form>
           </div>
-        </section>
+        </Panel>
       </div>
       <aside className="detail-aside">
-        <section className="panel">
+        <Panel>
           <div className="panel-header">
             <div>
               <h2 className="panel-title">Active devices</h2>
@@ -446,8 +446,8 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
               </Button>
             </div>
           </div>
-        </section>
-        <section className="panel">
+        </Panel>
+        <Panel>
           <div className="panel-header">
             <div>
               <h2 className="panel-title">Security events</h2>
@@ -481,7 +481,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
               ))}
             </div>
           </div>
-        </section>
+        </Panel>
       </aside>
     </div>
   );

@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Search, Users, X } from "lucide-react"
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
-import { Badge, Button, DataTable, SelectInput, TablePanel, TextInput } from "@/components/ui";
+import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import { initials } from "@/lib/format";
 import type { EmployeeDirectoryItem, EmployeeReferenceData } from "@/lib/types";
 import styles from "./employee-directory.module.css";
@@ -33,6 +33,7 @@ export function EmployeeDirectory({
     key: "name" | "department" | "location" | "employee_type";
     direction: "asc" | "desc";
   }>({ key: "name", direction: "asc" });
+
   const sorted = [...employees].sort((left, right) => {
     const leftValue = sort.key === "location" ? (left.location ?? left.state) : left[sort.key];
     const rightValue = sort.key === "location" ? (right.location ?? right.state) : right[sort.key];
@@ -108,7 +109,7 @@ export function EmployeeDirectory({
         <div className="results-count">{total} employees</div>
       </form>
 
-      <TablePanel>
+      <Panel as="div" clipped>
         {sorted.length ? (
           <DataTable>
             <thead>
@@ -179,7 +180,7 @@ export function EmployeeDirectory({
           offset={offset}
           itemLabel="employees"
         />
-      </TablePanel>
+      </Panel>
     </>
   );
 }

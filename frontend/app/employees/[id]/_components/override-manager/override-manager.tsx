@@ -3,11 +3,10 @@
 import { Check, CircleAlert, Clock3, Pencil, Plus, ShieldCheck, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Badge, Button, DataTable } from "@/components/ui";
+import { Badge, Button, DataTable, Panel } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import type { Assignment, AssignmentField, Employee, EmployeeOverride } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
-import valueStyles from "@/components/shared/styles/value-text.module.css";
 
 type OverrideAction = "create" | "update" | "delete";
 type PendingOverride = {
@@ -209,7 +208,7 @@ export function OverrideManager({
           {error || notice}
         </div>
       )}
-      <section className="panel">
+      <Panel>
         <div className="panel-header">
           <div>
             <h2 className="panel-title">Manual overrides</h2>
@@ -265,8 +264,8 @@ export function OverrideManager({
             </div>
           )}
         </div>
-      </section>
-      <section className="panel">
+      </Panel>
+      <Panel>
         <div className="panel-header">
           <div>
             <h2 className="panel-title">Assignment history</h2>
@@ -304,7 +303,7 @@ export function OverrideManager({
                     </Badge>
                   </td>
                   <td>
-                    <span className={`secondary-cell ${valueStyles.flush}`}>
+                    <span className="secondary-cell flush">
                       {formatDate(assignment.effective_from)}
                       {assignment.effective_until
                         ? ` – ${formatDate(assignment.effective_until)}`
@@ -319,7 +318,7 @@ export function OverrideManager({
             <div className="empty-state compact">No assignment history yet.</div>
           )}
         </div>
-      </section>
+      </Panel>
       {editing && (
         <div className="modal-backdrop" role="presentation">
           <section

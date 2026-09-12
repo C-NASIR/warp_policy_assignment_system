@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { initials } from "@/lib/format";
 import type { Employee, Group, Policy } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
-import { Badge, Button } from "@/components/ui";
+import { Badge, Button, Panel } from "@/components/ui";
 
 type MembershipChange = {
   action: "add" | "remove";
@@ -229,7 +229,7 @@ export function GroupManager({
           {error || notice}
         </div>
       )}
-      <section className="panel">
+      <Panel>
         <div className="panel-header">
           <div>
             {editingName ? (
@@ -267,9 +267,9 @@ export function GroupManager({
             </Button>
           )}
         </div>
-      </section>
+      </Panel>
       <div className="detail-grid">
-        <section className="panel">
+        <Panel>
           <div className="panel-header">
             <div>
               <h2 className="panel-title">Members</h2>
@@ -338,8 +338,8 @@ export function GroupManager({
               {members.length === 0 && <div className="empty-state compact">No members yet.</div>}
             </div>
           </div>
-        </section>
-        <section className="panel">
+        </Panel>
+        <Panel>
           <div className="panel-header">
             <div>
               <h2 className="panel-title">Attached policies</h2>
@@ -396,7 +396,7 @@ export function GroupManager({
               )}
             </div>
           </div>
-        </section>
+        </Panel>
       </div>
       {pending && (
         <div className="modal-backdrop" role="presentation">

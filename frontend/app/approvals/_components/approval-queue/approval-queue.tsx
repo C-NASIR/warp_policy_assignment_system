@@ -156,13 +156,13 @@ export function ApprovalQueue({ initialRequests }: { initialRequests: ChangeAppr
         </Panel>
       ))}
       {requests.length === 0 && (
-        <div className="empty-state panel">
+        <Panel as="div" className="empty-state">
           <div className="empty-icon">
             <ShieldCheck size={18} />
           </div>
           <strong>No approval requests</strong>
           <span>New human-authored change previews will appear here.</span>
-        </div>
+        </Panel>
       )}
     </div>
   );

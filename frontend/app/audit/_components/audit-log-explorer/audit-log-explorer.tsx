@@ -4,15 +4,7 @@ import { ChevronDown, ChevronUp, Search, ScrollText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
-import {
-  Badge,
-  Button,
-  DataTable,
-  SelectInput,
-  TablePanel,
-  TableScroll,
-  TextInput,
-} from "@/components/ui";
+import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import { formatDate, titleCase } from "@/lib/format";
 import type { AuditLog, AuditLogFacets } from "@/lib/types";
 
@@ -103,8 +95,8 @@ export function AuditLogExplorer({
         </div>
         <span className="results-count">{total} events</span>
       </form>
-      <TablePanel>
-        <TableScroll className="audit-table-scroll">
+      <Panel as="div" clipped>
+        <div className="audit-table-scroll">
           <DataTable className="audit-table">
             <colgroup>
               <col className="audit-when-column" />
@@ -141,7 +133,7 @@ export function AuditLogExplorer({
           {events.length === 0 && (
             <div className="empty-state compact">No audit events match those filters.</div>
           )}
-        </TableScroll>
+        </div>
         <PaginationControls
           path="/audit"
           params={{
@@ -154,7 +146,7 @@ export function AuditLogExplorer({
           offset={offset}
           itemLabel="events"
         />
-      </TablePanel>
+      </Panel>
     </>
   );
 }

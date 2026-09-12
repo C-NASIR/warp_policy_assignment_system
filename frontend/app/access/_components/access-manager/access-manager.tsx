@@ -11,8 +11,9 @@ import {
   Users,
 } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
-import { Badge, Button, DataTable, TablePanel } from "@/components/ui";
+import { Badge, Button, DataTable, Panel } from "@/components/ui";
 import type { AssignmentField, Employee, Permission, Role, User } from "@/lib/types";
+import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
 type Props = {
   initialUsers: User[];
@@ -199,7 +200,7 @@ function UsersPanel({
     onComplete(`${user.name} was disabled.`);
   }
   return (
-    <TablePanel className="access-table">
+    <Panel as="div" className="access-table" clipped>
       <DataTable>
         <thead>
           <tr>
@@ -292,7 +293,7 @@ function UsersPanel({
         <span>{users.length} users</span>
         <span>{roles.length} available roles</span>
       </div>
-    </TablePanel>
+    </Panel>
   );
 }
 
@@ -322,7 +323,7 @@ function RolesPanel({
   return (
     <div className="role-grid">
       {roles.map((role) => (
-        <article className="panel role-card" key={role.id}>
+        <Panel as="article" className="role-card" key={role.id}>
           <div className="role-card-head">
             <div className="role-icon">
               <ShieldCheck size={16} />
@@ -371,16 +372,16 @@ function RolesPanel({
               <Badge tone="accent">+{role.permissions.length - 5}</Badge>
             )}
           </div>
-        </article>
+        </Panel>
       ))}
       {roles.length === 0 && (
-        <div className="empty-state panel">
+        <Panel as="div" className="empty-state">
           <div className="empty-icon">
             <ShieldCheck size={18} />
           </div>
           <strong>No roles yet</strong>
           <span>Create the first least-privilege role for your team.</span>
-        </div>
+        </Panel>
       )}
     </div>
   );
@@ -401,6 +402,7 @@ function RoleForm({
   onClose(): void;
   onSaved(role: Role): void;
 }) {
+  useModalAccessibility(true, onClose);
   const [name, setName] = useState(role?.name ?? "");
   const [description, setDescription] = useState(role?.description ?? "");
   const [employeeScope, setEmployeeScope] = useState<Role["employee_scope"]>(
@@ -644,6 +646,7 @@ function UserForm({
   onClose(): void;
   onSaved(user: User): void;
 }) {
+  useModalAccessibility(true, onClose);
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [password, setPassword] = useState("");

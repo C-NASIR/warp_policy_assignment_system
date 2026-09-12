@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, BookOpenCheck, Search, X } from "lucid
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
-import { Badge, Button, DataTable, SelectInput, TablePanel, TextInput } from "@/components/ui";
+import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import type { Policy, PolicyImpact } from "@/lib/types";
 
@@ -100,7 +100,7 @@ export function PolicyDirectory({
         </div>
         <div className="results-count">{total} policies</div>
       </form>
-      <TablePanel>
+      <Panel as="div" clipped>
         {sorted.length ? (
           <DataTable>
             <thead>
@@ -188,7 +188,7 @@ export function PolicyDirectory({
           offset={offset}
           itemLabel="policies"
         />
-      </TablePanel>
+      </Panel>
     </>
   );
 }

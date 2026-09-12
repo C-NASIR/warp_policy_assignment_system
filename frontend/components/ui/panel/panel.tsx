@@ -2,8 +2,20 @@ import type { HTMLAttributes, ReactNode } from "react";
 import { classNames } from "@/lib/class-names";
 import styles from "./panel.module.css";
 
-export function Panel({ className, ...props }: HTMLAttributes<HTMLElement>) {
-  return <section className={classNames(styles.panel, className)} {...props} />;
+type PanelElement = "article" | "div" | "section";
+
+export function Panel({
+  as: Component = "section",
+  className,
+  clipped = false,
+  ...props
+}: HTMLAttributes<HTMLElement> & { as?: PanelElement; clipped?: boolean }) {
+  return (
+    <Component
+      className={classNames(styles.panel, clipped && styles.clipped, className)}
+      {...props}
+    />
+  );
 }
 
 export function PanelHeader({

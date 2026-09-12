@@ -3,7 +3,6 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
-  type TextareaHTMLAttributes,
 } from "react";
 import { classNames } from "@/lib/class-names";
 import styles from "./form-field.module.css";
@@ -61,16 +60,3 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HT
     );
   },
 );
-
-export const TextArea = forwardRef<
-  HTMLTextAreaElement,
-  TextareaHTMLAttributes<HTMLTextAreaElement>
->(function TextArea({ className, ...props }, ref) {
-  return (
-    <textarea
-      ref={ref}
-      className={classNames(styles.control, styles.textarea, className)}
-      {...props}
-    />
-  );
-});

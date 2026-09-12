@@ -33,9 +33,10 @@ Import from `@/components/ui`:
 
 - `Button` and `ButtonLink`: `primary`, `secondary`, and `danger` variants; default and small sizes.
 - `Badge`: neutral, accent, success, warning, and danger tones.
-- `FormField`, `TextInput`, `SelectInput`, and `TextArea`: labels, hints, validation, and controls.
+- `FormField`, `TextInput`, and `SelectInput`: labels, hints, validation, and controls.
 - `Panel`, `PanelHeader`, and `PanelBody`: bordered product surfaces.
-- `TablePanel`, `TableScroll`, and `DataTable`: shared table framing and responsive overflow.
+- `DataTable`: shared table styling. Use a clipped `Panel` around tables that need a framed surface,
+  and a plain feature-owned overflow container when horizontal scrolling is needed.
 
 Keep data-driven values such as progress widths or documentation nesting depth as inline custom
 values when CSS cannot know them. Static visual adjustments belong in a CSS Module.

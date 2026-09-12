@@ -9,7 +9,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { ButtonLink } from "@/components/ui";
+import { ButtonLink, Panel } from "@/components/ui";
 import {
   getAssignmentSummary,
   getAuditLogPage,
@@ -102,7 +102,7 @@ export default async function OverviewPage() {
         })}
       </section>
       <section className="dashboard-grid">
-        <article className="panel">
+        <Panel as="article">
           <div className="panel-header">
             <h2 className="panel-title">Assignment coverage</h2>
             <Link className="panel-link" href="/employees">
@@ -123,8 +123,8 @@ export default async function OverviewPage() {
               </div>
             ))}
           </div>
-        </article>
-        <article className="panel">
+        </Panel>
+        <Panel as="article">
           <div className="panel-header">
             <h2 className="panel-title">Recent changes</h2>
             <Link className="panel-link" href="/audit">
@@ -149,7 +149,7 @@ export default async function OverviewPage() {
               <div className="empty-state compact">No changes have been recorded yet.</div>
             )}
           </div>
-        </article>
+        </Panel>
       </section>
       <section className="quick-actions" aria-label="Quick actions">
         <Link className="quick-action" href="/employees/new">

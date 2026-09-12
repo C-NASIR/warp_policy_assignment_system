@@ -2,10 +2,9 @@
 
 import { Braces, Check, CircleAlert, Plus, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Badge, Button, DataTable, SelectInput, TablePanel, TextInput } from "@/components/ui";
+import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import type { AssignmentField } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
-import valueStyles from "@/components/shared/styles/value-text.module.css";
 
 export function AssignmentFieldManager({
   initialFields,
@@ -126,7 +125,7 @@ export function AssignmentFieldManager({
         </div>
         <span className="results-count">{filtered.length} fields</span>
       </div>
-      <TablePanel>
+      <Panel as="div" clipped>
         <DataTable>
           <thead>
             <tr>
@@ -154,7 +153,7 @@ export function AssignmentFieldManager({
                 </td>
                 <td>{field.cardinality === "one" ? "Highest priority wins" : "Set union"}</td>
                 <td>
-                  <span className={`secondary-cell ${valueStyles.flush}`}>
+                  <span className="secondary-cell flush">
                     {field.cardinality === "one"
                       ? "One final value per employee"
                       : "Unique values from every matching rule"}
@@ -171,7 +170,7 @@ export function AssignmentFieldManager({
           <span>{fields.length} total fields</span>
           <span>Cardinality is fixed after creation</span>
         </div>
-      </TablePanel>
+      </Panel>
       {open && (
         <div className="modal-backdrop" role="presentation">
           <section
