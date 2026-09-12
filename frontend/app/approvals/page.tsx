@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ApprovalQueue } from "@/components/features/approvals";
+import { ApprovalQueue } from "./_components/approval-queue/approval-queue";
 import { Badge } from "@/components/ui";
 import { getApprovalRequests, getCurrentUser } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";

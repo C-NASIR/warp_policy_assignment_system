@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AccessReviewReport } from "@/components/features/access";
+import { AccessReviewReport } from "./_components/access-review-report/access-review-report";
 import { getAccessReview } from "@/lib/backend";
 
 export const metadata: Metadata = { title: "Access review" };

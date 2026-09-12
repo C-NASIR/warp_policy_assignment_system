@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AssignmentFieldManager } from "@/components/features/settings";
+import { AssignmentFieldManager } from "./_components/assignment-field-manager/assignment-field-manager";
 import { getAssignmentFields, getCurrentUser } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 

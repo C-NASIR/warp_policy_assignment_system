@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
-import { EmployeeEditor } from "@/components/features/employees";
+import { EmployeeEditor } from "../_components/employee-editor/employee-editor";
 import { Badge } from "@/components/ui";
 import {
   getAssignmentFields,

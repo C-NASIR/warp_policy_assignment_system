@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Info, Pencil, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
-import { AssignmentCard, EmployeeEditor, OverrideManager } from "@/components/features/employees";
+import { EmployeeEditor } from "../_components/employee-editor/employee-editor";
+import { AssignmentCard } from "./_components/assignment-card/assignment-card";
+import { OverrideManager } from "./_components/override-manager/override-manager";
 import { Badge, Panel, PanelBody, PanelHeader } from "@/components/ui";
 import {
   getAssignmentFields,

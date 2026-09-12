@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
-import { EmployeeDirectory } from "@/components/features/employees";
+import { EmployeeDirectory } from "./_components/employee-directory/employee-directory";
 import { ButtonLink } from "@/components/ui";
 import { getCurrentUser, getEmployeePage, getEmployeeReferenceData } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";

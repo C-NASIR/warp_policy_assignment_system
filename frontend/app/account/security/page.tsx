@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { SecurityForm } from "@/components/features/security";
+import { SecurityForm } from "./_components/security-form/security-form";
 import { Badge } from "@/components/ui";
 import { getAccountSecurity, getCurrentUser } from "@/lib/backend";
 

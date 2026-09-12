@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CircleCheckBig, Info, Pencil, Users } from "lucide-react";
 import { notFound } from "next/navigation";
-import { PolicyLifecycle } from "@/components/features/policies";
+import { PolicyLifecycle } from "./_components/policy-lifecycle/policy-lifecycle";
 import { Badge, ButtonLink, Panel, PanelBody, PanelHeader } from "@/components/ui";
 import { getAssignmentFields, getCurrentUser, getPolicy, getPolicyImpact } from "@/lib/backend";
 import { formatDate, titleCase } from "@/lib/format";

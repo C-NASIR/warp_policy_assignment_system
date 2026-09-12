@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { redirect } from "next/navigation";
-import { PolicyBuilder } from "@/components/features/policies";
+import { PolicyBuilder } from "./_components/policy-builder/policy-builder";
 import { Badge } from "@/components/ui";
 import {
   getAssignmentFields,

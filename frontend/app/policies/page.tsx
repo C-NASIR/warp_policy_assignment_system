@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
-import { PolicyDirectory } from "@/components/features/policies";
+import { PolicyDirectory } from "./_components/policy-directory/policy-directory";
 import { ButtonLink } from "@/components/ui";
 import { getCurrentUser, getPolicyImpact, getPolicyPage } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";

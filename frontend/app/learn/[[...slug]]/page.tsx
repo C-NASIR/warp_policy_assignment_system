@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ListTree } from "lucide-react";
 import { notFound } from "next/navigation";
-import { ArticleMeta, getLearnMdxComponents, LearnNavigation } from "@/components/features/learn";
+import { ArticleMeta } from "./_components/article-meta/article-meta";
+import { LearnNavigation } from "./_components/learn-navigation/learn-navigation";
+import { getLearnMdxComponents } from "./_components/mdx-components/mdx-components";
 import { getCurrentUser } from "@/lib/backend";
 import { getOrderedLearnPages, labelForLearnSection, learnSource } from "@/lib/learn-source";
 
