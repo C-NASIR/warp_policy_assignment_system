@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { RootProvider } from "fumadocs-ui/provider/next";
-import { AppShell } from "@/components/app-shell";
-import { WebMcpTools } from "@/components/webmcp-tools";
+import { AppShell, WebMcpTools } from "@/components/shell";
 import { getAccountSecurity, getBackendStatus, getCurrentUser } from "@/lib/backend";
 import { getLearnSearchEntries } from "@/lib/learn-source";
 import "./globals.css";

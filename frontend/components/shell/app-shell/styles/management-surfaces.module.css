@@ -1,0 +1,346 @@
+.productScope {
+  display: contents;
+}
+
+/* Phase 2 management surfaces */
+.productScope :global(.icon-button.danger) {
+  color: var(--danger);
+}
+.productScope :global(.panel-caption) {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.productScope :global(.panel-body.flush) {
+  padding: 0;
+  overflow-x: auto;
+}
+.productScope :global(.inline-create) {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 0.8fr) auto;
+  align-items: end;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid #d9d5f0;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  box-shadow: var(--shadow);
+}
+.productScope :global(.inline-create .full-row) {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.productScope :global(.management-grid) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.productScope :global(.management-card) {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 13px;
+  padding: 17px 18px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.productScope :global(.management-card:hover) {
+  transform: translateY(-1px);
+  border-color: #c9c5e8;
+  box-shadow: 0 8px 24px rgb(27 25 38 / 0.08);
+}
+.productScope :global(.management-card-icon),
+.productScope :global(.override-icon) {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.productScope :global(.management-card-title) {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 720;
+}
+.productScope :global(.management-card-meta) {
+  display: flex;
+  gap: 14px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.productScope :global(.management-card-meta span) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.productScope :global(.attach-row) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.productScope :global(.member-list),
+.productScope :global(.override-list) {
+  display: grid;
+  gap: 7px;
+}
+.productScope :global(.member-row) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+.productScope :global(.member-row > a),
+.productScope :global(.member-row .person-cell > span:last-child) {
+  min-width: 0;
+}
+.productScope :global(.member-row .primary-cell),
+.productScope :global(.member-row .secondary-cell) {
+  display: block;
+}
+.productScope :global(.member-row .secondary-cell) {
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.productScope :global(.empty-state.compact) {
+  min-height: auto;
+  padding: 25px 14px;
+}
+.productScope :global(.confirm-card) {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--canvas);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.24);
+}
+.productScope :global(.confirm-card h2) {
+  margin: 13px 0 7px;
+  font-size: 16px;
+}
+.productScope :global(.confirm-card p) {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.65;
+}
+.productScope :global(.confirm-card .heading-actions) {
+  justify-content: flex-end;
+}
+.productScope :global(.confirm-icon) {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.productScope :global(.confirm-close) {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.productScope :global(.confirm-close:hover) {
+  background: var(--surface-subtle);
+  color: var(--ink);
+}
+.productScope :global(.form-dialog) {
+  width: min(560px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--canvas);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.24);
+}
+.productScope :global(.choice-grid) {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+.productScope :global(.choice-grid legend) {
+  margin-bottom: 7px;
+}
+.productScope :global(.choice-card) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.productScope :global(.choice-card.selected) {
+  border-color: #9d96e8;
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px rgb(113 102 218 / 0.08);
+}
+.productScope :global(.choice-card input) {
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+.productScope :global(.choice-card strong),
+.productScope :global(.choice-card small) {
+  display: block;
+}
+.productScope :global(.choice-card strong) {
+  font-size: 10px;
+}
+.productScope :global(.choice-card small) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.productScope :global(.audit-table-scroll) {
+  overflow-x: auto;
+}
+.productScope :global(.audit-table) {
+  min-width: 920px;
+  table-layout: fixed;
+}
+.productScope :global(.audit-table .audit-when-column) {
+  width: 130px;
+}
+.productScope :global(.audit-table .audit-actor-column) {
+  width: 190px;
+}
+.productScope :global(.audit-table .audit-entity-column) {
+  width: 260px;
+}
+.productScope :global(.audit-table .audit-action-column) {
+  width: 100px;
+}
+.productScope :global(.audit-table .audit-details-column) {
+  width: 50px;
+}
+.productScope :global(.audit-table td) {
+  height: 70px;
+  vertical-align: middle;
+}
+.productScope :global(.audit-table th:last-child),
+.productScope :global(.audit-table td:last-child) {
+  padding-right: 12px;
+  padding-left: 8px;
+  text-align: right;
+}
+.productScope :global(.audit-time span),
+.productScope :global(.audit-time small) {
+  display: block;
+  white-space: nowrap;
+}
+.productScope :global(.audit-time span) {
+  color: var(--ink);
+  font-weight: 650;
+}
+.productScope :global(.audit-time small) {
+  margin-top: 4px;
+  color: var(--faint);
+  font-size: 9px;
+}
+.productScope :global(.audit-actor) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.productScope :global(.audit-summary) {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.productScope :global(.audit-expand-button) {
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+}
+.productScope :global(.audit-detail-row td) {
+  padding: 0 !important;
+  background: #f8f7fc;
+}
+.productScope :global(.audit-record-reference) {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--font-geist-mono);
+  font-size: 9px;
+}
+.productScope :global(.audit-payload) {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border-top: 1px solid var(--border);
+  background: var(--border);
+}
+.productScope :global(.audit-payload > div) {
+  min-width: 0;
+  padding: 14px 16px;
+  background: #f8f7fc;
+}
+.productScope :global(.audit-payload pre) {
+  max-height: 220px;
+  margin: 7px 0 0;
+  overflow: auto;
+  color: #494853;
+  font-family: var(--font-geist-mono);
+  font-size: 10px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.productScope :global(.override-row) {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px;
+  border: 1px solid #ead6aa;
+  border-radius: 9px;
+  background: var(--warning-soft);
+}
+.productScope :global(.override-icon) {
+  background: #fff8e9;
+  color: #95621f;
+}
+.productScope :global(.row-actions) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.productScope :global(.floating-message) {
+  position: fixed;
+  z-index: 70;
+  right: 24px;
+  bottom: 24px;
+  max-width: 360px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.12);
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { SecurityForm } from "@/components/security-form";
+import { SecurityForm } from "@/components/features/security";
+import { Badge } from "@/components/ui";
 import { getAccountSecurity, getCurrentUser } from "@/lib/backend";
 
 export const metadata: Metadata = { title: "Account security" };
@@ -19,7 +20,7 @@ export default async function AccountSecurityPage() {
             Signed in as {user.email}. Manage identity verification, devices, and security activity.
           </p>
         </div>
-        <span className="badge success">{user.is_root ? "Root account" : "Active account"}</span>
+        <Badge tone="success">{user.is_root ? "Root account" : "Active account"}</Badge>
       </div>
       <SecurityForm initialSecurity={security} />
     </>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Plus } from "lucide-react";
-import { PolicyDirectory } from "@/components/policy-directory";
+import { PolicyDirectory } from "@/components/features/policies";
+import { ButtonLink } from "@/components/ui";
 import { getCurrentUser, getPolicyImpact, getPolicyPage } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 import type { PolicyImpact } from "@/lib/types";
@@ -44,9 +44,9 @@ export default async function PoliciesPage({
           </p>
         </div>
         {hasPermission(user, "policies:create") && (
-          <Link className="button" href="/policies/new">
+          <ButtonLink href="/policies/new">
             <Plus size={15} /> Create policy
-          </Link>
+          </ButtonLink>
         )}
       </div>
       <PolicyDirectory

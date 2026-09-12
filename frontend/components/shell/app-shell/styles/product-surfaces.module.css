@@ -1,0 +1,209 @@
+.productScope {
+  display: contents;
+}
+
+/* Shared product surfaces */
+.productScope :global(.heading-actions) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.productScope :global(.toolbar) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.productScope :global(.toolbar-left) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.productScope :global(.search-box) {
+  position: relative;
+  width: min(310px, 100%);
+}
+.productScope :global(.search-box svg) {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+  pointer-events: none;
+}
+.productScope :global(.input),
+.productScope :global(.select),
+.productScope :global(.textarea) {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  outline: none;
+  transition: 140ms ease;
+}
+.productScope :global(.input),
+.productScope :global(.select) {
+  height: 39px;
+  padding: 0 11px;
+}
+.productScope :global(.textarea) {
+  min-height: 92px;
+  resize: vertical;
+  padding: 10px 11px;
+}
+.productScope :global(.search-box .input) {
+  padding-left: 36px;
+}
+.productScope :global(.input:focus),
+.productScope :global(.select:focus),
+.productScope :global(.textarea:focus) {
+  border-color: #8078ff;
+  box-shadow: 0 0 0 3px rgb(99 91 255 / 0.11);
+}
+.productScope :global(.input.field-invalid),
+.productScope :global(.select.field-invalid),
+.productScope :global(.textarea.field-invalid),
+.productScope :global(.input:user-invalid),
+.productScope :global(.select:user-invalid),
+.productScope :global(.textarea:user-invalid) {
+  border-color: #cf4b46;
+  background-color: #fffafa;
+  box-shadow: 0 0 0 3px rgb(181 53 53 / 0.1);
+}
+.productScope :global(.input.field-invalid:focus),
+.productScope :global(.select.field-invalid:focus),
+.productScope :global(.textarea.field-invalid:focus),
+.productScope :global(.input:user-invalid:focus),
+.productScope :global(.select:user-invalid:focus),
+.productScope :global(.textarea:user-invalid:focus) {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgb(181 53 53 / 0.18);
+}
+.productScope :global(.field:has(.field-invalid) > .field-label),
+.productScope :global(.field:has(:user-invalid) > .field-label) {
+  color: var(--danger);
+}
+.productScope :global(.select) {
+  appearance: none;
+  padding-right: 30px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #898b85 50%),
+    linear-gradient(135deg, #898b85 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 16px,
+    calc(100% - 11px) 16px;
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+}
+.productScope :global(.filter-select) {
+  width: auto;
+  min-width: 145px;
+}
+.productScope :global(.primary-cell) {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 680;
+  transition: 120ms ease;
+}
+.productScope :global(.secondary-cell) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.productScope :global(.avatar) {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9px;
+  background: #eeeef7;
+  color: #4f4a9b;
+  font-size: 10px;
+  font-weight: 750;
+}
+.productScope :global(.person-cell) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.productScope :global(.empty-state) {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+.productScope :global(.empty-state > strong),
+.productScope :global(.empty-state > span) {
+  display: block;
+}
+.productScope :global(.empty-state > strong) {
+  margin-bottom: 5px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.productScope :global(.empty-state > span) {
+  margin-bottom: 12px;
+}
+.productScope :global(.empty-state .text-button) {
+  margin: 0 auto;
+}
+.productScope :global(.empty-icon) {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+.productScope :global(.results-count) {
+  color: var(--muted);
+  font-size: 11px;
+}
+.productScope :global(.pagination-footer) {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+}
+.productScope :global(.stat-grid) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.productScope :global(.stat-card) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 104px;
+  padding: 17px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.productScope :global(.stat-card span) {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+.productScope :global(.stat-card strong) {
+  margin-top: 16px;
+  font-size: 26px;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+}

@@ -1,0 +1,27 @@
+.card {
+  max-width: 33.75rem;
+  margin: 5rem auto;
+  padding: 2.375rem;
+  text-align: center;
+}
+
+.narrow {
+  max-width: 32.5rem;
+}
+
+.icon {
+  margin-inline: auto;
+}
+
+.dangerIcon {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.title {
+  font-size: 1.375rem;
+}
+
+.copy {
+  margin: 0 auto 1.25rem;
+}

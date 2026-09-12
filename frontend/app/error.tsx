@@ -1,6 +1,8 @@
 "use client";
 
 import { CircleAlert, RotateCcw } from "lucide-react";
+import { Button, Panel } from "@/components/ui";
+import styles from "./status-page.module.css";
 
 export default function ErrorPage({
   reset,
@@ -9,23 +11,17 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   return (
-    <div
-      className="panel"
-      style={{ maxWidth: 540, margin: "80px auto", padding: 38, textAlign: "center" }}
-    >
-      <div
-        className="preview-empty-icon"
-        style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
-      >
+    <Panel className={styles.card}>
+      <div className={`preview-empty-icon ${styles.icon} ${styles.dangerIcon}`}>
         <CircleAlert size={20} />
       </div>
-      <h1 style={{ fontSize: 22 }}>This view couldn’t be loaded</h1>
-      <p className="page-subtitle" style={{ margin: "0 auto 20px" }}>
+      <h1 className={styles.title}>This view couldn’t be loaded</h1>
+      <p className={`page-subtitle ${styles.copy}`}>
         Check that the policy API is available, then try again.
       </p>
-      <button className="button" onClick={reset}>
+      <Button onClick={reset}>
         <RotateCcw size={14} /> Try again
-      </button>
-    </div>
+      </Button>
+    </Panel>
   );
 }

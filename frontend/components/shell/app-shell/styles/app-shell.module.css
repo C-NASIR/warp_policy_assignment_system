@@ -1,0 +1,706 @@
+.productScope {
+  display: contents;
+}
+
+.productScope :global(.app-layout) {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+}
+.productScope :global(.sidebar) {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  background: var(--sidebar);
+  color: white;
+  overflow-y: auto;
+  border-right: 1px solid rgb(255 255 255 / 0.05);
+}
+.productScope :global(.brand) {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 42px;
+  padding: 0 10px 18px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+.productScope :global(.brand-mark) {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #786fff, #554be7);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.25);
+  font-weight: 800;
+  font-size: 14px;
+}
+.productScope :global(.brand-title) {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.productScope :global(.brand-subtitle) {
+  color: var(--sidebar-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.productScope :global(.sidebar-close) {
+  display: none;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.06);
+  color: white;
+  cursor: pointer;
+}
+.productScope :global(.nav-label) {
+  padding: 22px 10px 8px;
+  color: #77797e;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+.productScope :global(.nav-list) {
+  display: grid;
+  gap: 4px;
+}
+.productScope :global(.nav-item) {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 11px;
+  border-radius: 9px;
+  color: #b8b9bc;
+  font-size: 13px;
+  font-weight: 550;
+  transition: 150ms ease;
+}
+.productScope :global(.nav-item:hover) {
+  background: rgb(255 255 255 / 0.06);
+  color: white;
+}
+.productScope :global(.nav-item.active) {
+  background: rgb(255 255 255 / 0.1);
+  color: white;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+}
+.productScope :global(.nav-item.active svg) {
+  color: #918aff;
+}
+.productScope :global(.sidebar-footer) {
+  margin-top: auto;
+  padding: 14px 10px 2px;
+}
+.productScope :global(.sidebar-command) {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 4px 0;
+  padding: 9px 10px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 0.04);
+  color: #c8c9cc;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.productScope :global(.sidebar-command:hover) {
+  border-color: rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.08);
+  color: white;
+}
+.productScope :global(kbd) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  min-height: 19px;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 9px;
+  opacity: 0.68;
+}
+.productScope :global(.company-switcher) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+.productScope :global(.company-avatar) {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f2ad58;
+  color: #35210c;
+  font-size: 11px;
+  font-weight: 800;
+}
+.productScope :global(.company-name) {
+  font-size: 12px;
+  font-weight: 650;
+}
+.productScope :global(.company-role) {
+  color: var(--sidebar-muted);
+  font-size: 10px;
+  margin-top: 2px;
+}
+.productScope :global(.account-summary) {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+.productScope :global(.account-avatar) {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+}
+.productScope :global(.account-copy) {
+  min-width: 0;
+}
+.productScope :global(.account-copy .company-name),
+.productScope :global(.account-copy .company-role) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.productScope :global(.account-logout) {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sidebar-muted);
+  cursor: pointer;
+}
+.productScope :global(.account-logout:hover) {
+  background: rgb(255 255 255 / 0.08);
+  color: white;
+}
+.productScope :global(.main-column) {
+  min-width: 0;
+}
+.productScope :global(.topbar) {
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 34px;
+  background: rgb(244 244 240 / 0.88);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(14px);
+}
+.productScope :global(.topbar-context) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.productScope :global(.topbar-page) {
+  color: var(--ink);
+  font-weight: 680;
+}
+.productScope :global(.topbar-divider) {
+  width: 1px;
+  height: 16px;
+  background: var(--border-strong);
+}
+.productScope :global(.system-dot) {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #d18a2e;
+  box-shadow: 0 0 0 4px #f5e8d6;
+}
+.productScope :global(.system-dot[data-connected="true"]) {
+  background: #22a867;
+  box-shadow: 0 0 0 4px #dff2e8;
+}
+.productScope :global(.topbar-actions) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.productScope :global(.icon-button) {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.productScope :global(.icon-button:hover) {
+  border-color: var(--border-strong);
+  color: var(--ink);
+}
+.productScope :global(.command-trigger) {
+  min-width: 238px;
+  height: 36px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 0.8);
+  color: var(--faint);
+  font-size: 11px;
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.productScope :global(.command-trigger:hover) {
+  border-color: var(--border-strong);
+  color: var(--muted);
+}
+.productScope :global(.command-trigger kbd) {
+  gap: 2px;
+  color: var(--muted);
+}
+.productScope :global(.activity-wrap) {
+  position: relative;
+}
+.productScope :global(.notification-dot) {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid white;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.productScope :global(.activity-popover) {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  z-index: 60;
+  width: min(370px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 20px 55px rgb(24 24 27 / 0.16);
+  animation: pop-in 0.16s ease-out;
+}
+.productScope :global(.popover-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.productScope :global(.popover-head strong),
+.productScope :global(.popover-head span) {
+  display: block;
+}
+.productScope :global(.popover-head strong) {
+  font-size: 12px;
+}
+.productScope :global(.popover-head > div > span) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.productScope :global(.popover-list) {
+  padding: 5px 8px;
+}
+.productScope :global(.popover-item) {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-bottom: 1px solid #eeeeea;
+}
+.productScope :global(.popover-item:last-child) {
+  border-bottom: 0;
+}
+.productScope :global(.popover-item strong),
+.productScope :global(.popover-item small) {
+  display: block;
+}
+.productScope :global(.popover-item strong) {
+  font-size: 11px;
+}
+.productScope :global(.popover-item small) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.productScope :global(.popover-item time) {
+  align-self: start;
+  color: var(--faint);
+  font-size: 9px;
+}
+.productScope :global(.popover-footer) {
+  display: block;
+  padding: 11px 15px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+.productScope :global(.content) {
+  max-width: 1450px;
+  margin: 0 auto;
+  padding: 34px;
+}
+.productScope :global(.page-heading) {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+.productScope :global(.eyebrow) {
+  margin: 0 0 7px;
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.productScope :global(h1),
+.productScope :global(h2),
+.productScope :global(h3),
+.productScope :global(p) {
+  margin-top: 0;
+}
+.productScope :global(h1) {
+  margin-bottom: 6px;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+.productScope :global(.page-subtitle) {
+  max-width: 660px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.productScope :global(.metric-grid) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.productScope :global(.metric-card),
+.productScope :global(.panel) {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.productScope :global(.metric-card) {
+  position: relative;
+  min-height: 142px;
+  overflow: hidden;
+  padding: 19px;
+  border-radius: 12px;
+}
+.productScope :global(.metric-icon) {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  color: var(--muted);
+}
+.productScope :global(.metric-value) {
+  font-size: 25px;
+  font-weight: 720;
+  letter-spacing: -0.04em;
+}
+.productScope :global(.metric-label) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.productScope :global(.metric-delta) {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  color: var(--success);
+  font-size: 10px;
+  font-weight: 700;
+}
+.productScope :global(.dashboard-grid) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.75fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+.productScope :global(.panel) {
+  border-radius: 12px;
+}
+.productScope :global(.panel-header) {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 19px;
+  border-bottom: 1px solid var(--border);
+}
+.productScope :global(.panel-title) {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.productScope :global(.panel-link) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+.productScope :global(.coverage-list) {
+  padding: 8px 19px 15px;
+}
+.productScope :global(.coverage-row) {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(180px, 1fr) 58px;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eeeeea;
+}
+.productScope :global(.coverage-row:last-child) {
+  border-bottom: 0;
+}
+.productScope :global(.coverage-name) {
+  font-size: 12px;
+  font-weight: 650;
+}
+.productScope :global(.coverage-caption) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.productScope :global(.progress-track) {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #ecece7;
+}
+.productScope :global(.progress-bar) {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+.productScope :global(.coverage-value) {
+  text-align: right;
+  font-size: 11px;
+  font-weight: 650;
+}
+.productScope :global(.activity-list) {
+  padding: 8px 19px 14px;
+}
+.productScope :global(.activity-item) {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  padding: 12px 0;
+}
+.productScope :global(.activity-icon) {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.productScope :global(.activity-copy) {
+  color: #454642;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.productScope :global(.activity-copy strong) {
+  color: var(--ink);
+}
+.productScope :global(.activity-time) {
+  margin-top: 4px;
+  color: var(--faint);
+  font-size: 9px;
+}
+.productScope :global(.quick-actions) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.productScope :global(.quick-action) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 15px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: rgb(255 255 255 / 0.64);
+  transition: 150ms ease;
+}
+.productScope :global(.quick-action:hover) {
+  border-color: #c9c6ff;
+  background: white;
+  transform: translateY(-1px);
+}
+.productScope :global(.quick-action-icon) {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.productScope :global(.quick-action-title),
+.productScope :global(.quick-action-caption) {
+  display: block;
+}
+.productScope :global(.quick-action-title) {
+  font-size: 11px;
+  font-weight: 700;
+}
+.productScope :global(.quick-action-caption) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.productScope :global(.mobile-menu-button) {
+  display: none;
+}
+
+@media (max-width: 1050px) {
+  .productScope :global(.metric-grid) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .productScope :global(.dashboard-grid) {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .productScope :global(.app-layout) {
+    display: block;
+  }
+  .productScope :global(.sidebar) {
+    position: fixed;
+    left: 0;
+    z-index: 50;
+    width: 232px;
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+  }
+  .productScope :global(.sidebar.open) {
+    transform: translateX(0);
+    box-shadow: 20px 0 60px rgb(0 0 0 / 0.25);
+  }
+  .productScope :global(.sidebar-close) {
+    display: grid;
+  }
+  .productScope :global(.sidebar-scrim) {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: block;
+    border: 0;
+    background: rgb(16 16 18 / 0.48);
+    backdrop-filter: blur(2px);
+  }
+  .productScope :global(.mobile-menu-button) {
+    display: grid;
+  }
+  .productScope :global(.topbar) {
+    padding: 0 18px;
+  }
+  .productScope :global(.content) {
+    padding: 24px 18px;
+  }
+  .productScope :global(.page-heading) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .productScope :global(.metric-grid),
+  .productScope :global(.quick-actions) {
+    grid-template-columns: 1fr;
+  }
+  .productScope :global(.coverage-row) {
+    grid-template-columns: 1fr 48px;
+  }
+  .productScope :global(.progress-track) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .productScope :global(.command-trigger) {
+    min-width: 36px;
+    width: 36px;
+    padding: 0;
+    place-items: center;
+  }
+  .productScope :global(.command-trigger span),
+  .productScope :global(.command-trigger kbd),
+  .productScope :global(.system-copy),
+  .productScope :global(.topbar-divider) {
+    display: none;
+  }
+  .productScope :global(.context-help) {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+  .productScope :global(.context-help span) {
+    display: none;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.98);
+  }
+}

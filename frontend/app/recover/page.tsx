@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RecoveryForm } from "@/components/recovery-form";
+import { RecoveryForm } from "@/components/features/auth";
 
 export const metadata: Metadata = { title: "Account recovery" };
 

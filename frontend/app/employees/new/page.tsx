@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
-import { EmployeeEditor } from "@/components/employee-form";
+import { EmployeeEditor } from "@/components/features/employees";
+import { Badge } from "@/components/ui";
 import {
   getAssignmentFields,
   getCurrentUser,
@@ -36,7 +37,7 @@ export default async function NewEmployeePage() {
             looks right.
           </p>
         </div>
-        <span className="badge accent">Preview required</span>
+        <Badge tone="accent">Preview required</Badge>
       </div>
       <EmployeeEditor employees={employees} fields={fields} referenceData={referenceData} />
     </>

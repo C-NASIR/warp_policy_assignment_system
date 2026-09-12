@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AuthForm } from "@/components/auth-form";
+import { AuthForm } from "@/components/features/auth";
 import { getCurrentUser } from "@/lib/backend";
 import { firstAllowedPath } from "@/lib/permissions";
 

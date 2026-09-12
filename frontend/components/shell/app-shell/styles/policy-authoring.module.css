@@ -1,0 +1,196 @@
+.productScope {
+  display: contents;
+}
+
+/* Policy authoring */
+.productScope :global(.builder-shell) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+.productScope :global(.rule-group) {
+  padding: 15px;
+  border: 1px solid #dedce8;
+  border-radius: 10px;
+  background: #faf9ff;
+}
+.productScope :global(.rule-group.nested) {
+  margin: 10px 0;
+  border-left: 3px solid #8c85ff;
+  background: white;
+}
+.productScope :global(.rule-group-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.productScope :global(.logical-picker) {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.productScope :global(.logical-picker .select) {
+  width: 86px;
+  height: 32px;
+}
+.productScope :global(.condition-row) {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 88px minmax(150px, 1fr) 30px;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+.productScope :global(.condition-row .input),
+.productScope :global(.condition-row .select) {
+  height: 36px;
+  font-size: 10px;
+}
+.productScope :global(.remove-button) {
+  width: 30px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+}
+.productScope :global(.remove-button:hover) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.productScope :global(.remove-button.danger) {
+  border: 1px solid #efd2d0;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.productScope :global(.remove-button.danger:hover) {
+  border-color: #dfa9a5;
+  background: #ffe4e2;
+  color: #922a2a;
+}
+.productScope :global(.remove-button.danger:disabled) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--faint);
+}
+.productScope :global(.text-button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 680;
+  cursor: pointer;
+}
+.productScope :global(.output-list) {
+  display: grid;
+  gap: 8px;
+}
+.productScope :global(.output-row) {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 1fr) 30px;
+  gap: 7px;
+}
+.productScope :global(.assignment-remove:disabled) {
+  visibility: hidden;
+}
+.productScope :global(.impact-hero) {
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(155deg, #26252c, #17171a);
+  color: white;
+}
+.productScope :global(.impact-number) {
+  margin: 9px 0 3px;
+  font-size: 31px;
+  font-weight: 760;
+  letter-spacing: -0.05em;
+}
+.productScope :global(.impact-label) {
+  color: #bcbcc2;
+  font-size: 10px;
+}
+.productScope :global(.match-list) {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.productScope :global(.match-person) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 10px;
+}
+.productScope :global(.plain-rule) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  color: #484944;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.productScope :global(.rule-token) {
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 680;
+}
+.productScope :global(.version-timeline) {
+  display: grid;
+  gap: 0;
+}
+.productScope :global(.version-row) {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  padding-bottom: 18px;
+}
+.productScope :global(.version-row:last-child) {
+  padding-bottom: 0;
+}
+.productScope :global(.version-row::before) {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 13px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+.productScope :global(.version-row:last-child::before) {
+  display: none;
+}
+.productScope :global(.version-dot) {
+  width: 13px;
+  height: 13px;
+  margin-top: 1px;
+  border: 3px solid var(--surface);
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px #c9c5ff;
+}
+.productScope :global(.version-title) {
+  font-size: 10px;
+  font-weight: 700;
+}
+.productScope :global(.version-caption) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+}

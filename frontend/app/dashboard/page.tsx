@@ -9,6 +9,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { ButtonLink } from "@/components/ui";
 import {
   getAssignmentSummary,
   getAuditLogPage,
@@ -81,9 +82,9 @@ export default async function OverviewPage() {
             {summary.field_count.toLocaleString()} fields.
           </p>
         </div>
-        <Link className="button" href="/policies/new">
+        <ButtonLink href="/policies/new">
           <Plus size={15} /> Create policy
-        </Link>
+        </ButtonLink>
       </div>
       <section className="metric-grid" aria-label="Assignment system metrics">
         {metrics.map((metric) => {

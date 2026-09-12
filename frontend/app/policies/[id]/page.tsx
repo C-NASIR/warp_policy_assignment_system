@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CircleCheckBig, Info, Pencil, Users } from "lucide-react";
 import { notFound } from "next/navigation";
-import { PolicyLifecycle } from "@/components/policy-lifecycle";
+import { PolicyLifecycle } from "@/components/features/policies";
+import { Badge, ButtonLink, Panel, PanelBody, PanelHeader } from "@/components/ui";
 import { getAssignmentFields, getCurrentUser, getPolicy, getPolicyImpact } from "@/lib/backend";
 import { formatDate, titleCase } from "@/lib/format";
 import { hasPermission } from "@/lib/permissions";
 import type { ConditionGroup } from "@/lib/types";
+import styles from "./policy-detail.module.css";
 
 export async function generateMetadata({ params }: PageProps<"/policies/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -39,8 +41,8 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
       </Link>
       <div className="detail-hero">
         <div>
-          <div className="heading-actions" style={{ marginBottom: 7 }}>
-            <span className="badge">Version {current?.version_number ?? "—"}</span>
+          <div className={`heading-actions ${styles.versionBadge}`}>
+            <Badge>Version {current?.version_number ?? "—"}</Badge>
           </div>
           <h1 className="detail-title">{policy.name}</h1>
           <div className="detail-meta">
@@ -50,39 +52,43 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
         <div className="heading-actions">
           <PolicyLifecycle policy={policy} />
           {policy.capabilities.can_create_version && (
-            <Link className="button secondary" href={`/policies/new?policyId=${policy.id}`}>
+            <ButtonLink variant="secondary" href={`/policies/new?policyId=${policy.id}`}>
               <Pencil size={14} /> New version
-            </Link>
+            </ButtonLink>
           )}
         </div>
       </div>
       <div className="detail-grid">
         <div className="section-stack">
-          <section className="panel">
-            <div className="panel-header">
-              <h2 className="panel-title">Who this applies to</h2>
-              <span className="badge accent">
-                {current?.condition_group.logical_operator === "or"
-                  ? "Any condition"
-                  : "All conditions"}
-              </span>
-            </div>
-            <div className="panel-body">
+          <Panel>
+            <PanelHeader
+              title="Who this applies to"
+              action={
+                <Badge tone="accent">
+                  {current?.condition_group.logical_operator === "or"
+                    ? "Any condition"
+                    : "All conditions"}
+                </Badge>
+              }
+            />
+            <PanelBody>
               {current ? (
                 <RuleSummary group={current.condition_group} />
               ) : (
                 <div className="empty-state compact">No active rule version.</div>
               )}
-            </div>
-          </section>
-          <section className="panel">
-            <div className="panel-header">
-              <h2 className="panel-title">Assignments provided</h2>
-              <span className="badge">
-                {assignmentValueCount} {assignmentValueCount === 1 ? "value" : "values"}
-              </span>
-            </div>
-            <div className="panel-body">
+            </PanelBody>
+          </Panel>
+          <Panel>
+            <PanelHeader
+              title="Assignments provided"
+              action={
+                <Badge>
+                  {assignmentValueCount} {assignmentValueCount === 1 ? "value" : "values"}
+                </Badge>
+              }
+            />
+            <PanelBody>
               <div className="assignment-list">
                 {current?.values.map((value, index) => (
                   <div
@@ -110,13 +116,11 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
                   </div>
                 ))}
               </div>
-            </div>
-          </section>
-          <section className="panel">
-            <div className="panel-header">
-              <h2 className="panel-title">Version history</h2>
-            </div>
-            <div className="panel-body">
+            </PanelBody>
+          </Panel>
+          <Panel>
+            <PanelHeader title="Version history" />
+            <PanelBody>
               <div className="version-timeline">
                 {[...policy.versions].reverse().map((version) => (
                   <div className="version-row" key={version.id}>
@@ -133,17 +137,17 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
                   </div>
                 ))}
               </div>
-            </div>
-          </section>
+            </PanelBody>
+          </Panel>
         </div>
         <aside className="section-stack">
-          <section className="panel">
+          <Panel>
             <div className="impact-hero">
               <Users size={17} />
               <div className="impact-number">{impact?.selected_employee_count ?? 0}</div>
               <div className="impact-label">employees receive assignments from this policy</div>
             </div>
-            <div className="panel-body">
+            <PanelBody>
               <div className="side-stat">
                 <div className="side-stat-value">{impact?.matched_employee_count ?? 0}</div>
                 <div className="side-stat-label">Employees match the rule</div>
@@ -158,8 +162,8 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
                 </div>
                 <div className="side-stat-label">Matched but another policy won</div>
               </div>
-            </div>
-          </section>
+            </PanelBody>
+          </Panel>
           <div className="callout">
             <Info size={15} />
             <span>
@@ -175,7 +179,7 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
               <span className="quick-action-title">Explore affected employees</span>
               <span className="quick-action-caption">Review assignment sources and evidence</span>
             </span>
-            <ArrowRight size={14} style={{ marginLeft: "auto" }} />
+            <ArrowRight className={styles.actionArrow} size={14} />
           </Link>
         </aside>
       </div>

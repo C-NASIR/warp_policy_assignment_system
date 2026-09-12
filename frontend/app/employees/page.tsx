@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Plus } from "lucide-react";
-import { EmployeeDirectory } from "@/components/employee-directory";
+import { EmployeeDirectory } from "@/components/features/employees";
+import { ButtonLink } from "@/components/ui";
 import { getCurrentUser, getEmployeePage, getEmployeeReferenceData } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 
@@ -35,9 +35,9 @@ export default async function EmployeesPage({
           </p>
         </div>
         {hasPermission(user, "employees:create") && (
-          <Link className="button" href="/employees/new">
+          <ButtonLink href="/employees/new">
             <Plus size={15} /> Add employee
-          </Link>
+          </ButtonLink>
         )}
       </div>
       <EmployeeDirectory

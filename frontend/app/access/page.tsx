@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AccessManager } from "@/components/access-manager";
+import { AccessManager } from "@/components/features/access";
 import {
   getAuthorizationAssignmentFields,
   getCurrentUser,

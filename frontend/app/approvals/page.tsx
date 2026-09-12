@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ApprovalQueue } from "@/components/approval-queue";
+import { ApprovalQueue } from "@/components/features/approvals";
+import { Badge } from "@/components/ui";
 import { getApprovalRequests, getCurrentUser } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 
@@ -21,9 +22,9 @@ export default async function ApprovalsPage() {
             what was approved.
           </p>
         </div>
-        <span className="badge accent">
+        <Badge tone="accent">
           {requests.filter((request) => request.status === "pending").length} pending
-        </span>
+        </Badge>
       </div>
       <ApprovalQueue initialRequests={requests} />
     </>

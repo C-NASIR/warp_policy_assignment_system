@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { ShieldX } from "lucide-react";
+import { ButtonLink } from "@/components/ui";
 import { getCurrentUser } from "@/lib/backend";
 import { firstAllowedPath } from "@/lib/permissions";
+import styles from "./forbidden.module.css";
 
 export default async function ForbiddenPage() {
   const user = await getCurrentUser();
@@ -17,9 +18,9 @@ export default async function ForbiddenPage() {
         Your assigned roles determine which PolicyOS areas and actions are available. Ask an access
         administrator if you believe this is incorrect.
       </p>
-      <Link className="button" href={destination}>
+      <ButtonLink className={styles.action} href={destination}>
         Go to an available page
-      </Link>
+      </ButtonLink>
     </section>
   );
 }

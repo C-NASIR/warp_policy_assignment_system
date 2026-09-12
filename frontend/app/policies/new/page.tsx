@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { redirect } from "next/navigation";
-import { PolicyBuilder } from "@/components/policy-builder";
+import { PolicyBuilder } from "@/components/features/policies";
+import { Badge } from "@/components/ui";
 import {
   getAssignmentFields,
   getConditionFields,
@@ -44,7 +45,7 @@ export default async function NewPolicyPage({ searchParams }: PageProps<"/polici
             impact before anything changes.
           </p>
         </div>
-        <span className="badge accent">Draft</span>
+        <Badge tone="accent">Draft</Badge>
       </div>
       <PolicyBuilder
         conditionFields={conditionFields}

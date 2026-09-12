@@ -1,6 +1,8 @@
+import styles from "./loading.module.css";
+
 export default function Loading() {
   return (
-    <div aria-label="Loading page" aria-busy="true" style={{ display: "grid", gap: 14 }}>
+    <div className={styles.loading} aria-label="Loading page" aria-busy="true">
       <div className="skeleton skeleton-title" />
       <div className="metric-grid">
         {Array.from({ length: 4 }).map((_, index) => (

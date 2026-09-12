@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AuditLogExplorer } from "@/components/audit-log-explorer";
+import { AuditLogExplorer } from "@/components/features/audit";
 import { getAuditLogFacets, getAuditLogPage } from "@/lib/backend";
 
 export const metadata: Metadata = { title: "Audit log" };

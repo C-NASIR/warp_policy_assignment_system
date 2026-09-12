@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Info, Pencil, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
-import { AssignmentCard } from "@/components/assignment-card";
-import { EmployeeEditor } from "@/components/employee-form";
-import { OverrideManager } from "@/components/override-manager";
+import { AssignmentCard, EmployeeEditor, OverrideManager } from "@/components/features/employees";
+import { Badge, Panel, PanelBody, PanelHeader } from "@/components/ui";
 import {
   getAssignmentFields,
   getCurrentUser,
@@ -17,6 +16,7 @@ import {
 } from "@/lib/backend";
 import { formatDate, initials } from "@/lib/format";
 import { hasPermission } from "@/lib/permissions";
+import styles from "./employee-detail.module.css";
 
 export async function generateMetadata({
   params,
@@ -87,12 +87,12 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
       <div className={canReadAssignments ? "detail-grid" : "section-stack"}>
         <div className="section-stack">
           {canReadAssignments && (
-            <section className="panel">
-              <div className="panel-header">
-                <h2 className="panel-title">Current assignments</h2>
-                <span className="badge success">{assignments.length} resolved</span>
-              </div>
-              <div className="panel-body">
+            <Panel>
+              <PanelHeader
+                title="Current assignments"
+                action={<Badge tone="success">{assignments.length} resolved</Badge>}
+              />
+              <PanelBody>
                 {assignments.length ? (
                   <div className="assignment-list">
                     {assignments.map((item) => (
@@ -102,14 +102,12 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                 ) : (
                   <div className="empty-state">No active assignments.</div>
                 )}
-              </div>
-            </section>
+              </PanelBody>
+            </Panel>
           )}
-          <section className="panel">
-            <div className="panel-header">
-              <h2 className="panel-title">Employee profile</h2>
-            </div>
-            <div className="panel-body">
+          <Panel>
+            <PanelHeader title="Employee profile" />
+            <PanelBody>
               <div className="profile-grid">
                 <div>
                   <span className="label">Department</span>
@@ -137,8 +135,8 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                   <div className="profile-value">#{String(employee.id).padStart(4, "0")}</div>
                 </div>
               </div>
-            </div>
-          </section>
+            </PanelBody>
+          </Panel>
           {canReadAssignments && (
             <OverrideManager
               employee={employee}
@@ -151,11 +149,9 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
         </div>
         {canReadAssignments && (
           <aside className="section-stack">
-            <section className="panel">
-              <div className="panel-header">
-                <h2 className="panel-title">Assignment health</h2>
-              </div>
-              <div className="panel-body">
+            <Panel>
+              <PanelHeader title="Assignment health" />
+              <PanelBody>
                 <div className="side-stat">
                   <div className="side-stat-value">{assignments.length}</div>
                   <div className="side-stat-label">Current assignment values</div>
@@ -168,8 +164,8 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                   <div className="side-stat-value">{overrideCount}</div>
                   <div className="side-stat-label">Manual overrides</div>
                 </div>
-              </div>
-            </section>
+              </PanelBody>
+            </Panel>
             <div className="callout">
               <Info size={15} />
               <span>
@@ -178,14 +174,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
               </span>
             </div>
             {overrideCount > 0 && (
-              <div
-                className="callout"
-                style={{
-                  background: "var(--warning-soft)",
-                  borderColor: "#eddaab",
-                  color: "#74501a",
-                }}
-              >
+              <div className={`callout ${styles.warningCallout}`}>
                 <ShieldCheck size={15} />
                 <span>
                   This employee has {overrideCount} manual override. Review it periodically to

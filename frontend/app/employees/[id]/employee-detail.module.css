@@ -1,0 +1,5 @@
+.warningCallout {
+  border-color: #eddaab;
+  background: var(--warning-soft);
+  color: #74501a;
+}

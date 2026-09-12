@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
-import { GroupManager } from "@/components/group-manager";
+import { GroupManager } from "@/components/features/groups";
 import {
   getCurrentUser,
   getEmployees,

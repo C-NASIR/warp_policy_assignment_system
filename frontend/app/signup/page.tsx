@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
-import { AuthForm } from "@/components/auth-form";
+import { AuthForm } from "@/components/features/auth";
+import { ButtonLink } from "@/components/ui";
 import { getCurrentUser, getRootSetupStatus } from "@/lib/backend";
 import { firstAllowedPath } from "@/lib/permissions";
 
@@ -29,9 +30,9 @@ export default async function SignupPage() {
             This workspace is already set up. Ask your PolicyOS administrator to create an account
             for you, then sign in with the credentials they provide.
           </p>
-          <Link className="button auth-submit" href="/login">
+          <ButtonLink className="auth-submit" href="/login" fullWidth>
             Sign in
-          </Link>
+          </ButtonLink>
           <Link className="auth-switch" href="/">
             Back to home
           </Link>

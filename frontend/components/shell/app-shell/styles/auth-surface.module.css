@@ -1,0 +1,208 @@
+.productScope {
+  display: contents;
+}
+
+/* Human authentication */
+.productScope :global(.auth-page) {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 18px;
+  background: radial-gradient(circle at 50% 0%, #f0efff 0, transparent 38%), var(--canvas);
+}
+.productScope :global(.auth-card) {
+  width: min(440px, 100%);
+  padding: 30px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 24px 70px rgb(30 30 35 / 0.11);
+}
+.productScope :global(.auth-brand) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 34px;
+}
+.productScope :global(.auth-brand > span:last-child),
+.productScope :global(.auth-brand strong),
+.productScope :global(.auth-brand small) {
+  display: block;
+}
+.productScope :global(.auth-brand strong) {
+  font-size: 13px;
+}
+.productScope :global(.auth-brand small) {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.productScope :global(.auth-icon) {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.productScope :global(.auth-card h1) {
+  font-size: 24px;
+}
+.productScope :global(.auth-form) {
+  display: grid;
+  gap: 15px;
+  margin-top: 25px;
+}
+.productScope :global(.auth-form .field),
+.productScope :global(.security-form .field) {
+  display: block;
+}
+.productScope :global(.auth-requirement),
+.productScope :global(.auth-security) {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.productScope :global(.auth-requirement svg),
+.productScope :global(.auth-security svg) {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--success);
+}
+.productScope :global(.auth-submit) {
+  width: 100%;
+  margin-top: 3px;
+}
+.productScope :global(.auth-card > .auth-submit) {
+  margin-top: 24px;
+}
+.productScope :global(.auth-switch) {
+  display: block;
+  margin: 22px 0 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 14px;
+}
+.productScope :global(.auth-switch a) {
+  color: var(--accent-ink);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.productScope :global(.auth-submit svg) {
+  margin-left: auto;
+}
+.productScope :global(.auth-message) {
+  margin: 20px 0 -7px;
+}
+.productScope :global(.auth-security) {
+  margin-top: 22px;
+  padding-top: 17px;
+  border-top: 1px solid var(--border);
+}
+.productScope :global(.auth-security svg) {
+  color: var(--accent-ink);
+}
+.productScope :global(.security-panel) {
+  max-width: 700px;
+}
+.productScope :global(.security-form) {
+  display: grid;
+  gap: 15px;
+  max-width: 480px;
+}
+.productScope :global(.mfa-qr) {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  width: fit-content;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  color: #253047;
+  font-size: 11px;
+  font-weight: 600;
+}
+.productScope :global(.mfa-qr svg) {
+  display: block;
+}
+.productScope :global(.security-list) {
+  display: grid;
+}
+.productScope :global(.security-list-item) {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.productScope :global(.security-list-item:first-child) {
+  padding-top: 0;
+}
+.productScope :global(.security-list-item:last-child) {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.productScope :global(.security-list-item strong) {
+  font-size: 11px;
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+.productScope :global(.security-list-item small) {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.productScope :global(.security-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 17px -19px -18px;
+  padding: 14px 19px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+.productScope :global(.review-findings) {
+  display: grid;
+  gap: 10px;
+}
+.productScope :global(.review-finding) {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.6fr) minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+}
+.productScope :global(.review-finding strong) {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+.productScope :global(.review-finding small) {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.productScope :global(.security-footer) {
+  margin: 3px -19px -18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+.productScope :global(.form-hint) {
+  color: var(--muted);
+  font-size: 10px;
+}

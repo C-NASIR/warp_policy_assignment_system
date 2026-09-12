@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GroupDirectory } from "@/components/group-directory";
+import { GroupDirectory } from "@/components/features/groups";
 import { getCurrentUser, getGroupPage } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 
