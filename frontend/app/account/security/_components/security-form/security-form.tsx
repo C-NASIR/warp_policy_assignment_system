@@ -3,7 +3,7 @@
 import { Check, CircleAlert, KeyRound, Laptop, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { Badge, Button, Panel } from "@/components/ui";
 import type { AccountSecurity } from "@/lib/types";
 import styles from "./security-form.module.css";
@@ -46,7 +46,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
     return result as ErrorResult & Record<string, unknown>;
   }
 
-  async function changePassword(event: FormEvent) {
+  async function changePassword(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (newPassword !== confirmation) {
       setError("The new passwords do not match.");
@@ -72,7 +72,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
     }
   }
 
-  async function startMfa(event: FormEvent) {
+  async function startMfa(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
@@ -89,7 +89,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
     }
   }
 
-  async function confirmMfa(event: FormEvent) {
+  async function confirmMfa(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
@@ -110,7 +110,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
     }
   }
 
-  async function disableMfa(event: FormEvent) {
+  async function disableMfa(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
@@ -128,7 +128,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
     }
   }
 
-  async function stepUp(event: FormEvent) {
+  async function stepUp(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");

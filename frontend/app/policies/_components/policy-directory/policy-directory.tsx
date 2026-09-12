@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, BookOpenCheck, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
 import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import { formatDate } from "@/lib/format";
@@ -57,7 +57,7 @@ export function PolicyDirectory({
         : { key, direction: "asc" },
     );
   }
-  function applyFilters(event: FormEvent) {
+  function applyFilters(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());

@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronUp, Search, ScrollText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
 import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import { formatDate, titleCase } from "@/lib/format";
@@ -28,7 +28,7 @@ export function AuditLogExplorer({
   const [entity, setEntity] = useState(filters.entityType);
   const [action, setAction] = useState(filters.action);
   const [expanded, setExpanded] = useState<number | null>(null);
-  function applyFilters(event: FormEvent) {
+  function applyFilters(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());

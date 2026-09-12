@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, CircleAlert, Network, Plus, Search, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
 import { Button, FormField, TextInput } from "@/components/ui";
 import type { GroupDirectoryItem } from "@/lib/types";
@@ -59,7 +59,7 @@ export function GroupDirectory({
     }
   }
 
-  function applySearch(event: FormEvent) {
+  function applySearch(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = search.trim();
     router.push(value ? `/groups?search=${encodeURIComponent(value)}` : "/groups");

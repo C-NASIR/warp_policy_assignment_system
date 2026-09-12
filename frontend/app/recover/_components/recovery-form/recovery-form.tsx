@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Check, CircleAlert, KeyRound } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { Button, FormField, TextInput } from "@/components/ui";
 
 export function RecoveryForm() {
@@ -16,7 +16,7 @@ export function RecoveryForm() {
   const [error, setError] = useState("");
   const [complete, setComplete] = useState(false);
 
-  async function requestReset(event: FormEvent) {
+  async function requestReset(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
@@ -37,7 +37,7 @@ export function RecoveryForm() {
     }
   }
 
-  async function finishReset(event: FormEvent) {
+  async function finishReset(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (password !== confirmation) {
       setError("The new passwords do not match.");

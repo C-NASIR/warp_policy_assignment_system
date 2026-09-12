@@ -10,7 +10,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { type SubmitEvent, useMemo, useState } from "react";
 import { Badge, Button, DataTable, Panel } from "@/components/ui";
 import type { AssignmentField, Employee, Permission, Role, User } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
@@ -422,7 +422,7 @@ function RoleForm({
   const [passwordInvalid, setPasswordInvalid] = useState(false);
   const [mfaInvalid, setMfaInvalid] = useState(false);
   const groups = useMemo(() => [...new Set(permissions.map((item) => item.group))], [permissions]);
-  async function submit(event: FormEvent) {
+  async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     const missingPassword = currentPassword.length === 0;
@@ -661,7 +661,7 @@ function UserForm({
   const [mfaCode, setMfaCode] = useState("");
   const [passwordInvalid, setPasswordInvalid] = useState(false);
   const [mfaInvalid, setMfaInvalid] = useState(false);
-  async function submit(event: FormEvent) {
+  async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (roles.length === 0) return;
     setError("");
