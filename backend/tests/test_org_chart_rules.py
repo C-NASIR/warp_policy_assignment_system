@@ -162,6 +162,13 @@ def test_condition_catalog_declares_org_fields_and_dependencies(client):
     assert response.status_code == 200
     fields = {item["key"]: item for item in response.json()}
 
+    assert fields["employee_id"]["label"] == "Employee"
+    assert fields["employee_id"]["data_type"] == "employee_reference"
+    assert fields["employee_id"]["allowed_operators"] == ["="]
+    assert fields["employee_id"]["input"]["type"] == "resource"
+    assert fields["employee_id"]["input"]["reference_resource"] == "employees"
+    assert fields["department"]["input"]["reference_resource"] == "departments"
+    assert fields["employee_type"]["input"]["reference_resource"] == "employee_types"
     assert fields["manager_id"]["field_type"] == "static"
     assert fields["manager_id"]["data_type"] == "employee_reference"
     assert fields["manager_id"]["allowed_operators"] == ["="]
@@ -201,6 +208,17 @@ def test_all_org_chart_condition_types_match(client):
     direct_staff = _field(client, "direct_staff")
     hierarchy = _field(client, "hierarchy")
     deep_org = _field(client, "deep_org")
+    employee_specific = _field(client, "employee_specific")
+
+    _policy(
+        client,
+        name="Alice only",
+        condition_field="employee_id",
+        operator="=",
+        condition_value=str(alice["id"]),
+        assignment_field_id=employee_specific["id"],
+        assignment_value="true",
+    )
 
     _policy(
         client,
@@ -253,6 +271,7 @@ def test_all_org_chart_condition_types_match(client):
     carol_assignments = _assignments(client, carol["id"])
 
     assert alice_assignments == {
+        "employee_specific": "true",
         "large_team": "true",
         "manager_training": "required",
     }

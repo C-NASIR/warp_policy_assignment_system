@@ -263,9 +263,27 @@ def _static_spec(
 CONDITION_FIELD_SPECS = {
     spec.key: spec
     for spec in (
+        ConditionFieldSpec(
+            key="employee_id",
+            label="Employee",
+            description="A specific employee, identified by their stable employee ID.",
+            field_type="static",
+            data_type="employee_reference",
+            resolver_key="employee_attribute_id_v1",
+            allowed_operators=_EQUALITY_OPERATORS,
+            input=ConditionFieldInputSpec(
+                type="resource",
+                reference_resource="employees",
+            ),
+            resolver=_static_resolver("id"),
+            parser=_positive_integer_parser,
+            source_table="employees",
+            source_column="id",
+            dependencies=_employee_column_dependency("id"),
+        ),
         _static_spec(
             "name",
-            "Name",
+            "Employee name (legacy)",
             "The employee's full name.",
             "string",
             _string_parser,
@@ -285,7 +303,10 @@ CONDITION_FIELD_SPECS = {
             "The employee's current department.",
             "string",
             _string_parser,
-            ConditionFieldInputSpec(type="text", placeholder="Engineering"),
+            ConditionFieldInputSpec(
+                type="resource",
+                reference_resource="departments",
+            ),
         ),
         _static_spec(
             "employee_type",
@@ -293,7 +314,10 @@ CONDITION_FIELD_SPECS = {
             "The employee's employment classification.",
             "string",
             _string_parser,
-            ConditionFieldInputSpec(type="text", placeholder="regular"),
+            ConditionFieldInputSpec(
+                type="resource",
+                reference_resource="employee_types",
+            ),
         ),
         _static_spec(
             "location",

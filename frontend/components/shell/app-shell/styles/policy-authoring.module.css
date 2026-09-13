@@ -48,6 +48,21 @@
   height: 36px;
   font-size: 10px;
 }
+.productScope :global(.condition-duration-input) {
+  position: relative;
+}
+.productScope :global(.condition-duration-input .input) {
+  padding-right: 42px;
+}
+.productScope :global(.condition-duration-input span) {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 10px;
+  pointer-events: none;
+}
 .productScope :global(.remove-button) {
   width: 30px;
   height: 36px;
@@ -62,6 +77,15 @@
 .productScope :global(.remove-button:hover) {
   background: var(--danger-soft);
   color: var(--danger);
+}
+.productScope :global(.remove-button:disabled) {
+  color: var(--faint);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.productScope :global(.remove-button:disabled:hover) {
+  background: transparent;
+  color: var(--faint);
 }
 .productScope :global(.remove-button.danger) {
   border: 1px solid #efd2d0;

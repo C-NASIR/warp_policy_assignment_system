@@ -8,6 +8,7 @@ import {
   getAssignmentFields,
   getConditionFields,
   getCurrentUser,
+  getEmployeeReferenceData,
   getEmployees,
   getPolicy,
 } from "@/lib/backend";
@@ -19,12 +20,14 @@ export default async function NewPolicyPage({ searchParams }: PageProps<"/polici
   const { policyId } = await searchParams;
   const id = typeof policyId === "string" ? Number(policyId) : null;
   const user = await getCurrentUser();
-  const [conditionFields, assignmentFields, employees, basePolicy] = await Promise.all([
-    getConditionFields(),
-    getAssignmentFields(),
-    getEmployees(),
-    id ? getPolicy(id) : null,
-  ]);
+  const [conditionFields, assignmentFields, employees, referenceData, basePolicy] =
+    await Promise.all([
+      getConditionFields(),
+      getAssignmentFields(),
+      getEmployees(),
+      getEmployeeReferenceData(),
+      id ? getPolicy(id) : null,
+    ]);
   if (id ? !basePolicy?.capabilities.can_create_version : !hasPermission(user, "policies:create"))
     redirect("/forbidden");
   const activateOnCreate =
@@ -51,6 +54,7 @@ export default async function NewPolicyPage({ searchParams }: PageProps<"/polici
         conditionFields={conditionFields}
         assignmentFields={assignmentFields}
         employees={employees}
+        referenceData={referenceData}
         basePolicy={basePolicy}
         activateOnCreate={activateOnCreate}
       />

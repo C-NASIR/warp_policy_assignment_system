@@ -4,24 +4,33 @@ import { Check, CircleAlert, Eye, Plus, Sparkles, Trash2, Users } from "lucide-r
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { BuilderCondition, ConditionRow, defaultCondition } from "./condition-row";
 import { Badge, Button, ButtonLink } from "@/components/ui";
 import { initials } from "@/lib/format";
-import type { AssignmentField, Condition, ConditionField, Employee, Policy } from "@/lib/types";
+import type {
+  AssignmentField,
+  Condition,
+  ConditionField,
+  Employee,
+  EmployeeReferenceData,
+  Policy,
+} from "@/lib/types";
 import styles from "./policy-builder.module.css";
 
-type BuilderCondition = Condition & { rowId: number };
 type BuilderOutput = { rowId: number; assignment_field_definition_id: number; value: string };
 
 export function PolicyBuilder({
   conditionFields,
   assignmentFields,
   employees,
+  referenceData,
   basePolicy,
   activateOnCreate = true,
 }: {
   conditionFields: ConditionField[];
   assignmentFields: AssignmentField[];
   employees: Employee[];
+  referenceData: EmployeeReferenceData;
   basePolicy?: Policy | null;
   activateOnCreate?: boolean;
 }) {
@@ -38,13 +47,7 @@ export function PolicyBuilder({
   const initialConditions: Condition[] = baseVersion?.condition_group.conditions.length
     ? baseVersion.condition_group.conditions
     : conditionFields.length
-      ? [
-          {
-            field: conditionFields[0].key,
-            operator: conditionFields[0].allowed_operators[0],
-            value: "",
-          },
-        ]
+      ? [defaultCondition(conditionFields)]
       : [];
   const [conditions, setConditions] = useState<BuilderCondition[]>(() =>
     initialConditions.map((item, index) => ({ ...item, rowId: index + 1 })),
@@ -354,110 +357,24 @@ export function PolicyBuilder({
               </label>
               <Badge tone="accent">Backend evaluated</Badge>
             </div>
-            {conditions.map((condition) => {
-              const definition =
-                conditionFields.find((item) => item.key === condition.field) ?? conditionFields[0];
-              return (
-                <div className="condition-row" key={condition.rowId}>
-                  <select
-                    className="select"
-                    value={condition.field}
-                    onChange={(event) => {
-                      const next = conditionFields.find((item) => item.key === event.target.value);
-                      setCondition(condition.rowId, {
-                        field: event.target.value,
-                        operator: next?.allowed_operators[0] ?? "=",
-                        value: "",
-                      });
-                    }}
-                  >
-                    {conditionFields.map((item) => (
-                      <option key={item.key} value={item.key}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="select"
-                    value={condition.operator}
-                    onChange={(event) =>
-                      setCondition(condition.rowId, {
-                        operator: event.target.value as Condition["operator"],
-                      })
-                    }
-                  >
-                    {definition?.allowed_operators.map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
-                  {definition?.input.type === "select" ? (
-                    <select
-                      className={`select${validationAttempted && !condition.value.trim() ? " field-invalid" : ""}`}
-                      required
-                      aria-invalid={validationAttempted && !condition.value.trim()}
-                      value={condition.value}
-                      onChange={(event) =>
-                        setCondition(condition.rowId, { value: event.target.value })
-                      }
-                    >
-                      <option value="">Choose value</option>
-                      {definition.input.options.map((item) => (
-                        <option value={item.value} key={item.value}>
-                          {item.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : definition?.input.type === "resource" ? (
-                    <select
-                      className={`select${validationAttempted && !condition.value.trim() ? " field-invalid" : ""}`}
-                      required
-                      aria-invalid={validationAttempted && !condition.value.trim()}
-                      value={condition.value}
-                      onChange={(event) =>
-                        setCondition(condition.rowId, { value: event.target.value })
-                      }
-                    >
-                      <option value="">Choose employee</option>
-                      {employees.map((item) => (
-                        <option value={item.id} key={item.id}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      className={`input${validationAttempted && !condition.value.trim() ? " field-invalid" : ""}`}
-                      required
-                      aria-invalid={validationAttempted && !condition.value.trim()}
-                      type={
-                        definition?.input.type === "date"
-                          ? "date"
-                          : definition?.input.type === "number"
-                            ? "number"
-                            : "text"
-                      }
-                      value={condition.value}
-                      onChange={(event) =>
-                        setCondition(condition.rowId, { value: event.target.value })
-                      }
-                      placeholder={definition?.input.placeholder ?? "Enter value"}
-                    />
-                  )}
-                  <button
-                    className="remove-button"
-                    onClick={() => {
-                      if (conditions.length > 1)
-                        setConditions((current) =>
-                          current.filter((item) => item.rowId !== condition.rowId),
-                        );
-                    }}
-                    aria-label="Remove condition"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              );
-            })}
+            {conditions.map((condition) => (
+              <ConditionRow
+                key={condition.rowId}
+                condition={condition}
+                conditionFields={conditionFields}
+                employees={employees}
+                referenceData={referenceData}
+                validationAttempted={validationAttempted}
+                removeDisabled={conditions.length <= 1}
+                removeLabel="Remove condition"
+                onChange={(patch) => setCondition(condition.rowId, patch)}
+                onRemove={() =>
+                  setConditions((current) =>
+                    current.filter((item) => item.rowId !== condition.rowId),
+                  )
+                }
+              />
+            ))}
             {childConditions.length > 0 && (
               <div className="rule-group nested">
                 <div className="rule-group-head">
@@ -487,95 +404,23 @@ export function PolicyBuilder({
                     <Trash2 size={13} />
                   </button>
                 </div>
-                {childConditions.map((condition) => {
-                  const definition =
-                    conditionFields.find((item) => item.key === condition.field) ??
-                    conditionFields[0];
-                  return (
-                    <div className="condition-row" key={condition.rowId}>
-                      <select
-                        className="select"
-                        value={condition.field}
-                        onChange={(event) => {
-                          const next = conditionFields.find(
-                            (item) => item.key === event.target.value,
-                          );
-                          setChildCondition(condition.rowId, {
-                            field: event.target.value,
-                            operator: next?.allowed_operators[0] ?? "=",
-                            value: "",
-                          });
-                        }}
-                      >
-                        {conditionFields.map((item) => (
-                          <option key={item.key} value={item.key}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className="select"
-                        value={condition.operator}
-                        onChange={(event) =>
-                          setChildCondition(condition.rowId, {
-                            operator: event.target.value as Condition["operator"],
-                          })
-                        }
-                      >
-                        {definition?.allowed_operators.map((item) => (
-                          <option key={item}>{item}</option>
-                        ))}
-                      </select>
-                      {definition?.input.type === "select" ? (
-                        <select
-                          className={`select${validationAttempted && !condition.value.trim() ? " field-invalid" : ""}`}
-                          required
-                          aria-invalid={validationAttempted && !condition.value.trim()}
-                          value={condition.value}
-                          onChange={(event) =>
-                            setChildCondition(condition.rowId, { value: event.target.value })
-                          }
-                        >
-                          <option value="">Choose value</option>
-                          {definition.input.options.map((item) => (
-                            <option value={item.value} key={item.value}>
-                              {item.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          className={`input${validationAttempted && !condition.value.trim() ? " field-invalid" : ""}`}
-                          required
-                          aria-invalid={validationAttempted && !condition.value.trim()}
-                          type={
-                            definition?.input.type === "date"
-                              ? "date"
-                              : definition?.input.type === "number"
-                                ? "number"
-                                : "text"
-                          }
-                          value={condition.value}
-                          onChange={(event) =>
-                            setChildCondition(condition.rowId, { value: event.target.value })
-                          }
-                          placeholder={definition?.input.placeholder ?? "Enter value"}
-                        />
-                      )}
-                      <button
-                        className="remove-button"
-                        onClick={() =>
-                          setChildConditions((current) =>
-                            current.filter((item) => item.rowId !== condition.rowId),
-                          )
-                        }
-                        aria-label="Remove nested condition"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  );
-                })}
+                {childConditions.map((condition) => (
+                  <ConditionRow
+                    key={condition.rowId}
+                    condition={condition}
+                    conditionFields={conditionFields}
+                    employees={employees}
+                    referenceData={referenceData}
+                    validationAttempted={validationAttempted}
+                    removeLabel="Remove nested condition"
+                    onChange={(patch) => setChildCondition(condition.rowId, patch)}
+                    onRemove={() =>
+                      setChildConditions((current) =>
+                        current.filter((item) => item.rowId !== condition.rowId),
+                      )
+                    }
+                  />
+                ))}
                 <button
                   className="text-button"
                   onClick={() =>
@@ -583,9 +428,7 @@ export function PolicyBuilder({
                       ...current,
                       {
                         rowId: Math.max(...current.map((item) => item.rowId), 99) + 1,
-                        field: conditionFields[0]?.key ?? "state",
-                        operator: "=",
-                        value: "",
+                        ...defaultCondition(conditionFields),
                       },
                     ])
                   }
@@ -602,9 +445,7 @@ export function PolicyBuilder({
                     ...current,
                     {
                       rowId: Math.max(...current.map((item) => item.rowId), 0) + 1,
-                      field: conditionFields[0]?.key ?? "state",
-                      operator: "=",
-                      value: "",
+                      ...defaultCondition(conditionFields),
                     },
                   ])
                 }
@@ -618,9 +459,7 @@ export function PolicyBuilder({
                     setChildConditions([
                       {
                         rowId: 100,
-                        field: conditionFields[0]?.key ?? "state",
-                        operator: "=",
-                        value: "",
+                        ...defaultCondition(conditionFields),
                       },
                     ])
                   }
