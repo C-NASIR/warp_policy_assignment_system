@@ -16,11 +16,12 @@ export default async function EmployeesPage({
 }) {
   const params = await searchParams;
   const search = value(params.search);
+  const state = value(params.state);
   const department = value(params.department);
   const employeeType = value(params.employee_type);
   const offset = nonnegativeInteger(value(params.offset));
   const [page, referenceData, user] = await Promise.all([
-    getEmployeePage({ search, department, employeeType, limit: pageSize, offset }),
+    getEmployeePage({ search, state, department, employeeType, limit: pageSize, offset }),
     getEmployeeReferenceData(),
     getCurrentUser(),
   ]);
@@ -46,7 +47,7 @@ export default async function EmployeesPage({
         total={page.total}
         limit={page.limit}
         offset={page.offset}
-        filters={{ search, department, employeeType }}
+        filters={{ search, state, department, employeeType }}
       />
     </>
   );

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
-import { PaginationControls } from "@/components/shared";
+import { PaginationControls, StateCombobox } from "@/components/shared";
 import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import { formatEmployeeId, initials } from "@/lib/format";
 import type { EmployeeDirectoryItem, EmployeeReferenceData } from "@/lib/types";
@@ -23,10 +23,11 @@ export function EmployeeDirectory({
   total: number;
   limit: number;
   offset: number;
-  filters: { search: string; department: string; employeeType: string };
+  filters: { search: string; state: string; department: string; employeeType: string };
 }) {
   const router = useRouter();
   const [search, setSearch] = useState(filters.search);
+  const [state, setState] = useState(filters.state);
   const [department, setDepartment] = useState(filters.department);
   const [type, setType] = useState(filters.employeeType);
   const [sort, setSort] = useState<{
@@ -56,6 +57,7 @@ export function EmployeeDirectory({
     event.preventDefault();
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());
+    if (state) query.set("state", state);
     if (department) query.set("department", department);
     if (type) query.set("employee_type", type);
     router.push(query.size ? `/employees?${query}` : "/employees");
@@ -63,6 +65,7 @@ export function EmployeeDirectory({
 
   function resetFilters() {
     setSearch("");
+    setState("");
     setDepartment("");
     setType("");
     router.push("/employees");
@@ -82,6 +85,14 @@ export function EmployeeDirectory({
               aria-label="Search employees"
             />
           </label>
+          <StateCombobox
+            states={referenceData.states}
+            value={state}
+            required={false}
+            placeholder="All states/jurisdictions"
+            ariaLabel="Filter by state or jurisdiction"
+            onChange={setState}
+          />
           <SelectInput
             className="filter-select"
             value={department}
@@ -179,6 +190,7 @@ export function EmployeeDirectory({
           path="/employees"
           params={{
             search: filters.search,
+            state: filters.state,
             department: filters.department,
             employee_type: filters.employeeType,
           }}

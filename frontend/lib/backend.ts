@@ -137,6 +137,7 @@ export async function getBackendStatus(): Promise<BackendStatus> {
 export const getEmployees = () => readAll<EmployeeDirectoryItem>("/employees");
 export const getEmployeePage = (options: {
   search?: string;
+  state?: string;
   department?: string;
   employeeType?: string;
   limit: number;
@@ -145,6 +146,7 @@ export const getEmployeePage = (options: {
   readPage<EmployeeDirectoryItem>(
     collectionPath("/employees", {
       search: options.search,
+      state: options.state,
       department: options.department,
       employee_type: options.employeeType,
       limit: options.limit,

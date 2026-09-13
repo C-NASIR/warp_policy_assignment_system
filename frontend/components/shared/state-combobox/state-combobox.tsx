@@ -18,11 +18,17 @@ export function StateCombobox({
   states,
   value,
   invalid = false,
+  required = true,
+  placeholder = "Search by state name or abbreviation",
+  ariaLabel,
   onChange,
 }: {
   states: StateOption[];
   value: string;
   invalid?: boolean;
+  required?: boolean;
+  placeholder?: string;
+  ariaLabel?: string;
   onChange(value: string): void;
 }) {
   const listboxId = useId();
@@ -90,8 +96,9 @@ export function StateCombobox({
             activeIndex >= 0 ? `${listboxId}-${filtered[activeIndex]?.code}` : undefined
           }
           aria-invalid={invalid}
+          aria-label={ariaLabel}
           autoComplete="off"
-          required
+          required={required}
           value={query}
           onFocus={() => {
             setOpen(true);
@@ -104,7 +111,7 @@ export function StateCombobox({
             setOpen(true);
           }}
           onKeyDown={onKeyDown}
-          placeholder="Search by state name or abbreviation"
+          placeholder={placeholder}
         />
         {query && (
           <button
