@@ -2,7 +2,7 @@
 
 import { Check, Eye, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { ManagerCombobox } from "./manager-combobox";
 import { EmployeeAssignmentPreviewPanel } from "./employee-assignment-preview";
 import { formatEmployeeId } from "@/lib/format";
@@ -30,12 +30,14 @@ export function EmployeeEditor({
   employee,
   employees = [],
   referenceData,
+  mfaEnabled = false,
   compact = false,
   trigger,
 }: {
   employee?: Employee;
   employees?: Employee[];
   referenceData: EmployeeReferenceData;
+  mfaEnabled?: boolean;
   compact?: boolean;
   trigger?: ReactNode;
 }) {
@@ -60,7 +62,20 @@ export function EmployeeEditor({
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
-  useModalAccessibility(compact && open, () => setOpen(false));
+  const [reauthenticationRequired, setReauthenticationRequired] = useState(false);
+  const [password, setPassword] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [passwordInvalid, setPasswordInvalid] = useState(false);
+  const [mfaInvalid, setMfaInvalid] = useState(false);
+  useModalAccessibility(compact && open, () => {
+    resetReauthentication();
+    setOpen(false);
+  });
+  useEffect(() => {
+    if (!compact || !success) return;
+    const timeout = window.setTimeout(() => setSuccess(""), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [compact, success]);
 
   const currentManager = employees.find((item) => item.id === data.manager_id);
   const initialManagerCandidate: EmployeeManagerCandidate | undefined = data.manager_id
@@ -86,8 +101,17 @@ export function EmployeeEditor({
     setData((current) => ({ ...current, [key]: value }));
     setPreview(null);
     setApproval(null);
+    resetReauthentication();
     setSuccess("");
     setError("");
+  }
+
+  function resetReauthentication() {
+    setReauthenticationRequired(false);
+    setPassword("");
+    setMfaCode("");
+    setPasswordInvalid(false);
+    setMfaInvalid(false);
   }
 
   const change = employee
@@ -123,6 +147,7 @@ export function EmployeeEditor({
         );
       setPreview(result as EmployeeAssignmentPreview);
       setApproval(result.approval?.token ?? null);
+      resetReauthentication();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to preview this change.");
     } finally {
@@ -134,6 +159,35 @@ export function EmployeeEditor({
     setSubmitting(true);
     setError("");
     try {
+      if (reauthenticationRequired) {
+        const missingPassword = !password;
+        const missingMfaCode = mfaEnabled && !mfaCode;
+        setPasswordInvalid(missingPassword);
+        setMfaInvalid(missingMfaCode);
+        if (missingPassword || missingMfaCode) {
+          setError(
+            missingMfaCode
+              ? "Enter your password and MFA code to confirm this change."
+              : "Enter your password to confirm this change.",
+          );
+          return;
+        }
+
+        const reauthenticationResponse = await fetch("/api/backend/auth/reauthenticate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password, ...(mfaCode ? { mfa_code: mfaCode } : {}) }),
+        });
+        if (!reauthenticationResponse.ok) {
+          const failure = await requestFailure(reauthenticationResponse);
+          setPasswordInvalid(failure.code === "invalid_current_password");
+          setMfaInvalid(failure.code === "invalid_mfa_code");
+          setError(failure.message);
+          return;
+        }
+        resetReauthentication();
+      }
+
       const endpoint = approval
         ? "/api/backend/change-executions"
         : employee
@@ -144,21 +198,27 @@ export function EmployeeEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(approval ? { approval_token: approval, change } : payload),
       });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(result.error?.message ?? "The employee change could not be saved.");
-      setSuccess(
-        employee
-          ? "Employee and downstream assignments updated."
-          : "Employee created and assignments resolved.",
-      );
+      if (!response.ok) {
+        const failure = await requestFailure(response);
+        if (failure.code === "reauthentication_required") {
+          setReauthenticationRequired(true);
+          return;
+        }
+        throw new Error(failure.message || "The employee change could not be saved.");
+      }
+      setPreview(null);
+      setApproval(null);
+      resetReauthentication();
+      setValidationAttempted(false);
       if (!employee) {
+        setSuccess("Employee created and assignments resolved.");
         setData(createBlankEmployee());
-        setPreview(null);
-        setApproval(null);
-        setValidationAttempted(false);
         router.push("/employees");
-      } else router.refresh();
+      } else {
+        setSuccess("Employee updated and assignments recalculated.");
+        setOpen(false);
+        router.refresh();
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to save this change.");
     } finally {
@@ -175,8 +235,8 @@ export function EmployeeEditor({
             These facts are evaluated against every active policy rule.
           </div>
           {error && <div className="error-banner">{error}</div>}
-          {success && (
-            <div className="success-banner">
+          {success && !compact && (
+            <div className="success-banner" role="status">
               <Check size={14} />
               {success}
             </div>
@@ -278,6 +338,57 @@ export function EmployeeEditor({
             </div>
           </div>
         </div>
+        {reauthenticationRequired && (
+          <div
+            className={`sensitive-confirmation employee-sensitive-confirmation${mfaEnabled ? " with-mfa" : ""}`}
+          >
+            <div className="sensitive-confirmation-copy">
+              <strong>Confirm your identity</strong>
+              <span>
+                Your session needs fresh authentication before this reviewed change can be applied.
+              </span>
+            </div>
+            <label className="field">
+              <span className="field-label">
+                Password <span className="required">Required</span>
+              </span>
+              <input
+                className={`input${passwordInvalid ? " field-invalid" : ""}`}
+                type="password"
+                autoComplete="current-password"
+                autoFocus
+                aria-required="true"
+                aria-invalid={passwordInvalid}
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setPasswordInvalid(false);
+                  setError("");
+                }}
+              />
+            </label>
+            {mfaEnabled && (
+              <label className="field">
+                <span className="field-label">
+                  MFA code <span className="required">Required</span>
+                </span>
+                <input
+                  className={`input${mfaInvalid ? " field-invalid" : ""}`}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  aria-required="true"
+                  aria-invalid={mfaInvalid}
+                  value={mfaCode}
+                  onChange={(event) => {
+                    setMfaCode(event.target.value);
+                    setMfaInvalid(false);
+                    setError("");
+                  }}
+                />
+              </label>
+            )}
+          </div>
+        )}
         <div className="form-footer employee-editor-footer">
           <div className="heading-actions">
             <Button variant="secondary" type="button" onClick={review} disabled={submitting}>
@@ -287,7 +398,13 @@ export function EmployeeEditor({
             {preview && (
               <Button type="button" onClick={confirm} disabled={submitting}>
                 <Check size={14} />
-                {employee ? "Confirm changes" : "Create employee"}
+                {submitting
+                  ? "Confirming…"
+                  : reauthenticationRequired
+                    ? "Authenticate and confirm"
+                    : employee
+                      ? "Confirm changes"
+                      : "Create employee"}
               </Button>
             )}
           </div>
@@ -315,7 +432,21 @@ export function EmployeeEditor({
   if (!compact) return form;
   return (
     <>
-      <Button variant="secondary" onClick={() => setOpen(true)}>
+      {success && (
+        <div className="floating-message success-banner" role="status">
+          <Check size={14} />
+          {success}
+        </div>
+      )}
+      <Button
+        variant="secondary"
+        onClick={() => {
+          setSuccess("");
+          setError("");
+          resetReauthentication();
+          setOpen(true);
+        }}
+      >
         {trigger}
       </Button>
       {open && (
@@ -330,7 +461,10 @@ export function EmployeeEditor({
               <h2>Edit {employee?.name}</h2>
               <button
                 className="icon-button"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  resetReauthentication();
+                  setOpen(false);
+                }}
                 aria-label="Close editor"
               >
                 <X size={16} />
@@ -342,4 +476,18 @@ export function EmployeeEditor({
       )}
     </>
   );
+}
+
+type RequestFailure = { code?: string; message: string };
+
+async function requestFailure(response: Response): Promise<RequestFailure> {
+  const result = await response.json().catch(() => ({}));
+  return {
+    code: result.error?.code,
+    message:
+      result.error?.issues?.[0]?.message ??
+      result.error?.message ??
+      result.detail ??
+      `Request failed with ${response.status}`,
+  };
 }

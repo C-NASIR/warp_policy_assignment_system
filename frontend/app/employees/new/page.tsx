@@ -30,7 +30,7 @@ export default async function NewEmployeePage() {
         </div>
         <Badge tone="accent">Preview required</Badge>
       </div>
-      <EmployeeEditor referenceData={referenceData} />
+      <EmployeeEditor referenceData={referenceData} mfaEnabled={user?.mfa_enabled ?? false} />
     </>
   );
 }

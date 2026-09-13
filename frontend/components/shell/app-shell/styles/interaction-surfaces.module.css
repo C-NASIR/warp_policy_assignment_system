@@ -390,6 +390,9 @@
   .productScope :global(.access-form-dialog .sensitive-confirmation.with-mfa) {
     grid-template-columns: 1fr;
   }
+  .productScope :global(.employee-sensitive-confirmation.with-mfa) {
+    grid-template-columns: 1fr;
+  }
   .productScope :global(.access-form-dialog .form-footer) {
     align-items: stretch;
     flex-direction: column;

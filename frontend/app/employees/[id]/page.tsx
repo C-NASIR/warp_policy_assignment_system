@@ -76,6 +76,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
             employee={employee}
             employees={allEmployees}
             referenceData={referenceData}
+            mfaEnabled={user?.mfa_enabled ?? false}
             trigger={
               <>
                 <Pencil size={14} /> Edit employee

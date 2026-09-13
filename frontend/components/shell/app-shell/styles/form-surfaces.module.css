@@ -249,6 +249,28 @@
 .productScope :global(.access-form-dialog .sensitive-confirmation.with-mfa) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+.productScope :global(.employee-sensitive-confirmation) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--surface-subtle);
+}
+.productScope :global(.employee-sensitive-confirmation.with-mfa) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.productScope :global(.sensitive-confirmation-copy) {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.productScope :global(.sensitive-confirmation-copy strong) {
+  color: var(--ink);
+  font-size: 12px;
+}
 .productScope :global(.access-form-dialog .dialog-error) {
   flex: 0 0 auto;
   margin: 12px 20px 0;
