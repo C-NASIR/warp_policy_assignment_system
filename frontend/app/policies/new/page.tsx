@@ -30,8 +30,7 @@ export default async function NewPolicyPage({ searchParams }: PageProps<"/polici
     ]);
   if (id ? !basePolicy?.capabilities.can_create_version : !hasPermission(user, "policies:create"))
     redirect("/forbidden");
-  const activateOnCreate =
-    hasPermission(user, "policies:activate") || hasPermission(user, "policies:update");
+  const activateOnCreate = hasPermission(user, "policies:activate");
   return (
     <>
       <div className="breadcrumb">

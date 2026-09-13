@@ -47,21 +47,18 @@ def conflict_response(exc: Exception) -> dict[str, Any]:
         code=issue.code,
         message=issue.message,
         issues=[issue],
-        legacy_detail=issue.message,
     )
 
 
 def validation_response(
     *,
     issues: list[APIErrorIssueRead],
-    legacy_detail: Any,
 ) -> dict[str, Any]:
     return error_response(
         category="validation",
         code="request_validation_failed",
         message="Request validation failed",
         issues=issues,
-        legacy_detail=legacy_detail,
     )
 
 
@@ -72,14 +69,14 @@ def error_response(
         "conflict",
         "authentication",
         "authorization",
+        "not_found",
+        "service",
     ],
     code: str,
     message: str,
     issues: list[APIErrorIssueRead],
-    legacy_detail: Any,
 ) -> dict[str, Any]:
     return APIErrorResponseRead(
-        detail=jsonable_encoder(legacy_detail),
         error=APIErrorRead(
             category=category,
             code=code,

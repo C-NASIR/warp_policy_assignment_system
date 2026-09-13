@@ -190,6 +190,24 @@ def test_policy_create_preview_uses_engine_without_persisting(client):
     assert client.get(f"/employees/{bob['id']}/assignments").json() == []
 
 
+def test_change_preview_requires_the_current_type_discriminator(client):
+    response = client.post(
+        "/change-previews",
+        json={
+            "change_type": "policy_create",
+            "policy": {
+                "name": "California payroll",
+                "priority": 20,
+                "condition_group": _condition("state", "CA"),
+                "values": [],
+            },
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["category"] == "validation"
+
+
 def test_openapi_documents_type_specific_preview_responses(client):
     response_schema = client.get("/openapi.json").json()["paths"]["/change-previews"][
         "post"

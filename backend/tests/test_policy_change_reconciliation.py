@@ -104,9 +104,9 @@ def test_policy_creation_synchronously_reconciles_existing_matching_employees(cl
     )
 
     alice_assignments = _assignments(client, alice)
-    assert [(item["value"], item["source_policy_version_id"]) for item in alice_assignments] == [
-        ("weekly", policy["versions"][0]["id"])
-    ]
+    assert [
+        (item["value"], item["source_policy_version_id"]) for item in alice_assignments
+    ] == [("weekly", policy["versions"][0]["id"])]
     assert _assignments(client, bob) == []
     assert _assignment_history(client, bob) == []
 
@@ -134,7 +134,9 @@ def test_new_current_version_reconciles_employees_that_enter_and_leave_policy(cl
             "priority": 10,
             "effective_from": current_date().isoformat(),
             "condition_group": _condition("state", "TX"),
-            "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
+            "values": [
+                {"assignment_field_definition_id": field["id"], "value": "biweekly"}
+            ],
         },
     )
     assert response.status_code == 201
@@ -147,9 +149,9 @@ def test_new_current_version_reconciles_employees_that_enter_and_leave_policy(cl
     assert alice_history[0]["effective_until"] is not None
 
     bob_assignments = _assignments(client, bob)
-    assert [(item["value"], item["source_policy_version_id"]) for item in bob_assignments] == [
-        ("biweekly", new_version["id"])
-    ]
+    assert [
+        (item["value"], item["source_policy_version_id"]) for item in bob_assignments
+    ] == [("biweekly", new_version["id"])]
 
 
 def test_future_policy_version_does_not_change_current_assignments(client):
@@ -172,7 +174,9 @@ def test_future_policy_version_does_not_change_current_assignments(client):
             "priority": 20,
             "effective_from": (current_date() + timedelta(days=1)).isoformat(),
             "condition_group": _condition("state", "CA"),
-            "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
+            "values": [
+                {"assignment_field_definition_id": field["id"], "value": "biweekly"}
+            ],
         },
     )
     assert response.status_code == 201
@@ -225,8 +229,12 @@ def test_group_linked_policy_version_and_archive_reconcile_members_despite_condi
     )
     alice = _create_employee(client, "Alice", "CA")
     group = client.post("/groups", json={"name": "Engineering"}).json()
-    assert client.post(f"/groups/{group['id']}/employees/{alice['id']}").status_code == 201
-    assert client.post(f"/groups/{group['id']}/policies/{policy['id']}").status_code == 201
+    assert (
+        client.post(f"/groups/{group['id']}/employees/{alice['id']}").status_code == 201
+    )
+    assert (
+        client.post(f"/groups/{group['id']}/policies/{policy['id']}").status_code == 201
+    )
     assert [item["value"] for item in _assignments(client, alice)] == ["engineer"]
     assert _employee_policy_ids(db, alice) == [policy["id"]]
 
@@ -236,16 +244,21 @@ def test_group_linked_policy_version_and_archive_reconcile_members_despite_condi
             "priority": 10,
             "effective_from": current_date().isoformat(),
             "condition_group": _condition("state", "WI"),
-            "values": [{"assignment_field_definition_id": field["id"], "value": "senior"}],
+            "values": [
+                {"assignment_field_definition_id": field["id"], "value": "senior"}
+            ],
         },
     )
     assert version.status_code == 201
     assert [item["value"] for item in _assignments(client, alice)] == ["senior"]
     assert _employee_policy_ids(db, alice) == [policy["id"]]
 
-    assert client.patch(
-        f"/policies/{policy['id']}", json={"status": "archived"}
-    ).status_code == 200
+    assert (
+        client.patch(
+            f"/policies/{policy['id']}", json={"status": "archived"}
+        ).status_code
+        == 200
+    )
     assert _assignments(client, alice) == []
     assert _employee_policy_ids(db, alice) == []
 
@@ -263,8 +276,12 @@ def test_future_group_policy_is_not_a_current_employee_policy_or_assignment(clie
     )
     alice = _create_employee(client, "Alice", "CA")
     group = client.post("/groups", json={"name": "Engineering"}).json()
-    assert client.post(f"/groups/{group['id']}/employees/{alice['id']}").status_code == 201
-    assert client.post(f"/groups/{group['id']}/policies/{policy['id']}").status_code == 201
+    assert (
+        client.post(f"/groups/{group['id']}/employees/{alice['id']}").status_code == 201
+    )
+    assert (
+        client.post(f"/groups/{group['id']}/policies/{policy['id']}").status_code == 201
+    )
 
     assert _employee_policy_ids(db, alice) == []
     assert _assignments(client, alice) == []
@@ -295,11 +312,13 @@ def test_conflicting_policy_creation_rolls_back_policy_audits_and_partial_fanout
             "name": "California monthly",
             "priority": 10,
             "condition_group": _condition("state", "CA"),
-            "values": [{"assignment_field_definition_id": field["id"], "value": "monthly"}],
+            "values": [
+                {"assignment_field_definition_id": field["id"], "value": "monthly"}
+            ],
         },
     )
     assert response.status_code == 409
-    assert "Conflicting values" in response.json()["detail"]
+    assert "Conflicting values" in response.json()["error"]["message"]
 
     assert [(item["id"], item["name"]) for item in client.get("/policies").json()] == [
         (existing["id"], "Bob weekly")
@@ -345,11 +364,13 @@ def test_conflicting_new_version_rolls_back_version_range_audits_and_partial_fan
             "priority": 10,
             "effective_from": current_date().isoformat(),
             "condition_group": _condition("state", "CA"),
-            "values": [{"assignment_field_definition_id": field["id"], "value": "monthly"}],
+            "values": [
+                {"assignment_field_definition_id": field["id"], "value": "monthly"}
+            ],
         },
     )
     assert response.status_code == 409
-    assert "Conflicting values" in response.json()["detail"]
+    assert "Conflicting values" in response.json()["error"]["message"]
 
     versions = client.get(f"/policies/{changing['id']}/versions").json()
     assert len(versions) == 1

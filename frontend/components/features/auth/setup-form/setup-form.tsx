@@ -33,13 +33,11 @@ export function SetupForm() {
       });
       const result = (await response.json().catch(() => ({}))) as Partial<CurrentUser> & {
         error?: { issues?: { message?: string }[]; message?: string };
-        detail?: string;
       };
       if (!response.ok) {
         throw new Error(
           result.error?.issues?.[0]?.message ??
             result.error?.message ??
-            result.detail ??
             "Workspace setup could not be completed.",
         );
       }

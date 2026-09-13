@@ -1,6 +1,5 @@
 from app.services.human_auth import SESSION_COOKIE_NAME
 
-
 ROOT = {
     "name": "Root Admin",
     "email": "root@example.com",
@@ -27,6 +26,8 @@ def _create_role(client, permissions: list[str], name: str = "Employee viewer") 
             "name": name,
             "description": "A deliberately limited role",
             "permissions": permissions,
+            "employee_scope": "all",
+            "assignment_field_scope": "all",
         },
     )
     assert response.status_code == 201, response.text
@@ -75,6 +76,20 @@ def test_root_can_manage_roles_and_users(client):
     assert cannot_delete.status_code == 409
 
 
+def test_new_roles_default_to_no_data_scope(client):
+    _setup_root(client)
+
+    response = client.post(
+        "/roles",
+        json={"name": "Unscoped role", "permissions": ["employees:read"]},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["employee_scope"] == "none"
+    assert response.json()["assignment_field_scope"] == "none"
+    assert response.json()["assignment_field_ids"] == []
+
+
 def test_root_manually_replaces_a_users_roles(client):
     _setup_root(client)
     original_role = _create_role(client, ["employees:read"])
@@ -107,14 +122,17 @@ def test_temporary_password_is_forced_and_role_permissions_are_enforced(client):
 
     login = client.post(
         "/auth/login",
-        json={"email": "morgan.lee@example.com", "password": "temporary password value"},
+        json={
+            "email": "morgan.lee@example.com",
+            "password": "temporary password value",
+        },
     )
     assert login.status_code == 200
     assert login.json()["password_change_required"] is True
 
     forced = client.get("/employees")
     assert forced.status_code == 403
-    assert "temporary password" in forced.json()["detail"]
+    assert "temporary password" in forced.json()["error"]["message"]
 
     changed = client.post(
         "/auth/change-password",
@@ -130,16 +148,21 @@ def test_temporary_password_is_forced_and_role_permissions_are_enforced(client):
     denied_read = client.get("/policies")
     assert denied_read.status_code == 403
     assert denied_read.json()["error"]["code"] == "insufficient_permission"
-    assert denied_read.json()["error"]["issues"][0]["metadata"]["required_permissions"] == ["policies:read"]
-    assert client.post(
-        "/employees",
-        json={
-            "name": "Avery Stone",
-            "state": "IL",
-            "department": "Operations",
-            "employee_type": "full-time",
-        },
-    ).status_code == 403
+    assert denied_read.json()["error"]["issues"][0]["metadata"][
+        "required_permissions"
+    ] == ["policies:read"]
+    assert (
+        client.post(
+            "/employees",
+            json={
+                "name": "Avery Stone",
+                "state": "IL",
+                "department": "Operations",
+                "employee_type": "full-time",
+            },
+        ).status_code
+        == 403
+    )
 
 
 def test_permission_changes_apply_to_existing_sessions(client):
@@ -148,17 +171,26 @@ def test_permission_changes_apply_to_existing_sessions(client):
     _create_user(client, role["id"])
     root_cookie = client.cookies.get(SESSION_COOKIE_NAME)
 
-    assert client.post(
-        "/auth/login",
-        json={"email": "morgan.lee@example.com", "password": "temporary password value"},
-    ).status_code == 200
-    assert client.post(
-        "/auth/change-password",
-        json={
-            "current_password": "temporary password value",
-            "new_password": "permanent password value",
-        },
-    ).status_code == 200
+    assert (
+        client.post(
+            "/auth/login",
+            json={
+                "email": "morgan.lee@example.com",
+                "password": "temporary password value",
+            },
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            "/auth/change-password",
+            json={
+                "current_password": "temporary password value",
+                "new_password": "permanent password value",
+            },
+        ).status_code
+        == 200
+    )
     user_cookie = client.cookies.get(SESSION_COOKIE_NAME)
     employee = {
         "name": "Avery Stone",
@@ -186,18 +218,27 @@ def test_disabling_user_revokes_active_sessions(client):
     user = _create_user(client, role["id"])
 
     assert client.post("/auth/logout").status_code == 204
-    assert client.post(
-        "/auth/login",
-        json={"email": "morgan.lee@example.com", "password": "temporary password value"},
-    ).status_code == 200
+    assert (
+        client.post(
+            "/auth/login",
+            json={
+                "email": "morgan.lee@example.com",
+                "password": "temporary password value",
+            },
+        ).status_code
+        == 200
+    )
     user_cookie = client.cookies.get(SESSION_COOKIE_NAME)
     assert user_cookie
 
     assert client.post("/auth/logout").status_code == 204
-    assert client.post(
-        "/auth/login",
-        json={"email": ROOT["email"], "password": ROOT["password"]},
-    ).status_code == 200
+    assert (
+        client.post(
+            "/auth/login",
+            json={"email": ROOT["email"], "password": ROOT["password"]},
+        ).status_code
+        == 200
+    )
     disabled = client.delete(f"/users/{user['id']}")
     assert disabled.status_code == 204
 

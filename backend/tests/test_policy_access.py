@@ -70,15 +70,15 @@ def test_archived_policy_must_be_reactivated_before_versioning():
     assert exc.value.status_code == 409
 
 
-def test_legacy_policy_update_retains_combined_capabilities():
+def test_policy_update_permission_only_allows_policy_details():
     capabilities = policy_capabilities(
         _human("policies:update"),
         Policy(status="active"),
     )
 
     assert capabilities.can_update is True
-    assert capabilities.can_create_version is True
-    assert capabilities.can_archive is True
+    assert capabilities.can_create_version is False
+    assert capabilities.can_archive is False
 
 
 def _policy_payload(name: str, field_id: int, *, status: str = "active") -> dict:
@@ -148,30 +148,39 @@ def test_it_policy_administrator_is_limited_to_application_access(client):
             ],
         },
     ).json()
-    assert client.post(
-        "/users",
-        json={
-            "name": "IT Administrator",
-            "email": "it@example.com",
-            "temporary_password": "temporary password value",
-            "role_ids": [role["id"]],
-        },
-    ).status_code == 201
+    assert (
+        client.post(
+            "/users",
+            json={
+                "name": "IT Administrator",
+                "email": "it@example.com",
+                "temporary_password": "temporary password value",
+                "role_ids": [role["id"]],
+            },
+        ).status_code
+        == 201
+    )
     assert client.post("/auth/logout").status_code == 204
-    assert client.post(
-        "/auth/login",
-        json={
-            "email": "it@example.com",
-            "password": "temporary password value",
-        },
-    ).status_code == 200
-    assert client.post(
-        "/auth/change-password",
-        json={
-            "current_password": "temporary password value",
-            "new_password": "permanent password value",
-        },
-    ).status_code == 200
+    assert (
+        client.post(
+            "/auth/login",
+            json={
+                "email": "it@example.com",
+                "password": "temporary password value",
+            },
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            "/auth/change-password",
+            json={
+                "current_password": "temporary password value",
+                "new_password": "permanent password value",
+            },
+        ).status_code
+        == 200
+    )
 
     policies = client.get("/policies")
     assert policies.status_code == 200
@@ -184,21 +193,29 @@ def test_it_policy_administrator_is_limited_to_application_access(client):
         "can_archive": True,
     }
 
-    assert client.patch(
-        f"/policies/{pay_policy['id']}",
-        json={"status": "archived"},
-    ).status_code == 404
-    assert client.post(
-        f"/policies/{pay_policy['id']}/versions",
-        json={
-            **{
-                key: value
-                for key, value in _policy_payload("ignored", pay["id"]).items()
-                if key not in {"name", "status"}
+    assert (
+        client.patch(
+            f"/policies/{pay_policy['id']}",
+            json={"status": "archived"},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            f"/policies/{pay_policy['id']}/versions",
+            json={
+                **{
+                    key: value
+                    for key, value in _policy_payload("ignored", pay["id"]).items()
+                    if key not in {"name", "status"}
+                },
+                "effective_from": current_date()
+                .replace(year=current_date().year + 1)
+                .isoformat(),
             },
-            "effective_from": current_date().replace(year=current_date().year + 1).isoformat(),
-        },
-    ).status_code == 404
+        ).status_code
+        == 404
+    )
     archived = client.patch(
         f"/policies/{access_policy['id']}",
         json={"status": "archived"},

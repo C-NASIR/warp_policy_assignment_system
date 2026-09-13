@@ -4,6 +4,7 @@ from sqlalchemy.sql import Select
 
 from app.dates import current_datetime
 from app.models import AssignmentFieldDefinition, Employee, EmployeeOverride
+from app.services.assignment_values import normalize_assignment_value
 from app.services.audit import record_audit_log, snapshot_override
 from app.services.reconciliation import reconcile_employees
 
@@ -31,7 +32,9 @@ class EmployeeOverrideConflictError(ValueError):
         }
 
 
-def list_employee_overrides(session: Session, employee_id: int) -> list[EmployeeOverride]:
+def list_employee_overrides(
+    session: Session, employee_id: int
+) -> list[EmployeeOverride]:
     _get_employee(session, employee_id)
     return list(session.scalars(employee_overrides_statement(employee_id)))
 
@@ -66,6 +69,7 @@ def create_employee_override(
         session,
         assignment_field_definition_id,
     )
+    value = normalize_assignment_value(assignment_field_definition, value)
     _validate_override_cardinality(
         session,
         employee_id,
@@ -111,6 +115,7 @@ def update_employee_override(
         else override.assignment_field_definition
     )
     target_value = value if value is not None else override.value
+    target_value = normalize_assignment_value(target_field, target_value)
     if (
         target_field.id == override.assignment_field_definition_id
         and target_value == override.value
@@ -182,7 +187,8 @@ def _validate_override_cardinality(
 ) -> None:
     statement = select(EmployeeOverride).where(
         EmployeeOverride.employee_id == employee_id,
-        EmployeeOverride.assignment_field_definition_id == assignment_field_definition.id,
+        EmployeeOverride.assignment_field_definition_id
+        == assignment_field_definition.id,
         EmployeeOverride.retired_at.is_(None),
     )
     if excluded_override_id is not None:
@@ -226,13 +232,14 @@ def _get_assignment_field_definition(
     )
     if assignment_field_definition is None:
         raise EmployeeOverrideResourceNotFoundError(
-            "Assignment field definition "
-            f"{assignment_field_definition_id} not found"
+            f"Assignment field definition {assignment_field_definition_id} not found"
         )
     return assignment_field_definition
 
 
-def _get_override(session: Session, employee_id: int, override_id: int) -> EmployeeOverride:
+def _get_override(
+    session: Session, employee_id: int, override_id: int
+) -> EmployeeOverride:
     override = session.scalar(
         select(EmployeeOverride)
         .where(

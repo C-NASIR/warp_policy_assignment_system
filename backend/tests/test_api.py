@@ -2,7 +2,9 @@ from app.dates import current_date
 
 
 def create_field(client, name, cardinality):
-    response = client.post("/assignment-fields", json={"name": name, "cardinality": cardinality})
+    response = client.post(
+        "/assignment-fields", json={"name": name, "cardinality": cardinality}
+    )
     assert response.status_code == 201
     return response.json()
 
@@ -91,11 +93,18 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
     assert directory_entry["active_assignment_count"] == 2
 
 
-def test_nonmatching_policy_produces_no_assignment_then_employee_update_applies_it(client):
+def test_nonmatching_policy_produces_no_assignment_then_employee_update_applies_it(
+    client,
+):
     field = create_field(client, "badge", "one")
     employee = client.post(
         "/employees",
-        json={"name": "Bob", "state": "TX", "department": "Sales", "employee_type": "contractor"},
+        json={
+            "name": "Bob",
+            "state": "TX",
+            "department": "Sales",
+            "employee_type": "contractor",
+        },
     ).json()
     create_policy(
         client,
@@ -130,16 +139,34 @@ def test_equal_priority_conflict_is_clear_and_employee_creation_rolls_back(clien
 
     response = client.post(
         "/employees",
-        json={"name": "Alice", "state": "CA", "department": "Engineering", "employee_type": "regular"},
+        json={
+            "name": "Alice",
+            "state": "CA",
+            "department": "Engineering",
+            "employee_type": "regular",
+        },
     )
     assert response.status_code == 409
-    assert "Conflicting values for field 'pay_schedule'" in response.json()["detail"]
+    assert (
+        "Conflicting values for field 'pay_schedule'"
+        in response.json()["error"]["message"]
+    )
     assert client.get("/employees").json() == []
 
 
 def test_validation_and_missing_references(client):
-    assert client.post("/assignment-fields", json={"name": "x", "cardinality": "some"}).status_code == 422
-    assert client.post("/policies", json={"name": "missing tree", "priority": 1}).status_code == 422
+    assert (
+        client.post(
+            "/assignment-fields", json={"name": "x", "cardinality": "some"}
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            "/policies", json={"name": "missing tree", "priority": 1}
+        ).status_code
+        == 422
+    )
 
     response = client.post(
         "/policies",
@@ -172,7 +199,10 @@ def test_archiving_policy_removes_it_on_employee_reconciliation(client):
             "employee_type": "regular",
         },
     ).json()
-    assert [item["value"] for item in client.get(f"/employees/{alice['id']}/assignments").json()] == ["blue"]
+    assert [
+        item["value"]
+        for item in client.get(f"/employees/{alice['id']}/assignments").json()
+    ] == ["blue"]
 
     response = client.patch(
         f"/policies/{policy['id']}",
@@ -228,9 +258,13 @@ def test_employee_date_comparison_policy_is_accepted_and_applied(client):
             "priority": 1,
             "condition_group": {
                 "logical_operator": "and",
-                "conditions": [{"field": "start_date", "operator": "<=", "value": "2024-12-31"}],
+                "conditions": [
+                    {"field": "start_date", "operator": "<=", "value": "2024-12-31"}
+                ],
             },
-            "values": [{"assignment_field_definition_id": badge["id"], "value": "tenured"}],
+            "values": [
+                {"assignment_field_definition_id": badge["id"], "value": "tenured"}
+            ],
         },
     )
     assert response.status_code == 201
@@ -261,7 +295,11 @@ def test_policy_rejects_an_unknown_comparison_operator(client):
             "condition_group": {
                 "logical_operator": "and",
                 "conditions": [
-                    {"field": "start_date", "operator": "contains", "value": "2024-12-31"}
+                    {
+                        "field": "start_date",
+                        "operator": "contains",
+                        "value": "2024-12-31",
+                    }
                 ],
             },
         },
@@ -278,7 +316,9 @@ def test_policy_rejects_invalid_typed_condition_values(client):
             "priority": 1,
             "condition_group": {
                 "logical_operator": "and",
-                "conditions": [{"field": "start_date", "operator": "<", "value": "last Tuesday"}],
+                "conditions": [
+                    {"field": "start_date", "operator": "<", "value": "last Tuesday"}
+                ],
             },
         },
     )

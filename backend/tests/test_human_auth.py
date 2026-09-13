@@ -3,7 +3,6 @@ from sqlalchemy import select
 from app.models import AuthSession, User
 from app.services.human_auth import SESSION_COOKIE_NAME, hash_session_token
 
-
 ROOT = {
     "name": "Priya Shah",
     "email": "Priya.Shah@example.com",
@@ -31,10 +30,16 @@ def test_root_setup_is_one_time_and_starts_a_human_session(client, db):
     assert user["is_root"] is True
     assert user["status"] == "active"
     assert "password" not in user
-    assert "HttpOnly" in client.post("/auth/login", json={
-        "email": ROOT["email"],
-        "password": ROOT["password"],
-    }).headers["set-cookie"]
+    assert (
+        "HttpOnly"
+        in client.post(
+            "/auth/login",
+            json={
+                "email": ROOT["email"],
+                "password": ROOT["password"],
+            },
+        ).headers["set-cookie"]
+    )
 
     stored = db.scalar(select(User).where(User.email == "priya.shah@example.com"))
     assert stored is not None
@@ -152,4 +157,4 @@ def test_human_session_rejects_untrusted_state_changes(client):
         },
     )
     assert denied.status_code == 403
-    assert "trusted origin" in denied.json()["detail"]
+    assert "trusted origin" in denied.json()["error"]["message"]

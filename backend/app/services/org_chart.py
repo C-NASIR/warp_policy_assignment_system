@@ -58,7 +58,7 @@ def get_ancestor_ids(session: Session, employee_id: int) -> set[int]:
     """Return every manager above an employee, nearest or distant.
 
     UNION (rather than UNION ALL) also makes this terminate safely if corrupt
-    legacy data contains a cycle.
+    data contains a cycle.
     """
     ancestors = (
         select(Employee.manager_id.label("employee_id"))

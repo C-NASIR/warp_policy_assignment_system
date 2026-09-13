@@ -8,7 +8,6 @@ from sqlalchemy import (
     inspect,
 )
 
-from app.database import Base
 from app.models import (
     APICredential,
     ApprovedChangeExecution,
@@ -166,8 +165,18 @@ def test_policy_domain_models_have_required_columns():
             "effective_from",
             "effective_until",
         },
-        AssignmentFieldDefinition: {"id", "field", "cardinality", "conflict_resolution"},
-        PolicyFieldValue: {"policy_version_id", "assignment_field_definition_id", "value"},
+        AssignmentFieldDefinition: {
+            "id",
+            "name",
+            "cardinality",
+            "conflict_resolution",
+            "input",
+        },
+        PolicyFieldValue: {
+            "policy_version_id",
+            "assignment_field_definition_id",
+            "value",
+        },
     }
 
     for model, required_columns in expected.items():
@@ -176,8 +185,12 @@ def test_policy_domain_models_have_required_columns():
 
 
 def test_join_models_use_composite_primary_keys():
-    group_condition_pk = {column.key for column in inspect(ConditionGroupCondition).primary_key}
-    employee_group_pk = {column.key for column in inspect(EmployeeGroupMembership).primary_key}
+    group_condition_pk = {
+        column.key for column in inspect(ConditionGroupCondition).primary_key
+    }
+    employee_group_pk = {
+        column.key for column in inspect(EmployeeGroupMembership).primary_key
+    }
     group_policy_pk = {column.key for column in inspect(GroupPolicy).primary_key}
     employee_policy_pk = {column.key for column in inspect(EmployeePolicy).primary_key}
     policy_value_pk = {column.key for column in inspect(PolicyFieldValue).primary_key}
@@ -186,13 +199,20 @@ def test_join_models_use_composite_primary_keys():
     assert employee_group_pk == {"employee_id", "group_id"}
     assert group_policy_pk == {"group_id", "policy_id"}
     assert employee_policy_pk == {"employee_id", "policy_id"}
-    assert policy_value_pk == {"policy_version_id", "assignment_field_definition_id", "value"}
+    assert policy_value_pk == {
+        "policy_version_id",
+        "assignment_field_definition_id",
+        "value",
+    }
 
 
 def test_employee_manager_is_self_referencing_and_indexed():
     table = cast(Table, Employee.__table__)
     foreign_keys = {
-        (tuple(column.key for column in constraint.columns), tuple(element.target_fullname for element in constraint.elements))
+        (
+            tuple(column.key for column in constraint.columns),
+            tuple(element.target_fullname for element in constraint.elements),
+        )
         for constraint in table.constraints
         if isinstance(constraint, ForeignKeyConstraint)
     }
@@ -229,18 +249,9 @@ def test_collection_filter_columns_have_supporting_indexes():
     for model, required_indexes in expected_indexes.items():
         table = cast(Table, model.__table__)
         actual_indexes = {
-            tuple(column.key for column in index.columns)
-            for index in table.indexes
+            tuple(column.key for column in index.columns) for index in table.indexes
         }
         assert required_indexes <= actual_indexes
-
-
-def test_legacy_group_columns_are_absent():
-    assert "groups" in Base.metadata.tables
-    assert "employee_group_memberships" in Base.metadata.tables
-    assert "group_policies" in Base.metadata.tables
-    assert "employee_groups" not in Base.metadata.tables
-    assert "group_id" not in {column.key for column in inspect(Policy).columns}
 
 
 def test_employee_assignment_requires_exactly_one_source():

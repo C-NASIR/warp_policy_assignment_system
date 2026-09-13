@@ -972,7 +972,6 @@ async function requestFailure(response: Response): Promise<RequestFailure> {
     message:
       result.error?.issues?.[0]?.message ??
       result.error?.message ??
-      result.detail ??
       `Request failed with ${response.status}`,
   };
 }

@@ -224,12 +224,12 @@ def get_audit_actor(
     actor = x_actor.strip()
     if not actor:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="X-Actor cannot be blank",
         )
     if len(actor) > 200:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="X-Actor cannot exceed 200 characters",
         )
     authorize(principal, {ACTOR_OVERRIDE_SCOPE})

@@ -46,7 +46,7 @@ Use reserved `.test` email addresses in fixtures. Never use a real address in co
 
 ## Assignment scenario
 
-The original policy story continues to use Rachel's employee facts and the existing fields introduced by the lessons:
+The policy story uses Rachel's employee facts and these assignment fields:
 
 | Field | Cardinality | Teaching purpose |
 | --- | --- | --- |

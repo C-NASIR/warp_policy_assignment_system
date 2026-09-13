@@ -38,7 +38,6 @@ export function LoginForm() {
       });
       const result = (await response.json().catch(() => ({}))) as Partial<CurrentUser> & {
         error?: { code?: string; issues?: { message?: string }[]; message?: string };
-        detail?: string;
       };
       if (!response.ok) {
         if (result.error?.code === "mfa_required") {
@@ -49,7 +48,6 @@ export function LoginForm() {
         throw new Error(
           result.error?.issues?.[0]?.message ??
             result.error?.message ??
-            result.detail ??
             "Authentication could not be completed.",
         );
       }

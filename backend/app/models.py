@@ -15,7 +15,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.dates import current_date, current_datetime
@@ -571,6 +571,7 @@ class Employee(Base):
     @property
     def state_label(self) -> str:
         return state_label(self.state)
+
     policies: Mapped[list[Policy]] = relationship(
         secondary="employee_policies", back_populates="employees"
     )
@@ -607,12 +608,14 @@ class AssignmentFieldDefinition(Base):
     __tablename__ = "assignment_field_definitions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    field: Mapped[str] = mapped_column(String(100), unique=True)
-    # ``name`` keeps the current API backwards compatible while the persisted
-    # field follows the domain vocabulary.
-    name = synonym("field")
+    name: Mapped[str] = mapped_column(String(100), unique=True)
     cardinality: Mapped[Literal["one", "many"]] = mapped_column(String(10))
     conflict_resolution: Mapped[str] = mapped_column(String(50), default="priority")
+    input: Mapped[dict] = mapped_column(
+        JSON,
+        default=lambda: {"type": "text", "options": []},
+        server_default='{"type":"text","options":[]}',
+    )
     overrides: Mapped[list[EmployeeOverride]] = relationship(
         back_populates="assignment_field_definition"
     )
@@ -697,6 +700,7 @@ class PolicyVersion(Base):
                 f"PolicyVersion {self.id} must have exactly one root condition group"
             )
         return roots[0]
+
 
 class ConditionFieldDefinition(Base):
     __tablename__ = "condition_field_definitions"

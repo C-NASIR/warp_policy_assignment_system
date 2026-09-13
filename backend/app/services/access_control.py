@@ -59,8 +59,8 @@ PERMISSIONS: dict[str, tuple[str, str, str]] = {
     ),
     "policies:update": (
         "Policies",
-        "Full policy management (legacy)",
-        "Edit policy metadata, add versions, and change lifecycle state. Existing roles keep this combined grant.",
+        "Edit policy details",
+        "Rename policies and return them to draft status.",
     ),
     "policies:version:create": (
         "Policies",
@@ -213,9 +213,8 @@ def required_permissions(method: str, path: str) -> set[str]:
             return {"policies:read"}
         if method == "POST" and path == "/policies":
             return {"policies:create"}
-        # Policy routes enforce the specific version/lifecycle permission after
-        # loading the record. This keeps the middleware contract precise while
-        # retaining policies:update as a backwards-compatible combined grant.
+        # Policy routes enforce the specific version or lifecycle permission
+        # after loading the record.
         return set()
     return set()
 

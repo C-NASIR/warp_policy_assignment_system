@@ -10,6 +10,7 @@ from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
     AssignmentFieldDefinitionCreate,
     AssignmentFieldDefinitionRead,
+    AssignmentFieldDefinitionUpdate,
 )
 from app.services.assignment_field_visibility import (
     require_unrestricted_assignment_fields,
@@ -30,7 +31,7 @@ def create(
     visibility: AssignmentFieldScope,
 ) -> AssignmentFieldDefinition:
     require_unrestricted_assignment_fields(visibility)
-    assignment_field = AssignmentFieldDefinition(**data.model_dump())
+    assignment_field = AssignmentFieldDefinition(**data.model_dump(mode="json"))
     session.add(assignment_field)
     try:
         session.flush()
@@ -59,7 +60,7 @@ def list_all(
         pattern = f"%{search.strip()}%"
         statement = statement.where(
             or_(
-                AssignmentFieldDefinition.field.ilike(pattern),
+                AssignmentFieldDefinition.name.ilike(pattern),
                 AssignmentFieldDefinition.conflict_resolution.ilike(pattern),
             )
         )
@@ -89,3 +90,24 @@ def get(
         visibility,
         assignment_field_definition_id,
     )
+
+
+@router.patch(
+    "/{assignment_field_definition_id}",
+    response_model=AssignmentFieldDefinitionRead,
+)
+def patch(
+    assignment_field_definition_id: int,
+    data: AssignmentFieldDefinitionUpdate,
+    session: DatabaseSession,
+    visibility: AssignmentFieldScope,
+) -> AssignmentFieldDefinition:
+    require_unrestricted_assignment_fields(visibility)
+    assignment_field = visible_assignment_field_or_404(
+        session,
+        visibility,
+        assignment_field_definition_id,
+    )
+    assignment_field.input = data.input.model_dump(mode="json")
+    session.flush()
+    return assignment_field

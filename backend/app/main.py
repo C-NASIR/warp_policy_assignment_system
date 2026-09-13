@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
@@ -34,6 +33,7 @@ from app.routers import (
 )
 from app.schemas import APIErrorResponseRead
 from app.services.access_control import PermissionDeniedError, required_permissions
+from app.services.assignment_values import AssignmentValueError
 from app.services.auth import (
     AuthenticationError,
     AuthorizationError,
@@ -233,7 +233,6 @@ async def authentication_error_handler(
                     metadata=exc.metadata,
                 )
             ],
-            legacy_detail=str(exc),
         ),
         headers=headers,
     )
@@ -258,7 +257,6 @@ async def authorization_error_handler(
                     metadata=exc.metadata,
                 )
             ],
-            legacy_detail=str(exc),
         ),
     )
 
@@ -282,7 +280,6 @@ async def permission_denied_error_handler(
                     metadata=exc.metadata,
                 )
             ],
-            legacy_detail=str(exc),
         ),
     )
 
@@ -306,7 +303,6 @@ async def credential_conflict_handler(
                     metadata=exc.metadata,
                 )
             ],
-            legacy_detail=str(exc),
         ),
     )
 
@@ -333,7 +329,6 @@ async def credential_validation_handler(
                     metadata=exc.metadata,
                 )
             ],
-            legacy_detail=str(exc),
         ),
     )
 
@@ -348,7 +343,15 @@ async def group_resource_not_found_handler(
     _: Request,
     exc: GroupResourceNotFoundError,
 ) -> JSONResponse:
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
+    return JSONResponse(
+        status_code=404,
+        content=error_response(
+            category="not_found",
+            code="resource_not_found",
+            message=str(exc),
+            issues=[validation_issue(code="resource_not_found", message=str(exc))],
+        ),
+    )
 
 
 @app.exception_handler(EmployeeManagerNotFoundError)
@@ -356,7 +359,15 @@ async def employee_manager_not_found_handler(
     _: Request,
     exc: EmployeeManagerNotFoundError,
 ) -> JSONResponse:
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
+    return JSONResponse(
+        status_code=404,
+        content=error_response(
+            category="not_found",
+            code="resource_not_found",
+            message=str(exc),
+            issues=[validation_issue(code="resource_not_found", message=str(exc))],
+        ),
+    )
 
 
 @app.exception_handler(EmployeeHierarchyConflictError)
@@ -372,7 +383,15 @@ async def employee_override_not_found_handler(
     _: Request,
     exc: EmployeeOverrideResourceNotFoundError,
 ) -> JSONResponse:
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
+    return JSONResponse(
+        status_code=404,
+        content=error_response(
+            category="not_found",
+            code="resource_not_found",
+            message=str(exc),
+            issues=[validation_issue(code="resource_not_found", message=str(exc))],
+        ),
+    )
 
 
 @app.exception_handler(EmployeeOverrideConflictError)
@@ -381,6 +400,26 @@ async def employee_override_conflict_handler(
     exc: EmployeeOverrideConflictError,
 ) -> JSONResponse:
     return JSONResponse(status_code=409, content=conflict_response(exc))
+
+
+@app.exception_handler(AssignmentValueError)
+async def assignment_value_error_handler(
+    _: Request,
+    exc: AssignmentValueError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content=validation_response(
+            issues=[
+                validation_issue(
+                    code="invalid_assignment_value",
+                    message=str(exc),
+                    path=["body", "value"],
+                    metadata=exc.metadata,
+                )
+            ],
+        ),
+    )
 
 
 @app.exception_handler(PolicyVersionOverlapError)
@@ -419,7 +458,6 @@ async def change_approval_conflict_handler(
                     metadata=exc.metadata,
                 )
             ],
-            legacy_detail=str(exc),
         ),
     )
 
@@ -443,7 +481,6 @@ async def change_approval_validation_handler(
                     metadata=exc.metadata,
                 )
             ],
-            legacy_detail=str(exc),
         ),
     )
 
@@ -470,7 +507,6 @@ async def request_validation_handler(
         status_code=422,
         content=validation_response(
             issues=issues,
-            legacy_detail=jsonable_encoder(raw_errors),
         ),
     )
 
@@ -484,16 +520,42 @@ async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse
             code="conflict",
             message=message,
             issues=[validation_issue(code="conflict", message=message)],
-            legacy_detail=exc.detail,
         )
     elif exc.status_code == 422:
         message = _http_error_message(exc.detail)
         content = validation_response(
             issues=[validation_issue(code="invalid_request", message=message)],
-            legacy_detail=exc.detail,
         )
     else:
-        content = {"detail": jsonable_encoder(exc.detail)}
+        message = _http_error_message(exc.detail)
+        category = (
+            "authentication"
+            if exc.status_code == 401
+            else "authorization"
+            if exc.status_code == 403
+            else "not_found"
+            if exc.status_code == 404
+            else "service"
+            if exc.status_code >= 500
+            else "validation"
+        )
+        code = (
+            "authentication_failed"
+            if exc.status_code == 401
+            else "forbidden"
+            if exc.status_code == 403
+            else "resource_not_found"
+            if exc.status_code == 404
+            else "service_unavailable"
+            if exc.status_code >= 500
+            else "invalid_request"
+        )
+        content = error_response(
+            category=category,
+            code=code,
+            message=message,
+            issues=[validation_issue(code=code, message=message)],
+        )
     return JSONResponse(
         status_code=exc.status_code,
         content=content,

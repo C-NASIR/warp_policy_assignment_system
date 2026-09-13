@@ -73,7 +73,7 @@ export function GroupManager({
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          result.error?.message ?? result.detail ?? "The group could not be renamed.",
+          result.error?.message ?? "The group could not be renamed.",
         );
       setEditingName(false);
       setNotice("Group name updated.");
@@ -151,7 +151,7 @@ export function GroupManager({
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          result.error?.message ?? result.detail ?? "The membership could not be updated.",
+          result.error?.message ?? "The membership could not be updated.",
         );
       setMembers((current) =>
         pending.action === "add"
@@ -183,7 +183,7 @@ export function GroupManager({
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          result.error?.message ?? result.detail ?? "The policy could not be attached.",
+          result.error?.message ?? "The policy could not be attached.",
         );
       setAttachedPolicies((current) => [...current, policy]);
       setPolicyId("");
@@ -206,7 +206,7 @@ export function GroupManager({
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          result.error?.message ?? result.detail ?? "The policy could not be detached.",
+          result.error?.message ?? "The policy could not be detached.",
         );
       setAttachedPolicies((current) => current.filter((item) => item.id !== policy.id));
       setNotice(`${policy.name} detached. Member assignments were reconciled.`);

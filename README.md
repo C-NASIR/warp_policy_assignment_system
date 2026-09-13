@@ -113,7 +113,7 @@ separate.
 Read the [company scenario](docs/seed-data-company.md) and use the
 [test credentials](docs/seed-data-credentials.txt) to compare roles and workflows.
 
-The API is available at <http://127.0.0.1:8000>, with interactive OpenAPI documentation at <http://127.0.0.1:8000/docs>. The backend creates missing tables at startup; the current Alembic setup does not yet contain migration revisions.
+The API is available at <http://127.0.0.1:8000>, with interactive OpenAPI documentation at <http://127.0.0.1:8000/docs>. The backend creates the schema directly from the application models.
 
 ## Scheduled reconciliation
 

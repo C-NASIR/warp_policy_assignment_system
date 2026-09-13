@@ -13,7 +13,7 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/assignment-field-manager.tsx",
+    "frontend/app/settings/_components/assignment-field-manager/assignment-field-manager.tsx",
     "backend/app/routers/assignment_fields.py",
   ]
 reading_time: 2
@@ -29,18 +29,21 @@ In a connected training deployment:
 1. Choose **Create field**.
 2. Enter **Annual vacation allowance** as the Field name.
 3. Select **One value**. Rachel should have one final annual allowance.
-4. Choose **Create field** to save it.
-5. Find the new row and check that its Cardinality is **One value** and its Resolution is **Highest priority wins**.
+4. Keep **Controlled options** and enter `15 days`, `20 days`, `22 days`, and `25 days`, one per line.
+5. Choose **Create field** to save it.
+6. Find the new row and check that its Cardinality is **One value**, its Resolution is **Highest priority wins**, and it has four controlled options.
 
 This creates the output category. It doesn't assign vacation days to Rachel yet; a policy or override will supply the value.
 
-Prepare **Application access** as a **Many values** field as well if an equivalent field doesn't already exist. Its Resolution displays **Set union**, meaning distinct values from applicable policies are combined.
+Prepare **Application access** as a **Many values** field as well if an equivalent field doesn't already exist. Add `Design tool` as a controlled option. Its Resolution displays **Set union**, meaning distinct values from applicable policies are combined.
 
 For a one-value field, different values tied at the highest priority cause a conflict. The system doesn't choose an arbitrary answer just because the field accepts only one value.
 
 **Cardinality is fixed after creation.** Decide whether the question expects one answer or several before saving. This screen doesn't provide a control to convert an existing field between them.
 
-The form asks for a name and cardinality. For our vacation examples, we'll enter values such as `15 days` and `20 days` in the policy builder. Use consistent wording: these are stored assignment values, not an automatically calculated vacation balance.
+Administrators can edit a field's allowed values later. Removing an option prevents new policies and overrides from choosing it, while existing policy versions and assignment history keep the value they originally stored.
+
+The form asks for a name, cardinality, and value control. Controlled options prevent spelling and capitalization variants from becoming different assignments. Free text remains available for genuinely open-ended fields, but must be chosen explicitly when the field is created.
 
 Reading this catalog requires settings access; **Create field** requires settings-management permission. A role's assignment-field scope can also limit what it sees. If the field is missing, check access before creating a duplicate.
 

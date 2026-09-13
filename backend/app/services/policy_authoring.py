@@ -16,6 +16,10 @@ from app.models import (
     PolicyVersion,
 )
 from app.schemas import ConditionGroupCreate, PolicyVersionCreate
+from app.services.assignment_values import (
+    AssignmentValueError,
+    normalize_assignment_value,
+)
 from app.services.condition_fields import (
     ConditionFieldError,
     get_condition_field_definitions,
@@ -36,7 +40,17 @@ def create_policy_version_from_input(
     actor: str,
 ) -> PolicyVersion:
     """Validate and persist the canonical representation of a policy version."""
-    _validate_assignment_field_definitions(session, data.values)
+    assignment_definitions = _validate_assignment_field_definitions(
+        session, data.values
+    )
+    for item in data.values:
+        try:
+            item.value = normalize_assignment_value(
+                assignment_definitions[item.assignment_field_definition_id],
+                item.value,
+            )
+        except AssignmentValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
     try:
         definitions = get_condition_field_definitions(
             session,
@@ -75,21 +89,25 @@ def create_policy_version_from_input(
     return version
 
 
-def _validate_assignment_field_definitions(session: Session, values) -> None:
+def _validate_assignment_field_definitions(
+    session: Session, values
+) -> dict[int, AssignmentFieldDefinition]:
     field_ids = {item.assignment_field_definition_id for item in values}
-    existing_ids = set(
-        session.scalars(
-            select(AssignmentFieldDefinition.id).where(
-                AssignmentFieldDefinition.id.in_(field_ids)
+    definitions = {
+        item.id: item
+        for item in session.scalars(
+            select(AssignmentFieldDefinition).where(
+                AssignmentFieldDefinition.id.in_(field_ids),
             )
         )
-    )
-    missing_ids = sorted(field_ids - existing_ids)
+    }
+    missing_ids = sorted(field_ids - definitions.keys())
     if missing_ids:
         raise HTTPException(
             status_code=404,
             detail=f"Assignment field definitions not found: {missing_ids}",
         )
+    return definitions
 
 
 def _build_canonical_condition_tree(

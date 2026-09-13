@@ -10,11 +10,10 @@ import styles from "./security-form.module.css";
 
 type ErrorResult = {
   error?: { issues?: { message?: string }[]; message?: string };
-  detail?: string;
 };
 
 function message(result: ErrorResult, fallback: string) {
-  return result.error?.issues?.[0]?.message ?? result.error?.message ?? result.detail ?? fallback;
+  return result.error?.issues?.[0]?.message ?? result.error?.message ?? fallback;
 }
 
 export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecurity }) {

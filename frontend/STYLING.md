@@ -14,7 +14,7 @@ third-party styles but is not the default authoring pattern for product UI.
   colocated CSS Module when needed. A feature-level barrel is the public import boundary for routes.
 - `components/shared`: application-specific components used by multiple features. Keep this smaller
   than the feature layer and move a component here only after it has multiple consumers.
-- `components/shell`: application chrome and integration components, including the scoped legacy
+- `components/shell`: application chrome and integration components, including the scoped
   surface styles owned by the shell.
 - `*.module.css` beside a component or route: component- and feature-specific layout and states.
 - The scoped surface modules imported by `components/shell/app-shell/app-shell.tsx`: existing semantic page

@@ -55,6 +55,10 @@ export type AssignmentField = {
   name: string;
   cardinality: "one" | "many";
   conflict_resolution: string;
+  input: {
+    type: "text" | "select";
+    options: { value: string; label: string }[];
+  };
 };
 
 export type Assignment = {

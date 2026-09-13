@@ -24,10 +24,10 @@ managers.
 ## What is represented
 
 The seed creates 25 employees, 12 human accounts, 10 roles, 8 employee groups,
-10 assignment fields, and 15 policies. The records are intentionally connected:
+8 assignment fields, and 15 policies. The records are intentionally connected:
 
 - full-time and contractor baselines establish benefits, payroll, equipment,
-  applications, training, travel limits, and data classifications;
+  applications, training, expense limits, and information-access levels;
 - higher-priority state, department, manager, executive, and tenure policies
   demonstrate deterministic conflict resolution;
 - Incident Response and Blade Inspection policies arrive through group
@@ -35,8 +35,8 @@ The seed creates 25 employees, 12 human accounts, 10 roles, 8 employee groups,
 - all user roles are assigned explicitly and remain independent of policy results;
 - a revised full-time package creates real assignment history, and a scheduled
   manager-policy version demonstrates a future effective date;
-- active and retired overrides document approved exceptions for travel,
-  facilities, and contractor hardware;
+- active and retired overrides document approved exceptions for expenses,
+  physical access, and contractor hardware;
 - active, draft, and archived policies exercise the complete lifecycle;
 - pending, rejected, executed, and expired approval requests populate the
   approval workflow;
@@ -71,8 +71,7 @@ write. Then compare these accounts:
 Useful records to inspect include the two versions of **Core Full-time Employee
 Package**, the future version of **People Manager Responsibilities**, the group
 origin on **Incident Response Duty**, Priya's current and retired travel
-exceptions, Mia's high travel exception, and the archived **Legacy VPN Access**
-policy.
+exceptions, Mia's high travel exception, and **Archived VPN Access**.
 
 ## Loading the seed
 

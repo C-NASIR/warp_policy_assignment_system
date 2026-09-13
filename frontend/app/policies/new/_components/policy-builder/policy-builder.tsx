@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BuilderCondition, ConditionRow, defaultCondition } from "./condition-row";
 import { Badge, Button, ButtonLink } from "@/components/ui";
+import { AssignmentValueInput } from "@/components/shared";
 import { initials } from "@/lib/format";
 import type {
   AssignmentField,
@@ -225,7 +226,7 @@ export function PolicyBuilder({
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(result.error?.message ?? result.detail ?? "The policy could not be saved.");
+        throw new Error(result.error?.message ?? "The policy could not be saved.");
       setSuccess(
         basePolicy
           ? "New policy version created and assignments reconciled."
@@ -499,6 +500,7 @@ export function PolicyBuilder({
                     onChange={(event) =>
                       setOutput(output.rowId, {
                         assignment_field_definition_id: Number(event.target.value),
+                        value: "",
                       })
                     }
                   >
@@ -509,19 +511,11 @@ export function PolicyBuilder({
                       </option>
                     ))}
                   </select>
-                  <input
-                    className={`input${validationAttempted && !output.value.trim() ? " field-invalid" : ""}`}
-                    required
-                    aria-invalid={validationAttempted && !output.value.trim()}
+                  <AssignmentValueInput
+                    field={field}
                     value={output.value}
-                    onChange={(event) => setOutput(output.rowId, { value: event.target.value })}
-                    placeholder={
-                      !field
-                        ? "Enter assignment value"
-                        : field.cardinality === "many"
-                          ? "e.g. GitHub"
-                          : "e.g. Bi-weekly"
-                    }
+                    invalid={validationAttempted && !output.value.trim()}
+                    onChange={(value) => setOutput(output.rowId, { value })}
                   />
                   <button
                     className="remove-button assignment-remove"

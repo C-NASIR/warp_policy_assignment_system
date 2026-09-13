@@ -47,20 +47,26 @@ def _policy(client, name: str, values: list[dict], *, priority: int = 10) -> dic
 
 def _login_scoped_user(client) -> None:
     assert client.post("/auth/logout").status_code == 204
-    assert client.post(
-        "/auth/login",
-        json={
-            "email": "it-admin@example.com",
-            "password": "temporary password value",
-        },
-    ).status_code == 200
-    assert client.post(
-        "/auth/change-password",
-        json={
-            "current_password": "temporary password value",
-            "new_password": "permanent password value",
-        },
-    ).status_code == 200
+    assert (
+        client.post(
+            "/auth/login",
+            json={
+                "email": "it-admin@example.com",
+                "password": "temporary password value",
+            },
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            "/auth/change-password",
+            json={
+                "current_password": "temporary password value",
+                "new_password": "permanent password value",
+            },
+        ).status_code
+        == 200
+    )
 
 
 def test_selected_assignment_fields_filter_reads_and_mutations(client):
@@ -115,12 +121,14 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
     assert employee_response.status_code == 201, employee_response.text
     employee = employee_response.json()
     group = client.post("/groups", json={"name": "Engineering"}).json()
-    assert client.post(
-        f"/groups/{group['id']}/policies/{access_policy['id']}"
-    ).status_code == 201
-    assert client.post(
-        f"/groups/{group['id']}/policies/{pay_policy['id']}"
-    ).status_code == 201
+    assert (
+        client.post(f"/groups/{group['id']}/policies/{access_policy['id']}").status_code
+        == 201
+    )
+    assert (
+        client.post(f"/groups/{group['id']}/policies/{pay_policy['id']}").status_code
+        == 201
+    )
     pay_override = client.post(
         f"/employees/{employee['id']}/overrides",
         json={
@@ -141,6 +149,8 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
                 "policies:read",
                 "policies:create",
                 "policies:update",
+                "policies:version:create",
+                "policies:activate",
                 "groups:read",
                 "groups:update",
                 "assignments:read",
@@ -173,10 +183,13 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
     assert fields.status_code == 200
     assert [item["id"] for item in fields.json()] == [access["id"]]
     assert client.get(f"/assignment-fields/{pay['id']}").status_code == 404
-    assert client.post(
-        "/assignment-fields",
-        json={"name": "device_access", "cardinality": "many"},
-    ).status_code == 403
+    assert (
+        client.post(
+            "/assignment-fields",
+            json={"name": "device_access", "cardinality": "many"},
+        ).status_code
+        == 403
+    )
 
     policies = client.get("/policies")
     assert policies.status_code == 200
@@ -190,9 +203,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
             "priority": 20,
             "condition_group": {
                 "logical_operator": "and",
-                "conditions": [
-                    {"field": "state", "operator": "=", "value": "TX"}
-                ],
+                "conditions": [{"field": "state", "operator": "=", "value": "TX"}],
             },
             "values": [
                 {
@@ -210,9 +221,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
             "priority": 20,
             "condition_group": {
                 "logical_operator": "and",
-                "conditions": [
-                    {"field": "state", "operator": "=", "value": "TX"}
-                ],
+                "conditions": [{"field": "state", "operator": "=", "value": "TX"}],
             },
             "values": [
                 {
@@ -230,9 +239,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
             "priority": 20,
             "condition_group": {
                 "logical_operator": "and",
-                "conditions": [
-                    {"field": "state", "operator": "=", "value": "TX"}
-                ],
+                "conditions": [{"field": "state", "operator": "=", "value": "TX"}],
             },
             "values": [
                 {
@@ -249,9 +256,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
         access["id"]
     }
     directory_entry = next(
-        item
-        for item in client.get("/employees").json()
-        if item["id"] == employee["id"]
+        item for item in client.get("/employees").json() if item["id"] == employee["id"]
     )
     assert directory_entry["active_assignment_count"] == len(assignments)
     query = client.post(
@@ -262,8 +267,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
         },
     ).json()
     assert {
-        item["assignment_field_definition"]["id"]
-        for item in query[0]["assignments"]
+        item["assignment_field_definition"]["id"] for item in query[0]["assignments"]
     } == {access["id"]}
     summary = client.get("/assignment-summary").json()
     assert summary["field_count"] == 1
@@ -271,45 +275,55 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
 
     group_policies = client.get(f"/groups/{group['id']}/policies").json()
     assert [item["id"] for item in group_policies] == [access_policy["id"]]
-    assert client.delete(
-        f"/groups/{group['id']}/policies/{pay_policy['id']}"
-    ).status_code == 404
-    assert client.post(
-        f"/employees/{employee['id']}/overrides",
-        json={
-            "assignment_field_definition_id": pay["id"],
-            "value": "semimonthly",
-        },
-    ).status_code == 404
-    assert client.delete(
-        f"/employees/{employee['id']}/overrides/{pay_override['id']}"
-    ).status_code == 404
-    assert client.post(
-        "/change-previews",
-        json={
-            "type": "policy_version_create",
-            "policy_id": pay_policy["id"],
-            "version": {
-                "priority": 20,
-                "condition_group": {
-                    "logical_operator": "and",
-                    "conditions": [
+    assert (
+        client.delete(f"/groups/{group['id']}/policies/{pay_policy['id']}").status_code
+        == 404
+    )
+    assert (
+        client.post(
+            f"/employees/{employee['id']}/overrides",
+            json={
+                "assignment_field_definition_id": pay["id"],
+                "value": "semimonthly",
+            },
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            f"/employees/{employee['id']}/overrides/{pay_override['id']}"
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            "/change-previews",
+            json={
+                "type": "policy_version_create",
+                "policy_id": pay_policy["id"],
+                "version": {
+                    "priority": 20,
+                    "condition_group": {
+                        "logical_operator": "and",
+                        "conditions": [
+                            {
+                                "field": "department",
+                                "operator": "=",
+                                "value": "Engineering",
+                            }
+                        ],
+                    },
+                    "values": [
                         {
-                            "field": "department",
-                            "operator": "=",
-                            "value": "Engineering",
+                            "assignment_field_definition_id": pay["id"],
+                            "value": "semimonthly",
                         }
                     ],
                 },
-                "values": [
-                    {
-                        "assignment_field_definition_id": pay["id"],
-                        "value": "semimonthly",
-                    }
-                ],
             },
-        },
-    ).status_code == 404
+        ).status_code
+        == 404
+    )
 
     policy_audits = client.get("/audit-logs?entity_type=Policy&limit=100").json()
     assert {item["entity_id"] for item in policy_audits} == {
@@ -323,16 +337,12 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
         access_policy["versions"][0]["id"],
         allowed_policy["versions"][0]["id"],
     }
-    assert client.get(
-        "/audit-logs?entity_type=EmployeeOverride&limit=100"
-    ).json() == []
+    assert client.get("/audit-logs?entity_type=EmployeeOverride&limit=100").json() == []
     group_audits = client.get(
         f"/audit-logs?entity_type=Group&entity_id={group['id']}&limit=100"
     ).json()
     assert {
-        item["action"]
-        for item in group_audits
-        if item["action"].startswith("policy_")
+        item["action"] for item in group_audits if item["action"].startswith("policy_")
     } == {"policy_attached"}
     assignment_audits = client.get(
         "/audit-logs?entity_type=EmployeeAssignment&limit=100"
@@ -343,10 +353,13 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
         for item in assignment_audits
     } == {access["id"]}
 
-    assert client.post(
-        "/auth/login",
-        json={"email": ROOT["email"], "password": ROOT["password"]},
-    ).status_code == 200
+    assert (
+        client.post(
+            "/auth/login",
+            json={"email": ROOT["email"], "password": ROOT["password"]},
+        ).status_code
+        == 200
+    )
     changed = client.patch(
         f"/roles/{role['id']}",
         json={
@@ -359,9 +372,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
     assert [item["id"] for item in client.get("/assignment-fields").json()] == [
         pay["id"]
     ]
-    assert [item["id"] for item in client.get("/policies").json()] == [
-        pay_policy["id"]
-    ]
+    assert [item["id"] for item in client.get("/policies").json()] == [pay_policy["id"]]
 
 
 def test_assignment_field_grants_union_across_roles(client):
@@ -385,15 +396,18 @@ def test_assignment_field_grants_union_across_roles(client):
         )
         assert response.status_code == 201, response.text
         role_ids.append(response.json()["id"])
-    assert client.post(
-        "/users",
-        json={
-            "name": "IT Admin",
-            "email": "it-admin@example.com",
-            "temporary_password": "temporary password value",
-            "role_ids": role_ids,
-        },
-    ).status_code == 201
+    assert (
+        client.post(
+            "/users",
+            json={
+                "name": "IT Admin",
+                "email": "it-admin@example.com",
+                "temporary_password": "temporary password value",
+                "role_ids": role_ids,
+            },
+        ).status_code
+        == 201
+    )
 
     _login_scoped_user(client)
     assert {item["id"] for item in client.get("/assignment-fields").json()} == {

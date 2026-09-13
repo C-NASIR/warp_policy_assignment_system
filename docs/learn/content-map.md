@@ -45,7 +45,7 @@ The learning story begins with a company hiring Rachel and gradually turning ind
 
 21. **Separate proposing from authorizing:** Policy authorship, activation, approval, execution, and the full supported request lifecycle.
 
-Lessons 16–21 are one connected organizational sequence. `CON16` retains the existing `who-can-do-what` URL and content ID while becoming the entry point rather than carrying the whole access model alone. The approval material formerly concentrated in **Changing things safely** now introduces only preview safety there; independent organizational review has its primary conceptual home in lesson 21.
+Lessons 16–21 are one connected organizational sequence. `CON16` is the entry point for the access model, and **Changing things safely** introduces preview safety. Independent organizational review has its primary conceptual home in lesson 21.
 
 ## PolicyOS — 16 lessons
 

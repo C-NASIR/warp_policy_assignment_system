@@ -17,7 +17,6 @@ from app.dates import current_date, ensure_utc
 from app.services.condition_fields import ConditionFieldError, normalize_condition
 from app.states import StateGroup, normalize_state_code
 
-
 StateCode = Annotated[
     str,
     BeforeValidator(normalize_state_code),
@@ -187,12 +186,8 @@ class RoleCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
     permissions: list[str] = Field(default_factory=list)
-    # Preserve the pre-Phase-3 behavior for older API clients that do not send
-    # this newly introduced field. The first-party UI always chooses explicitly.
-    employee_scope: Literal["all", "reporting_tree", "self", "none"] = "all"
-    # Older clients retain their pre-Phase-5 access. The first-party UI sends
-    # an explicit least-privilege choice for every new role.
-    assignment_field_scope: Literal["all", "selected", "none"] = "all"
+    employee_scope: Literal["all", "reporting_tree", "self", "none"] = "none"
+    assignment_field_scope: Literal["all", "selected", "none"] = "none"
     assignment_field_ids: list[int] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -336,14 +331,50 @@ class GroupDirectoryRead(GroupRead):
     policy_count: int = Field(ge=0)
 
 
+class AssignmentFieldInputOptionRead(BaseModel):
+    value: str = Field(min_length=1, max_length=500)
+    label: str = Field(min_length=1, max_length=200)
+
+    @field_validator("value", "label")
+    @classmethod
+    def strip_option_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+
+class AssignmentFieldInputRead(BaseModel):
+    type: Literal["text", "select"] = "text"
+    options: list[AssignmentFieldInputOptionRead] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_options(self) -> AssignmentFieldInputRead:
+        if self.type == "select" and not self.options:
+            raise ValueError("Select assignment fields require at least one option")
+        if self.type == "text" and self.options:
+            raise ValueError("Text assignment fields cannot define options")
+        values = [option.value.casefold() for option in self.options]
+        if len(values) != len(set(values)):
+            raise ValueError("Assignment field option values must be unique")
+        return self
+
+
 class AssignmentFieldDefinitionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     cardinality: Literal["one", "many"]
     conflict_resolution: str = Field(default="priority", min_length=1, max_length=50)
+    input: AssignmentFieldInputRead = Field(default_factory=AssignmentFieldInputRead)
 
 
 class AssignmentFieldDefinitionRead(AssignmentFieldDefinitionCreate, ORMModel):
     id: int
+
+
+class AssignmentFieldDefinitionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    input: AssignmentFieldInputRead
 
 
 class ConditionFieldDependencyRead(ORMModel):
@@ -766,6 +797,8 @@ class APIErrorRead(BaseModel):
         "conflict",
         "authentication",
         "authorization",
+        "not_found",
+        "service",
     ]
     code: str
     message: str
@@ -773,8 +806,6 @@ class APIErrorRead(BaseModel):
 
 
 class APIErrorResponseRead(BaseModel):
-    # Kept during the transition from FastAPI's legacy error response shape.
-    detail: Any
     error: APIErrorRead
 
 
@@ -936,15 +967,6 @@ class ChangePreviewRead(BaseModel):
     warnings: list[str]
     approval: ChangeApprovalRead | None = None
     approval_request_id: str | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def accept_legacy_change_type(cls, value: Any) -> Any:
-        """Keep previously stored approval previews readable after the rename."""
-        if isinstance(value, dict) and "type" not in value and "change_type" in value:
-            value = dict(value)
-            value["type"] = value.pop("change_type")
-        return value
 
 
 ChangePreviewResponse = Annotated[

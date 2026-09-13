@@ -4,6 +4,7 @@ import { Check, CircleAlert, Clock3, Pencil, Plus, ShieldCheck, Trash2, X } from
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, Button, DataTable, Panel } from "@/components/ui";
+import { AssignmentValueInput } from "@/components/shared";
 import { formatDate } from "@/lib/format";
 import type { Assignment, AssignmentField, Employee, EmployeeOverride } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
@@ -42,6 +43,7 @@ export function OverrideManager({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const selectedField = fields.find((field) => field.id === fieldId);
   useModalAccessibility(Boolean(editing || pending), () => {
     setEditing(null);
     setPending(null);
@@ -164,7 +166,7 @@ export function OverrideManager({
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          result.error?.message ?? result.detail ?? "The override could not be applied.",
+          result.error?.message ?? "The override could not be applied.",
         );
       const createdId = result.resources?.override_id ?? result.id;
       if (pending.action === "delete")
@@ -344,7 +346,10 @@ export function OverrideManager({
                 <select
                   className="select"
                   value={fieldId}
-                  onChange={(event) => setFieldId(Number(event.target.value))}
+                  onChange={(event) => {
+                    setFieldId(Number(event.target.value));
+                    setValue("");
+                  }}
                 >
                   {fields.map((field) => (
                     <option key={field.id} value={field.id}>
@@ -353,15 +358,15 @@ export function OverrideManager({
                   ))}
                 </select>
               </label>
-              <label className="field">
+              <div className="field">
                 <span className="field-label">Manual value</span>
-                <input
-                  className="input"
+                <AssignmentValueInput
+                  field={selectedField}
                   value={value}
-                  onChange={(event) => setValue(event.target.value)}
-                  placeholder="Enter the assignment value"
+                  label="Manual value"
+                  onChange={setValue}
                 />
-              </label>
+              </div>
               <div className="callout">
                 <ShieldCheck size={14} />
                 <span>

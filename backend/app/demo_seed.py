@@ -10,6 +10,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.demo_assignment_fields import DEMO_ASSIGNMENT_FIELD_SPECS
 from app.models import (
     APICredential,
     ApprovedChangeExecution,
@@ -257,23 +258,14 @@ def seed_demo_company(
 
 
 def _create_assignment_fields(session: Session) -> dict[str, AssignmentFieldDefinition]:
-    specs = (
-        ("Pay Schedule", "one"),
-        ("Benefits Plan", "one"),
-        ("Laptop Profile", "one"),
-        ("Application Access", "many"),
-        ("Facility Access", "many"),
-        ("Compliance Training", "many"),
-        ("Travel Approval Limit", "one"),
-        ("Data Classification", "one"),
-        ("Safety Equipment", "many"),
-        ("On-call Rotation", "one"),
-    )
     result = {
-        name: AssignmentFieldDefinition(
-            field=name, cardinality=cardinality, conflict_resolution="priority"
+        spec.name: AssignmentFieldDefinition(
+            name=spec.name,
+            cardinality=spec.cardinality,
+            conflict_resolution="priority",
+            input=spec.input,
         )
-        for name, cardinality in specs
+        for spec in DEMO_ASSIGNMENT_FIELD_SPECS
     }
     session.add_all(result.values())
     session.flush()
@@ -633,6 +625,7 @@ def _create_roles(
                 "employees:delete",
                 "policies:read",
                 "policies:create",
+                "policies:update",
                 "policies:version:create",
                 "policies:activate",
                 "policies:archive",
@@ -663,6 +656,7 @@ def _create_roles(
                 "employees:read",
                 "policies:read",
                 "policies:create",
+                "policies:update",
                 "policies:version:create",
                 "groups:read",
                 "assignments:read",
@@ -723,12 +717,10 @@ def _create_roles(
             "reporting_tree",
             "selected",
             [
-                field_ids["Laptop Profile"],
+                field_ids["Device Profile"],
                 field_ids["Application Access"],
-                field_ids["Facility Access"],
-                field_ids["Travel Approval Limit"],
-                field_ids["Safety Equipment"],
-                field_ids["On-call Rotation"],
+                field_ids["Physical Access"],
+                field_ids["Expense Approval Limit"],
             ],
         ),
         (
@@ -756,7 +748,7 @@ def _create_roles(
             "selected",
             [
                 field_ids["Benefits Plan"],
-                field_ids["Laptop Profile"],
+                field_ids["Device Profile"],
                 field_ids["Application Access"],
                 field_ids["Compliance Training"],
             ],
@@ -768,9 +760,9 @@ def _create_roles(
             "self",
             "selected",
             [
-                field_ids["Laptop Profile"],
+                field_ids["Device Profile"],
                 field_ids["Application Access"],
-                field_ids["Facility Access"],
+                field_ids["Physical Access"],
                 field_ids["Compliance Training"],
             ],
         ),
@@ -780,7 +772,10 @@ def _create_roles(
             ["employees:read", "policies:read", "assignments:read"],
             "self",
             "selected",
-            [field_ids["Application Access"], field_ids["Data Classification"]],
+            [
+                field_ids["Application Access"],
+                field_ids["Information Access Level"],
+            ],
         ),
         (
             "Incident Responder",
@@ -788,7 +783,7 @@ def _create_roles(
             ["employees:read", "assignments:read"],
             "self",
             "selected",
-            [field_ids["Application Access"], field_ids["On-call Rotation"]],
+            [field_ids["Application Access"]],
         ),
     )
     roles: dict[str, Role] = {}
@@ -980,12 +975,12 @@ def _create_policies(
                 "conditions": full_time,
                 "values": [
                     ("Benefits Plan", "Harbor Health PPO"),
-                    ("Laptop Profile", "Managed Standard Laptop"),
+                    ("Device Profile", "Managed Standard Laptop"),
                     ("Application Access", "Slack"),
                     ("Application Access", "Google Workspace"),
                     ("Compliance Training", "Annual Security Awareness"),
-                    ("Travel Approval Limit", "USD 2,500"),
-                    ("Data Classification", "Internal"),
+                    ("Expense Approval Limit", "USD 2,500"),
+                    ("Information Access Level", "Internal"),
                 ],
             },
             {
@@ -995,13 +990,13 @@ def _create_policies(
                 "conditions": full_time,
                 "values": [
                     ("Benefits Plan", "Harbor Health PPO 2026"),
-                    ("Laptop Profile", "Managed Standard Laptop"),
+                    ("Device Profile", "Managed Standard Laptop"),
                     ("Application Access", "Slack"),
                     ("Application Access", "Google Workspace"),
                     ("Application Access", "1Password"),
                     ("Compliance Training", "Annual Security Awareness"),
-                    ("Travel Approval Limit", "USD 2,500"),
-                    ("Data Classification", "Internal"),
+                    ("Expense Approval Limit", "USD 2,500"),
+                    ("Information Access Level", "Internal"),
                 ],
             },
         ],
@@ -1044,10 +1039,10 @@ def _create_policies(
                 "values": [
                     ("Pay Schedule", "Monthly invoice"),
                     ("Benefits Plan", "Not eligible - contractor"),
-                    ("Laptop Profile", "BYOD - managed browser"),
+                    ("Device Profile", "BYOD - managed browser"),
                     ("Application Access", "Google Workspace Guest"),
                     ("Compliance Training", "Contractor Security Briefing"),
-                    ("Data Classification", "Restricted - need to know"),
+                    ("Information Access Level", "Restricted - need to know"),
                 ],
             }
         ],
@@ -1061,12 +1056,12 @@ def _create_policies(
                 "effective_from": today - timedelta(days=760),
                 "conditions": _group(_condition("department", "=", "Engineering")),
                 "values": [
-                    ("Laptop Profile", "Engineering Workstation"),
+                    ("Device Profile", "Engineering Workstation"),
                     ("Application Access", "GitHub Enterprise"),
                     ("Application Access", "Linear"),
                     ("Application Access", "Sentry"),
                     ("Application Access", "AWS Sandbox"),
-                    ("Data Classification", "Confidential Engineering"),
+                    ("Information Access Level", "Confidential Engineering"),
                 ],
             }
         ],
@@ -1080,15 +1075,13 @@ def _create_policies(
                 "effective_from": today - timedelta(days=730),
                 "conditions": _group(_condition("department", "=", "Field Operations")),
                 "values": [
-                    ("Laptop Profile", "Rugged Field Tablet"),
+                    ("Device Profile", "Rugged Field Tablet"),
                     ("Application Access", "ServiceMax"),
                     ("Application Access", "DroneDeploy"),
-                    ("Facility Access", "All Wind Sites"),
+                    ("Physical Access", "All Wind Sites"),
                     ("Compliance Training", "OSHA 10"),
-                    ("Safety Equipment", "Class E Hard Hat"),
-                    ("Safety Equipment", "Arc-rated Field Kit"),
-                    ("Travel Approval Limit", "USD 7,500"),
-                    ("Data Classification", "Operational Confidential"),
+                    ("Expense Approval Limit", "USD 7,500"),
+                    ("Information Access Level", "Operational Confidential"),
                 ],
             }
         ],
@@ -1108,10 +1101,10 @@ def _create_policies(
                     ],
                 ),
                 "values": [
-                    ("Laptop Profile", "Travel Lightweight Laptop"),
+                    ("Device Profile", "Travel Lightweight Laptop"),
                     ("Application Access", "HubSpot"),
                     ("Application Access", "Gong"),
-                    ("Data Classification", "Customer Confidential"),
+                    ("Information Access Level", "Customer Confidential"),
                 ],
             }
         ],
@@ -1128,7 +1121,7 @@ def _create_policies(
                 "values": [
                     ("Application Access", "Workday Manager"),
                     ("Compliance Training", "Manager Conduct and Coaching"),
-                    ("Travel Approval Limit", "USD 10,000"),
+                    ("Expense Approval Limit", "USD 10,000"),
                 ],
             },
             {
@@ -1139,7 +1132,7 @@ def _create_policies(
                 "values": [
                     ("Application Access", "Workday Manager"),
                     ("Compliance Training", "Manager Conduct and Coaching"),
-                    ("Travel Approval Limit", "USD 12,500"),
+                    ("Expense Approval Limit", "USD 12,500"),
                 ],
             },
         ],
@@ -1155,8 +1148,8 @@ def _create_policies(
                 "conditions": _group(_condition("management_level", "=", "0")),
                 "values": [
                     ("Application Access", "Board Portal"),
-                    ("Travel Approval Limit", "USD 25,000"),
-                    ("Data Classification", "Board Confidential"),
+                    ("Expense Approval Limit", "USD 25,000"),
+                    ("Information Access Level", "Board Confidential"),
                 ],
             }
         ],
@@ -1187,7 +1180,7 @@ def _create_policies(
                 "effective_from": today - timedelta(days=620),
                 "conditions": _group(_condition("location", "=", "Chicago HQ")),
                 "values": [
-                    ("Facility Access", "Chicago HQ - General"),
+                    ("Physical Access", "Chicago HQ - General"),
                     ("Application Access", "Envoy Visitors"),
                 ],
             }
@@ -1206,8 +1199,7 @@ def _create_policies(
                 "values": [
                     ("Application Access", "PagerDuty"),
                     ("Application Access", "Statuspage"),
-                    ("On-call Rotation", "Wind Platform Primary"),
-                    ("Facility Access", "Network Operations Room"),
+                    ("Physical Access", "Network Operations Room"),
                 ],
             }
         ],
@@ -1225,7 +1217,6 @@ def _create_policies(
                 "values": [
                     ("Application Access", "Inspection Evidence Vault"),
                     ("Compliance Training", "Annual Rope Rescue Recertification"),
-                    ("Safety Equipment", "Fall Arrest Harness"),
                 ],
             }
         ],
@@ -1250,7 +1241,7 @@ def _create_policies(
         ],
     )
     add_policy(
-        "Legacy VPN Access",
+        "Archived VPN Access",
         "archived",
         [
             {
@@ -1258,7 +1249,7 @@ def _create_policies(
                 "effective_from": today - timedelta(days=1000),
                 "effective_until": today - timedelta(days=401),
                 "conditions": _group(_condition("employee_type", "=", "Full-time")),
-                "values": [("Application Access", "Legacy Pulse VPN")],
+                "values": [("Application Access", "Pulse VPN")],
             }
         ],
         created_by="elliot.park@cedarharbor.example",
@@ -1292,29 +1283,29 @@ def _create_overrides(
 ) -> None:
     retired = EmployeeOverride(
         employee_id=employees["priya"].id,
-        assignment_field_definition_id=fields["Travel Approval Limit"].id,
+        assignment_field_definition_id=fields["Expense Approval Limit"].id,
         value="USD 4,000",
         retired_at=now - timedelta(days=40),
     )
     active = (
         EmployeeOverride(
             employee_id=employees["priya"].id,
-            assignment_field_definition_id=fields["Travel Approval Limit"].id,
+            assignment_field_definition_id=fields["Expense Approval Limit"].id,
             value="USD 5,000",
         ),
         EmployeeOverride(
             employee_id=employees["mia"].id,
-            assignment_field_definition_id=fields["Travel Approval Limit"].id,
+            assignment_field_definition_id=fields["Expense Approval Limit"].id,
             value="USD 12,000",
         ),
         EmployeeOverride(
             employee_id=employees["mateo"].id,
-            assignment_field_definition_id=fields["Facility Access"].id,
+            assignment_field_definition_id=fields["Physical Access"].id,
             value="Denver Partner Yard",
         ),
         EmployeeOverride(
             employee_id=employees["luca"].id,
-            assignment_field_definition_id=fields["Laptop Profile"].id,
+            assignment_field_definition_id=fields["Device Profile"].id,
             value="Managed Contractor MacBook",
         ),
     )
@@ -1553,7 +1544,7 @@ def _create_approval_history(
                 "type": "employee_override_change",
                 "action": "create",
                 "employee_id": employees["omar"].id,
-                "assignment_field_definition_id": fields["Travel Approval Limit"].id,
+                "assignment_field_definition_id": fields["Expense Approval Limit"].id,
                 "value": "USD 25,000",
                 "override_id": None,
             },
@@ -1574,7 +1565,7 @@ def _create_approval_history(
             change_type="policy_status_change",
             change={
                 "type": "policy_status_change",
-                "policy_id": policies["Legacy VPN Access"].id,
+                "policy_id": policies["Archived VPN Access"].id,
                 "status": "archived",
             },
             preview=_preview("policy_status_change", affected_employees=0),
@@ -1620,7 +1611,7 @@ def _create_approval_history(
             executed_by=users["marcus"].email,
             executed_at=requests[2].executed_at,
             response={
-                "policy_id": policies["Legacy VPN Access"].id,
+                "policy_id": policies["Archived VPN Access"].id,
                 "status": "archived",
             },
         )
@@ -1661,7 +1652,7 @@ def _create_operational_history(
         (
             users["elliot"].email,
             "Policy",
-            policies["Legacy VPN Access"].id,
+            policies["Archived VPN Access"].id,
             "archived",
             {"status": "active"},
             {"status": "archived"},
@@ -1711,7 +1702,7 @@ def _create_operational_history(
 def _create_schedule_history(
     session: Session, policies: dict[str, Policy], now: datetime
 ) -> None:
-    archived_version = policies["Legacy VPN Access"].versions[0]
+    archived_version = policies["Archived VPN Access"].versions[0]
     draft_version = policies["Responsible AI Pilot"].versions[0]
     session.add_all(
         (

@@ -60,7 +60,6 @@ export function RecoveryForm() {
         throw new Error(
           result.error?.issues?.[0]?.message ??
             result.error?.message ??
-            result.detail ??
             "The password could not be reset.",
         );
       setComplete(true);

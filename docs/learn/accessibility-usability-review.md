@@ -1,4 +1,4 @@
-# Phase 6 accessibility and usability review
+# Accessibility and usability review
 
 Review date: 2026-09-05  
 Scope: `/learn`, mobile navigation, article content, and Quick Find results.

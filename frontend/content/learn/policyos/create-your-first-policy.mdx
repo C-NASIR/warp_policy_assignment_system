@@ -13,7 +13,7 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/policy-builder.tsx",
+    "frontend/app/policies/new/_components/policy-builder/policy-builder.tsx",
     "frontend/app/policies/new/page.tsx",
     "backend/app/routers/policies.py",
     "backend/tests/test_policy_versions.py",
@@ -31,7 +31,7 @@ Use Rachel's connected training record and the **Annual vacation allowance** fie
 1. Open **Policies** and choose **Create policy**.
 2. Under **Policy basics**, enter **Standard Vacation**, set Priority to **10**, and choose today's date for **Effective from**. Leave **Effective until** blank for an open-ended version.
 3. Under **Who this applies to**, keep **ALL** and configure one row: **Employee type**, **=**, **Full-time**. Replace the builder's initial example condition.
-4. Under **What gets assigned**, select **Annual vacation allowance** and enter **15 days**. Remove any unintended output rows.
+4. Under **What gets assigned**, select **Annual vacation allowance** and choose **15 days**. Remove any unintended output rows.
 5. Choose **Preview impact** and check the displayed condition, sample employees, and assignment value.
 6. Once the rule expresses the intended decision, choose **Create policy**.
 

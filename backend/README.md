@@ -4,7 +4,7 @@ Version 1 is a FastAPI backend that records past assignments, serves current ass
 
 ## Architecture
 
-The application uses FastAPI and Pydantic at the API boundary, explicit application services for domain behavior, SQLAlchemy 2 for persistence, and PostgreSQL through Psycopg 3. PostgreSQL is the only supported database for the API, worker, migrations, and tests. Alembic is configured for future migrations once persistent environments require them.
+The application uses FastAPI and Pydantic at the API boundary, explicit application services for domain behavior, SQLAlchemy 2 for persistence, and PostgreSQL through Psycopg 3. PostgreSQL is the only supported database for the API, worker, and tests. The schema is created directly from the application models.
 
 ```text
 Employee
@@ -76,14 +76,14 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **Condition tree:** a version-owned nested `and`/`or` expression over condition fields using `=`, `<`, `<=`, `>`, and `>=` comparisons.
 - **Compiled policy clause:** one version-owned flat set of conditions that must all match.
 - **Employee policy:** a persisted match between an employee and a policy.
-- **Assignment field definition:** a named assignment output with `one` or `many` cardinality.
+- **Assignment field definition:** a named assignment output with `one` or `many` cardinality and either a controlled option list or an explicitly chosen free-text input.
 - **Policy field value:** one relationally stored consequence of a policy version.
 - **Employee override:** one employee-specific field value that replaces policy results for that field; retired rows remain available as historical sources.
 - **Employee assignment:** a time-bounded resolved value supplied by exactly one policy version or employee override, with an immutable explanation of the decision.
 - **Audit log:** an append-only actor, entity, action, before/after snapshot, and timestamp for an important domain mutation.
 - **User:** a human account with a normalized email, Argon2id password hash, lifecycle status, one or more assigned roles, and an optional employee link. Administratively reset passwords are temporary and must be changed at the next login.
 - **Role:** a reusable, named bundle of application permissions plus an employee-data scope, assigned many-to-many to non-Root users.
-- **Role permission:** one allow-only capability such as `employees:read`, `policies:version:create`, `policies:activate`, or `access:manage`. Effective permissions are the union of every assigned role. `policies:update` remains a combined legacy grant for roles created before fine-grained policy actions were introduced.
+- **Role permission:** one allow-only capability such as `employees:read`, `policies:update`, `policies:version:create`, `policies:activate`, or `access:manage`. Effective permissions are the union of every assigned role.
 - **Change approval request:** a persisted human workflow containing the exact proposed change and preview, its requester, expiry, decision, approving user, and execution status. The author cannot approve their own request, and the approving user must execute it.
 - **Employee-data scope:** a role-level visibility boundary of `all`, `reporting_tree`, `self`, or `none`. A user's effective employee visibility is the union of every assigned role; reporting-tree access starts from the employee linked to that user and includes every direct and indirect report.
 - **Assignment-field scope:** a separate role-level data boundary of `all`, `selected`, or `none`. Selected roles name the assignment domains they can access, such as Application Access or Pay Schedule. Effective access is the union across roles, while any `all` role grants every assignment field.
@@ -110,7 +110,7 @@ export CORS_ALLOWED_ORIGINS=http://localhost:3000
 uv run python -m fastapi dev main.py
 ```
 
-The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created on startup. The Alembic scaffold is retained for future persistent environments, but there are currently no migration revisions.
+The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created directly from the application models on startup.
 
 Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root is an immutable break-glass superuser; other users receive the union of their assigned role permissions, employee-data scopes, and assignment-field scopes. Employee scope is enforced on employee records and every employee-derived result. Assignment-field scope independently filters assignment fields, policies, assignments, overrides, summaries, group-policy links, change previews and executions, and related audit events. A policy is accessible only when every output in every version belongs to the user's visible assignment fields, preventing partial edits to mixed-domain policies. Out-of-scope direct resource requests return 404 so they do not disclose whether the record exists. Policy responses include record-specific `can_update`, `can_create_version`, `can_activate`, and `can_archive` capabilities. These combine the caller's granular action permissions, assignment-field scope, and the record lifecycle state; the frontend consumes them while the API remains the final enforcement boundary. Permission and scope changes take effect on the next request, including for existing sessions.
 
@@ -255,7 +255,7 @@ state-changing cookie-authenticated requests.
 | GET | `/groups/{id}/policies` | List policies attached to a group |
 | POST / DELETE | `/groups/{id}/policies/{policy_id}` | Attach or remove a group policy |
 | POST / GET | `/assignment-fields` | Create or list assignment field definitions |
-| GET | `/assignment-fields/{id}` | Read an assignment field definition |
+| GET / PATCH | `/assignment-fields/{id}` | Read a field or maintain its value-input contract |
 | GET | `/condition-fields` | List system-supported condition fields and dependencies |
 | GET | `/condition-fields/{key}` | Read one system-supported condition field |
 | POST / GET | `/policies` | Create policies with version 1 or list them |
@@ -269,8 +269,7 @@ state-changing cookie-authenticated requests.
 ### Collection filtering and pagination
 
 Every `GET` collection endpoint accepts `limit` (default `100`, maximum `500`)
-and `offset` (default `0`). Response bodies remain arrays for backward
-compatibility. Pagination metadata is returned in `X-Total-Count`, `X-Limit`,
+and `offset` (default `0`). Response bodies are arrays. Pagination metadata is returned in `X-Total-Count`, `X-Limit`,
 and `X-Offset`; the total is calculated after filters and before pagination.
 All collections use a stable ID-based order, with domain-specific secondary
 ordering for versions, assignments, and audit events. OpenAPI documents both
@@ -450,7 +449,7 @@ enforce the machine boundary.
 
 ## Error contract
 
-Authentication (`401`), authorization (`403`), conflict (`409`), and validation (`422`) responses include a stable `error`
+Authentication (`401`), authorization (`403`), not-found (`404`), conflict (`409`), validation (`422`), and service (`5xx`) responses include a stable `error`
 object for the UI and MCP clients. It contains a category, application-level
 code, human-readable message, and one or more issues with a machine-readable
 code, request or domain path, and structured metadata. Request validation issues
@@ -458,10 +457,6 @@ preserve Pydantic's error code and exact input location. Policy-assignment
 conflicts additionally identify the assignment field, winning priority, and all
 conflicting policy/version/value candidates. Change previews return the same
 conflict issue shape in their `conflicts` collection.
-
-The original FastAPI `detail` member remains in `409` and `422` responses for
-backward compatibility. New clients should consume `error`; `detail` is a
-transition field and should not be parsed for business logic.
 
 ## Auditing contract
 
@@ -530,8 +525,8 @@ application_access = GitHub
 
 Patching Alice's state to Wisconsin (`WI`) removes the California policy match and automatically leaves `weekly` and `GitHub`. The integration tests exercise this exact lifecycle.
 
-## Version 1 boundaries
+## Current boundaries
 
-Phase 4 adds role-scoped assignment domains on top of Phase 3 employee visibility. Roles can grant all, selected, or no assignment fields; grants combine by union and update existing sessions immediately. The scope is enforced across catalogs, complete-policy reads and writes, assignments and history, overrides, queries, summaries, group-policy links, previews and executions, and audit events. Root and machine credentials retain global access. Older API clients and existing roles retain `all` during the compatibility migration, while the first-party UI explicitly defaults new roles to `none`. Mixed-domain policies are hidden unless every output domain is allowed so a limited administrator cannot partially inspect or mutate one through another route.
+Roles can grant all, selected, or no assignment fields; grants combine by union and update sessions immediately. New roles default to no employee or assignment-field scope until access is chosen explicitly. The scope is enforced across catalogs, complete-policy reads and writes, assignments and history, overrides, queries, summaries, group-policy links, previews and executions, and audit events. Root and machine credentials retain global access. Mixed-domain policies are hidden unless every output domain is allowed so a limited administrator cannot partially inspect or mutate one through another route.
 
-This phase intentionally excludes value-level restrictions within one assignment field, per-policy exceptions, delegated limits on which roles an access administrator may grant, password-reset delivery, MFA, and external identity-provider integration. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.
+Assignment fields enforce their value contract for policies, previews, executions, and manual overrides. Controlled fields accept only declared options; free text must be selected explicitly when defining a field. This phase still excludes per-policy exceptions, delegated limits on which roles an access administrator may grant, password-reset delivery, MFA, and external identity-provider integration. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.

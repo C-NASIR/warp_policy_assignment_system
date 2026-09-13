@@ -35,7 +35,7 @@ def _policy(client, field_id, name, value):
     return response.json()
 
 
-def test_request_validation_errors_have_stable_codes_paths_and_legacy_detail(client):
+def test_request_validation_errors_have_stable_codes_and_paths(client):
     response = client.post(
         "/assignment-fields",
         json={"name": "pay_schedule", "cardinality": "invalid"},
@@ -43,7 +43,7 @@ def test_request_validation_errors_have_stable_codes_paths_and_legacy_detail(cli
 
     assert response.status_code == 422
     body = response.json()
-    assert isinstance(body["detail"], list)
+    assert set(body) == {"error"}
     assert body["error"] == {
         "category": "validation",
         "code": "request_validation_failed",
@@ -73,7 +73,7 @@ def test_manual_validation_errors_use_the_same_envelope(client):
 
     assert response.status_code == 422
     body = response.json()
-    assert body["detail"] == "X-Actor cannot be blank"
+    assert set(body) == {"error"}
     assert body["error"]["category"] == "validation"
     assert body["error"]["code"] == "request_validation_failed"
     assert body["error"]["issues"] == [
@@ -103,7 +103,7 @@ def test_policy_conflicts_include_field_and_candidate_metadata(client):
 
     assert response.status_code == 409
     body = response.json()
-    assert body["detail"] == body["error"]["message"]
+    assert set(body) == {"error"}
     assert body["error"]["category"] == "conflict"
     assert body["error"]["code"] == "policy_conflict"
     issue = body["error"]["issues"][0]

@@ -31,7 +31,7 @@ export function PolicyLifecycle({ policy }: { policy: Policy }) {
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          result.error?.message ?? result.detail ?? "The policy status could not be changed.",
+          result.error?.message ?? "The policy status could not be changed.",
         );
       setStatus(nextStatus);
       setConfirming(false);

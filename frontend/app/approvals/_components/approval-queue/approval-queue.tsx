@@ -28,7 +28,7 @@ export function ApprovalQueue({ initialRequests }: { initialRequests: ChangeAppr
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          result.error?.message ?? result.detail ?? `Unable to ${action} this request.`,
+          result.error?.message ?? `Unable to ${action} this request.`,
         );
       if (action === "execute" && typeof result.executed_at !== "string")
         throw new Error("The backend did not return the execution timestamp.");

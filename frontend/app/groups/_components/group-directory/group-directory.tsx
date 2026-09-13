@@ -48,7 +48,7 @@ export function GroupDirectory({
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          result.error?.message ?? result.detail ?? "The group could not be created.",
+          result.error?.message ?? "The group could not be created.",
         );
       router.push(`/groups/${result.id}`);
       router.refresh();
