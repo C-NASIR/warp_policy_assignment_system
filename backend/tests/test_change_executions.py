@@ -22,9 +22,7 @@ def _policy(client, field_id, *, name, state, value):
             "priority": 10,
             "condition_group": {
                 "logical_operator": "and",
-                "conditions": [
-                    {"field": "state", "operator": "=", "value": state}
-                ],
+                "conditions": [{"field": "state", "operator": "=", "value": state}],
             },
             "values": [
                 {
@@ -108,12 +106,8 @@ def test_approved_change_executes_once_and_replays_result(client, monkeypatch):
     assert result["status"] == "executed"
     assert result["replayed"] is False
     assert result["executed_by"] == "api"
-    assert result["resources"]["employee_id"] == result["changes"][0][
-        "employee_id"
-    ]
-    assert [item["value"] for item in result["changes"][0]["added"]] == [
-        "weekly"
-    ]
+    assert result["resources"]["employee_id"] == result["changes"][0]["employee_id"]
+    assert [item["value"] for item in result["changes"][0]["added"]] == ["weekly"]
 
     monkeypatch.setattr(
         change_approvals,
@@ -152,7 +146,9 @@ def test_approved_policy_create_executes_the_previewed_change(client, monkeypatc
     assert result["resources"]["policy_version_id"] > 0
     assert result["affected_employee_count"] == 1
     assert result["changes"][0]["employee_id"] == employee["id"]
-    assert client.get(f"/policies/{result['resources']['policy_id']}").status_code == 200
+    assert (
+        client.get(f"/policies/{result['resources']['policy_id']}").status_code == 200
+    )
     assignments = client.get(f"/employees/{employee['id']}/assignments").json()
     assert [assignment["value"] for assignment in assignments] == ["biweekly"]
 
@@ -215,7 +211,8 @@ def test_execution_rolls_back_when_approved_impact_is_stale(client, monkeypatch)
     field = _field(client)
     change = _employee_change(name="Bob", state="Texas")
     preview = _approved_preview(client, change)
-    assert preview["affected_employee_count"] == 0
+    assert preview["before_assignments"] == []
+    assert preview["after_assignments"] == []
     _policy(
         client,
         field["id"],
@@ -235,9 +232,12 @@ def test_execution_rolls_back_when_approved_impact_is_stale(client, monkeypatch)
     assert response.status_code == 409
     error = response.json()["error"]
     assert error["code"] == "change_approval_stale"
-    assert error["issues"][0]["metadata"]["current_preview"][
-        "affected_employee_count"
-    ] == 1
+    current_preview = error["issues"][0]["metadata"]["current_preview"]
+    assert current_preview["type"] == "employee_create"
+    assert current_preview["before_assignments"] == []
+    assert [item["value"] for item in current_preview["after_assignments"]] == [
+        "monthly"
+    ]
     assert client.get("/employees").json() == []
 
 
@@ -283,8 +283,10 @@ def test_preview_explains_when_approved_execution_is_not_configured(
 
     assert preview["approval"] is None
     assert preview["warnings"] == [
-        "Approved execution is unavailable because CHANGE_APPROVAL_SECRET is not "
-        "configured"
+        (
+            "Approved execution is unavailable because CHANGE_APPROVAL_SECRET is not "
+            "configured"
+        )
     ]
     response = client.post(
         "/change-executions",

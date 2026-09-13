@@ -1474,7 +1474,7 @@ def _preview(
     affected_employees: int,
 ) -> dict[str, Any]:
     return {
-        "change_type": change_type,
+        "type": change_type,
         "valid": True,
         "affected_employee_count": affected_employees,
         "changes": [],
@@ -1520,7 +1520,7 @@ def _create_approval_history(
         _MutationContext(included_employee_ids={employees["imani"].id}),
     )
     pending_preview_model = ChangePreviewRead(
-        change_type=pending_change_model.type,
+        type=pending_change_model.type,
         valid=True,
         affected_employee_count=0,
         changes=pending_changes,

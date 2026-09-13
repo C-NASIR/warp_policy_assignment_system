@@ -28,6 +28,7 @@ from app.schemas import (
     ChangeApprovalRead,
     ChangePreviewCreate,
     ChangePreviewRead,
+    EmployeeAssignmentPreviewRead,
     EmployeeCreateChangePreview,
     EmployeeOverrideChangePreview,
     EmployeeUpdateChangePreview,
@@ -84,7 +85,7 @@ class ChangeApprovalClaims:
 
 def issue_change_approval(
     change: ChangePreviewCreate,
-    preview: ChangePreviewRead,
+    preview: ChangePreviewRead | EmployeeAssignmentPreviewRead,
     precondition_digest: str,
     *,
     approval_id: str | None = None,
@@ -203,7 +204,9 @@ def change_digest(change: ChangePreviewCreate) -> str:
     return _digest(change.model_dump(mode="json"))
 
 
-def preview_digest(preview: ChangePreviewRead) -> str:
+def preview_digest(
+    preview: ChangePreviewRead | EmployeeAssignmentPreviewRead,
+) -> str:
     return _digest(preview.model_dump(mode="json", exclude={"approval"}))
 
 
@@ -262,9 +265,7 @@ def change_precondition_digest(
         }
     elif isinstance(change, GroupMembershipChangePreview):
         group_statement = select(Group).where(Group.id == change.group_id)
-        employee_statement = select(Employee).where(
-            Employee.id == change.employee_id
-        )
+        employee_statement = select(Employee).where(Employee.id == change.employee_id)
         if lock:
             group_statement = group_statement.with_for_update()
             employee_statement = employee_statement.with_for_update()

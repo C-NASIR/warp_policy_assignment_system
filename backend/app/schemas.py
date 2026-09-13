@@ -890,8 +890,26 @@ class ChangeApprovalRead(BaseModel):
         return ensure_utc(value)
 
 
+class EmployeeAssignmentPreviewRead(BaseModel):
+    """Assignment consequences of creating or updating one employee."""
+
+    type: Literal["employee_create", "employee_update"]
+    valid: bool
+    before_assignments: list[AssignmentPreviewRead]
+    after_assignments: list[AssignmentPreviewRead]
+    conflicts: list[ChangePreviewConflictRead]
+    warnings: list[str]
+    approval: ChangeApprovalRead | None = None
+
+
 class ChangePreviewRead(BaseModel):
-    change_type: str
+    type: Literal[
+        "policy_create",
+        "policy_version_create",
+        "policy_status_change",
+        "group_membership_change",
+        "employee_override_change",
+    ]
     valid: bool
     affected_employee_count: int
     changes: list[EmployeeAssignmentPreviewChangeRead]
@@ -899,6 +917,21 @@ class ChangePreviewRead(BaseModel):
     warnings: list[str]
     approval: ChangeApprovalRead | None = None
     approval_request_id: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def accept_legacy_change_type(cls, value: Any) -> Any:
+        """Keep previously stored approval previews readable after the rename."""
+        if isinstance(value, dict) and "type" not in value and "change_type" in value:
+            value = dict(value)
+            value["type"] = value.pop("change_type")
+        return value
+
+
+ChangePreviewResponse = Annotated[
+    EmployeeAssignmentPreviewRead | ChangePreviewRead,
+    Field(discriminator="type"),
+]
 
 
 class ChangeApprovalRequestRead(BaseModel):

@@ -429,6 +429,12 @@
 .productScope :global(.preview-change.changed) {
   color: var(--warning);
 }
+.productScope :global(.preview-change.removed) {
+  color: var(--danger);
+}
+.productScope :global(.preview-change.unchanged) {
+  color: var(--muted);
+}
 .productScope :global(.success-banner) {
   display: flex;
   align-items: flex-start;

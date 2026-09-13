@@ -84,11 +84,9 @@ def test_employee_create_and_update_previews_do_not_persist(client):
         },
     )
     assert create_preview["valid"] is True
-    assert create_preview["affected_employee_count"] == 1
-    assert create_preview["changes"][0]["employee_id"] is None
-    assert [item["value"] for item in create_preview["changes"][0]["added"]] == [
-        "weekly"
-    ]
+    assert create_preview["type"] == "employee_create"
+    assert create_preview["before_assignments"] == []
+    assert [item["value"] for item in create_preview["after_assignments"]] == ["weekly"]
     assert client.get("/employees").json() == []
 
     alice = _employee(client)
@@ -100,10 +98,11 @@ def test_employee_create_and_update_previews_do_not_persist(client):
             "changes": {"state": "Texas"},
         },
     )
-    change = update_preview["changes"][0]
-    assert [item["value"] for item in change["before"]] == ["weekly"]
-    assert change["after"] == []
-    assert [item["value"] for item in change["removed"]] == ["weekly"]
+    assert update_preview["type"] == "employee_update"
+    assert [item["value"] for item in update_preview["before_assignments"]] == [
+        "weekly"
+    ]
+    assert update_preview["after_assignments"] == []
     assert client.get(f"/employees/{alice['id']}").json()["state"] == "California"
     assert [
         item["value"]
@@ -141,13 +140,8 @@ def test_policy_version_preview_reconciles_population_without_persisting(client)
         },
     )
     assert preview["valid"] is True
-    changes = {
-        item["employee_id"]: item
-        for item in preview["changes"]
-    }
-    assert [item["value"] for item in changes[alice["id"]]["removed"]] == [
-        "weekly"
-    ]
+    changes = {item["employee_id"]: item for item in preview["changes"]}
+    assert [item["value"] for item in changes[alice["id"]]["removed"]] == ["weekly"]
     bob_added = changes[bob["id"]]["added"]
     assert [item["value"] for item in bob_added] == ["biweekly"]
     assert bob_added[0]["source_id"] is None
@@ -184,6 +178,8 @@ def test_policy_create_preview_uses_engine_without_persisting(client):
     )
 
     assert preview["valid"] is True
+    assert preview["type"] == "policy_create"
+    assert "change_type" not in preview
     assert preview["affected_employee_count"] == 1
     assert preview["changes"][0]["employee_id"] == alice["id"]
     assert preview["changes"][0]["employee_name"] == "Alice"
@@ -192,6 +188,20 @@ def test_policy_create_preview_uses_engine_without_persisting(client):
     assert client.get("/policies").json() == []
     assert client.get(f"/employees/{alice['id']}/assignments").json() == []
     assert client.get(f"/employees/{bob['id']}/assignments").json() == []
+
+
+def test_openapi_documents_type_specific_preview_responses(client):
+    response_schema = client.get("/openapi.json").json()["paths"]["/change-previews"][
+        "post"
+    ]["responses"]["200"]["content"]["application/json"]["schema"]
+
+    assert response_schema["discriminator"]["propertyName"] == "type"
+    assert response_schema["discriminator"]["mapping"]["employee_create"].endswith(
+        "/EmployeeAssignmentPreviewRead"
+    )
+    assert response_schema["discriminator"]["mapping"]["policy_create"].endswith(
+        "/ChangePreviewRead"
+    )
 
 
 def test_group_membership_and_override_previews_do_not_persist(client):
@@ -204,9 +214,9 @@ def test_group_membership_and_override_previews_do_not_persist(client):
     )
     alice = _employee(client)
     group = client.post("/groups", json={"name": "Engineering"}).json()
-    assert client.post(
-        f"/groups/{group['id']}/policies/{policy['id']}"
-    ).status_code == 201
+    assert (
+        client.post(f"/groups/{group['id']}/policies/{policy['id']}").status_code == 201
+    )
 
     membership_preview = _preview(
         client,
@@ -217,9 +227,9 @@ def test_group_membership_and_override_previews_do_not_persist(client):
             "employee_id": alice["id"],
         },
     )
-    assert [
-        item["value"] for item in membership_preview["changes"][0]["added"]
-    ] == ["GitHub"]
+    assert [item["value"] for item in membership_preview["changes"][0]["added"]] == [
+        "GitHub"
+    ]
     assert client.get(f"/groups/{group['id']}/employees").json() == []
     assert client.get(f"/employees/{alice['id']}/assignments").json() == []
 
@@ -325,7 +335,9 @@ def test_preview_returns_policy_conflicts_without_persisting(client):
         },
     )
     assert conflict["valid"] is False
-    assert conflict["affected_employee_count"] == 0
+    assert conflict["type"] == "employee_create"
+    assert conflict["before_assignments"] == []
+    assert conflict["after_assignments"] == []
     assert conflict["conflicts"][0]["code"] == "policy_conflict"
     assert conflict["conflicts"][0]["path"] == [
         "assignments",
@@ -333,12 +345,12 @@ def test_preview_returns_policy_conflicts_without_persisting(client):
     ]
     assert conflict["conflicts"][0]["metadata"]["priority"] == 10
     assert {
-        item["value"]
-        for item in conflict["conflicts"][0]["metadata"]["candidates"]
+        item["value"] for item in conflict["conflicts"][0]["metadata"]["candidates"]
     } == {"weekly", "monthly"}
-    assert "Conflicting values for field 'pay_schedule'" in conflict["conflicts"][0][
-        "message"
-    ]
+    assert (
+        "Conflicting values for field 'pay_schedule'"
+        in conflict["conflicts"][0]["message"]
+    )
     assert client.get("/employees").json() == []
 
 

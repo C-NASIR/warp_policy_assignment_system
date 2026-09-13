@@ -61,6 +61,31 @@ export type Assignment = {
   assignment_field_definition: AssignmentField;
 };
 
+export type AssignmentPreview = {
+  assignment_field_definition_id: number;
+  assignment_field_name: string;
+  value: string;
+  source_type: "policy_version" | "override";
+  source_id: number | null;
+  source_is_proposed: boolean;
+  explanation: Record<string, unknown>;
+};
+
+export type EmployeeAssignmentPreview = {
+  type: "employee_create" | "employee_update";
+  valid: boolean;
+  before_assignments: AssignmentPreview[];
+  after_assignments: AssignmentPreview[];
+  conflicts: {
+    code: string;
+    message: string;
+    path: (string | number)[];
+    metadata: Record<string, unknown>;
+  }[];
+  warnings: string[];
+  approval?: { token: string } | null;
+};
+
 export type Condition = {
   field: string;
   operator: "=" | "<" | "<=" | ">" | ">=";

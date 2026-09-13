@@ -1,22 +1,21 @@
 "use client";
 
-import { Check, Eye, Info, Sparkles, X } from "lucide-react";
+import { Check, Eye, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReactNode, useMemo, useState } from "react";
 import { ManagerCombobox } from "./manager-combobox";
+import { EmployeeAssignmentPreviewPanel } from "./employee-assignment-preview";
 import { formatEmployeeId } from "@/lib/format";
-import type { Employee, EmployeeManagerCandidate, EmployeeReferenceData } from "@/lib/types";
+import type {
+  Employee,
+  EmployeeAssignmentPreview,
+  EmployeeManagerCandidate,
+  EmployeeReferenceData,
+} from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 import { Button, SelectInput } from "@/components/ui";
 
 type EmployeeInput = Omit<Employee, "id">;
-type PreviewItem = {
-  field: string;
-  value: string;
-  source: string;
-  change: "added" | "changed" | "unchanged";
-};
-
 const createBlankEmployee = (): EmployeeInput => ({
   name: "",
   state: "",
@@ -55,7 +54,7 @@ export function EmployeeEditor({
         }
       : createBlankEmployee(),
   );
-  const [preview, setPreview] = useState<PreviewItem[] | null>(null);
+  const [preview, setPreview] = useState<EmployeeAssignmentPreview | null>(null);
   const [approval, setApproval] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
@@ -122,23 +121,7 @@ export function EmployeeEditor({
             result.conflicts?.[0]?.message ??
             "The assignment preview could not be calculated.",
         );
-      const affected =
-        result.changes?.find(
-          (item: { employee_id: number | null }) => item.employee_id === (employee?.id ?? null),
-        ) ?? result.changes?.[0];
-      const after = (affected?.after ?? []).map(
-        (item: {
-          assignment_field_name: string;
-          value: string;
-          explanation?: { policy?: { name?: string } };
-        }) => ({
-          field: item.assignment_field_name,
-          value: item.value,
-          source: item.explanation?.policy?.name ?? "Policy rule",
-          change: "added" as const,
-        }),
-      );
-      setPreview(after);
+      setPreview(result as EmployeeAssignmentPreview);
       setApproval(result.approval?.token ?? null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to preview this change.");
@@ -323,38 +306,7 @@ export function EmployeeEditor({
             </p>
           </div>
         ) : (
-          <>
-            <div className="preview-header">
-              <div className="preview-kicker">Resolution complete</div>
-              <h3 className="preview-title">{preview.length} assignment values will apply</h3>
-            </div>
-            <div className="preview-content">
-              {preview.map((item, index) => (
-                <div className="preview-assignment" key={`${item.field}-${item.value}-${index}`}>
-                  <div>
-                    <div className="preview-field">{item.field}</div>
-                    <div className="preview-value">{item.value}</div>
-                    <div className="secondary-cell">From {item.source}</div>
-                  </div>
-                  <span className={`preview-change ${item.change}`}>
-                    {item.change === "unchanged"
-                      ? "No change"
-                      : item.change === "added"
-                        ? "+ Add"
-                        : "Change"}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="form-section">
-              <div className="callout">
-                <Info size={14} />
-                <span>
-                  This preview was calculated by the policy engine and can be safely approved.
-                </span>
-              </div>
-            </div>
-          </>
+          <EmployeeAssignmentPreviewPanel preview={preview} />
         )}
       </aside>
     </div>

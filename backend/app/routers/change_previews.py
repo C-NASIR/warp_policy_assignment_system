@@ -33,6 +33,7 @@ from app.schemas import (
     AssignmentPreviewRead,
     ChangePreviewCreate,
     ChangePreviewRead,
+    ChangePreviewResponse,
     EmployeeAssignmentPreviewChangeRead,
     EmployeeCreateChangePreview,
     EmployeeOverrideChangePreview,
@@ -65,6 +66,11 @@ from app.services.change_approvals import (
     validate_approved_change,
     verify_change_approval,
 )
+from app.services.employee_change_previews import (
+    apply_employee_change,
+    employee_assignment_preview,
+    preview_employee,
+)
 from app.services.employee_overrides import (
     EmployeeOverrideConflictError,
     create_employee_override,
@@ -73,10 +79,8 @@ from app.services.employee_overrides import (
 )
 from app.services.employee_visibility import (
     EmployeeVisibility,
-    require_employee_creation_scope,
     visible_employee_or_404,
 )
-from app.services.employees import create_employee, update_employee
 from app.services.groups import add_employee_to_group, remove_employee_from_group
 from app.services.org_chart import EmployeeHierarchyConflictError
 from app.services.policy_access import (
@@ -100,8 +104,7 @@ execution_router = APIRouter(
 )
 
 _APPROVAL_UNAVAILABLE_WARNING = (
-    "Approved execution is unavailable because CHANGE_APPROVAL_SECRET is not "
-    "configured"
+    "Approved execution is unavailable because CHANGE_APPROVAL_SECRET is not configured"
 )
 
 
@@ -116,7 +119,7 @@ class _MutationContext:
     resources: dict[str, int] = field(default_factory=dict)
 
 
-@router.post("", response_model=ChangePreviewRead)
+@router.post("", response_model=ChangePreviewResponse)
 def preview(
     data: ChangePreviewCreate,
     session: DatabaseSession,
@@ -124,13 +127,10 @@ def preview(
     visibility: EmployeeScope,
     field_visibility: AssignmentFieldScope,
     principal: Authenticated,
-) -> ChangePreviewRead:
+) -> ChangePreviewResponse:
     """Simulate one supported mutation and roll back every resulting write."""
     requires_human_approval = _requires_human_approval(data, principal)
-    if (
-        requires_human_approval
-        and isinstance(data, PolicyVersionCreateChangePreview)
-    ):
+    if requires_human_approval and isinstance(data, PolicyVersionCreateChangePreview):
         data.version.created_by = principal.subject
     _validate_change_scope(
         session,
@@ -139,6 +139,29 @@ def preview(
         visibility,
         principal,
     )
+    if isinstance(data, (EmployeeCreateChangePreview, EmployeeUpdateChangePreview)):
+        approved_precondition_digest = change_precondition_digest(
+            session,
+            data,
+            lock=False,
+        )
+        response = preview_employee(
+            session,
+            data,
+            actor,
+            visibility,
+            field_visibility,
+        )
+        if response.valid:
+            response.approval = issue_change_approval(
+                data,
+                response,
+                approved_precondition_digest,
+            )
+            if response.approval is None:
+                response.warnings.append(_APPROVAL_UNAVAILABLE_WARNING)
+        return response
+
     savepoint = session.begin_nested()
     try:
         approved_precondition_digest = change_precondition_digest(
@@ -178,11 +201,10 @@ def preview(
                 context,
             )
             response = ChangePreviewRead(
-                change_type=data.type,
+                type=data.type,
                 valid=True,
                 affected_employee_count=sum(
-                    bool(item.added or item.removed or item.changed)
-                    for item in changes
+                    bool(item.added or item.removed or item.changed) for item in changes
                 ),
                 changes=changes,
                 conflicts=[],
@@ -204,13 +226,11 @@ def preview(
             PolicyVersionOverlapError,
         ) as exc:
             response = ChangePreviewRead(
-                change_type=data.type,
+                type=data.type,
                 valid=False,
                 affected_employee_count=0,
                 changes=[],
-                conflicts=[
-                    _preview_conflict_issue(exc, context)
-                ],
+                conflicts=[_preview_conflict_issue(exc, context)],
                 warnings=[],
             )
     finally:
@@ -355,14 +375,26 @@ def execute_approved_change(
         comparable_after,
         context,
     )
-    comparable_preview = ChangePreviewRead(
-        change_type=change.type,
-        valid=True,
-        affected_employee_count=_affected_employee_count(comparable_changes),
-        changes=comparable_changes,
-        conflicts=[],
-        warnings=[],
-    )
+    if isinstance(change, (EmployeeCreateChangePreview, EmployeeUpdateChangePreview)):
+        employee_id = (
+            change.employee_id
+            if isinstance(change, EmployeeUpdateChangePreview)
+            else next(iter(context.proposed_employee_ids))
+        )
+        comparable_preview = employee_assignment_preview(
+            change,
+            before.get(employee_id, []),
+            comparable_after.get(employee_id, []),
+        )
+    else:
+        comparable_preview = ChangePreviewRead(
+            type=change.type,
+            valid=True,
+            affected_employee_count=_affected_employee_count(comparable_changes),
+            changes=comparable_changes,
+            conflicts=[],
+            warnings=[],
+        )
     actual_preview_digest = preview_digest(comparable_preview)
     if actual_preview_digest != claims.preview_digest:
         raise ChangeApprovalConflictError(
@@ -434,32 +466,11 @@ def _apply_change(
     context: _MutationContext,
     visibility: EmployeeVisibility,
 ) -> None:
-    if isinstance(data, EmployeeCreateChangePreview):
-        require_employee_creation_scope(session, visibility, data.employee.manager_id)
-        employee = create_employee(session, data.employee, actor)
+    if isinstance(data, (EmployeeCreateChangePreview, EmployeeUpdateChangePreview)):
+        employee = apply_employee_change(session, data, actor, visibility)
         context.included_employee_ids.add(employee.id)
-        context.proposed_employee_ids.add(employee.id)
-        context.resources["employee_id"] = employee.id
-        return
-
-    if isinstance(data, EmployeeUpdateChangePreview):
-        employee = visible_employee_or_404(
-            session,
-            visibility,
-            data.employee_id,
-        )
-        if (
-            "manager_id" in data.changes.model_fields_set
-            and data.changes.manager_id is not None
-            and data.changes.manager_id != employee.manager_id
-        ):
-            visible_employee_or_404(
-                session,
-                visibility,
-                data.changes.manager_id,
-            )
-        update_employee(session, employee, data.changes, actor)
-        context.included_employee_ids.add(employee.id)
+        if isinstance(data, EmployeeCreateChangePreview):
+            context.proposed_employee_ids.add(employee.id)
         context.resources["employee_id"] = employee.id
         return
 
@@ -621,10 +632,7 @@ def _validate_change_scope(
         validate_assignment_field_ids(
             session,
             field_visibility,
-            (
-                value.assignment_field_definition_id
-                for value in data.policy.values
-            ),
+            (value.assignment_field_definition_id for value in data.policy.values),
         )
     elif isinstance(data, PolicyVersionCreateChangePreview):
         require_visible_policy(session, field_visibility, data.policy_id)
@@ -634,10 +642,7 @@ def _validate_change_scope(
         validate_assignment_field_ids(
             session,
             field_visibility,
-            (
-                value.assignment_field_definition_id
-                for value in data.version.values
-            ),
+            (value.assignment_field_definition_id for value in data.version.values),
         )
     elif isinstance(data, PolicyStatusChangePreview):
         require_visible_policy(session, field_visibility, data.policy_id)
@@ -723,11 +728,7 @@ def _current_assignments(
         statement,
         EmployeeAssignment.assignment_field_definition_id,
     )
-    assignments = list(
-        session.scalars(
-            statement
-        )
-    )
+    assignments = list(session.scalars(statement))
     result: dict[int, list[AssignmentPreviewRead]] = {}
     for assignment in assignments:
         if assignment.source_policy_version_id is not None:
@@ -743,9 +744,7 @@ def _current_assignments(
                 assignment_field_definition_id=(
                     assignment.assignment_field_definition_id
                 ),
-                assignment_field_name=(
-                    assignment.assignment_field_definition.name
-                ),
+                assignment_field_name=(assignment.assignment_field_definition.name),
                 value=assignment.value,
                 source_type=source_type,
                 source_id=None if source_is_proposed else source_id,
@@ -805,7 +804,10 @@ def _assignment_changes(
         added = _list_difference(after_items, before_items)
         removed = _list_difference(before_items, after_items)
         changed = _changed_fields(before_items, after_items)
-        if not (added or removed or changed) and employee_id not in context.included_employee_ids:
+        if (
+            not (added or removed or changed)
+            and employee_id not in context.included_employee_ids
+        ):
             continue
         changes.append(
             EmployeeAssignmentPreviewChangeRead(
@@ -905,29 +907,27 @@ def _sanitize_explanation(
     result: dict[str, Any] = {}
     for key, item in value.items():
         proposed = (
-            key in {"policy_version_id", "source_policy_version_id"}
-            and item in proposed_policy_version_ids
-        ) or (
-            key == "policy_id"
-            and item in proposed_policy_ids
-        ) or (
-            key == "clause_id"
-            and item in proposed_condition_clause_ids
-        ) or (
-            key in {"override_id", "source_override_id"}
-            and item in proposed_override_ids
-        ) or (
-            key == "id"
-            and parent_key == "policy"
-            and item in proposed_policy_ids
-        ) or (
-            key == "id"
-            and parent_key == "policy_version"
-            and item in proposed_policy_version_ids
-        ) or (
-            key == "id"
-            and parent_key == "override"
-            and item in proposed_override_ids
+            (
+                key in {"policy_version_id", "source_policy_version_id"}
+                and item in proposed_policy_version_ids
+            )
+            or (key == "policy_id" and item in proposed_policy_ids)
+            or (key == "clause_id" and item in proposed_condition_clause_ids)
+            or (
+                key in {"override_id", "source_override_id"}
+                and item in proposed_override_ids
+            )
+            or (key == "id" and parent_key == "policy" and item in proposed_policy_ids)
+            or (
+                key == "id"
+                and parent_key == "policy_version"
+                and item in proposed_policy_version_ids
+            )
+            or (
+                key == "id"
+                and parent_key == "override"
+                and item in proposed_override_ids
+            )
         )
         result[key] = (
             None
