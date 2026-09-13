@@ -16,7 +16,7 @@ import {
   getEmployeeOverrides,
   getEmployees,
 } from "@/lib/backend";
-import { formatDate, initials } from "@/lib/format";
+import { formatDate, formatEmployeeId, initials } from "@/lib/format";
 import { hasPermission } from "@/lib/permissions";
 import styles from "./employee-detail.module.css";
 
@@ -75,7 +75,6 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
           <EmployeeEditor
             employee={employee}
             employees={allEmployees}
-            fields={fields}
             referenceData={referenceData}
             trigger={
               <>
@@ -134,7 +133,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                 </div>
                 <div>
                   <span className="label">Employee ID</span>
-                  <div className="profile-value">#{String(employee.id).padStart(4, "0")}</div>
+                  <div className="profile-value">{formatEmployeeId(employee.id)}</div>
                 </div>
               </div>
             </PanelBody>

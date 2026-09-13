@@ -3,9 +3,11 @@
 import { Check, Eye, Info, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReactNode, useMemo, useState } from "react";
-import type { AssignmentField, Employee, EmployeeReferenceData } from "@/lib/types";
+import { ManagerCombobox } from "./manager-combobox";
+import { formatEmployeeId } from "@/lib/format";
+import type { Employee, EmployeeManagerCandidate, EmployeeReferenceData } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
-import { Button } from "@/components/ui";
+import { Button, SelectInput } from "@/components/ui";
 
 type EmployeeInput = Omit<Employee, "id">;
 type PreviewItem = {
@@ -15,11 +17,11 @@ type PreviewItem = {
   change: "added" | "changed" | "unchanged";
 };
 
-const createBlankEmployee = (referenceData: EmployeeReferenceData): EmployeeInput => ({
+const createBlankEmployee = (): EmployeeInput => ({
   name: "",
   state: "",
   department: "",
-  employee_type: referenceData.employee_types[0] ?? "",
+  employee_type: "",
   location: "",
   start_date: new Date().toISOString().slice(0, 10),
   manager_id: null,
@@ -27,15 +29,13 @@ const createBlankEmployee = (referenceData: EmployeeReferenceData): EmployeeInpu
 
 export function EmployeeEditor({
   employee,
-  employees,
-  fields,
+  employees = [],
   referenceData,
   compact = false,
   trigger,
 }: {
   employee?: Employee;
-  employees: Employee[];
-  fields: AssignmentField[];
+  employees?: Employee[];
   referenceData: EmployeeReferenceData;
   compact?: boolean;
   trigger?: ReactNode;
@@ -53,7 +53,7 @@ export function EmployeeEditor({
           start_date: employee.start_date,
           manager_id: employee.manager_id,
         }
-      : createBlankEmployee(referenceData),
+      : createBlankEmployee(),
   );
   const [preview, setPreview] = useState<PreviewItem[] | null>(null);
   const [approval, setApproval] = useState<string | null>(null);
@@ -63,7 +63,15 @@ export function EmployeeEditor({
   const [error, setError] = useState("");
   useModalAccessibility(compact && open, () => setOpen(false));
 
-  const managers = employees.filter((item) => item.id !== employee?.id);
+  const currentManager = employees.find((item) => item.id === data.manager_id);
+  const initialManagerCandidate: EmployeeManagerCandidate | undefined = data.manager_id
+    ? {
+        id: data.manager_id,
+        label: currentManager
+          ? `${currentManager.name} · ${currentManager.department} · ${formatEmployeeId(currentManager.id)}`
+          : `Employee ${formatEmployeeId(data.manager_id)}`,
+      }
+    : undefined;
   const departments = referenceData.departments;
   const employeeTypes = referenceData.employee_types;
   const payload = useMemo(
@@ -162,7 +170,7 @@ export function EmployeeEditor({
           : "Employee created and assignments resolved.",
       );
       if (!employee) {
-        setData(createBlankEmployee(referenceData));
+        setData(createBlankEmployee());
         setPreview(null);
         setApproval(null);
         setValidationAttempted(false);
@@ -208,39 +216,37 @@ export function EmployeeEditor({
               <span className="field-label">
                 Department <span className="required">Required</span>
               </span>
-              <input
-                className={`input${validationAttempted && !data.department ? " field-invalid" : ""}`}
+              <SelectInput
                 required
                 aria-invalid={validationAttempted && !data.department}
-                list="department-options"
                 value={data.department}
                 onChange={(e) => update("department", e.target.value)}
-                placeholder="Enter or choose a department"
-              />
-              <datalist id="department-options">
+              >
+                <option value="" disabled>
+                  Select a department
+                </option>
                 {departments.map((item) => (
-                  <option key={item} value={item} />
+                  <option key={item}>{item}</option>
                 ))}
-              </datalist>
+              </SelectInput>
             </label>
             <label className="field">
               <span className="field-label">
                 Employment type <span className="required">Required</span>
               </span>
-              <input
-                className={`input${validationAttempted && !data.employee_type ? " field-invalid" : ""}`}
+              <SelectInput
                 required
                 aria-invalid={validationAttempted && !data.employee_type}
-                list="employee-type-options"
                 value={data.employee_type}
                 onChange={(e) => update("employee_type", e.target.value)}
-                placeholder="Enter or choose an employment type"
-              />
-              <datalist id="employee-type-options">
+              >
+                <option value="" disabled>
+                  Select an employment type
+                </option>
                 {employeeTypes.map((item) => (
-                  <option key={item} value={item} />
+                  <option key={item}>{item}</option>
                 ))}
-              </datalist>
+              </SelectInput>
             </label>
             <label className="field">
               <span className="field-label">
@@ -277,29 +283,19 @@ export function EmployeeEditor({
                 onChange={(e) => update("start_date", e.target.value)}
               />
             </label>
-            <label className="field">
-              <span className="field-label">Manager</span>
-              <select
-                className="select"
-                value={data.manager_id ?? ""}
-                onChange={(e) =>
-                  update("manager_id", e.target.value ? Number(e.target.value) : null)
-                }
-              >
-                <option value="">No manager</option>
-                {managers.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="field">
+              <label className="field-label" htmlFor="manager">
+                Manager
+              </label>
+              <ManagerCombobox
+                employeeId={employee?.id}
+                initialCandidate={initialManagerCandidate}
+                onChange={(managerId) => update("manager_id", managerId)}
+              />
+            </div>
           </div>
         </div>
-        <div className="form-footer">
-          <span className="form-hint">
-            Checks {fields.length} assignment fields. Nothing is saved until you confirm.
-          </span>
+        <div className="form-footer employee-editor-footer">
           <div className="heading-actions">
             <Button variant="secondary" type="button" onClick={review} disabled={submitting}>
               <Eye size={14} />

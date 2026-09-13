@@ -296,6 +296,11 @@ class EmployeeDirectoryRead(EmployeeRead):
     active_assignment_count: int = Field(ge=0)
 
 
+class EmployeeManagerCandidateRead(BaseModel):
+    id: int
+    label: str
+
+
 class GroupCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
 

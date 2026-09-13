@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
 import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
-import { initials } from "@/lib/format";
+import { formatEmployeeId, initials } from "@/lib/format";
 import type { EmployeeDirectoryItem, EmployeeReferenceData } from "@/lib/types";
 import styles from "./employee-directory.module.css";
 
@@ -138,7 +138,12 @@ export function EmployeeDirectory({
                   <td>
                     <Link className="person-cell" href={`/employees/${employee.id}`}>
                       <span className="avatar">{initials(employee.name)}</span>
-                      <span className="primary-cell">{employee.name}</span>
+                      <span className="employee-identity">
+                        <span className="primary-cell">{employee.name}</span>
+                        <span className="secondary-cell">
+                          Employee {formatEmployeeId(employee.id)}
+                        </span>
+                      </span>
                     </Link>
                   </td>
                   <td>{employee.department}</td>

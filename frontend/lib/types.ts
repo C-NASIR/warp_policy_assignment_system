@@ -13,6 +13,11 @@ export type EmployeeDirectoryItem = Employee & {
   active_assignment_count: number;
 };
 
+export type EmployeeManagerCandidate = {
+  id: number;
+  label: string;
+};
+
 export type EmployeeReferenceData = {
   departments: string[];
   employee_types: string[];

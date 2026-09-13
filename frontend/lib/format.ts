@@ -7,6 +7,10 @@ export function initials(name: string) {
     .toUpperCase();
 }
 
+export function formatEmployeeId(id: number) {
+  return `#${String(id).padStart(4, "0")}`;
+}
+
 export function formatDate(value: string | null | undefined) {
   if (!value) return "Ongoing";
   return new Intl.DateTimeFormat("en-US", {

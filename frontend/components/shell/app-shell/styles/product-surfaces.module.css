@@ -137,6 +137,10 @@
   align-items: center;
   gap: 10px;
 }
+.productScope :global(.employee-identity),
+.productScope :global(.employee-identity > span) {
+  display: block;
+}
 .productScope :global(.empty-state) {
   padding: 48px 24px;
   text-align: center;

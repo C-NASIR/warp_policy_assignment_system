@@ -119,6 +119,70 @@ def test_employee_filters_compose_with_pagination_and_total_count(client):
     assert [employee["name"] for employee in page] == ["Carol"]
 
 
+def test_employee_search_accepts_padded_employee_id(client):
+    employee = _employee(
+        client,
+        "Alex Morgan",
+        state="Illinois",
+        department="Operations",
+    )
+    _employee(
+        client,
+        "Someone Else",
+        state="Texas",
+        department="Sales",
+    )
+
+    response = client.get("/employees", params={"search": f"#{employee['id']:04d}"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()] == [employee["id"]]
+
+
+def test_manager_candidates_are_bounded_minimal_and_cycle_safe(client):
+    manager = _employee(
+        client,
+        "Alex Morgan",
+        state="Illinois",
+        department="Engineering",
+    )
+    report = _employee(
+        client,
+        "Alex Morgan",
+        state="Illinois",
+        department="Support",
+        manager_id=manager["id"],
+    )
+    grandchild = _employee(
+        client,
+        "Taylor Reed",
+        state="Illinois",
+        department="Support",
+        manager_id=report["id"],
+    )
+
+    by_id = client.get(
+        "/employees/manager-candidates",
+        params={"search": f"#{manager['id']:04d}", "limit": 1},
+    )
+    assert by_id.status_code == 200
+    assert by_id.json() == [
+        {
+            "id": manager["id"],
+            "label": f"Alex Morgan · Engineering · #{manager['id']:04d}",
+        }
+    ]
+
+    editing_manager = client.get(
+        "/employees/manager-candidates",
+        params={"employee_id": manager["id"]},
+    )
+    assert editing_manager.status_code == 200
+    assert {
+        item["id"] for item in editing_manager.json()
+    }.isdisjoint({manager["id"], report["id"], grandchild["id"]})
+
+
 def test_employee_reference_data_returns_distinct_sorted_values(client):
     _employee(
         client,

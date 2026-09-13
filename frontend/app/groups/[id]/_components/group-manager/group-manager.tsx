@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Check, CircleAlert, FileKey2, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { initials } from "@/lib/format";
+import { formatEmployeeId, initials } from "@/lib/format";
 import type { Employee, Group, Policy } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 import { Badge, Button, Panel } from "@/components/ui";
@@ -294,7 +294,7 @@ export function GroupManager({
                   <option value="">Select an employee</option>
                   {availableEmployees.map((employee) => (
                     <option key={employee.id} value={employee.id}>
-                      {employee.name} · {employee.department}
+                      {employee.name} · {employee.department} · {formatEmployeeId(employee.id)}
                     </option>
                   ))}
                 </select>

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { type SubmitEvent, useMemo, useState } from "react";
 import { Badge, Button, DataTable, Panel } from "@/components/ui";
+import { formatEmployeeId } from "@/lib/format";
 import type { AssignmentField, Employee, Permission, Role, User } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
@@ -231,7 +232,9 @@ function UsersPanel({
                   ) : employee ? (
                     <>
                       <span className="primary-cell">{employee.name}</span>
-                      <span className="secondary-cell">{employee.department}</span>
+                      <span className="secondary-cell">
+                        {employee.department} · {formatEmployeeId(employee.id)}
+                      </span>
                     </>
                   ) : (
                     <span className="secondary-cell">Not linked</span>
@@ -808,7 +811,7 @@ function UserForm({
                   <option value="">No employee link</option>
                   {employees.map((employee) => (
                     <option key={employee.id} value={employee.id}>
-                      {employee.name} · {employee.department}
+                      {employee.name} · {employee.department} · {formatEmployeeId(employee.id)}
                     </option>
                   ))}
                 </select>

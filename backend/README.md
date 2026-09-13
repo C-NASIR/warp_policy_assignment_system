@@ -231,6 +231,7 @@ state-changing cookie-authenticated requests.
 | POST / GET | `/auth/credentials` | Issue a credential once or list safe credential metadata |
 | DELETE | `/auth/credentials/{id}` | Revoke a credential |
 | POST / GET | `/employees` | Create or list employees |
+| GET | `/employees/manager-candidates` | Search a bounded, visibility-scoped set of valid manager choices |
 | GET | `/employees/reference-data` | Read distinct department and employee-type values visible to the caller |
 | GET / PATCH / DELETE | `/employees/{id}` | Read, update, or delete an employee |
 | GET | `/employees/{id}/assignments` | Read current assignments, or assignments at an optional `as_of` UTC timestamp |

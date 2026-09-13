@@ -4,12 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { EmployeeEditor } from "../_components/employee-editor/employee-editor";
 import { Badge } from "@/components/ui";
-import {
-  getAssignmentFields,
-  getCurrentUser,
-  getEmployeeReferenceData,
-  getEmployees,
-} from "@/lib/backend";
+import { getCurrentUser, getEmployeeReferenceData } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Add employee" };
@@ -17,11 +12,7 @@ export const metadata: Metadata = { title: "Add employee" };
 export default async function NewEmployeePage() {
   const user = await getCurrentUser();
   if (!hasPermission(user, "employees:create")) redirect("/forbidden");
-  const [employees, fields, referenceData] = await Promise.all([
-    getEmployees(),
-    getAssignmentFields(),
-    getEmployeeReferenceData(),
-  ]);
+  const referenceData = await getEmployeeReferenceData();
   return (
     <>
       <Link className="page-back-link" href="/employees">
@@ -39,7 +30,7 @@ export default async function NewEmployeePage() {
         </div>
         <Badge tone="accent">Preview required</Badge>
       </div>
-      <EmployeeEditor employees={employees} fields={fields} referenceData={referenceData} />
+      <EmployeeEditor referenceData={referenceData} />
     </>
   );
 }

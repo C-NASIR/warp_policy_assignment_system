@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { KeyboardEvent, useEffect, useState } from "react";
 import { classNames } from "@/lib/class-names";
+import { formatEmployeeId } from "@/lib/format";
 import type { LearnSearchEntry } from "@/lib/learn-source";
 import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser, SecurityEvent } from "@/lib/types";
@@ -471,6 +472,11 @@ export function AppShell({
                       ? "Root account"
                       : currentUser.roles.map((role) => role.name).join(", ") || "No role"}
                   </div>
+                  {currentUser.employee_id ? (
+                    <div className="account-employee-id">
+                      Employee {formatEmployeeId(currentUser.employee_id)}
+                    </div>
+                  ) : null}
                 </div>
                 <button
                   className="account-logout"

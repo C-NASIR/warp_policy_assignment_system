@@ -18,6 +18,7 @@ from app.schemas import (
     AssignmentSummaryRead,
     EmployeeCreate,
     EmployeeDirectoryRead,
+    EmployeeManagerCandidateRead,
     EmployeeOverrideCreate,
     EmployeeOverrideRead,
     EmployeeOverrideUpdate,
@@ -45,9 +46,15 @@ from app.services.employee_visibility import (
 )
 from app.services.employees import create_employee, delete_employee, update_employee
 from app.services.impact_summaries import build_assignment_summary
+from app.services.org_chart import get_descendant_ids
 from app.services.reconciliation import reconcile_employees
 
 router = APIRouter(prefix="/employees", tags=["employees"])
+
+
+def _search_employee_id(search: str) -> int | None:
+    candidate = search.strip().removeprefix("#")
+    return int(candidate) if candidate.isdigit() else None
 
 
 @router.post("", response_model=EmployeeRead, status_code=status.HTTP_201_CREATED)
@@ -81,15 +88,17 @@ def list_all(
     statement = visibility.apply(select(Employee))
     if search:
         pattern = f"%{search.strip()}%"
-        statement = statement.where(
-            or_(
-                Employee.name.ilike(pattern),
-                Employee.state.ilike(pattern),
-                Employee.department.ilike(pattern),
-                Employee.employee_type.ilike(pattern),
-                Employee.location.ilike(pattern),
-            )
-        )
+        predicates = [
+            Employee.name.ilike(pattern),
+            Employee.state.ilike(pattern),
+            Employee.department.ilike(pattern),
+            Employee.employee_type.ilike(pattern),
+            Employee.location.ilike(pattern),
+        ]
+        searched_id = _search_employee_id(search)
+        if searched_id is not None:
+            predicates.append(Employee.id == searched_id)
+        statement = statement.where(or_(*predicates))
     if state is not None:
         statement = statement.where(Employee.state == state)
     if department is not None:
@@ -149,6 +158,60 @@ def list_all(
             active_assignment_count=int(counts.get(employee.id, 0)),
         )
         for employee in employees
+    ]
+
+
+@router.get(
+    "/manager-candidates",
+    response_model=list[EmployeeManagerCandidateRead],
+)
+def manager_candidates(
+    session: DatabaseSession,
+    visibility: EmployeeScope,
+    search: Annotated[str | None, Query(max_length=200)] = None,
+    employee_id: Annotated[int | None, Query(gt=0)] = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> list[EmployeeManagerCandidateRead]:
+    """Return a bounded, minimal set of valid manager choices."""
+    if employee_id is None and not (
+        visibility.unrestricted or visibility.can_create_reports
+    ):
+        return []
+
+    excluded_ids: set[int] = set()
+    if employee_id is not None:
+        visible_employee_or_404(session, visibility, employee_id)
+        excluded_ids = {employee_id, *get_descendant_ids(session, employee_id)}
+
+    statement = visibility.apply(
+        select(Employee.id, Employee.name, Employee.department),
+        Employee.id,
+    )
+    if excluded_ids:
+        statement = statement.where(Employee.id.not_in(excluded_ids))
+    if search and search.strip():
+        pattern = f"%{search.strip()}%"
+        predicates = [
+            Employee.name.ilike(pattern),
+            Employee.department.ilike(pattern),
+        ]
+        searched_id = _search_employee_id(search)
+        if searched_id is not None:
+            predicates.append(Employee.id == searched_id)
+        statement = statement.where(or_(*predicates))
+
+    rows = session.execute(
+        statement.order_by(Employee.name, Employee.id).limit(limit)
+    ).all()
+    return [
+        EmployeeManagerCandidateRead(
+            id=employee_id,
+            label=(
+                f"{name} · {department} · "
+                f"#{str(employee_id).zfill(4)}"
+            ),
+        )
+        for employee_id, name, department in rows
     ]
 
 

@@ -111,6 +111,14 @@ def test_reporting_tree_scope_filters_every_employee_boundary(client):
         report["id"],
         grandchild["id"],
     }
+    candidates = client.get("/employees/manager-candidates")
+    assert candidates.status_code == 200
+    assert {item["id"] for item in candidates.json()} == {
+        manager["id"],
+        report["id"],
+        grandchild["id"],
+    }
+    assert all(set(item) == {"id", "label"} for item in candidates.json())
     assert client.get(f"/employees/{peer['id']}").status_code == 404
     assert client.patch(
         f"/employees/{peer['id']}",
