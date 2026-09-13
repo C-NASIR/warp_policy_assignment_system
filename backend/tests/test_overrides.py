@@ -7,7 +7,7 @@ def create_field(client, name, cardinality="one"):
     return response.json()
 
 
-def create_policy(client, name, priority, values, state="California"):
+def create_policy(client, name, priority, values, state="CA"):
     response = client.post(
         "/policies",
         json={
@@ -29,7 +29,7 @@ def create_employee(client, name="Alice"):
         "/employees",
         json={
             "name": name,
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -233,14 +233,14 @@ def test_override_does_not_hide_an_equal_priority_policy_conflict(client):
         "Weekly",
         10,
         [{"assignment_field_definition_id": schedule["id"], "value": "weekly"}],
-        state="Wisconsin",
+        state="WI",
     )
     monthly = create_policy(
         client,
         "Monthly",
         10,
         [{"assignment_field_definition_id": schedule["id"], "value": "monthly"}],
-        state="Wisconsin",
+        state="WI",
     )
     employee = create_employee(client)
     group = client.post("/groups", json={"name": "Engineering"}).json()

@@ -81,7 +81,7 @@ def test_policy_domain_models_have_required_columns():
         Employee: {
             "id",
             "name",
-            "state",
+            "state_code",
             "department",
             "employee_type",
             "location",
@@ -217,7 +217,7 @@ def test_collection_filter_columns_have_supporting_indexes():
             ("entity_type", "entity_id"),
         },
         Employee: {
-            ("state", "department", "employee_type"),
+            ("state_code", "department", "employee_type"),
             ("start_date",),
             ("manager_id",),
         },
@@ -306,7 +306,7 @@ def test_scheduled_reconciliations_enforce_lifecycle_and_lookup_indexes():
 def test_group_relationships_persist_memberships_and_policies(db):
     employee = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -327,7 +327,7 @@ def test_group_relationships_persist_memberships_and_policies(db):
 def test_deleting_group_removes_links_without_deleting_employees_or_policies(db):
     employee = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )

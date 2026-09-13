@@ -14,8 +14,9 @@ import type {
 } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 import { Button, SelectInput } from "@/components/ui";
+import { StateCombobox } from "@/components/shared";
 
-type EmployeeInput = Omit<Employee, "id">;
+type EmployeeInput = Omit<Employee, "id" | "state_label">;
 const createBlankEmployee = (): EmployeeInput => ({
   name: "",
   state: "",
@@ -293,15 +294,13 @@ export function EmployeeEditor({
             </label>
             <label className="field">
               <span className="field-label">
-                State or region <span className="required">Required</span>
+                State <span className="required">Required</span>
               </span>
-              <input
-                className={`input${validationAttempted && !data.state.trim() ? " field-invalid" : ""}`}
-                required
-                aria-invalid={validationAttempted && !data.state.trim()}
+              <StateCombobox
+                states={referenceData.states}
                 value={data.state}
-                onChange={(e) => update("state", e.target.value)}
-                placeholder="e.g. California"
+                invalid={validationAttempted && !data.state}
+                onChange={(value) => update("state", value)}
               />
             </label>
             <label className="field">

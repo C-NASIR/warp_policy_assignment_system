@@ -18,7 +18,7 @@ def _employee(client, name: str, manager_id: int | None = None) -> dict:
         "/employees",
         json={
             "name": name,
-            "state": "Illinois",
+            "state": "IL",
             "department": "Operations",
             "employee_type": "full-time",
             "manager_id": manager_id,
@@ -168,7 +168,7 @@ def test_reporting_tree_scope_filters_every_employee_boundary(client):
         "/employees",
         json={
             "name": "Out of tree",
-            "state": "Illinois",
+            "state": "IL",
             "department": "Operations",
             "employee_type": "full-time",
         },
@@ -193,7 +193,7 @@ def test_scope_changes_apply_to_an_existing_session(client):
         "/employees",
         json={
             "name": "Not visible to self",
-            "state": "Illinois",
+            "state": "IL",
             "department": "Operations",
             "employee_type": "full-time",
             "manager_id": manager["id"],

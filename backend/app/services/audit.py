@@ -36,8 +36,8 @@ def snapshot_entity(
     redacted = _SENSITIVE_FIELD_NAMES | set(redact)
     snapshot: dict[str, Any] = {}
     mapper = cast(Mapper[Any], inspect(type(entity)))
-    for column in mapper.columns:
-        key = column.key
+    for attribute in mapper.column_attrs:
+        key = attribute.key
         if key in excluded:
             continue
         value = getattr(entity, key)

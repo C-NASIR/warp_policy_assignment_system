@@ -19,7 +19,7 @@ def _policy(client, field_id, name, value):
                     {
                         "field": "state",
                         "operator": "=",
-                        "value": "California",
+                        "value": "CA",
                     }
                 ],
             },
@@ -65,7 +65,7 @@ def test_manual_validation_errors_use_the_same_envelope(client):
         headers={"X-Actor": " "},
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -95,7 +95,7 @@ def test_policy_conflicts_include_field_and_candidate_metadata(client):
         "/employees",
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },

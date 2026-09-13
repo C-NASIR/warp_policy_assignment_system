@@ -4,6 +4,7 @@ import { Search, X } from "lucide-react";
 import { KeyboardEvent, useEffect, useId, useState } from "react";
 import { formatEmployeeId } from "@/lib/format";
 import type { ConditionField, Employee, EmployeeReferenceData } from "@/lib/types";
+import { StateCombobox } from "@/components/shared";
 
 function employeeLabel(employee: Employee) {
   return `${employee.name} · ${employee.department} · ${formatEmployeeId(employee.id)}`;
@@ -194,6 +195,17 @@ export function ConditionValueInput({
       <EmployeeReferenceInput
         value={value}
         employees={employees}
+        invalid={invalid}
+        onChange={onChange}
+      />
+    );
+  }
+
+  if (input.type === "resource" && input.reference_resource === "states") {
+    return (
+      <StateCombobox
+        states={referenceData.states}
+        value={value}
         invalid={invalid}
         onChange={onChange}
       />

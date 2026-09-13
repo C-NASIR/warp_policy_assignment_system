@@ -29,7 +29,7 @@ def _create_policy(
     field_id: int,
     *,
     condition_field: str = "state",
-    condition_value: str = "California",
+    condition_value: str = "CA",
     condition_operator: str = "=",
     value: str = "3 weeks",
     effective_from: date | None = None,
@@ -61,7 +61,7 @@ def _create_employee(
     client,
     *,
     name: str = "Alice",
-    state: str = "California",
+    state: str = "CA",
     start_date: date | None = None,
 ) -> dict:
     body = {
@@ -106,7 +106,7 @@ def test_query_uses_recorded_past_current_projection_and_future_resolution(clien
         json={
             "priority": 10,
             "effective_from": future.isoformat(),
-            "condition_group": _condition("state", "California"),
+            "condition_group": _condition("state", "CA"),
             "values": [
                 {
                     "assignment_field_definition_id": field["id"],
@@ -163,9 +163,9 @@ def test_future_resolution_does_not_depend_on_current_employee_policy_links(clie
     policy = _create_policy(
         client,
         field["id"],
-        condition_value="Wisconsin",
+        condition_value="WI",
     )
-    employee = _create_employee(client, state="California")
+    employee = _create_employee(client, state="CA")
     assert client.get(f"/employees/{employee['id']}/assignments").json() == []
     assert db.scalars(select(EmployeePolicy)).all() == []
 
@@ -174,7 +174,7 @@ def test_future_resolution_does_not_depend_on_current_employee_policy_links(clie
         json={
             "priority": 10,
             "effective_from": future.isoformat(),
-            "condition_group": _condition("state", "California"),
+            "condition_group": _condition("state", "CA"),
             "values": [
                 {
                     "assignment_field_definition_id": field["id"],

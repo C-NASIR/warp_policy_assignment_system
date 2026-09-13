@@ -146,7 +146,7 @@ def test_human_session_rejects_untrusted_state_changes(client):
         headers={"Origin": "https://untrusted.example"},
         json={
             "name": "Avery Stone",
-            "state": "Illinois",
+            "state": "IL",
             "department": "Operations",
             "employee_type": "full-time",
         },

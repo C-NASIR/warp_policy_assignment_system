@@ -25,7 +25,7 @@ from app.services.scheduled_reconciliations import (
 )
 
 
-def _condition(state="California"):
+def _condition(state="CA"):
     return {
         "logical_operator": "and",
         "conditions": [{"field": "state", "operator": "=", "value": state}],
@@ -41,7 +41,7 @@ def _create_field(client, name="pay_schedule"):
     return response.json()
 
 
-def _create_employee(client, state="California"):
+def _create_employee(client, state="CA"):
     response = client.post(
         "/employees",
         json={
@@ -61,7 +61,7 @@ def _create_policy(
     *,
     value="weekly",
     priority=10,
-    state="California",
+    state="CA",
     effective_from=None,
     effective_until=None,
 ):
@@ -327,14 +327,14 @@ def test_employee_trigger_uses_the_shared_employee_reconciliation_path(
     session_factory,
 ):
     field = _create_field(client, "badge")
-    _create_policy(client, field["id"], state="Wisconsin", value="blue")
-    alice = _create_employee(client, state="California")
+    _create_policy(client, field["id"], state="WI", value="blue")
+    alice = _create_employee(client, state="CA")
     due_at = datetime(2027, 4, 15, tzinfo=UTC)
 
     with session_factory.begin() as session:
         employee = session.get(Employee, alice["id"])
         assert employee is not None
-        employee.state = "Wisconsin"
+        employee.state = "WI"
         schedule_reconciliation(
             session,
             entity_type=EMPLOYEE_ENTITY,
@@ -362,7 +362,7 @@ def test_override_trigger_dispatches_assignment_reconciliation(
     with session_factory.begin() as session:
         employee = Employee(
             name="Alice",
-            state="California",
+            state="CA",
             department="Engineering",
             employee_type="regular",
         )

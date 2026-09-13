@@ -35,8 +35,10 @@ export function EmployeeDirectory({
   }>({ key: "name", direction: "asc" });
 
   const sorted = [...employees].sort((left, right) => {
-    const leftValue = sort.key === "location" ? (left.location ?? left.state) : left[sort.key];
-    const rightValue = sort.key === "location" ? (right.location ?? right.state) : right[sort.key];
+    const leftValue =
+      sort.key === "location" ? (left.location ?? left.state_label) : left[sort.key];
+    const rightValue =
+      sort.key === "location" ? (right.location ?? right.state_label) : right[sort.key];
     return (
       String(leftValue).localeCompare(String(rightValue)) * (sort.direction === "asc" ? 1 : -1)
     );
@@ -147,7 +149,7 @@ export function EmployeeDirectory({
                     </Link>
                   </td>
                   <td>{employee.department}</td>
-                  <td>{employee.location ?? employee.state}</td>
+                  <td>{employee.location ?? employee.state_label}</td>
                   <td>{employee.employee_type}</td>
                   <td>
                     <Badge tone="accent">{employee.active_assignment_count} active</Badge>

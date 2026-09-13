@@ -128,7 +128,7 @@ def test_operation_scopes_enforce_read_preview_execute_and_audit_boundaries(
         headers=read_headers,
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -153,7 +153,7 @@ def test_operation_scopes_enforce_read_preview_execute_and_audit_boundaries(
             "type": "employee_create",
             "employee": {
                 "name": "Preview Alice",
-                "state": "California",
+                "state": "CA",
                 "department": "Engineering",
                 "employee_type": "regular",
             },
@@ -168,7 +168,7 @@ def test_operation_scopes_enforce_read_preview_execute_and_audit_boundaries(
                 "type": "employee_create",
                 "employee": {
                     "name": "Preview Alice",
-                    "state": "California",
+                    "state": "CA",
                     "department": "Engineering",
                     "employee_type": "regular",
                 },
@@ -192,7 +192,7 @@ def test_mutation_actor_comes_from_subject_and_override_requires_scope(client):
         headers=headers,
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -209,7 +209,7 @@ def test_mutation_actor_comes_from_subject_and_override_requires_scope(client):
         headers={**headers, "X-Actor": "human-admin"},
         json={
             "name": "Bob",
-            "state": "Wisconsin",
+            "state": "WI",
             "department": "Sales",
             "employee_type": "regular",
         },
@@ -233,7 +233,7 @@ def test_mutation_actor_comes_from_subject_and_override_requires_scope(client):
         },
         json={
             "name": "Bob",
-            "state": "Wisconsin",
+            "state": "WI",
             "department": "Sales",
             "employee_type": "regular",
         },

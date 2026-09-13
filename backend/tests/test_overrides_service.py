@@ -56,7 +56,7 @@ def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_f
         state_definition = get_condition_field_definitions(session, {"state"})["state"]
         employee = Employee(
             name="Alice",
-            state="California",
+            state="CA",
             department="Engineering",
             employee_type="regular",
         )
@@ -74,7 +74,7 @@ def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_f
                                 CompiledPolicyCondition(
                                     condition_field_definition=state_definition,
                                     operator="=",
-                                    value="California",
+                                    value="CA",
                                 )
                             ]
                         )
@@ -98,7 +98,7 @@ def test_override_creation_rolls_back_when_policy_resolution_conflicts(session_f
                                 CompiledPolicyCondition(
                                     condition_field_definition=state_definition,
                                     operator="=",
-                                    value="California",
+                                    value="CA",
                                 )
                             ]
                         )

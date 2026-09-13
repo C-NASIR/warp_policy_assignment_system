@@ -76,7 +76,7 @@ def test_demo_seed_refuses_to_merge_with_existing_tenant_data(db):
     db.add(
         Employee(
             name="Existing Employee",
-            state="Illinois",
+            state="IL",
             department="Operations",
             employee_type="Full-time",
             location="Chicago",

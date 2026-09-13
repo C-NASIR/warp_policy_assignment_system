@@ -132,7 +132,7 @@ export function PolicyDirectory({
                       {firstCondition ? (
                         <span>
                           {firstCondition.field.replaceAll("_", " ")} {firstCondition.operator}{" "}
-                          <strong>{firstCondition.value}</strong>
+                          <strong>{firstCondition.display_value ?? firstCondition.value}</strong>
                         </span>
                       ) : (
                         "No current rule"

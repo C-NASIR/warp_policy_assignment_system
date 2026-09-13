@@ -130,6 +130,19 @@
   color: var(--muted);
   font-size: 10px;
 }
+.productScope :global(.state-combobox-group + .state-combobox-group) {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border);
+}
+.productScope :global(.state-combobox-group-label) {
+  padding: 5px 10px 3px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .productScope :global(.form-footer) {
   display: flex;
   align-items: center;

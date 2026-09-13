@@ -91,15 +91,15 @@ def _employee_policy_ids(db, employee):
 
 def test_policy_creation_synchronously_reconciles_existing_matching_employees(client):
     field = _create_field(client)
-    alice = _create_employee(client, "Alice", "California")
-    bob = _create_employee(client, "Bob", "Texas")
+    alice = _create_employee(client, "Alice", "CA")
+    bob = _create_employee(client, "Bob", "TX")
 
     policy = _create_policy(
         client,
         field,
         name="California payroll",
         condition_field="state",
-        condition_value="California",
+        condition_value="CA",
         value="weekly",
     )
 
@@ -119,12 +119,12 @@ def test_new_current_version_reconciles_employees_that_enter_and_leave_policy(cl
         field,
         name="Regional payroll",
         condition_field="state",
-        condition_value="California",
+        condition_value="CA",
         value="weekly",
         effective_from=yesterday,
     )
-    alice = _create_employee(client, "Alice", "California")
-    bob = _create_employee(client, "Bob", "Texas")
+    alice = _create_employee(client, "Alice", "CA")
+    bob = _create_employee(client, "Bob", "TX")
     alice_original = _assignments(client, alice)[0]
     assert _assignments(client, bob) == []
 
@@ -133,7 +133,7 @@ def test_new_current_version_reconciles_employees_that_enter_and_leave_policy(cl
         json={
             "priority": 10,
             "effective_from": current_date().isoformat(),
-            "condition_group": _condition("state", "Texas"),
+            "condition_group": _condition("state", "TX"),
             "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
         },
     )
@@ -159,11 +159,11 @@ def test_future_policy_version_does_not_change_current_assignments(client):
         field,
         name="Scheduled payroll change",
         condition_field="state",
-        condition_value="California",
+        condition_value="CA",
         value="weekly",
         effective_from=current_date() - timedelta(days=1),
     )
-    alice = _create_employee(client, "Alice", "California")
+    alice = _create_employee(client, "Alice", "CA")
     original = _assignments(client, alice)[0]
 
     response = client.post(
@@ -171,7 +171,7 @@ def test_future_policy_version_does_not_change_current_assignments(client):
         json={
             "priority": 20,
             "effective_from": (current_date() + timedelta(days=1)).isoformat(),
-            "condition_group": _condition("state", "California"),
+            "condition_group": _condition("state", "CA"),
             "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
         },
     )
@@ -188,10 +188,10 @@ def test_archiving_and_reactivating_policy_reconcile_direct_assignments(client):
         field,
         name="California badge",
         condition_field="state",
-        condition_value="California",
+        condition_value="CA",
         value="blue",
     )
-    alice = _create_employee(client, "Alice", "California")
+    alice = _create_employee(client, "Alice", "CA")
     first = _assignments(client, alice)[0]
 
     archived = client.patch(f"/policies/{policy['id']}", json={"status": "archived"})
@@ -219,11 +219,11 @@ def test_group_linked_policy_version_and_archive_reconcile_members_despite_condi
         field,
         name="Engineering badge",
         condition_field="state",
-        condition_value="Wisconsin",
+        condition_value="WI",
         value="engineer",
         effective_from=current_date() - timedelta(days=1),
     )
-    alice = _create_employee(client, "Alice", "California")
+    alice = _create_employee(client, "Alice", "CA")
     group = client.post("/groups", json={"name": "Engineering"}).json()
     assert client.post(f"/groups/{group['id']}/employees/{alice['id']}").status_code == 201
     assert client.post(f"/groups/{group['id']}/policies/{policy['id']}").status_code == 201
@@ -235,7 +235,7 @@ def test_group_linked_policy_version_and_archive_reconcile_members_despite_condi
         json={
             "priority": 10,
             "effective_from": current_date().isoformat(),
-            "condition_group": _condition("state", "Wisconsin"),
+            "condition_group": _condition("state", "WI"),
             "values": [{"assignment_field_definition_id": field["id"], "value": "senior"}],
         },
     )
@@ -257,11 +257,11 @@ def test_future_group_policy_is_not_a_current_employee_policy_or_assignment(clie
         field,
         name="Future Engineering badge",
         condition_field="state",
-        condition_value="Wisconsin",
+        condition_value="WI",
         value="future",
         effective_from=current_date() + timedelta(days=1),
     )
-    alice = _create_employee(client, "Alice", "California")
+    alice = _create_employee(client, "Alice", "CA")
     group = client.post("/groups", json={"name": "Engineering"}).json()
     assert client.post(f"/groups/{group['id']}/employees/{alice['id']}").status_code == 201
     assert client.post(f"/groups/{group['id']}/policies/{policy['id']}").status_code == 201
@@ -283,8 +283,8 @@ def test_conflicting_policy_creation_rolls_back_policy_audits_and_partial_fanout
         condition_value="Bob",
         value="weekly",
     )
-    alice = _create_employee(client, "Alice", "California")
-    bob = _create_employee(client, "Bob", "California")
+    alice = _create_employee(client, "Alice", "CA")
+    bob = _create_employee(client, "Bob", "CA")
     bob_original = _assignments(client, bob)[0]
     audits_before = _audit_logs(client)
 
@@ -294,7 +294,7 @@ def test_conflicting_policy_creation_rolls_back_policy_audits_and_partial_fanout
         json={
             "name": "California monthly",
             "priority": 10,
-            "condition_group": _condition("state", "California"),
+            "condition_group": _condition("state", "CA"),
             "values": [{"assignment_field_definition_id": field["id"], "value": "monthly"}],
         },
     )
@@ -332,8 +332,8 @@ def test_conflicting_new_version_rolls_back_version_range_audits_and_partial_fan
         condition_value="Bob",
         value="weekly",
     )
-    alice = _create_employee(client, "Alice", "California")
-    bob = _create_employee(client, "Bob", "California")
+    alice = _create_employee(client, "Alice", "CA")
+    bob = _create_employee(client, "Bob", "CA")
     alice_original = _assignments(client, alice)[0]
     bob_original = _assignments(client, bob)[0]
     audits_before = _audit_logs(client)
@@ -344,7 +344,7 @@ def test_conflicting_new_version_rolls_back_version_range_audits_and_partial_fan
         json={
             "priority": 10,
             "effective_from": current_date().isoformat(),
-            "condition_group": _condition("state", "California"),
+            "condition_group": _condition("state", "CA"),
             "values": [{"assignment_field_definition_id": field["id"], "value": "monthly"}],
         },
     )

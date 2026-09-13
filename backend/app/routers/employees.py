@@ -48,6 +48,7 @@ from app.services.employees import create_employee, delete_employee, update_empl
 from app.services.impact_summaries import build_assignment_summary
 from app.services.org_chart import get_descendant_ids
 from app.services.reconciliation import reconcile_employees
+from app.states import STATES, matching_state_codes, normalize_state_code
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -76,7 +77,7 @@ def list_all(
     visibility: EmployeeScope,
     field_visibility: AssignmentFieldScope,
     search: Annotated[str | None, Query(max_length=200)] = None,
-    state: Annotated[str | None, Query(max_length=100)] = None,
+    state: Annotated[str | None, Query(max_length=2)] = None,
     department: Annotated[str | None, Query(max_length=100)] = None,
     employee_type: Annotated[str | None, Query(max_length=100)] = None,
     location: Annotated[str | None, Query(max_length=200)] = None,
@@ -95,11 +96,21 @@ def list_all(
             Employee.employee_type.ilike(pattern),
             Employee.location.ilike(pattern),
         ]
+        matching_codes = matching_state_codes(search)
+        if matching_codes:
+            predicates.append(Employee.state.in_(matching_codes))
         searched_id = _search_employee_id(search)
         if searched_id is not None:
             predicates.append(Employee.id == searched_id)
         statement = statement.where(or_(*predicates))
     if state is not None:
+        try:
+            state = normalize_state_code(state)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
         statement = statement.where(Employee.state == state)
     if department is not None:
         statement = statement.where(Employee.department == department)
@@ -228,6 +239,7 @@ def reference_data(
     return EmployeeReferenceDataRead(
         departments=sorted({department for department, _ in rows}),
         employee_types=sorted({employee_type for _, employee_type in rows}),
+        states=STATES,
     )
 
 

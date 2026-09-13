@@ -19,6 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.database import Base
 from app.dates import current_date, current_datetime
+from app.states import STATE_CODES, state_label
 
 
 class AuditLog(Base):
@@ -529,16 +530,20 @@ class Employee(Base):
     __table_args__ = (
         Index(
             "ix_employees_population_filters",
-            "state",
+            "state_code",
             "department",
             "employee_type",
         ),
         Index("ix_employees_start_date", "start_date"),
+        CheckConstraint(
+            f"state_code IN ({', '.join(repr(code) for code in sorted(STATE_CODES))})",
+            name="ck_employees_state_code",
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
-    state: Mapped[str] = mapped_column(String(100))
+    state: Mapped[str] = mapped_column("state_code", String(2))
     department: Mapped[str] = mapped_column(String(100))
     employee_type: Mapped[str] = mapped_column(String(100))
     location: Mapped[str | None] = mapped_column(String(200), nullable=True)
@@ -562,6 +567,10 @@ class Employee(Base):
         foreign_keys=[manager_id],
         passive_deletes=True,
     )
+
+    @property
+    def state_label(self) -> str:
+        return state_label(self.state)
     policies: Mapped[list[Policy]] = relationship(
         secondary="employee_policies", back_populates="employees"
     )
@@ -781,6 +790,10 @@ class Condition(Base):
     @property
     def field(self) -> str:
         return self.condition_field_definition.key
+
+    @property
+    def display_value(self) -> str:
+        return state_label(self.value) if self.field == "state" else self.value
 
 
 class ConditionGroup(Base):

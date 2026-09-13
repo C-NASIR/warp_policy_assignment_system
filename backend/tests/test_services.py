@@ -23,7 +23,7 @@ def versioned_policy(name, priority, values):
 
 
 def test_policy_engine_is_independently_callable(db):
-    employee = Employee(name="Alice", state="California", department="Engineering", employee_type="regular")
+    employee = Employee(name="Alice", state="CA", department="Engineering", employee_type="regular")
     pay = AssignmentFieldDefinition(name="pay_schedule", cardinality="one")
     access = AssignmentFieldDefinition(name="application_access", cardinality="many")
     db.add_all([employee, pay, access])

@@ -2,6 +2,7 @@ export type Employee = {
   id: number;
   name: string;
   state: string;
+  state_label: string;
   department: string;
   employee_type: string;
   location: string | null;
@@ -21,6 +22,14 @@ export type EmployeeManagerCandidate = {
 export type EmployeeReferenceData = {
   departments: string[];
   employee_types: string[];
+  states: StateOption[];
+};
+
+export type StateOption = {
+  code: string;
+  name: string;
+  label: string;
+  group: "states" | "territories" | "other";
 };
 
 export type CollectionPage<T> = {
@@ -90,6 +99,7 @@ export type Condition = {
   field: string;
   operator: "=" | "<" | "<=" | ">" | ">=";
   value: string;
+  display_value?: string;
 };
 
 export type ConditionGroup = {

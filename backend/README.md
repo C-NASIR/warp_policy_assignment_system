@@ -66,7 +66,7 @@ Overrides are retained for provenance. Updating an override retires the old immu
 
 ## Domain concepts
 
-- **Employee:** current name, state, department, employee type, location, start date, and an optional self-referencing manager relationship.
+- **Employee:** current name, U.S. state or territory, department, employee type, location, start date, and an optional self-referencing manager relationship. The physical `state_code` column stores the canonical two-letter code.
 - **Group:** a named collection of employees that can supply policies to its members.
 - **Employee group membership:** the many-to-many link between employees and groups.
 - **Group policy:** the many-to-many link that makes a policy apply to every member of a group.
@@ -293,7 +293,11 @@ Available filters include:
   support `search`
 
 `search` is case-insensitive and matches the endpoint's user-facing text
-columns. Exact filters compose with one another using AND semantics. Batch and
+columns. Employee search recognizes both state names and their two-letter
+codes. The exact `state` filter accepts only a canonical two-letter code.
+`GET /employees/reference-data` exposes the complete grouped state catalog;
+employee and state-policy writes reject values outside that catalog. Exact
+filters compose with one another using AND semantics. Batch and
 mutation results such as `POST /assignment-queries`, refresh, preview, and
 execution are explicitly bounded by their request contracts and are not treated
 as pageable resource collections.
@@ -516,7 +520,7 @@ The command exits successfully without processing when another invocation owns t
 
 ## Alice example
 
-Create `pay_schedule` (`one`) and `application_access` (`many`). Create a priority-20 policy whose initial version is conditioned on California and produces `biweekly` and `payroll_app`, and a priority-10 policy whose initial version is conditioned on Engineering and produces `weekly` and `GitHub`. Creating Alice in California Engineering automatically resolves:
+Create `pay_schedule` (`one`) and `application_access` (`many`). Create a priority-20 policy whose initial version is conditioned on California (`CA`) and produces `biweekly` and `payroll_app`, and a priority-10 policy whose initial version is conditioned on Engineering and produces `weekly` and `GitHub`. Creating Alice in California (`CA`) Engineering automatically resolves:
 
 ```text
 pay_schedule = biweekly
@@ -524,7 +528,7 @@ application_access = payroll_app
 application_access = GitHub
 ```
 
-Patching Alice's state to Wisconsin removes the California policy match and automatically leaves `weekly` and `GitHub`. The integration tests exercise this exact lifecycle.
+Patching Alice's state to Wisconsin (`WI`) removes the California policy match and automatically leaves `weekly` and `GitHub`. The integration tests exercise this exact lifecycle.
 
 ## Version 1 boundaries
 

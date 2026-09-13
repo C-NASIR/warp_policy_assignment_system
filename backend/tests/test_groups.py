@@ -7,7 +7,7 @@ def create_field(client, name="badge", cardinality="one"):
     return response.json()
 
 
-def create_policy(client, name, priority, field_id, value, state="Wisconsin"):
+def create_policy(client, name, priority, field_id, value, state="WI"):
     response = client.post(
         "/policies",
         json={
@@ -29,7 +29,7 @@ def create_employee(client, name="Alice"):
         "/employees",
         json={
             "name": name,
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -108,7 +108,7 @@ def test_direct_and_group_policies_use_the_same_priority_engine(client):
         100,
         field["id"],
         "monthly",
-        state="California",
+        state="CA",
     )
     inherited = create_policy(
         client,

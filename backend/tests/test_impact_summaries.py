@@ -38,7 +38,7 @@ def _policy(
     *,
     name: str,
     value: str,
-    state: str = "California",
+    state: str = "CA",
     priority: int = 10,
     effective_from=None,
     status: str = "active",
@@ -81,10 +81,10 @@ def test_assignment_summary_aggregates_sources_fields_and_employee_scope(client)
         access["id"],
         name="Engineering GitHub",
         value="GitHub",
-        state="Wisconsin",
+        state="WI",
     )
-    alice = _employee(client, "Alice", state="California")
-    _employee(client, "Bob", state="Texas", department="Sales")
+    alice = _employee(client, "Alice", state="CA")
+    _employee(client, "Bob", state="TX", department="Sales")
     group = client.post("/groups", json={"name": "Engineering"}).json()
     assert client.post(
         f"/groups/{group['id']}/employees/{alice['id']}"
@@ -150,8 +150,8 @@ def test_policy_impact_distinguishes_direct_group_and_selected_reach(client):
         name="California GitHub",
         value="GitHub",
     )
-    alice = _employee(client, "Alice", state="California")
-    bob = _employee(client, "Bob", state="Texas")
+    alice = _employee(client, "Alice", state="CA")
+    bob = _employee(client, "Bob", state="TX")
     group = client.post("/groups", json={"name": "Engineering"}).json()
     for employee in (alice, bob):
         assert client.post(
@@ -176,7 +176,7 @@ def test_policy_impact_distinguishes_direct_group_and_selected_reach(client):
 
 def test_future_summaries_report_conflicts_without_failing_the_whole_summary(client):
     pay = _field(client, "pay_schedule")
-    alice = _employee(client, "Alice", state="California")
+    alice = _employee(client, "Alice", state="CA")
     tomorrow = current_date() + timedelta(days=1)
     weekly = _policy(
         client,
@@ -237,7 +237,7 @@ def test_ineffective_policy_summary_and_historical_boundaries_are_explicit(clien
         value="weekly",
         status="archived",
     )
-    _employee(client, "Alice", state="California")
+    _employee(client, "Alice", state="CA")
 
     impact = client.get(f"/policies/{archived['id']}/impact-summary")
     assert impact.status_code == 200

@@ -319,7 +319,7 @@ export function GroupManager({
                     <span>
                       <span className="primary-cell">{employee.name}</span>
                       <span className="secondary-cell">
-                        {employee.department} · {employee.state}
+                        {employee.department} · {employee.state_label}
                       </span>
                     </span>
                   </Link>

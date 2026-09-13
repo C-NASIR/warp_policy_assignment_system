@@ -58,7 +58,7 @@ def _policy(client, field_id: int, name: str, *, status: str = "active") -> dict
             "condition_group": {
                 "logical_operator": "and",
                 "conditions": [
-                    {"field": "state", "operator": "=", "value": "California"}
+                    {"field": "state", "operator": "=", "value": "CA"}
                 ],
             },
             "values": [
@@ -77,26 +77,26 @@ def test_employee_filters_compose_with_pagination_and_total_count(client):
     manager = _employee(
         client,
         "Manager",
-        state="Wisconsin",
+        state="WI",
         department="Engineering",
     )
     _employee(
         client,
         "Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         manager_id=manager["id"],
     )
     _employee(
         client,
         "Bob",
-        state="Texas",
+        state="TX",
         department="Sales",
     )
     _employee(
         client,
         "Carol",
-        state="California",
+        state="CA",
         department="Engineering",
         manager_id=manager["id"],
     )
@@ -105,7 +105,7 @@ def test_employee_filters_compose_with_pagination_and_total_count(client):
         client.get(
             "/employees",
             params={
-                "state": "California",
+                "state": "CA",
                 "department": "Engineering",
                 "has_manager": True,
                 "limit": 1,
@@ -123,13 +123,13 @@ def test_employee_search_accepts_padded_employee_id(client):
     employee = _employee(
         client,
         "Alex Morgan",
-        state="Illinois",
+        state="IL",
         department="Operations",
     )
     _employee(
         client,
         "Someone Else",
-        state="Texas",
+        state="TX",
         department="Sales",
     )
 
@@ -143,20 +143,20 @@ def test_manager_candidates_are_bounded_minimal_and_cycle_safe(client):
     manager = _employee(
         client,
         "Alex Morgan",
-        state="Illinois",
+        state="IL",
         department="Engineering",
     )
     report = _employee(
         client,
         "Alex Morgan",
-        state="Illinois",
+        state="IL",
         department="Support",
         manager_id=manager["id"],
     )
     grandchild = _employee(
         client,
         "Taylor Reed",
-        state="Illinois",
+        state="IL",
         department="Support",
         manager_id=report["id"],
     )
@@ -187,21 +187,21 @@ def test_employee_reference_data_returns_distinct_sorted_values(client):
     _employee(
         client,
         "Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="Full-time",
     )
     _employee(
         client,
         "Bob",
-        state="Texas",
+        state="TX",
         department="Sales",
         employee_type="Contractor",
     )
     _employee(
         client,
         "Carol",
-        state="Wisconsin",
+        state="WI",
         department="Engineering",
         employee_type="Full-time",
     )
@@ -209,10 +209,8 @@ def test_employee_reference_data_returns_distinct_sorted_values(client):
     response = client.get("/employees/reference-data")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "departments": ["Engineering", "Sales"],
-        "employee_types": ["Contractor", "Full-time"],
-    }
+    assert response.json()["departments"] == ["Engineering", "Sales"]
+    assert response.json()["employee_types"] == ["Contractor", "Full-time"]
 
     search = _assert_page(
         client.get("/employees", params={"search": "alice"}),
@@ -234,7 +232,7 @@ def test_policy_group_and_metadata_collections_filter_and_page(client):
     alice = _employee(
         client,
         "Alice",
-        state="California",
+        state="CA",
         department="Engineering",
     )
     group = client.post("/groups", json={"name": "Engineering"}).json()
@@ -318,7 +316,7 @@ def test_assignment_override_and_audit_collections_support_filters(client):
     alice = _employee(
         client,
         "Alice",
-        state="California",
+        state="CA",
         department="Engineering",
     )
     override = client.post(

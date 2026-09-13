@@ -3,8 +3,8 @@
 import { ChevronDown, ChevronUp, Network, ShieldCheck, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui";
-import { titleCase } from "@/lib/format";
-import type { Assignment } from "@/lib/types";
+import { formatStateValue, titleCase } from "@/lib/format";
+import type { Assignment, StateOption } from "@/lib/types";
 
 type Explanation = {
   reason?: string;
@@ -21,7 +21,13 @@ type Explanation = {
   replaced_policy_assignments?: { value?: string; policy_name?: string }[];
 };
 
-export function AssignmentCard({ assignment }: { assignment: Assignment }) {
+export function AssignmentCard({
+  assignment,
+  states,
+}: {
+  assignment: Assignment;
+  states: StateOption[];
+}) {
   const [open, setOpen] = useState(false);
   const explanation = assignment.explanation as Explanation;
   const isOverride = assignment.source_override_id !== null;
@@ -81,9 +87,17 @@ export function AssignmentCard({ assignment }: { assignment: Assignment }) {
                 {evidence.map((item, index) => (
                   <div className="evidence-row" key={`${item.field}-${index}`}>
                     <span>
-                      {titleCase(item.field ?? "Condition")} {item.operator} {String(item.expected)}
+                      {titleCase(item.field ?? "Condition")} {item.operator}{" "}
+                      {item.field === "state"
+                        ? formatStateValue(item.expected, states)
+                        : String(item.expected)}
                     </span>
-                    <Badge tone="success">Matched · {String(item.actual)}</Badge>
+                    <Badge tone="success">
+                      Matched ·{" "}
+                      {item.field === "state"
+                        ? formatStateValue(item.actual, states)
+                        : String(item.actual)}
+                    </Badge>
                   </div>
                 ))}
               </div>

@@ -29,21 +29,29 @@ from app.services.policy_versions import (
 from app.services.reconciliation import refresh_employee_assignments
 
 
-def condition_group(state="California"):
+def condition_group(state="CA"):
     return {
         "logical_operator": "and",
         "conditions": [{"field": "state", "operator": "=", "value": state}],
     }
 
 
-def serialized_condition_group(state="California"):
+def serialized_condition_group(state="CA"):
     return {
-        **condition_group(state),
+        "logical_operator": "and",
+        "conditions": [
+            {
+                "field": "state",
+                "operator": "=",
+                "value": state,
+                "display_value": "California" if state == "CA" else state,
+            }
+        ],
         "child_groups": [],
     }
 
 
-def compiled_state_clause(db, state="California"):
+def compiled_state_clause(db, state="CA"):
     state_definition = get_condition_field_definitions(db, {"state"})["state"]
     return [
         CompiledPolicyClause(
@@ -149,7 +157,7 @@ def test_policy_version_reads_return_the_complete_nested_condition_tree(client):
                     {
                         "field": "state",
                         "operator": "=",
-                        "value": "California",
+                        "value": "CA",
                     },
                     {
                         "field": "department",
@@ -178,14 +186,29 @@ def test_policy_version_reads_return_the_complete_nested_condition_tree(client):
     assert response.status_code == 201
     policy = response.json()
     version = policy["versions"][0]
-    assert version["condition_group"] == condition_tree
+    returned_tree = version["condition_group"]
+    assert returned_tree["logical_operator"] == condition_tree["logical_operator"]
+    assert returned_tree["conditions"][0] == {
+        **condition_tree["conditions"][0],
+        "display_value": "regular",
+    }
+    assert returned_tree["child_groups"][0]["conditions"] == [
+        {
+            **condition_tree["child_groups"][0]["conditions"][0],
+            "display_value": "California",
+        },
+        {
+            **condition_tree["child_groups"][0]["conditions"][1],
+            "display_value": "Engineering",
+        },
+    ]
 
     assert client.get(
         f"/policies/{policy['id']}/versions/{version['id']}"
-    ).json()["condition_group"] == condition_tree
+    ).json()["condition_group"] == returned_tree
     assert client.get(f"/policies/{policy['id']}/versions").json()[0][
         "condition_group"
-    ] == condition_tree
+    ] == returned_tree
 
 
 def test_effective_version_selection_handles_boundaries_gaps_and_archiving(db):
@@ -255,7 +278,7 @@ def test_effective_version_selection_rejects_corrupt_overlapping_data(db):
 def test_group_policy_uses_version_for_evaluation_date_and_assignment_source(db):
     employee = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -268,14 +291,14 @@ def test_group_policy_uses_version_for_evaluation_date_and_assignment_source(db)
                 priority=10,
                 effective_from=date(2025, 1, 1),
                 effective_until=date(2025, 12, 31),
-                compiled_clauses=compiled_state_clause(db, "Wisconsin"),
+                compiled_clauses=compiled_state_clause(db, "WI"),
                 values=[PolicyFieldValue(assignment_field_definition=field, value="2 weeks")],
             ),
             PolicyVersion(
                 version_number=2,
                 priority=20,
                 effective_from=date(2026, 1, 1),
-                compiled_clauses=compiled_state_clause(db, "Wisconsin"),
+                compiled_clauses=compiled_state_clause(db, "WI"),
                 values=[PolicyFieldValue(assignment_field_definition=field, value="3 weeks")],
             ),
         ],
@@ -308,7 +331,7 @@ def test_group_policy_uses_version_for_evaluation_date_and_assignment_source(db)
 def test_direct_matching_uses_only_the_effective_versions_conditions(db):
     employee = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -320,13 +343,13 @@ def test_direct_matching_uses_only_the_effective_versions_conditions(db):
                 priority=10,
                 effective_from=date(2025, 1, 1),
                 effective_until=date(2025, 12, 31),
-                compiled_clauses=compiled_state_clause(db, "California"),
+                compiled_clauses=compiled_state_clause(db, "CA"),
             ),
             PolicyVersion(
                 version_number=2,
                 priority=10,
                 effective_from=date(2026, 1, 1),
-                compiled_clauses=compiled_state_clause(db, "Wisconsin"),
+                compiled_clauses=compiled_state_clause(db, "WI"),
             ),
         ],
     )
@@ -342,7 +365,7 @@ def test_direct_matching_uses_only_the_effective_versions_conditions(db):
 def test_version_priority_changes_the_winner_across_evaluation_dates(db):
     employee = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )

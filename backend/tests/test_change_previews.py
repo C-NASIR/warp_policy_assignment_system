@@ -12,7 +12,7 @@ def _assignment_field(client, name="pay_schedule", cardinality="one"):
     return response.json()
 
 
-def _condition(field="state", value="California"):
+def _condition(field="state", value="CA"):
     return {
         "logical_operator": "and",
         "conditions": [{"field": field, "operator": "=", "value": value}],
@@ -24,7 +24,7 @@ def _policy(
     assignment_field_id,
     *,
     condition_field="state",
-    condition_value="California",
+    condition_value="CA",
     value="weekly",
     effective_from=None,
     priority=10,
@@ -47,7 +47,7 @@ def _policy(
     return response.json()
 
 
-def _employee(client, name="Alice", state="California"):
+def _employee(client, name="Alice", state="CA"):
     response = client.post(
         "/employees",
         json={
@@ -77,7 +77,7 @@ def test_employee_create_and_update_previews_do_not_persist(client):
             "type": "employee_create",
             "employee": {
                 "name": "Alice",
-                "state": "California",
+                "state": "CA",
                 "department": "Engineering",
                 "employee_type": "regular",
             },
@@ -95,7 +95,7 @@ def test_employee_create_and_update_previews_do_not_persist(client):
         {
             "type": "employee_update",
             "employee_id": alice["id"],
-            "changes": {"state": "Texas"},
+            "changes": {"state": "TX"},
         },
     )
     assert update_preview["type"] == "employee_update"
@@ -103,7 +103,7 @@ def test_employee_create_and_update_previews_do_not_persist(client):
         "weekly"
     ]
     assert update_preview["after_assignments"] == []
-    assert client.get(f"/employees/{alice['id']}").json()["state"] == "California"
+    assert client.get(f"/employees/{alice['id']}").json()["state"] == "CA"
     assert [
         item["value"]
         for item in client.get(f"/employees/{alice['id']}/assignments").json()
@@ -119,7 +119,7 @@ def test_policy_version_preview_reconciles_population_without_persisting(client)
         effective_from=yesterday,
     )
     alice = _employee(client)
-    bob = _employee(client, name="Bob", state="Texas")
+    bob = _employee(client, name="Bob", state="TX")
 
     preview = _preview(
         client,
@@ -129,7 +129,7 @@ def test_policy_version_preview_reconciles_population_without_persisting(client)
             "version": {
                 "priority": 20,
                 "effective_from": current_date().isoformat(),
-                "condition_group": _condition("state", "Texas"),
+                "condition_group": _condition("state", "TX"),
                 "values": [
                     {
                         "assignment_field_definition_id": field["id"],
@@ -156,7 +156,7 @@ def test_policy_version_preview_reconciles_population_without_persisting(client)
 def test_policy_create_preview_uses_engine_without_persisting(client):
     field = _assignment_field(client)
     alice = _employee(client)
-    bob = _employee(client, name="Bob", state="Texas")
+    bob = _employee(client, name="Bob", state="TX")
 
     preview = _preview(
         client,
@@ -166,7 +166,7 @@ def test_policy_create_preview_uses_engine_without_persisting(client):
                 "name": "California payroll",
                 "status": "active",
                 "priority": 20,
-                "condition_group": _condition("state", "California"),
+                "condition_group": _condition("state", "CA"),
                 "values": [
                     {
                         "assignment_field_definition_id": field["id"],
@@ -209,7 +209,7 @@ def test_group_membership_and_override_previews_do_not_persist(client):
     policy = _policy(
         client,
         access_field["id"],
-        condition_value="Wisconsin",
+        condition_value="WI",
         value="GitHub",
     )
     alice = _employee(client)
@@ -328,7 +328,7 @@ def test_preview_returns_policy_conflicts_without_persisting(client):
             "type": "employee_create",
             "employee": {
                 "name": "Alice",
-                "state": "California",
+                "state": "CA",
                 "department": "Engineering",
                 "employee_type": "regular",
             },
@@ -360,7 +360,7 @@ def test_preview_conflict_hides_rolled_back_policy_version_id(client):
     editable = _policy(
         client,
         field["id"],
-        condition_value="Texas",
+        condition_value="TX",
         value="monthly",
         effective_from=current_date() - timedelta(days=1),
         priority=10,

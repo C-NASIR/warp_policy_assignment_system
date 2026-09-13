@@ -49,7 +49,7 @@ def _policy(
     return response.json()
 
 
-def _employee(client, *, state: str = "California") -> dict:
+def _employee(client, *, state: str = "CA") -> dict:
     response = client.post(
         "/employees",
         json={
@@ -71,7 +71,7 @@ def test_assignment_explains_condition_match_and_priority_competition(client):
         name="California Policy",
         priority=20,
         condition_field="state",
-        condition_value="California",
+        condition_value="CA",
         value="biweekly",
     )
     engineering = _policy(
@@ -100,8 +100,8 @@ def test_assignment_explains_condition_match_and_priority_competition(client):
     assert condition == {
         "field": "state",
         "operator": "=",
-        "expected": "California",
-        "actual": "California",
+        "expected": "CA",
+        "actual": "CA",
         "result": True,
     }
     candidates = explanation["selection"]["candidates"]
@@ -128,7 +128,7 @@ def test_group_origin_and_changed_reason_create_assignment_history(client):
         name="California Policy",
         priority=20,
         condition_field="state",
-        condition_value="California",
+        condition_value="CA",
         value="biweekly",
     )
     employee = _employee(client)
@@ -160,7 +160,7 @@ def test_group_origin_and_changed_reason_create_assignment_history(client):
 
     assert client.patch(
         f"/employees/{employee['id']}",
-        json={"state": "Wisconsin"},
+        json={"state": "WI"},
     ).status_code == 200
     history = client.get(
         f"/employees/{employee['id']}/assignments/history"
@@ -185,7 +185,7 @@ def test_override_and_future_projection_include_explanations(client):
         name="California Policy",
         priority=20,
         condition_field="state",
-        condition_value="California",
+        condition_value="CA",
         value="biweekly",
     )
     employee = _employee(client)

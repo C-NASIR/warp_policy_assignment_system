@@ -9,7 +9,7 @@ def _employee(
     name: str,
     *,
     manager_id: int | None = None,
-    state: str = "California",
+    state: str = "CA",
 ) -> dict:
     payload = {
         "name": name,
@@ -83,13 +83,13 @@ def _assignments(client, employee_id: int) -> dict[str, str]:
 def test_employee_manager_is_a_real_self_referencing_relationship(db):
     manager = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
     report = Employee(
         name="Bob",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
         manager=manager,
@@ -131,7 +131,7 @@ def test_manager_validation_rejects_missing_self_and_cycles(client):
         "/employees",
         json={
             "name": "Orphan",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
             "manager_id": 999,
@@ -414,15 +414,15 @@ def test_deleting_manager_detaches_and_reconciles_reporting_subtree(client):
 
 def test_manager_change_rolls_back_when_affected_manager_has_policy_conflict(client):
     field = _field(client, "schedule")
-    alice = _employee(client, "Alice", state="California")
-    david = _employee(client, "David", state="Texas")
+    alice = _employee(client, "Alice", state="CA")
+    david = _employee(client, "David", state="TX")
     bob = _employee(client, "Bob", manager_id=alice["id"])
     _policy(
         client,
         name="Texas schedule",
         condition_field="state",
         operator="=",
-        condition_value="Texas",
+        condition_value="TX",
         assignment_field_id=field["id"],
         assignment_value="weekly",
         priority=10,

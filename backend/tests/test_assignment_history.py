@@ -39,7 +39,7 @@ def make_policy(name, field, value, priority=10):
 def make_employee():
     return Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )

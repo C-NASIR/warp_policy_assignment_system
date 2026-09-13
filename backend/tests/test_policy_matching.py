@@ -55,7 +55,7 @@ def compiled_policy(
 def test_finds_policy_when_any_compiled_clause_fully_matches(db):
     alice = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -64,15 +64,15 @@ def test_finds_policy_when_any_compiled_clause_fully_matches(db):
         "A AND (B OR C)",
         10,
         [
-            [("state", "California"), ("employee_type", "regular")],
-            [("state", "California"), ("department", "Engineering")],
+            [("state", "CA"), ("employee_type", "regular")],
+            [("state", "CA"), ("department", "Engineering")],
         ],
     )
     not_matching = compiled_policy(
         db,
         "Wisconsin contractors",
         5,
-        [[("state", "Wisconsin"), ("employee_type", "contractor")]],
+        [[("state", "WI"), ("employee_type", "contractor")]],
     )
     db.add_all([alice, matching, not_matching])
     db.flush()
@@ -83,7 +83,7 @@ def test_finds_policy_when_any_compiled_clause_fully_matches(db):
 def test_clause_requires_every_condition_to_match(db):
     alice = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="contractor",
     )
@@ -91,7 +91,7 @@ def test_clause_requires_every_condition_to_match(db):
         db,
         "California regular",
         10,
-        [[("state", "California"), ("employee_type", "regular")]],
+        [[("state", "CA"), ("employee_type", "regular")]],
     )
     db.add_all([alice, policy])
     db.flush()
@@ -102,7 +102,7 @@ def test_clause_requires_every_condition_to_match(db):
 def test_policy_is_returned_once_when_multiple_clauses_match(db):
     alice = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -111,7 +111,7 @@ def test_policy_is_returned_once_when_multiple_clauses_match(db):
         "Multiple matching clauses",
         10,
         [
-            [("state", "California")],
+            [("state", "CA")],
             [("department", "Engineering")],
         ],
     )
@@ -124,7 +124,7 @@ def test_policy_is_returned_once_when_multiple_clauses_match(db):
 def test_matches_employee_columns_without_a_hard_coded_field_list(db):
     alice = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -138,7 +138,7 @@ def test_matches_employee_columns_without_a_hard_coded_field_list(db):
 def test_unknown_employee_or_unsupported_condition_does_not_match(db):
     alice = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -175,7 +175,7 @@ def test_unknown_employee_or_unsupported_condition_does_not_match(db):
 def test_comparison_operators_use_typed_employee_facts(db):
     manager = Employee(
         name="Manager",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -183,7 +183,7 @@ def test_comparison_operators_use_typed_employee_facts(db):
     db.flush()
     alice = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
         location="San Francisco",
@@ -211,7 +211,7 @@ def test_comparison_operators_use_typed_employee_facts(db):
 def test_false_date_comparison_does_not_match(db):
     alice = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
         start_date=date(2026, 1, 1),
@@ -226,7 +226,7 @@ def test_false_date_comparison_does_not_match(db):
 def test_refresh_employee_policies_replaces_stale_links(db):
     alice = Employee(
         name="Alice",
-        state="California",
+        state="CA",
         department="Engineering",
         employee_type="regular",
     )
@@ -234,13 +234,13 @@ def test_refresh_employee_policies_replaces_stale_links(db):
         db,
         "California policy",
         10,
-        [[("state", "California")]],
+        [[("state", "CA")]],
     )
     wisconsin = compiled_policy(
         db,
         "Wisconsin policy",
         10,
-        [[("state", "Wisconsin")]],
+        [[("state", "WI")]],
     )
     db.add_all([alice, california, wisconsin])
     db.flush()
@@ -251,7 +251,7 @@ def test_refresh_employee_policies_replaces_stale_links(db):
     assert [(link.employee_id, link.policy_id) for link in links] == [(alice.id, california.id)]
     assert [policy.id for policy in alice.policies] == [california.id]
 
-    alice.state = "Wisconsin"
+    alice.state = "WI"
     db.flush()
     replacement = refresh_employee_policies(db, alice.id)
 

@@ -27,3 +27,11 @@ export function titleCase(value: string) {
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
+
+export function formatStateValue(
+  value: unknown,
+  states: { code: string; label: string }[],
+) {
+  const text = String(value ?? "");
+  return states.find((option) => option.code === text)?.label ?? text;
+}

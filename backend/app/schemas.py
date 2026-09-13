@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     EmailStr,
     Field,
@@ -14,6 +15,14 @@ from pydantic import (
 
 from app.dates import current_date, ensure_utc
 from app.services.condition_fields import ConditionFieldError, normalize_condition
+from app.states import StateGroup, normalize_state_code
+
+
+StateCode = Annotated[
+    str,
+    BeforeValidator(normalize_state_code),
+    Field(min_length=2, max_length=2),
+]
 
 
 class ORMModel(BaseModel):
@@ -265,7 +274,7 @@ class UserRead(ORMModel):
 
 class EmployeeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
-    state: str = Field(min_length=1, max_length=100)
+    state: StateCode
     department: str = Field(min_length=1, max_length=100)
     employee_type: str = Field(min_length=1, max_length=100)
     location: str | None = Field(default=None, min_length=1, max_length=200)
@@ -275,7 +284,7 @@ class EmployeeCreate(BaseModel):
 
 class EmployeeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
-    state: str | None = Field(default=None, min_length=1, max_length=100)
+    state: StateCode | None = None
     department: str | None = Field(default=None, min_length=1, max_length=100)
     employee_type: str | None = Field(default=None, min_length=1, max_length=100)
     location: str | None = Field(default=None, min_length=1, max_length=200)
@@ -285,11 +294,20 @@ class EmployeeUpdate(BaseModel):
 
 class EmployeeRead(EmployeeCreate, ORMModel):
     id: int
+    state_label: str
+
+
+class StateRead(BaseModel):
+    code: str = Field(min_length=2, max_length=2)
+    name: str
+    label: str
+    group: StateGroup
 
 
 class EmployeeReferenceDataRead(BaseModel):
     departments: list[str]
     employee_types: list[str]
+    states: list[StateRead]
 
 
 class EmployeeDirectoryRead(EmployeeRead):
@@ -473,6 +491,7 @@ class ConditionRead(ORMModel):
     field: str
     operator: Literal["=", "<", "<=", ">", ">="]
     value: str
+    display_value: str
 
 
 class ConditionGroupRead(ORMModel):

@@ -36,4 +36,4 @@ npm run lint
 npm run build
 ```
 
-The backend is the source of truth for all operational data, authentication, authorization, reference values, assignment resolution, reconciliation, approval tokens, readiness, and audit records. The frontend owns presentation concerns such as labels, navigation, form state, and current-page display sorting.
+The backend is the source of truth for all operational data, authentication, authorization, reference values, assignment resolution, reconciliation, approval tokens, readiness, and audit records. This includes the grouped state and territory catalog used by the searchable employee and policy inputs. The frontend owns presentation concerns such as labels, navigation, form state, and current-page display sorting.

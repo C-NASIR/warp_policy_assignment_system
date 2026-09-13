@@ -107,7 +107,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
         "/employees",
         json={
             "name": "Alice",
-            "state": "Illinois",
+            "state": "IL",
             "department": "Engineering",
             "employee_type": "full-time",
         },
@@ -191,7 +191,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
             "condition_group": {
                 "logical_operator": "and",
                 "conditions": [
-                    {"field": "state", "operator": "=", "value": "Texas"}
+                    {"field": "state", "operator": "=", "value": "TX"}
                 ],
             },
             "values": [
@@ -211,7 +211,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
             "condition_group": {
                 "logical_operator": "and",
                 "conditions": [
-                    {"field": "state", "operator": "=", "value": "Texas"}
+                    {"field": "state", "operator": "=", "value": "TX"}
                 ],
             },
             "values": [
@@ -231,7 +231,7 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
             "condition_group": {
                 "logical_operator": "and",
                 "conditions": [
-                    {"field": "state", "operator": "=", "value": "Texas"}
+                    {"field": "state", "operator": "=", "value": "TX"}
                 ],
             },
             "values": [

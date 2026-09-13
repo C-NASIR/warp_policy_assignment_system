@@ -285,7 +285,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "nadia",
             "Nadia Okafor",
-            "Illinois",
+            "IL",
             "Executive",
             "Full-time",
             "Chicago HQ",
@@ -295,7 +295,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "marcus",
             "Marcus Li",
-            "Illinois",
+            "IL",
             "Operations",
             "Full-time",
             "Chicago HQ",
@@ -305,7 +305,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "elliot",
             "Elliot Park",
-            "Illinois",
+            "IL",
             "Engineering",
             "Full-time",
             "Chicago HQ",
@@ -315,7 +315,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "elena",
             "Elena Torres",
-            "Illinois",
+            "IL",
             "People Operations",
             "Full-time",
             "Chicago HQ",
@@ -325,7 +325,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "simone",
             "Simone Laurent",
-            "Illinois",
+            "IL",
             "Revenue",
             "Full-time",
             "Chicago HQ",
@@ -335,7 +335,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "rafael",
             "Rafael Morales",
-            "Wisconsin",
+            "WI",
             "Field Operations",
             "Full-time",
             "Milwaukee Service Hub",
@@ -345,7 +345,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "renee",
             "Renee Wallace",
-            "Wisconsin",
+            "WI",
             "Field Operations",
             "Full-time",
             "Milwaukee Service Hub",
@@ -355,7 +355,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "amara",
             "Amara Nwosu",
-            "Illinois",
+            "IL",
             "Engineering",
             "Full-time",
             "Chicago HQ",
@@ -365,7 +365,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "devin",
             "Devin Brooks",
-            "Illinois",
+            "IL",
             "Product",
             "Full-time",
             "Chicago HQ",
@@ -375,7 +375,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "priya",
             "Priya Raman",
-            "Illinois",
+            "IL",
             "Engineering",
             "Full-time",
             "Chicago HQ",
@@ -385,7 +385,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "kai",
             "Kai Chen",
-            "Texas",
+            "TX",
             "Engineering",
             "Full-time",
             "Remote - Austin",
@@ -395,7 +395,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "lila",
             "Lila Ahmed",
-            "Washington",
+            "WA",
             "Engineering",
             "Full-time",
             "Remote - Seattle",
@@ -405,7 +405,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "jonah",
             "Jonah Brooks",
-            "Massachusetts",
+            "MA",
             "Engineering",
             "Full-time",
             "Remote - Boston",
@@ -415,7 +415,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "tessa",
             "Tessa Nguyen",
-            "Illinois",
+            "IL",
             "Product",
             "Full-time",
             "Chicago HQ",
@@ -425,7 +425,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "imani",
             "Imani Reed",
-            "Illinois",
+            "IL",
             "People Operations",
             "Full-time",
             "Chicago HQ",
@@ -435,7 +435,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "caleb",
             "Caleb Foster",
-            "Illinois",
+            "IL",
             "People Operations",
             "Part-time",
             "Chicago HQ",
@@ -445,7 +445,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "sonya",
             "Sonya Patel",
-            "Texas",
+            "TX",
             "Sales",
             "Full-time",
             "Austin Sales Office",
@@ -455,7 +455,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "omar",
             "Omar Haddad",
-            "Texas",
+            "TX",
             "Sales",
             "Full-time",
             "Austin Sales Office",
@@ -465,7 +465,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "mia",
             "Mia Thompson",
-            "New York",
+            "NY",
             "Sales",
             "Full-time",
             "Remote - New York",
@@ -475,7 +475,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "jae",
             "Jae Park",
-            "Michigan",
+            "MI",
             "Customer Success",
             "Full-time",
             "Remote - Detroit",
@@ -485,7 +485,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "jordan",
             "Jordan Kim",
-            "Wisconsin",
+            "WI",
             "Field Operations",
             "Full-time",
             "Milwaukee Service Hub",
@@ -495,7 +495,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "aiden",
             "Aiden Murphy",
-            "Texas",
+            "TX",
             "Field Operations",
             "Full-time",
             "Abilene Field Depot",
@@ -505,7 +505,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "mateo",
             "Mateo Garcia",
-            "Colorado",
+            "CO",
             "Field Operations",
             "Full-time",
             "Remote - Denver",
@@ -515,7 +515,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "luca",
             "Luca Romano",
-            "Illinois",
+            "IL",
             "Engineering",
             "Contractor",
             "Chicago HQ",
@@ -525,7 +525,7 @@ def _create_employees(session: Session, today: date) -> dict[str, Employee]:
         (
             "ana",
             "Ana Silva",
-            "Wisconsin",
+            "WI",
             "Field Operations",
             "Contractor",
             "Milwaukee Service Hub",
@@ -1013,7 +1013,7 @@ def _create_policies(
             {
                 "priority": 30,
                 "effective_from": today - timedelta(days=800),
-                "conditions": _group(_condition("state", "=", "Illinois")),
+                "conditions": _group(_condition("state", "=", "IL")),
                 "values": [
                     ("Pay Schedule", "Semi-monthly"),
                     ("Compliance Training", "Illinois Workplace Conduct"),

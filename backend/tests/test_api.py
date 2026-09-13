@@ -35,7 +35,7 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
         client,
         "California Policy",
         20,
-        condition_group("state", "California"),
+        condition_group("state", "CA"),
         [
             {"assignment_field_definition_id": pay["id"], "value": "biweekly"},
             {"assignment_field_definition_id": access["id"], "value": "payroll_app"},
@@ -56,7 +56,7 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
         "/employees",
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -78,7 +78,7 @@ def test_alice_scenario_reconciles_policies_and_assignments(client):
     )
     assert directory_entry["active_assignment_count"] == 3
 
-    response = client.patch(f"/employees/{alice['id']}", json={"state": "Wisconsin"})
+    response = client.patch(f"/employees/{alice['id']}", json={"state": "WI"})
     assert response.status_code == 200
     assignments = client.get(f"/employees/{alice['id']}/assignments").json()
     assert {assignment["value"] for assignment in assignments} == {"weekly", "GitHub"}
@@ -95,7 +95,7 @@ def test_nonmatching_policy_produces_no_assignment_then_employee_update_applies_
     field = create_field(client, "badge", "one")
     employee = client.post(
         "/employees",
-        json={"name": "Bob", "state": "Texas", "department": "Sales", "employee_type": "contractor"},
+        json={"name": "Bob", "state": "TX", "department": "Sales", "employee_type": "contractor"},
     ).json()
     create_policy(
         client,
@@ -117,7 +117,7 @@ def test_equal_priority_conflict_is_clear_and_employee_creation_rolls_back(clien
         client,
         "State policy",
         10,
-        condition_group("state", "California"),
+        condition_group("state", "CA"),
         [{"assignment_field_definition_id": field["id"], "value": "weekly"}],
     )
     create_policy(
@@ -130,7 +130,7 @@ def test_equal_priority_conflict_is_clear_and_employee_creation_rolls_back(clien
 
     response = client.post(
         "/employees",
-        json={"name": "Alice", "state": "California", "department": "Engineering", "employee_type": "regular"},
+        json={"name": "Alice", "state": "CA", "department": "Engineering", "employee_type": "regular"},
     )
     assert response.status_code == 409
     assert "Conflicting values for field 'pay_schedule'" in response.json()["detail"]
@@ -160,14 +160,14 @@ def test_archiving_policy_removes_it_on_employee_reconciliation(client):
         client,
         "State badge",
         10,
-        condition_group("state", "California"),
+        condition_group("state", "CA"),
         [{"assignment_field_definition_id": badge["id"], "value": "blue"}],
     )
     alice = client.post(
         "/employees",
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -189,7 +189,7 @@ def test_policy_update_validates_nested_tree_and_value_references(client):
         client,
         "State badge",
         10,
-        condition_group("state", "California"),
+        condition_group("state", "CA"),
         [{"assignment_field_definition_id": field["id"], "value": "blue"}],
     )
 
@@ -206,7 +206,7 @@ def test_policy_update_validates_nested_tree_and_value_references(client):
         f"/policies/{policy['id']}/versions",
         json={
             "priority": 10,
-            "condition_group": condition_group("state", "California"),
+            "condition_group": condition_group("state", "CA"),
             "values": [{"assignment_field_definition_id": 999, "value": "red"}],
         },
     )
@@ -239,7 +239,7 @@ def test_employee_date_comparison_policy_is_accepted_and_applied(client):
         "/employees",
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
             "location": "San Francisco",
@@ -291,7 +291,7 @@ def test_employee_start_date_defaults_to_current_date(client):
         "/employees",
         json={
             "name": "New starter",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -306,7 +306,7 @@ def test_employee_manager_id_can_be_created_and_updated(client):
         "/employees",
         json={
             "name": "First manager",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -315,7 +315,7 @@ def test_employee_manager_id_can_be_created_and_updated(client):
         "/employees",
         json={
             "name": "Second manager",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -324,7 +324,7 @@ def test_employee_manager_id_can_be_created_and_updated(client):
         "/employees",
         json={
             "name": "New starter",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
             "manager_id": first_manager["id"],

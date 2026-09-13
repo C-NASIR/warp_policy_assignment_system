@@ -193,7 +193,7 @@ function RuleSummary({ group, nested = false }: { group: ConditionGroup; nested?
       <span className="rule-expression" key={`condition-${condition.field}-${index}`}>
         <span className="rule-token">{titleCase(condition.field)}</span>
         <strong>{condition.operator}</strong>
-        <span className="rule-token">{condition.value}</span>
+        <span className="rule-token">{condition.display_value ?? condition.value}</span>
       </span>
     )),
     ...group.child_groups.map((child, index) => (

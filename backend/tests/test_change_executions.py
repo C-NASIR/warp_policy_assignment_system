@@ -36,7 +36,7 @@ def _policy(client, field_id, *, name, state, value):
     return response.json()
 
 
-def _employee_change(name="Alice", state="California"):
+def _employee_change(name="Alice", state="CA"):
     return {
         "type": "employee_create",
         "employee": {
@@ -58,7 +58,7 @@ def _policy_create_change(field_id):
             "condition_group": {
                 "logical_operator": "and",
                 "conditions": [
-                    {"field": "state", "operator": "=", "value": "California"}
+                    {"field": "state", "operator": "=", "value": "CA"}
                 ],
             },
             "values": [
@@ -89,7 +89,7 @@ def test_approved_change_executes_once_and_replays_result(client, monkeypatch):
         client,
         field["id"],
         name="California weekly",
-        state="California",
+        state="CA",
         value="weekly",
     )
     change = _employee_change()
@@ -209,7 +209,7 @@ def test_execution_rejects_changed_input_and_invalid_signature(client, monkeypat
 def test_execution_rolls_back_when_approved_impact_is_stale(client, monkeypatch):
     monkeypatch.setenv("CHANGE_APPROVAL_SECRET", APPROVAL_SECRET)
     field = _field(client)
-    change = _employee_change(name="Bob", state="Texas")
+    change = _employee_change(name="Bob", state="TX")
     preview = _approved_preview(client, change)
     assert preview["before_assignments"] == []
     assert preview["after_assignments"] == []
@@ -217,7 +217,7 @@ def test_execution_rolls_back_when_approved_impact_is_stale(client, monkeypatch)
         client,
         field["id"],
         name="Texas monthly",
-        state="Texas",
+        state="TX",
         value="monthly",
     )
 
@@ -247,7 +247,7 @@ def test_execution_rejects_a_concurrent_target_edit(client, monkeypatch):
     change = {
         "type": "employee_update",
         "employee_id": employee["id"],
-        "changes": {"state": "Texas"},
+        "changes": {"state": "TX"},
     }
     preview = _approved_preview(client, change)
     concurrent = client.patch(
@@ -269,7 +269,7 @@ def test_execution_rejects_a_concurrent_target_edit(client, monkeypatch):
     assert error["code"] == "change_approval_stale"
     assert error["issues"][0]["metadata"]["stage"] == "target_precondition"
     current = client.get(f"/employees/{employee['id']}").json()
-    assert current["state"] == "California"
+    assert current["state"] == "CA"
     assert current["department"] == "Sales"
 
 

@@ -7,7 +7,7 @@ from app.models import AuditLog, Group
 from app.services.audit import record_audit_log, snapshot_entity
 
 
-def _condition_group(state: str = "Wisconsin") -> dict:
+def _condition_group(state: str = "WI") -> dict:
     return {
         "logical_operator": "and",
         "conditions": [{"field": "state", "operator": "=", "value": state}],
@@ -28,7 +28,7 @@ def _create_employee(client) -> dict:
         "/employees",
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
         },
@@ -57,7 +57,7 @@ def test_policy_and_version_audits_include_actor_and_version_snapshots(client):
             "name": "Pay schedule",
             "priority": 10,
             "effective_from": today.isoformat(),
-            "condition_group": _condition_group("California"),
+            "condition_group": _condition_group("CA"),
             "values": [{"assignment_field_definition_id": field["id"], "value": "weekly"}],
         },
     )
@@ -71,7 +71,7 @@ def test_policy_and_version_audits_include_actor_and_version_snapshots(client):
         json={
             "priority": 20,
             "effective_from": second_start.isoformat(),
-            "condition_group": _condition_group("California"),
+            "condition_group": _condition_group("CA"),
             "values": [{"assignment_field_definition_id": field["id"], "value": "biweekly"}],
         },
     )

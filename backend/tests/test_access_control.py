@@ -135,7 +135,7 @@ def test_temporary_password_is_forced_and_role_permissions_are_enforced(client):
         "/employees",
         json={
             "name": "Avery Stone",
-            "state": "Illinois",
+            "state": "IL",
             "department": "Operations",
             "employee_type": "full-time",
         },
@@ -162,7 +162,7 @@ def test_permission_changes_apply_to_existing_sessions(client):
     user_cookie = client.cookies.get(SESSION_COOKIE_NAME)
     employee = {
         "name": "Avery Stone",
-        "state": "Illinois",
+        "state": "IL",
         "department": "Operations",
         "employee_type": "full-time",
     }

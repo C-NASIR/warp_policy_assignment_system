@@ -20,6 +20,7 @@ from app.services.org_chart import (
     employee_management_level,
     get_ancestor_ids,
 )
+from app.states import normalize_state_code
 
 
 class ConditionFieldError(ValueError):
@@ -115,6 +116,14 @@ _DURATION_PATTERN = re.compile(
 
 def _string_parser(value: str) -> tuple[str, str]:
     return value, value
+
+
+def _state_parser(value: str) -> tuple[str, str]:
+    try:
+        normalized = normalize_state_code(value)
+    except ValueError as exc:
+        raise ConditionFieldError(str(exc)) from exc
+    return normalized, normalized
 
 
 def _date_parser(value: str) -> tuple[str, date]:
@@ -283,19 +292,29 @@ CONDITION_FIELD_SPECS = {
         ),
         _static_spec(
             "name",
-            "Employee name (legacy)",
+            "Employee name",
             "The employee's full name.",
             "string",
             _string_parser,
             ConditionFieldInputSpec(type="text", placeholder="Alice Johnson"),
         ),
-        _static_spec(
-            "state",
-            "State",
-            "The employee's state or region of employment.",
-            "string",
-            _string_parser,
-            ConditionFieldInputSpec(type="text", placeholder="California"),
+        ConditionFieldSpec(
+            key="state",
+            label="State",
+            description="The employee's U.S. state or territory of employment.",
+            field_type="static",
+            data_type="state_code",
+            resolver_key="employee_attribute_state_v1",
+            allowed_operators=_EQUALITY_OPERATORS,
+            input=ConditionFieldInputSpec(
+                type="resource",
+                reference_resource="states",
+            ),
+            resolver=_static_resolver("state"),
+            parser=_state_parser,
+            source_table="employees",
+            source_column="state",
+            dependencies=_employee_column_dependency("state"),
         ),
         _static_spec(
             "department",

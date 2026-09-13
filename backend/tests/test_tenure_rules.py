@@ -59,7 +59,7 @@ def _create_employee(client, *, start_date: date):
         "/employees",
         json={
             "name": "Alice",
-            "state": "California",
+            "state": "CA",
             "department": "Engineering",
             "employee_type": "regular",
             "start_date": start_date.isoformat(),
@@ -91,15 +91,16 @@ def test_condition_field_catalog_exposes_static_derived_and_dependency_metadata(
     assert fields["state"]["field_type"] == "static"
     assert fields["state"]["source_column"] == "state"
     assert fields["state"]["description"] == (
-        "The employee's state or region of employment."
+        "The employee's U.S. state or territory of employment."
     )
-    assert fields["state"]["allowed_operators"] == ["=", "<", "<=", ">", ">="]
+    assert fields["state"]["data_type"] == "state_code"
+    assert fields["state"]["allowed_operators"] == ["="]
     assert fields["state"]["input"] == {
-        "type": "text",
+        "type": "resource",
         "allows_null": False,
-        "placeholder": "California",
+        "placeholder": None,
         "options": [],
-        "reference_resource": None,
+        "reference_resource": "states",
         "minimum": None,
     }
     assert fields["tenure"]["field_type"] == "derived"

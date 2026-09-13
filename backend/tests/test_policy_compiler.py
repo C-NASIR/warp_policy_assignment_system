@@ -37,7 +37,7 @@ def group(operator: str, *conditions: Condition, children: tuple[ConditionGroup,
 
 
 def test_compiles_and_over_nested_or_to_flat_clauses(db):
-    a = condition(db, "state", "California")
+    a = condition(db, "state", "CA")
     b = condition(db, "employee_type", "regular")
     c = condition(db, "department", "Engineering")
     root = group("and", a, children=(group("or", b, c),))
@@ -46,16 +46,16 @@ def test_compiles_and_over_nested_or_to_flat_clauses(db):
         tuple((item.field, item.operator, item.value) for item in clause)
         for clause in compile_condition_tree_to_clauses(root)
     ] == [
-        (("state", "=", "California"), ("employee_type", "=", "regular")),
-        (("state", "=", "California"), ("department", "=", "Engineering")),
+        (("state", "=", "CA"), ("employee_type", "=", "regular")),
+        (("state", "=", "CA"), ("department", "=", "Engineering")),
     ]
 
 
 def test_compiles_nested_and_groups_using_cartesian_product(db):
     left = group(
         "or",
-        condition(db, "state", "California"),
-        condition(db, "state", "Wisconsin"),
+        condition(db, "state", "CA"),
+        condition(db, "state", "WI"),
     )
     right = group(
         "or",
@@ -67,10 +67,10 @@ def test_compiles_nested_and_groups_using_cartesian_product(db):
 
     assert len(clauses) == 4
     assert {tuple((item.field, item.value) for item in clause) for clause in clauses} == {
-        (("state", "California"), ("department", "Engineering")),
-        (("state", "California"), ("department", "Sales")),
-        (("state", "Wisconsin"), ("department", "Engineering")),
-        (("state", "Wisconsin"), ("department", "Sales")),
+        (("state", "CA"), ("department", "Engineering")),
+        (("state", "CA"), ("department", "Sales")),
+        (("state", "WI"), ("department", "Engineering")),
+        (("state", "WI"), ("department", "Sales")),
     }
 
 
@@ -82,7 +82,7 @@ def test_rejects_empty_condition_group():
 def test_rejects_unknown_logical_operator(db):
     with pytest.raises(PolicyCompilationError, match="Unsupported logical operator"):
         compile_condition_tree_to_clauses(
-            group("xor", condition(db, "state", "California"))
+            group("xor", condition(db, "state", "CA"))
         )
 
 
@@ -94,7 +94,7 @@ def test_compile_policy_version_clauses_builds_replaceable_representation(db):
         priority=10,
         effective_from=date(2020, 1, 1),
     )
-    a = condition(db, "state", "California")
+    a = condition(db, "state", "CA")
     b = condition(db, "employee_type", "regular")
     c = condition(db, "department", "Engineering")
     nested = group("or", b, c)
@@ -113,8 +113,8 @@ def test_compile_policy_version_clauses_builds_replaceable_representation(db):
         frozenset((item.field, item.operator, item.value) for item in clause.conditions)
         for clause in clauses
     } == {
-        frozenset({("state", "=", "California"), ("employee_type", "=", "regular")}),
-        frozenset({("state", "=", "California"), ("department", "=", "Engineering")}),
+        frozenset({("state", "=", "CA"), ("employee_type", "=", "regular")}),
+        frozenset({("state", "=", "CA"), ("department", "=", "Engineering")}),
     }
 
     root.logical_operator = "or"

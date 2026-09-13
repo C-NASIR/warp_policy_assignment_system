@@ -67,7 +67,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
             <h1 className="detail-title">{employee.name}</h1>
             <div className="detail-meta">
               {employee.department} · {employee.employee_type} ·{" "}
-              {employee.location ?? employee.state}
+              {employee.location ?? employee.state_label}
             </div>
           </div>
         </div>
@@ -98,7 +98,11 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                 {assignments.length ? (
                   <div className="assignment-list">
                     {assignments.map((item) => (
-                      <AssignmentCard assignment={item} key={item.id} />
+                      <AssignmentCard
+                        assignment={item}
+                        states={referenceData.states}
+                        key={item.id}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -122,7 +126,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                 <div>
                   <span className="label">Work location</span>
                   <div className="profile-value">{employee.location ?? "Not set"}</div>
-                  <div className="profile-caption">{employee.state}</div>
+                  <div className="profile-caption">{employee.state_label}</div>
                 </div>
                 <div>
                   <span className="label">Start date</span>

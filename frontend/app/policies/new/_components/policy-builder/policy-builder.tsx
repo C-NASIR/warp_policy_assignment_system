@@ -623,7 +623,7 @@ export function PolicyBuilder({
                           <span className="primary-cell">{previewEmployee.employee_name}</span>
                           <span className="secondary-cell">
                             {employee
-                              ? `${employee.department} · ${employee.state}`
+                              ? `${employee.department} · ${employee.state_label}`
                               : "Employee record"}
                           </span>
                         </span>
