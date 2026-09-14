@@ -251,6 +251,7 @@ state-changing cookie-authenticated requests.
 | POST / GET | `/groups` | Create or list groups |
 | GET / PATCH | `/groups/{id}` | Read or update a group |
 | GET | `/groups/{id}/employees` | List group members |
+| PATCH | `/groups/{id}/employees` | Apply a batch of group member additions and removals atomically |
 | POST / DELETE | `/groups/{id}/employees/{employee_id}` | Add or remove a group member |
 | GET | `/groups/{id}/policies` | List policies attached to a group |
 | POST / DELETE | `/groups/{id}/policies/{policy_id}` | Attach or remove a group policy |
@@ -376,26 +377,33 @@ new, unpersisted snapshot for the requested evaluation date.
 domain mutation and reconciliation services used by real writes inside a
 database savepoint that is always rolled back. It supports employee creation and
 updates, policy creation, policy-version creation, policy lifecycle changes,
-group membership changes, and override creation, updates, and deletion. The
-response contains per-employee before and after assignments, added and removed
-assignments, field-level changes, warnings, and conflicts. Proposed employees have
-a null employee ID; assignments supplied
-by a proposed policy version or override have a null source ID and
-`source_is_proposed: true`. Domain rows, policy links, assignment history, audit
-logs, and scheduled reconciliation records are not retained after a preview.
+group membership changes, and override creation, updates, and deletion.
+
+Policy creation and policy-version creation return the shared, display-focused
+`PolicyAssignmentPreviewRead` response. It contains the affected employees with
+their IDs, names, and departments; the normalized assignments per match; and a
+nullable conflict message. Other change types retain their assignment-detail
+responses with before and after assignments, added and removed assignments,
+field-level changes, warnings, and conflicts. Proposed employees have a null
+employee ID; assignments supplied by a proposed override have a null source ID
+and `source_is_proposed: true`. Domain rows, policy links, assignment history,
+audit logs, and scheduled reconciliation records are not retained after a
+preview.
 
 ## Approved-change execution contract
 
-A successful machine-authenticated preview includes a signed, expiring `approval` containing an
-approval ID, token, exact-change digest, preview-impact digest, and expiry time.
+Except for the display-focused policy creation and policy-version responses, a
+successful machine-authenticated preview includes a signed, expiring `approval`
+containing an approval ID, token, exact-change digest, preview-impact digest,
+and expiry time.
 It also signs a digest of the target employee, policy versions, membership, or
 override state relevant to that mutation. The token contains only identifiers,
 timestamps, and digests—the submitted employee or policy data is not embedded
 in it. Call `POST /change-executions` with that token and the exact same
 discriminated `change` object.
 
-A successful non-Root human preview of a policy version or policy lifecycle
-change instead creates a persisted pending request and returns
+A successful non-Root human preview of a policy lifecycle change creates a
+persisted pending request and returns
 `approval_request_id`. A user with `changes:approve` can review and
 approve or reject it through `/approval-requests`; the author cannot decide
 their own request. Approval creates the signed capability internally, and the

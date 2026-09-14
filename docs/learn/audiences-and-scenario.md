@@ -61,7 +61,7 @@ Product Launch remains an explicit employee group. It is not populated from a de
 - User roles are assigned and revoked explicitly; policies never change a user's roles.
 - Scopes from all assigned roles are unioned. A narrow role cannot deny a broader grant.
 - Reporting-tree scope includes the linked employee plus direct and indirect descendants. Being recorded as a manager does not create an account, permission, or role.
-- Ordinary human policy-version previews and supported lifecycle previews create independent approval requests. Root uses the privileged direct path.
+- Ordinary human lifecycle previews create independent approval requests. Policy creation and policy-version previews return display-only assignment summaries, while Root retains the privileged direct path.
 - Approval alone commits nothing. The ordinary approving user executes; Root may execute an approved request. Stale or expired approvals require a fresh preview and review.
 - Future effective dates still govern future policy behavior after execution, and scheduled reconciliation remains a deployment responsibility.
 - Course screenshots and training fixtures use fictional data; application state still comes from the configured backend.

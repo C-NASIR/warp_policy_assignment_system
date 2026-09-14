@@ -48,29 +48,6 @@ def _employee_change(name="Alice", state="CA"):
     }
 
 
-def _policy_create_change(field_id):
-    return {
-        "type": "policy_create",
-        "policy": {
-            "name": "California payroll",
-            "status": "active",
-            "priority": 20,
-            "condition_group": {
-                "logical_operator": "and",
-                "conditions": [
-                    {"field": "state", "operator": "=", "value": "CA"}
-                ],
-            },
-            "values": [
-                {
-                    "assignment_field_definition_id": field_id,
-                    "value": "biweekly",
-                }
-            ],
-        },
-    }
-
-
 def _approved_preview(client, change):
     response = client.post("/change-previews", json=change)
     assert response.status_code == 200
@@ -120,37 +97,6 @@ def test_approved_change_executes_once_and_replays_result(client, monkeypatch):
     assert replay.json()["approval_id"] == result["approval_id"]
     assert replay.json()["resources"] == result["resources"]
     assert len(client.get("/employees").json()) == 1
-
-
-def test_approved_policy_create_executes_the_previewed_change(client, monkeypatch):
-    monkeypatch.setenv("CHANGE_APPROVAL_SECRET", APPROVAL_SECRET)
-    field = _field(client)
-    employee = client.post(
-        "/employees",
-        json=_employee_change()["employee"],
-    ).json()
-    change = _policy_create_change(field["id"])
-    preview = _approved_preview(client, change)
-
-    execution = client.post(
-        "/change-executions",
-        json={
-            "approval_token": preview["approval"]["token"],
-            "change": change,
-        },
-    )
-
-    assert execution.status_code == 200, execution.text
-    result = execution.json()
-    assert result["resources"]["policy_id"] > 0
-    assert result["resources"]["policy_version_id"] > 0
-    assert result["affected_employee_count"] == 1
-    assert result["changes"][0]["employee_id"] == employee["id"]
-    assert (
-        client.get(f"/policies/{result['resources']['policy_id']}").status_code == 200
-    )
-    assignments = client.get(f"/employees/{employee['id']}/assignments").json()
-    assert [assignment["value"] for assignment in assignments] == ["biweekly"]
 
 
 def test_unexecuted_approval_expires(client, monkeypatch):

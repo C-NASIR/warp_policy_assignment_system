@@ -24,6 +24,8 @@ from app.schemas import (
     EmployeeRead,
     GroupCreate,
     GroupDirectoryRead,
+    GroupMembershipUpdate,
+    GroupPolicyUpdate,
     GroupRead,
     GroupUpdate,
     PolicyRead,
@@ -40,6 +42,7 @@ from app.services.groups import (
     get_group,
     remove_employee_from_group,
     remove_policy_from_group,
+    update_group_policies,
     update_group,
 )
 from app.services.policy_access import policy_read
@@ -166,6 +169,28 @@ def employees(
     )
 
 
+@router.patch(
+    "/{group_id}/employees",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def update_employees(
+    group_id: int,
+    data: GroupMembershipUpdate,
+    session: DatabaseSession,
+    actor: AuditActor,
+    visibility: EmployeeScope,
+) -> Response:
+    get_group(session, group_id)
+    employee_ids = {*data.add_employee_ids, *data.remove_employee_ids}
+    for employee_id in employee_ids:
+        visible_employee_or_404(session, visibility, employee_id)
+    for employee_id in data.remove_employee_ids:
+        remove_employee_from_group(session, group_id, employee_id, actor)
+    for employee_id in data.add_employee_ids:
+        add_employee_to_group(session, group_id, employee_id, actor)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post(
     "/{group_id}/employees/{employee_id}",
     response_model=EmployeeRead,
@@ -231,6 +256,31 @@ def policies(
         response,
     )
     return [policy_read(principal, policy) for policy in policies]
+
+
+@router.patch(
+    "/{group_id}/policies",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def update_policies(
+    group_id: int,
+    data: GroupPolicyUpdate,
+    session: DatabaseSession,
+    actor: AuditActor,
+    field_visibility: AssignmentFieldScope,
+) -> Response:
+    get_group(session, group_id)
+    policy_ids = {*data.add_policy_ids, *data.remove_policy_ids}
+    for policy_id in policy_ids:
+        require_visible_policy(session, field_visibility, policy_id)
+    update_group_policies(
+        session,
+        group_id,
+        data.add_policy_ids,
+        data.remove_policy_ids,
+        actor,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

@@ -1,60 +1,55 @@
 "use client";
 
 import Link from "next/link";
-import { Check, CircleAlert, FileKey2, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { Check, CircleAlert, FileKey2, Pencil, Trash2, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { formatEmployeeId, initials } from "@/lib/format";
+import { initials } from "@/lib/format";
 import type { Employee, Group, Policy } from "@/lib/types";
-import { useModalAccessibility } from "@/lib/use-modal-accessibility";
+import { EmployeeCombobox, PolicyCombobox } from "@/components/shared";
 import { Badge, Button, Panel } from "@/components/ui";
-
-type MembershipChange = {
-  action: "add" | "remove";
-  employee: Employee;
-  approvalToken: string | null;
-  affectedCount: number;
-};
 
 export function GroupManager({
   group,
   initialMembers,
   initialPolicies,
-  employees,
-  policies,
   canManage = true,
 }: {
   group: Group;
   initialMembers: Employee[];
   initialPolicies: Policy[];
-  employees: Employee[];
-  policies: Policy[];
   canManage?: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(group.name);
   const [editingName, setEditingName] = useState(false);
+  const [savedMembers, setSavedMembers] = useState(initialMembers);
   const [members, setMembers] = useState(initialMembers);
+  const [savedPolicies, setSavedPolicies] = useState(initialPolicies);
   const [attachedPolicies, setAttachedPolicies] = useState(initialPolicies);
-  const [employeeId, setEmployeeId] = useState("");
-  const [policyId, setPolicyId] = useState("");
-  const [pending, setPending] = useState<MembershipChange | null>(null);
+  const [employeePickerKey, setEmployeePickerKey] = useState(0);
+  const [policyPickerKey, setPolicyPickerKey] = useState(0);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  useModalAccessibility(Boolean(pending), () => setPending(null));
-  const availableEmployees = useMemo(
-    () => employees.filter((employee) => !members.some((member) => member.id === employee.id)),
-    [employees, members],
-  );
-  const availablePolicies = useMemo(
-    () =>
-      policies.filter(
-        (policy) =>
-          policy.status === "active" && !attachedPolicies.some((item) => item.id === policy.id),
-      ),
-    [policies, attachedPolicies],
-  );
+  const membershipChanges = useMemo(() => {
+    const savedIds = new Set(savedMembers.map((member) => member.id));
+    const draftIds = new Set(members.map((member) => member.id));
+    return {
+      added: members.filter((member) => !savedIds.has(member.id)),
+      removed: savedMembers.filter((member) => !draftIds.has(member.id)),
+    };
+  }, [members, savedMembers]);
+  const membershipChangeCount = membershipChanges.added.length + membershipChanges.removed.length;
+  const policyChanges = useMemo(() => {
+    const savedIds = new Set(savedPolicies.map((policy) => policy.id));
+    const draftIds = new Set(attachedPolicies.map((policy) => policy.id));
+    return {
+      added: attachedPolicies.filter((policy) => !savedIds.has(policy.id)),
+      removed: savedPolicies.filter((policy) => !draftIds.has(policy.id)),
+    };
+  }, [attachedPolicies, savedPolicies]);
+  const policyChangeCount = policyChanges.added.length + policyChanges.removed.length;
 
   async function rename() {
     const next = name.trim();
@@ -71,10 +66,7 @@ export function GroupManager({
         body: JSON.stringify({ name: next }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(
-          result.error?.message ?? "The group could not be renamed.",
-        );
+      if (!response.ok) throw new Error(result.error?.message ?? "The group could not be renamed.");
       setEditingName(false);
       setNotice("Group name updated.");
       router.refresh();
@@ -85,84 +77,28 @@ export function GroupManager({
     }
   }
 
-  async function previewMembership(action: "add" | "remove", employee: Employee) {
-    setBusy(`preview-${employee.id}`);
-    setError("");
-    setNotice("");
-    const change = {
-      type: "group_membership_change",
-      action,
-      group_id: group.id,
-      employee_id: employee.id,
-    };
-    try {
-      const response = await fetch("/api/backend/change-previews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(change),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.valid === false)
-        throw new Error(
-          result.error?.message ??
-            result.conflicts?.[0]?.message ??
-            "The membership impact could not be calculated.",
-        );
-      setPending({
-        action,
-        employee,
-        approvalToken: result.approval?.token ?? null,
-        affectedCount: result.changes?.[0]
-          ? result.changes[0].added.length +
-            result.changes[0].removed.length +
-            result.changes[0].changed.length
-          : result.affected_employee_count,
-      });
-    } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : "Unable to preview the membership change.",
-      );
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function confirmMembership() {
-    if (!pending) return;
+  async function submitMembershipChanges() {
+    if (membershipChangeCount === 0) return;
     setBusy("membership");
     setError("");
-    const change = {
-      type: "group_membership_change",
-      action: pending.action,
-      group_id: group.id,
-      employee_id: pending.employee.id,
-    };
+    setNotice("");
     try {
-      const endpoint = pending.approvalToken
-        ? "/api/backend/change-executions"
-        : `/api/backend/groups/${group.id}/employees/${pending.employee.id}`;
-      const response = await fetch(endpoint, {
-        method: pending.approvalToken ? "POST" : pending.action === "add" ? "POST" : "DELETE",
-        headers: pending.approvalToken ? { "Content-Type": "application/json" } : undefined,
-        body: pending.approvalToken
-          ? JSON.stringify({ approval_token: pending.approvalToken, change })
-          : undefined,
+      const response = await fetch(`/api/backend/groups/${group.id}/employees`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          add_employee_ids: membershipChanges.added.map((employee) => employee.id),
+          remove_employee_ids: membershipChanges.removed.map((employee) => employee.id),
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(
-          result.error?.message ?? "The membership could not be updated.",
-        );
-      setMembers((current) =>
-        pending.action === "add"
-          ? [...current, pending.employee]
-          : current.filter((item) => item.id !== pending.employee.id),
-      );
+        throw new Error(result.error?.message ?? "The membership could not be updated.");
+      setSavedMembers(members);
       setNotice(
-        `${pending.employee.name} ${pending.action === "add" ? "added to" : "removed from"} ${name}. Assignments were reconciled.`,
+        `Membership updated: ${membershipChanges.added.length} added and ${membershipChanges.removed.length} removed. Assignments were reconciled.`,
       );
-      setEmployeeId("");
-      setPending(null);
+      setEmployeePickerKey((current) => current + 1);
       router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to update membership.");
@@ -171,48 +107,31 @@ export function GroupManager({
     }
   }
 
-  async function attachPolicy() {
-    const policy = availablePolicies.find((item) => item.id === Number(policyId));
-    if (!policy) return;
+  async function submitPolicyChanges() {
+    if (policyChangeCount === 0) return;
     setBusy("policy");
     setError("");
+    setNotice("");
     try {
-      const response = await fetch(`/api/backend/groups/${group.id}/policies/${policy.id}`, {
-        method: "POST",
+      const response = await fetch(`/api/backend/groups/${group.id}/policies`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          add_policy_ids: policyChanges.added.map((policy) => policy.id),
+          remove_policy_ids: policyChanges.removed.map((policy) => policy.id),
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(
-          result.error?.message ?? "The policy could not be attached.",
-        );
-      setAttachedPolicies((current) => [...current, policy]);
-      setPolicyId("");
-      setNotice(`${policy.name} attached. Member assignments were reconciled.`);
+        throw new Error(result.error?.message ?? "The policy attachments could not be updated.");
+      setSavedPolicies(attachedPolicies);
+      setNotice(
+        `Policy attachments updated: ${policyChanges.added.length} added and ${policyChanges.removed.length} removed. Member assignments were reconciled.`,
+      );
+      setPolicyPickerKey((current) => current + 1);
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Unable to attach the policy.");
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function detachPolicy(policy: Policy) {
-    setBusy(`policy-${policy.id}`);
-    setError("");
-    try {
-      const response = await fetch(`/api/backend/groups/${group.id}/policies/${policy.id}`, {
-        method: "DELETE",
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(
-          result.error?.message ?? "The policy could not be detached.",
-        );
-      setAttachedPolicies((current) => current.filter((item) => item.id !== policy.id));
-      setNotice(`${policy.name} detached. Member assignments were reconciled.`);
-      router.refresh();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Unable to detach the policy.");
+      setError(reason instanceof Error ? reason.message : "Unable to update policy attachments.");
     } finally {
       setBusy("");
     }
@@ -274,8 +193,9 @@ export function GroupManager({
             <div>
               <h2 className="panel-title">Members</h2>
               <div className="panel-caption">
-                {members.length} {members.length === 1 ? "employee inherits" : "employees inherit"}{" "}
-                attached policies
+                {members.length} {members.length === 1 ? "employee" : "employees"} in this group
+                {membershipChangeCount > 0 &&
+                  ` · ${membershipChangeCount} unsaved ${membershipChangeCount === 1 ? "change" : "changes"}`}
               </div>
             </div>
             <Badge tone="accent">
@@ -286,29 +206,48 @@ export function GroupManager({
           <div className="panel-body">
             {canManage && (
               <div className="attach-row">
-                <select
-                  className="select"
-                  value={employeeId}
-                  onChange={(event) => setEmployeeId(event.target.value)}
-                >
-                  <option value="">Select an employee</option>
-                  {availableEmployees.map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.name} · {employee.department} · {formatEmployeeId(employee.id)}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  disabled={!employeeId || busy !== ""}
-                  onClick={() => {
-                    const employee = availableEmployees.find(
-                      (item) => item.id === Number(employeeId),
+                <EmployeeCombobox
+                  key={employeePickerKey}
+                  excludedEmployeeIds={members.map((member) => member.id)}
+                  onChange={(employee) => {
+                    if (!employee) return;
+                    setMembers((current) =>
+                      current.some((member) => member.id === employee.id)
+                        ? current
+                        : [...current, employee],
                     );
-                    if (employee) void previewMembership("add", employee);
+                    setEmployeePickerKey((current) => current + 1);
+                    setError("");
+                    setNotice("");
                   }}
-                >
-                  <Plus size={14} /> Review add
-                </Button>
+                />
+              </div>
+            )}
+            {canManage && (
+              <div className="membership-draft-actions top">
+                <span>
+                  {membershipChangeCount === 0
+                    ? "No unsaved membership changes"
+                    : `${membershipChanges.added.length} to add · ${membershipChanges.removed.length} to remove`}
+                </span>
+                <div className="heading-actions">
+                  <Button
+                    variant="secondary"
+                    disabled={membershipChangeCount === 0 || busy !== ""}
+                    onClick={() => {
+                      setMembers(savedMembers);
+                      setEmployeePickerKey((current) => current + 1);
+                    }}
+                  >
+                    Discard changes
+                  </Button>
+                  <Button
+                    disabled={membershipChangeCount === 0 || busy !== ""}
+                    onClick={submitMembershipChanges}
+                  >
+                    {busy === "membership" ? "Saving…" : "Save Changes"}
+                  </Button>
+                </div>
               </div>
             )}
             <div className="member-list">
@@ -327,8 +266,14 @@ export function GroupManager({
                     <button
                       className="remove-button danger"
                       disabled={busy !== ""}
-                      onClick={() => previewMembership("remove", employee)}
-                      aria-label={`Remove ${employee.name}`}
+                      onClick={() => {
+                        setMembers((current) =>
+                          current.filter((member) => member.id !== employee.id),
+                        );
+                        setError("");
+                        setNotice("");
+                      }}
+                      aria-label={`Remove ${employee.name} from draft`}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -343,7 +288,11 @@ export function GroupManager({
           <div className="panel-header">
             <div>
               <h2 className="panel-title">Attached policies</h2>
-              <div className="panel-caption">Every member is evaluated against these policies</div>
+              <div className="panel-caption">
+                Every member is evaluated against these policies
+                {policyChangeCount > 0 &&
+                  ` · ${policyChangeCount} unsaved ${policyChangeCount === 1 ? "change" : "changes"}`}
+              </div>
             </div>
             <Badge>
               <FileKey2 size={11} />
@@ -353,21 +302,48 @@ export function GroupManager({
           <div className="panel-body">
             {canManage && (
               <div className="attach-row">
-                <select
-                  className="select"
-                  value={policyId}
-                  onChange={(event) => setPolicyId(event.target.value)}
-                >
-                  <option value="">Select an active policy</option>
-                  {availablePolicies.map((policy) => (
-                    <option key={policy.id} value={policy.id}>
-                      {policy.name}
-                    </option>
-                  ))}
-                </select>
-                <Button disabled={!policyId || busy !== ""} onClick={attachPolicy}>
-                  <Plus size={14} /> Attach
-                </Button>
+                <PolicyCombobox
+                  key={policyPickerKey}
+                  excludedPolicyIds={attachedPolicies.map((policy) => policy.id)}
+                  onChange={(policy) => {
+                    if (!policy) return;
+                    setAttachedPolicies((current) =>
+                      current.some((item) => item.id === policy.id)
+                        ? current
+                        : [...current, policy],
+                    );
+                    setPolicyPickerKey((current) => current + 1);
+                    setError("");
+                    setNotice("");
+                  }}
+                />
+              </div>
+            )}
+            {canManage && (
+              <div className="membership-draft-actions top">
+                <span>
+                  {policyChangeCount === 0
+                    ? "No unsaved policy changes"
+                    : `${policyChanges.added.length} to add · ${policyChanges.removed.length} to remove`}
+                </span>
+                <div className="heading-actions">
+                  <Button
+                    variant="secondary"
+                    disabled={policyChangeCount === 0 || busy !== ""}
+                    onClick={() => {
+                      setAttachedPolicies(savedPolicies);
+                      setPolicyPickerKey((current) => current + 1);
+                    }}
+                  >
+                    Discard changes
+                  </Button>
+                  <Button
+                    disabled={policyChangeCount === 0 || busy !== ""}
+                    onClick={submitPolicyChanges}
+                  >
+                    {busy === "policy" ? "Saving…" : "Save Changes"}
+                  </Button>
+                </div>
               </div>
             )}
             <div className="member-list">
@@ -381,10 +357,16 @@ export function GroupManager({
                   </Link>
                   {canManage && (
                     <button
-                      className="remove-button"
+                      className="remove-button danger"
                       disabled={busy !== ""}
-                      onClick={() => detachPolicy(policy)}
-                      aria-label={`Detach ${policy.name}`}
+                      onClick={() => {
+                        setAttachedPolicies((current) =>
+                          current.filter((item) => item.id !== policy.id),
+                        );
+                        setError("");
+                        setNotice("");
+                      }}
+                      aria-label={`Remove ${policy.name} from draft`}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -398,36 +380,6 @@ export function GroupManager({
           </div>
         </Panel>
       </div>
-      {pending && (
-        <div className="modal-backdrop" role="presentation">
-          <section
-            className="confirm-card"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Confirm membership change"
-          >
-            <div className="confirm-icon">
-              <Users size={18} />
-            </div>
-            <h2>
-              {pending.action === "add" ? "Add" : "Remove"} {pending.employee.name}?
-            </h2>
-            <p>
-              This membership change will update {pending.affectedCount} assignment{" "}
-              {pending.affectedCount === 1 ? "value" : "values"}. The policy engine will record the
-              reason and reconcile the employee immediately.
-            </p>
-            <div className="heading-actions">
-              <Button variant="secondary" onClick={() => setPending(null)}>
-                Cancel
-              </Button>
-              <Button disabled={busy === "membership"} onClick={confirmMembership}>
-                {busy === "membership" ? "Applying…" : "Confirm and reconcile"}
-              </Button>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   );
 }

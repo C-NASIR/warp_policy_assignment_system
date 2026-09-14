@@ -163,17 +163,7 @@ def add_policy_to_group(
     policy = _get_policy(session, policy_id)
     key = {"group_id": group_id, "policy_id": policy_id}
     if session.get(GroupPolicy, key) is None:
-        session.add(GroupPolicy(**key))
-        session.flush()
-        record_audit_log(
-            session,
-            actor=actor,
-            entity_type="Group",
-            entity_id=group_id,
-            action="policy_attached",
-            before=None,
-            after=key,
-        )
+        _attach_policy(session, key, actor)
         _refresh_group_members(session, group_id)
     return policy
 
@@ -191,19 +181,72 @@ def remove_policy_from_group(
         {"group_id": group_id, "policy_id": policy_id},
     )
     if group_policy is not None:
-        before = {"group_id": group_id, "policy_id": policy_id}
-        session.delete(group_policy)
-        session.flush()
-        record_audit_log(
-            session,
-            actor=actor,
-            entity_type="Group",
-            entity_id=group_id,
-            action="policy_detached",
-            before=before,
-            after=None,
-        )
+        _detach_policy(session, group_policy, actor)
         _refresh_group_members(session, group_id)
+
+
+def update_group_policies(
+    session: Session,
+    group_id: int,
+    add_policy_ids: list[int],
+    remove_policy_ids: list[int],
+    actor: str = "system",
+) -> None:
+    get_group(session, group_id)
+    policy_ids = {*add_policy_ids, *remove_policy_ids}
+    for policy_id in policy_ids:
+        _get_policy(session, policy_id)
+
+    changed = False
+    for policy_id in remove_policy_ids:
+        group_policy = session.get(
+            GroupPolicy,
+            {"group_id": group_id, "policy_id": policy_id},
+        )
+        if group_policy is not None:
+            _detach_policy(session, group_policy, actor)
+            changed = True
+
+    for policy_id in add_policy_ids:
+        key = {"group_id": group_id, "policy_id": policy_id}
+        if session.get(GroupPolicy, key) is None:
+            _attach_policy(session, key, actor)
+            changed = True
+
+    if changed:
+        _refresh_group_members(session, group_id)
+
+
+def _attach_policy(session: Session, key: dict[str, int], actor: str) -> None:
+    session.add(GroupPolicy(**key))
+    session.flush()
+    record_audit_log(
+        session,
+        actor=actor,
+        entity_type="Group",
+        entity_id=key["group_id"],
+        action="policy_attached",
+        before=None,
+        after=key,
+    )
+
+
+def _detach_policy(session: Session, group_policy: GroupPolicy, actor: str) -> None:
+    before = {
+        "group_id": group_policy.group_id,
+        "policy_id": group_policy.policy_id,
+    }
+    session.delete(group_policy)
+    session.flush()
+    record_audit_log(
+        session,
+        actor=actor,
+        entity_type="Group",
+        entity_id=before["group_id"],
+        action="policy_detached",
+        before=before,
+        after=None,
+    )
 
 
 def _get_employee(session: Session, employee_id: int) -> Employee:

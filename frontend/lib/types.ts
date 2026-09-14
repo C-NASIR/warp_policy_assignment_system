@@ -99,6 +99,21 @@ export type EmployeeAssignmentPreview = {
   approval?: { token: string } | null;
 };
 
+export type PolicyAssignmentPreview = {
+  type: "policy_create" | "policy_version_create";
+  affected_employees: {
+    employee_id: number;
+    employee_name: string;
+    department: string;
+  }[];
+  assignments_per_match: {
+    assignment_field_definition_id: number;
+    assignment_field_name: string;
+    value: string;
+  }[];
+  conflict_message: string | null;
+};
+
 export type Condition = {
   field: string;
   operator: "=" | "<" | "<=" | ">" | ">=";

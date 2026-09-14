@@ -331,6 +331,58 @@ class GroupDirectoryRead(GroupRead):
     policy_count: int = Field(ge=0)
 
 
+class GroupMembershipUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    add_employee_ids: list[Annotated[int, Field(gt=0)]] = Field(
+        default_factory=list,
+        max_length=500,
+    )
+    remove_employee_ids: list[Annotated[int, Field(gt=0)]] = Field(
+        default_factory=list,
+        max_length=500,
+    )
+
+    @field_validator("add_employee_ids", "remove_employee_ids")
+    @classmethod
+    def require_unique_employee_ids(cls, value: list[int]) -> list[int]:
+        if len(value) != len(set(value)):
+            raise ValueError("Employee IDs must be unique")
+        return value
+
+    @model_validator(mode="after")
+    def require_disjoint_membership_changes(self) -> GroupMembershipUpdate:
+        if set(self.add_employee_ids) & set(self.remove_employee_ids):
+            raise ValueError("An employee cannot be both added and removed")
+        return self
+
+
+class GroupPolicyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    add_policy_ids: list[Annotated[int, Field(gt=0)]] = Field(
+        default_factory=list,
+        max_length=500,
+    )
+    remove_policy_ids: list[Annotated[int, Field(gt=0)]] = Field(
+        default_factory=list,
+        max_length=500,
+    )
+
+    @field_validator("add_policy_ids", "remove_policy_ids")
+    @classmethod
+    def require_unique_policy_ids(cls, value: list[int]) -> list[int]:
+        if len(value) != len(set(value)):
+            raise ValueError("Policy IDs must be unique")
+        return value
+
+    @model_validator(mode="after")
+    def require_disjoint_policy_changes(self) -> GroupPolicyUpdate:
+        if set(self.add_policy_ids) & set(self.remove_policy_ids):
+            raise ValueError("A policy cannot be both added and removed")
+        return self
+
+
 class AssignmentFieldInputOptionRead(BaseModel):
     value: str = Field(min_length=1, max_length=500)
     label: str = Field(min_length=1, max_length=200)
@@ -918,6 +970,27 @@ class EmployeeAssignmentPreviewChangeRead(BaseModel):
     changed: list[AssignmentFieldPreviewChangeRead]
 
 
+class PolicyPreviewEmployeeRead(BaseModel):
+    employee_id: int
+    employee_name: str
+    department: str
+
+
+class PolicyPreviewAssignmentRead(BaseModel):
+    assignment_field_definition_id: int
+    assignment_field_name: str
+    value: str
+
+
+class PolicyAssignmentPreviewRead(BaseModel):
+    """Frontend-facing impact summary for a proposed policy or policy version."""
+
+    type: Literal["policy_create", "policy_version_create"]
+    affected_employees: list[PolicyPreviewEmployeeRead]
+    assignments_per_match: list[PolicyPreviewAssignmentRead]
+    conflict_message: str | None = None
+
+
 class ChangePreviewConflictRead(BaseModel):
     code: str
     message: str
@@ -969,8 +1042,18 @@ class ChangePreviewRead(BaseModel):
     approval_request_id: str | None = None
 
 
+class NonPolicyChangePreviewRead(ChangePreviewRead):
+    type: Literal[
+        "policy_status_change",
+        "group_membership_change",
+        "employee_override_change",
+    ]
+
+
 ChangePreviewResponse = Annotated[
-    EmployeeAssignmentPreviewRead | ChangePreviewRead,
+    EmployeeAssignmentPreviewRead
+    | PolicyAssignmentPreviewRead
+    | NonPolicyChangePreviewRead,
     Field(discriminator="type"),
 ]
 

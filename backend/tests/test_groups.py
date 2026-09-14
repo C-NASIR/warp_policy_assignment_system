@@ -100,6 +100,81 @@ def test_membership_and_group_policy_changes_reconcile_employee(client):
     assert assignments(client, alice["id"]) == []
 
 
+def test_batch_membership_update_is_atomic_and_reconciles_all_employees(client):
+    field = create_field(client)
+    policy = create_policy(client, "Engineering badge", 10, field["id"], "engineer")
+    alice = create_employee(client)
+    bob = create_employee(client, "Bob")
+    carol = create_employee(client, "Carol")
+    engineering = create_group(client)
+    client.post(f"/groups/{engineering['id']}/policies/{policy['id']}")
+
+    added = client.patch(
+        f"/groups/{engineering['id']}/employees",
+        json={"add_employee_ids": [alice["id"], bob["id"]], "remove_employee_ids": []},
+    )
+
+    assert added.status_code == 204
+    assert client.get(f"/groups/{engineering['id']}/employees").json() == [alice, bob]
+    assert [item["value"] for item in assignments(client, alice["id"])] == ["engineer"]
+    assert [item["value"] for item in assignments(client, bob["id"])] == ["engineer"]
+
+    changed = client.patch(
+        f"/groups/{engineering['id']}/employees",
+        json={"add_employee_ids": [carol["id"]], "remove_employee_ids": [alice["id"]]},
+    )
+
+    assert changed.status_code == 204
+    assert client.get(f"/groups/{engineering['id']}/employees").json() == [bob, carol]
+    assert assignments(client, alice["id"]) == []
+    assert [item["value"] for item in assignments(client, carol["id"])] == ["engineer"]
+
+    invalid = client.patch(
+        f"/groups/{engineering['id']}/employees",
+        json={"add_employee_ids": [alice["id"], 999999], "remove_employee_ids": [bob["id"]]},
+    )
+
+    assert invalid.status_code == 404
+    assert client.get(f"/groups/{engineering['id']}/employees").json() == [bob, carol]
+
+
+def test_batch_policy_update_is_atomic_and_reconciles_members(client):
+    field = create_field(client, "application_access", "many")
+    github = create_policy(client, "GitHub", 10, field["id"], "GitHub")
+    linear = create_policy(client, "Linear", 20, field["id"], "Linear")
+    slack = create_policy(client, "Slack", 30, field["id"], "Slack")
+    alice = create_employee(client)
+    engineering = create_group(client)
+    client.post(f"/groups/{engineering['id']}/employees/{alice['id']}")
+    client.post(f"/groups/{engineering['id']}/policies/{github['id']}")
+
+    changed = client.patch(
+        f"/groups/{engineering['id']}/policies",
+        json={
+            "add_policy_ids": [linear["id"], slack["id"]],
+            "remove_policy_ids": [github["id"]],
+        },
+    )
+
+    assert changed.status_code == 204
+    assert client.get(f"/groups/{engineering['id']}/policies").json() == [linear, slack]
+    assert [item["value"] for item in assignments(client, alice["id"])] == [
+        "Linear",
+        "Slack",
+    ]
+
+    invalid = client.patch(
+        f"/groups/{engineering['id']}/policies",
+        json={
+            "add_policy_ids": [github["id"], 999999],
+            "remove_policy_ids": [linear["id"]],
+        },
+    )
+
+    assert invalid.status_code == 404
+    assert client.get(f"/groups/{engineering['id']}/policies").json() == [linear, slack]
+
+
 def test_direct_and_group_policies_use_the_same_priority_engine(client):
     field = create_field(client, "pay_schedule")
     direct = create_policy(

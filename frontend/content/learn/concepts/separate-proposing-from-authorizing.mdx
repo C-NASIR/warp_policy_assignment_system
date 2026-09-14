@@ -51,7 +51,7 @@ Approval alone changes nothing. If the committed version starts in the future, e
 
 An expired request or changed target state can make the approval unusable. Morgan must preview the current proposal again and obtain a fresh review. Rejection likewise ends that request; editing the idea does not revive it.
 
-This persisted independent-approval workflow is intentionally narrow. For ordinary signed-in users, it covers policy-version creation and policy lifecycle changes made through the supported preview path. Employee edits, group membership changes, and overrides may have preview-and-confirm flows, but they do not automatically become approval requests. Lacking permission for an arbitrary action never means “submit it for approval instead.”
+This persisted independent-approval workflow is intentionally narrow. For ordinary signed-in users, it covers policy lifecycle changes made through the supported preview path. Policy creation and policy-version previews return display-only assignment summaries; employee edits, group membership changes, and overrides may have preview-and-confirm flows, but they do not automatically become approval requests. Lacking permission for an arbitrary action never means “submit it for approval instead.”
 
 Root is the privileged exception: Root's policy preview can produce a directly executable approval token instead of a pending human request, and Root can execute an approved request. That exception does not relax data validation, stale-preview protection, authentication, or configured security requirements.
 

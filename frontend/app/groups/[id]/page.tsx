@@ -3,14 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { GroupManager } from "./_components/group-manager/group-manager";
-import {
-  getCurrentUser,
-  getEmployees,
-  getGroup,
-  getGroupEmployees,
-  getGroupPolicies,
-  getPolicies,
-} from "@/lib/backend";
+import { getCurrentUser, getGroup, getGroupEmployees, getGroupPolicies } from "@/lib/backend";
 import { hasPermission } from "@/lib/permissions";
 
 export async function generateMetadata({ params }: PageProps<"/groups/[id]">): Promise<Metadata> {
@@ -28,12 +21,10 @@ export default async function GroupDetailPage({ params }: PageProps<"/groups/[id
   const { id } = await params;
   const groupId = Number(id);
   const user = await getCurrentUser();
-  const [group, members, attachedPolicies, employees, policies] = await Promise.all([
+  const [group, members, attachedPolicies] = await Promise.all([
     getGroup(groupId),
     getGroupEmployees(groupId),
     getGroupPolicies(groupId),
-    hasPermission(user, "employees:read") ? getEmployees() : [],
-    hasPermission(user, "policies:read") ? getPolicies() : [],
   ]);
   if (!group) notFound();
   return (
@@ -46,8 +37,6 @@ export default async function GroupDetailPage({ params }: PageProps<"/groups/[id
         group={group}
         initialMembers={members}
         initialPolicies={attachedPolicies}
-        employees={employees}
-        policies={policies}
         canManage={hasPermission(user, "groups:update")}
       />
     </>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { PolicyBuilder } from "./_components/policy-builder/policy-builder";
 import { Badge } from "@/components/ui";
@@ -33,11 +33,10 @@ export default async function NewPolicyPage({ searchParams }: PageProps<"/polici
   const activateOnCreate = hasPermission(user, "policies:activate");
   return (
     <>
-      <div className="breadcrumb">
-        <Link href="/policies">Policies</Link>
-        <ChevronRight size={11} />
-        <span>{basePolicy ? `New ${basePolicy.name} version` : "Create policy"}</span>
-      </div>
+      <Link className="page-back-link" href="/policies">
+        <ArrowLeft size={13} />
+        Back to policies
+      </Link>
       <div className="page-heading">
         <div>
           <p className="eyebrow">Policy authoring</p>

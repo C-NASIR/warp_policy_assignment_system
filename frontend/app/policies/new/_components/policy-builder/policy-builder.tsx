@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BuilderCondition, ConditionRow, defaultCondition } from "./condition-row";
-import { Badge, Button, ButtonLink } from "@/components/ui";
+import { Badge, Button } from "@/components/ui";
 import { AssignmentValueInput } from "@/components/shared";
-import { initials } from "@/lib/format";
+import { formatEmployeeId, initials } from "@/lib/format";
 import type {
   AssignmentField,
   Condition,
@@ -15,6 +15,7 @@ import type {
   Employee,
   EmployeeReferenceData,
   Policy,
+  PolicyAssignmentPreview,
 } from "@/lib/types";
 import styles from "./policy-builder.module.css";
 
@@ -71,11 +72,11 @@ export function PolicyBuilder({
   const [previewed, setPreviewed] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [approval, setApproval] = useState<string | null>(null);
-  const [approvalRequestId, setApprovalRequestId] = useState<string | null>(null);
-  const [engineAffected, setEngineAffected] = useState<number | null>(null);
   const [previewEmployees, setPreviewEmployees] = useState<
-    { employee_id: number | null; employee_name: string }[]
+    PolicyAssignmentPreview["affected_employees"]
+  >([]);
+  const [previewAssignments, setPreviewAssignments] = useState<
+    PolicyAssignmentPreview["assignments_per_match"]
   >([]);
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [success, setSuccess] = useState("");
@@ -154,10 +155,8 @@ export function PolicyBuilder({
       return;
     }
     setError("");
-    setApproval(null);
-    setApprovalRequestId(null);
-    setEngineAffected(null);
     setPreviewEmployees([]);
+    setPreviewAssignments([]);
     setReviewing(true);
     const version = versionPayload();
     const change = basePolicy
@@ -180,18 +179,19 @@ export function PolicyBuilder({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(change),
       });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.valid === false)
+      const result = (await response
+        .json()
+        .catch(() => ({}))) as Partial<PolicyAssignmentPreview> & {
+        error?: { message?: string };
+      };
+      if (!response.ok || result.conflict_message)
         throw new Error(
           result.error?.message ??
-            result.conflicts?.[0]?.message ??
+            result.conflict_message ??
             "The policy impact could not be calculated.",
         );
-      setApproval(result.approval?.token ?? null);
-      setApprovalRequestId(result.approval_request_id ?? null);
-      setEngineAffected(result.affected_employee_count ?? 0);
-      setPreviewEmployees(result.changes ?? []);
-      if (result.approval_request_id) setSuccess("Preview submitted for independent approval.");
+      setPreviewEmployees(result.affected_employees ?? []);
+      setPreviewAssignments(result.assignments_per_match ?? []);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to preview policy impact.");
       setReviewing(false);
@@ -204,29 +204,21 @@ export function PolicyBuilder({
   async function save() {
     setSaving(true);
     setError("");
-    const version = versionPayload();
     try {
-      const change = basePolicy
-        ? { type: "policy_version_create", policy_id: basePolicy.id, version }
-        : null;
-      const endpoint = approval
-        ? "/api/backend/change-executions"
-        : basePolicy
-          ? `/api/backend/policies/${basePolicy.id}/versions`
-          : "/api/backend/policies";
-      const body = approval
-        ? { approval_token: approval, change }
-        : basePolicy
-          ? version
-          : { name: name.trim(), status: activateOnCreate ? "active" : "draft", ...version };
+      const version = versionPayload();
+      const endpoint = basePolicy
+        ? `/api/backend/policies/${basePolicy.id}/versions`
+        : "/api/backend/policies";
+      const body = basePolicy
+        ? version
+        : { name: name.trim(), status: activateOnCreate ? "active" : "draft", ...version };
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(result.error?.message ?? "The policy could not be saved.");
+      if (!response.ok) throw new Error(result.error?.message ?? "The policy could not be saved.");
       setSuccess(
         basePolicy
           ? "New policy version created and assignments reconciled."
@@ -554,27 +546,19 @@ export function PolicyBuilder({
         </section>
         <div className="form-footer">
           <span className="form-hint">
-            {approvalRequestId
-              ? `Approval request ${approvalRequestId} is pending.`
-              : basePolicy
-                ? "Previewing submits the exact change for an independent approval."
-                : "Preview the affected population before this version is saved."}
+            Preview the affected population before this {basePolicy ? "version" : "policy"} is
+            saved.
           </span>
           <div className="heading-actions">
-            {approvalRequestId && (
-              <ButtonLink variant="secondary" href="/approvals">
-                Open approvals
-              </ButtonLink>
-            )}
             <Button
               variant="secondary"
               onClick={review}
-              disabled={!hasAssignmentFields || reviewing || Boolean(approvalRequestId)}
+              disabled={!hasAssignmentFields || reviewing}
             >
               <Eye size={14} />
               {reviewing ? "Calculating…" : "Preview impact"}
             </Button>
-            {previewed && !approvalRequestId && (
+            {previewed && (
               <Button onClick={save} disabled={!hasAssignmentFields || saving}>
                 <Check size={14} />
                 {saving ? "Saving…" : basePolicy ? "Create version" : "Create policy"}
@@ -596,16 +580,13 @@ export function PolicyBuilder({
           <>
             <div className="impact-hero">
               <Users size={17} />
-              <div className="impact-number">{engineAffected ?? 0}</div>
+              <div className="impact-number">{previewEmployees.length}</div>
               <div className="impact-label">employees will have resolved assignment changes</div>
             </div>
             <div className="preview-content">
               <div className="label">Affected employees</div>
               <div className="match-list">
                 {previewEmployees.slice(0, 5).map((previewEmployee) => {
-                  const employee = employees.find(
-                    (item) => item.id === previewEmployee.employee_id,
-                  );
                   return (
                     <div
                       className="match-person"
@@ -613,12 +594,11 @@ export function PolicyBuilder({
                     >
                       <span className="person-cell">
                         <span className="avatar">{initials(previewEmployee.employee_name)}</span>
-                        <span>
+                        <span className="employee-identity">
                           <span className="primary-cell">{previewEmployee.employee_name}</span>
                           <span className="secondary-cell">
-                            {employee
-                              ? `${employee.department} · ${employee.state_label}`
-                              : "Employee record"}
+                            {previewEmployee.department} ·{" "}
+                            {formatEmployeeId(previewEmployee.employee_id)}
                           </span>
                         </span>
                       </span>
@@ -638,16 +618,13 @@ export function PolicyBuilder({
                 </div>
               )}
               <div className={`label ${styles.assignmentLabel}`}>Assignments per match</div>
-              {outputs.map((item) => (
-                <div className="preview-assignment" key={item.rowId}>
+              {previewAssignments.map((item, index) => (
+                <div
+                  className="preview-assignment"
+                  key={`${item.assignment_field_definition_id}-${index}`}
+                >
                   <div>
-                    <div className="preview-field">
-                      {
-                        assignmentFields.find(
-                          (field) => field.id === Number(item.assignment_field_definition_id),
-                        )?.name
-                      }
-                    </div>
+                    <div className="preview-field">{item.assignment_field_name}</div>
                     <div className="preview-value">{item.value}</div>
                   </div>
                   <span className="preview-change added">+ Assign</span>

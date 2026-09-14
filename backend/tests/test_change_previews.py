@@ -139,13 +139,29 @@ def test_policy_version_preview_reconciles_population_without_persisting(client)
             },
         },
     )
-    assert preview["valid"] is True
-    changes = {item["employee_id"]: item for item in preview["changes"]}
-    assert [item["value"] for item in changes[alice["id"]]["removed"]] == ["weekly"]
-    bob_added = changes[bob["id"]]["added"]
-    assert [item["value"] for item in bob_added] == ["biweekly"]
-    assert bob_added[0]["source_id"] is None
-    assert bob_added[0]["source_is_proposed"] is True
+    assert preview == {
+        "type": "policy_version_create",
+        "affected_employees": [
+            {
+                "employee_id": alice["id"],
+                "employee_name": "Alice",
+                "department": "Engineering",
+            },
+            {
+                "employee_id": bob["id"],
+                "employee_name": "Bob",
+                "department": "Engineering",
+            },
+        ],
+        "assignments_per_match": [
+            {
+                "assignment_field_definition_id": field["id"],
+                "assignment_field_name": "pay_schedule",
+                "value": "biweekly",
+            }
+        ],
+        "conflict_message": None,
+    }
 
     versions = client.get(f"/policies/{policy['id']}/versions").json()
     assert len(versions) == 1
@@ -153,7 +169,11 @@ def test_policy_version_preview_reconciles_population_without_persisting(client)
     assert client.get(f"/employees/{bob['id']}/assignments").json() == []
 
 
-def test_policy_create_preview_uses_engine_without_persisting(client):
+def test_policy_create_preview_uses_engine_without_persisting(client, monkeypatch):
+    monkeypatch.setenv(
+        "CHANGE_APPROVAL_SECRET",
+        "policy-preview-contract-secret-at-least-32-bytes",
+    )
     field = _assignment_field(client)
     alice = _employee(client)
     bob = _employee(client, name="Bob", state="TX")
@@ -170,21 +190,31 @@ def test_policy_create_preview_uses_engine_without_persisting(client):
                 "values": [
                     {
                         "assignment_field_definition_id": field["id"],
-                        "value": "biweekly",
+                        "value": " biweekly ",
                     }
                 ],
             },
         },
     )
 
-    assert preview["valid"] is True
-    assert preview["type"] == "policy_create"
-    assert "change_type" not in preview
-    assert preview["affected_employee_count"] == 1
-    assert preview["changes"][0]["employee_id"] == alice["id"]
-    assert preview["changes"][0]["employee_name"] == "Alice"
-    assert preview["changes"][0]["added"][0]["value"] == "biweekly"
-    assert preview["changes"][0]["added"][0]["source_is_proposed"] is True
+    assert preview == {
+        "type": "policy_create",
+        "affected_employees": [
+            {
+                "employee_id": alice["id"],
+                "employee_name": "Alice",
+                "department": "Engineering",
+            }
+        ],
+        "assignments_per_match": [
+            {
+                "assignment_field_definition_id": field["id"],
+                "assignment_field_name": "pay_schedule",
+                "value": "biweekly",
+            }
+        ],
+        "conflict_message": None,
+    }
     assert client.get("/policies").json() == []
     assert client.get(f"/employees/{alice['id']}/assignments").json() == []
     assert client.get(f"/employees/{bob['id']}/assignments").json() == []
@@ -218,8 +248,11 @@ def test_openapi_documents_type_specific_preview_responses(client):
         "/EmployeeAssignmentPreviewRead"
     )
     assert response_schema["discriminator"]["mapping"]["policy_create"].endswith(
-        "/ChangePreviewRead"
+        "/PolicyAssignmentPreviewRead"
     )
+    assert response_schema["discriminator"]["mapping"][
+        "policy_version_create"
+    ].endswith("/PolicyAssignmentPreviewRead")
 
 
 def test_group_membership_and_override_previews_do_not_persist(client):
@@ -372,7 +405,7 @@ def test_preview_returns_policy_conflicts_without_persisting(client):
     assert client.get("/employees").json() == []
 
 
-def test_preview_conflict_hides_rolled_back_policy_version_id(client):
+def test_policy_version_preview_returns_a_single_conflict_message(client):
     field = _assignment_field(client)
     _policy(client, field["id"], value="weekly", priority=10)
     editable = _policy(
@@ -404,9 +437,13 @@ def test_preview_conflict_hides_rolled_back_policy_version_id(client):
         },
     )
 
-    assert conflict["valid"] is False
-    candidates = conflict["conflicts"][0]["metadata"]["candidates"]
-    proposed = next(item for item in candidates if item["value"] == "monthly")
-    assert proposed["policy_version_id"] is None
-    assert proposed["source_is_proposed"] is True
+    assert "Conflicting values for field 'pay_schedule'" in conflict["conflict_message"]
+    assert conflict["affected_employees"] == []
+    assert conflict["assignments_per_match"] == [
+        {
+            "assignment_field_definition_id": field["id"],
+            "assignment_field_name": "pay_schedule",
+            "value": "monthly",
+        }
+    ]
     assert len(client.get(f"/policies/{editable['id']}/versions").json()) == 1

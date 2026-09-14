@@ -39,6 +39,7 @@ from app.schemas import (
     EmployeeOverrideChangePreview,
     EmployeeUpdateChangePreview,
     GroupMembershipChangePreview,
+    NonPolicyChangePreviewRead,
     PolicyCreateChangePreview,
     PolicyStatusChangePreview,
     PolicyVersionCreateChangePreview,
@@ -87,7 +88,7 @@ from app.services.policy_access import (
     require_policy_permission,
     require_policy_version_create,
 )
-from app.services.policy_authoring import create_policy_version_from_input
+from app.services.policy_change_previews import apply_policy_change, preview_policy
 from app.services.policy_engine import PolicyConflictError
 from app.services.policy_reconciliation import refresh_employees_affected_by_policy
 from app.services.policy_versions import (
@@ -130,8 +131,6 @@ def preview(
 ) -> ChangePreviewResponse:
     """Simulate one supported mutation and roll back every resulting write."""
     requires_human_approval = _requires_human_approval(data, principal)
-    if requires_human_approval and isinstance(data, PolicyVersionCreateChangePreview):
-        data.version.created_by = principal.subject
     _validate_change_scope(
         session,
         data,
@@ -161,6 +160,15 @@ def preview(
             if response.approval is None:
                 response.warnings.append(_APPROVAL_UNAVAILABLE_WARNING)
         return response
+
+    if isinstance(data, (PolicyCreateChangePreview, PolicyVersionCreateChangePreview)):
+        return preview_policy(
+            session,
+            data,
+            actor,
+            visibility,
+            field_visibility,
+        )
 
     savepoint = session.begin_nested()
     try:
@@ -252,7 +260,7 @@ def preview(
             response.warnings.append(_APPROVAL_UNAVAILABLE_WARNING)
         else:
             response.approval_request_id = request.id
-    return response
+    return NonPolicyChangePreviewRead.model_validate(response.model_dump())
 
 
 def _requires_human_approval(
@@ -264,7 +272,7 @@ def _requires_human_approval(
         and WILDCARD_PERMISSION not in principal.permissions
         and isinstance(
             data,
-            (PolicyVersionCreateChangePreview, PolicyStatusChangePreview),
+            PolicyStatusChangePreview,
         )
     )
 
@@ -474,55 +482,16 @@ def _apply_change(
         context.resources["employee_id"] = employee.id
         return
 
-    if isinstance(data, PolicyCreateChangePreview):
-        policy = Policy(
-            name=data.policy.name,
-            status=data.policy.status,
-            created_by=actor,
-        )
-        session.add(policy)
-        session.flush()
-        record_audit_log(
-            session,
-            actor=actor,
-            entity_type="Policy",
-            entity_id=policy.id,
-            action="created",
-            before=None,
-            after=snapshot_entity(policy),
-        )
-        version = create_policy_version_from_input(
-            session,
-            policy,
-            data.policy,
-            actor,
-        )
-        context.proposed_policy_version_ids.add(version.id)
-        context.proposed_policy_ids.add(policy.id)
+    if isinstance(data, (PolicyCreateChangePreview, PolicyVersionCreateChangePreview)):
+        applied = apply_policy_change(session, data, actor)
+        context.proposed_policy_version_ids.add(applied.version.id)
+        if isinstance(data, PolicyCreateChangePreview):
+            context.proposed_policy_ids.add(applied.policy.id)
         context.proposed_condition_clause_ids.update(
-            clause.id for clause in version.compiled_clauses
+            clause.id for clause in applied.version.compiled_clauses
         )
-        context.resources["policy_id"] = policy.id
-        context.resources["policy_version_id"] = version.id
-        refresh_employees_affected_by_policy(session, policy)
-        return
-
-    if isinstance(data, PolicyVersionCreateChangePreview):
-        policy = session.get(Policy, data.policy_id)
-        assert policy is not None
-        version = create_policy_version_from_input(
-            session,
-            policy,
-            data.version,
-            actor,
-        )
-        context.proposed_policy_version_ids.add(version.id)
-        context.proposed_condition_clause_ids.update(
-            clause.id for clause in version.compiled_clauses
-        )
-        context.resources["policy_id"] = policy.id
-        context.resources["policy_version_id"] = version.id
-        refresh_employees_affected_by_policy(session, policy)
+        context.resources["policy_id"] = applied.policy.id
+        context.resources["policy_version_id"] = applied.version.id
         return
 
     if isinstance(data, PolicyStatusChangePreview):
