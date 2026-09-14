@@ -12,11 +12,10 @@ export function authorableConditionFields(fields: ConditionField[]) {
   return employee ? [employee, ...authorable.filter((field) => field !== employee)] : authorable;
 }
 
-export function defaultCondition(fields: ConditionField[]): Omit<BuilderCondition, "rowId"> {
-  const definition = authorableConditionFields(fields)[0] ?? fields[0];
+export function defaultCondition(): Omit<BuilderCondition, "rowId"> {
   return {
-    field: definition?.key ?? "state",
-    operator: definition?.allowed_operators[0] ?? "=",
+    field: "",
+    operator: "=",
     value: "",
   };
 }
@@ -42,19 +41,21 @@ export function ConditionRow({
   onChange(patch: Partial<BuilderCondition>): void;
   onRemove(): void;
 }) {
-  const definition =
-    conditionFields.find((field) => field.key === condition.field) ?? conditionFields[0];
+  const definition = conditionFields.find((field) => field.key === condition.field);
   const selectableFields = authorableConditionFields(conditionFields);
   const displayedFields =
     definition && !selectableFields.some((field) => field.key === definition.key)
       ? [definition, ...selectableFields]
       : selectableFields;
-  const invalid = validationAttempted && !condition.value.trim();
+  const fieldInvalid = validationAttempted && !condition.field;
+  const valueInvalid = validationAttempted && Boolean(definition) && !condition.value.trim();
 
   return (
     <div className="condition-row">
       <select
-        className="select"
+        className={`select${fieldInvalid ? " field-invalid" : ""}`}
+        required
+        aria-invalid={fieldInvalid}
         value={condition.field}
         onChange={(event) => {
           const next = conditionFields.find((field) => field.key === event.target.value);
@@ -65,6 +66,9 @@ export function ConditionRow({
           });
         }}
       >
+        <option value="" disabled>
+          Select condition
+        </option>
         {displayedFields.map((field) => (
           <option key={field.key} value={field.key}>
             {field.label}
@@ -73,9 +77,11 @@ export function ConditionRow({
       </select>
       <select
         className="select"
-        value={condition.operator}
+        disabled={!definition}
+        value={definition ? condition.operator : ""}
         onChange={(event) => onChange({ operator: event.target.value as Condition["operator"] })}
       >
+        {!definition && <option value="">—</option>}
         {definition?.allowed_operators.map((operator) => (
           <option key={operator}>{operator}</option>
         ))}
@@ -87,8 +93,16 @@ export function ConditionRow({
           value={condition.value}
           employees={employees}
           referenceData={referenceData}
-          invalid={invalid}
+          invalid={valueInvalid}
           onChange={(value) => onChange({ value })}
+        />
+      )}
+      {!definition && (
+        <input
+          className="input"
+          disabled
+          aria-label="Condition value"
+          placeholder="Select a condition first"
         />
       )}
       <button

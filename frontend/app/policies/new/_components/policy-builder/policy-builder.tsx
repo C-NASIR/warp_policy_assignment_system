@@ -48,7 +48,7 @@ export function PolicyBuilder({
   const initialConditions: Condition[] = baseVersion?.condition_group.conditions.length
     ? baseVersion.condition_group.conditions
     : conditionFields.length
-      ? [defaultCondition(conditionFields)]
+      ? [defaultCondition()]
       : [];
   const [conditions, setConditions] = useState<BuilderCondition[]>(() =>
     initialConditions.map((item, index) => ({ ...item, rowId: index + 1 })),
@@ -429,7 +429,7 @@ export function PolicyBuilder({
                       ...current,
                       {
                         rowId: Math.max(...current.map((item) => item.rowId), 99) + 1,
-                        ...defaultCondition(conditionFields),
+                        ...defaultCondition(),
                       },
                     ])
                   }
@@ -446,7 +446,7 @@ export function PolicyBuilder({
                     ...current,
                     {
                       rowId: Math.max(...current.map((item) => item.rowId), 0) + 1,
-                      ...defaultCondition(conditionFields),
+                      ...defaultCondition(),
                     },
                   ])
                 }
@@ -460,7 +460,7 @@ export function PolicyBuilder({
                     setChildConditions([
                       {
                         rowId: 100,
-                        ...defaultCondition(conditionFields),
+                        ...defaultCondition(),
                       },
                     ])
                   }
