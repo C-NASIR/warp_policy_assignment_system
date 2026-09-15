@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -13,11 +12,9 @@ from sqlalchemy.orm import Session
 from app.demo_assignment_fields import DEMO_ASSIGNMENT_FIELD_SPECS
 from app.models import (
     APICredential,
-    ApprovedChangeExecution,
     AssignmentFieldDefinition,
     AuditLog,
     AuthSession,
-    ChangeApprovalRequest,
     Employee,
     EmployeeAssignment,
     EmployeeGroupMembership,
@@ -31,21 +28,14 @@ from app.models import (
     User,
 )
 from app.schemas import (
-    ChangePreviewRead,
     ConditionCreate,
     ConditionGroupCreate,
-    GroupMembershipChangePreview,
     PolicyValueCreate,
     PolicyVersionCreate,
 )
 from app.services.access_control import create_role, create_user
 from app.services.audit import record_audit_log, snapshot_entity
 from app.services.auth import hash_token
-from app.services.change_approvals import (
-    change_digest,
-    change_precondition_digest,
-    preview_digest,
-)
 from app.services.human_auth import hash_session_token
 from app.services.policy_authoring import create_policy_version_from_input
 from app.services.reconciliation import reconcile_employees
@@ -79,14 +69,6 @@ TEST_USERS: tuple[dict[str, Any], ...] = (
         "password": "PolicyAuthor!26",
         "roles": ["Policy Author"],
         "employee": "priya",
-    },
-    {
-        "key": "marcus",
-        "name": "Marcus Li",
-        "email": "marcus.li@cedarharbor.example",
-        "password": "ApproveWind!26",
-        "roles": ["Change Approver"],
-        "employee": "marcus",
     },
     {
         "key": "elena",
@@ -203,10 +185,6 @@ def seed_demo_company(
         )
         or 0,
         "audit logs": session.scalar(select(func.count()).select_from(AuditLog)) or 0,
-        "approval requests": session.scalar(
-            select(func.count()).select_from(ChangeApprovalRequest)
-        )
-        or 0,
         "scheduled reconciliations": session.scalar(
             select(func.count()).select_from(ScheduledReconciliation)
         )
@@ -250,7 +228,6 @@ def seed_demo_company(
     )
     _create_auth_history(session, users, now)
     _create_api_credentials(session, now)
-    _create_approval_history(session, users, employees, groups, fields, policies, now)
     _create_operational_history(session, users, employees, policies, now)
     _create_schedule_history(session, policies, now)
     session.flush()
@@ -642,8 +619,6 @@ def _create_roles(
                 "access:manage",
                 "api_credentials:manage",
                 "changes:preview",
-                "changes:execute",
-                "changes:approve",
             ],
             "all",
             "all",
@@ -662,22 +637,6 @@ def _create_roles(
                 "assignments:read",
                 "settings:read",
                 "changes:preview",
-            ],
-            "all",
-            "all",
-            [],
-        ),
-        (
-            "Change Approver",
-            "Independently reviews, approves, and executes sensitive changes.",
-            [
-                "employees:read",
-                "policies:read",
-                "groups:read",
-                "assignments:read",
-                "audit:read",
-                "changes:approve",
-                "changes:execute",
             ],
             "all",
             "all",
@@ -1459,166 +1418,6 @@ def _create_api_credentials(session: Session, now: datetime) -> None:
     session.flush()
 
 
-def _preview(
-    change_type: str,
-    *,
-    affected_employees: int,
-) -> dict[str, Any]:
-    return {
-        "type": change_type,
-        "valid": True,
-        "affected_employee_count": affected_employees,
-        "changes": [],
-        "conflicts": [],
-        "warnings": [],
-    }
-
-
-def _create_approval_history(
-    session: Session,
-    users: dict[str, User],
-    employees: dict[str, Employee],
-    groups: dict[str, Group],
-    fields: dict[str, AssignmentFieldDefinition],
-    policies: dict[str, Policy],
-    now: datetime,
-) -> None:
-    from app.routers.change_previews import (
-        _assignment_changes,
-        _current_assignments,
-        _MutationContext,
-    )
-    from app.services.assignment_field_visibility import AssignmentFieldVisibility
-    from app.services.employee_visibility import EmployeeVisibility
-
-    digest = hashlib.sha256(b"cedar-harbor-seed-approval").hexdigest()
-    pending_change = {
-        "type": "group_membership_change",
-        "action": "add",
-        "group_id": groups["People Managers"].id,
-        "employee_id": employees["imani"].id,
-    }
-    pending_change_model = GroupMembershipChangePreview.model_validate(pending_change)
-    current_assignments = _current_assignments(
-        session,
-        visibility=EmployeeVisibility(unrestricted=True),
-        field_visibility=AssignmentFieldVisibility(unrestricted=True),
-    )
-    pending_changes = _assignment_changes(
-        session,
-        current_assignments,
-        current_assignments,
-        _MutationContext(included_employee_ids={employees["imani"].id}),
-    )
-    pending_preview_model = ChangePreviewRead(
-        type=pending_change_model.type,
-        valid=True,
-        affected_employee_count=0,
-        changes=pending_changes,
-        conflicts=[],
-        warnings=[],
-    )
-    pending_preview = pending_preview_model.model_dump(mode="json")
-    requests = (
-        ChangeApprovalRequest(
-            id="11111111-1111-4111-8111-111111111111",
-            status="pending",
-            change_type="group_membership_change",
-            change=pending_change,
-            preview=pending_preview,
-            change_digest=change_digest(pending_change_model),
-            precondition_digest=change_precondition_digest(
-                session, pending_change_model, lock=False
-            ),
-            preview_digest=preview_digest(pending_preview_model),
-            requested_by=users["priya"].email,
-            requested_by_user_id=users["priya"].id,
-            created_at=now - timedelta(hours=2),
-            expires_at=now + timedelta(days=7),
-        ),
-        ChangeApprovalRequest(
-            id="22222222-2222-4222-8222-222222222222",
-            status="rejected",
-            change_type="employee_override_change",
-            change={
-                "type": "employee_override_change",
-                "action": "create",
-                "employee_id": employees["omar"].id,
-                "assignment_field_definition_id": fields["Expense Approval Limit"].id,
-                "value": "USD 25,000",
-                "override_id": None,
-            },
-            preview=_preview("employee_override_change", affected_employees=1),
-            change_digest=digest,
-            precondition_digest=digest,
-            preview_digest=digest,
-            requested_by=users["priya"].email,
-            requested_by_user_id=users["priya"].id,
-            created_at=now - timedelta(days=16),
-            expires_at=now - timedelta(days=15),
-            rejected_by=users["marcus"].email,
-            rejected_at=now - timedelta(days=16, hours=-3),
-        ),
-        ChangeApprovalRequest(
-            id="33333333-3333-4333-8333-333333333333",
-            status="executed",
-            change_type="policy_status_change",
-            change={
-                "type": "policy_status_change",
-                "policy_id": policies["Archived VPN Access"].id,
-                "status": "archived",
-            },
-            preview=_preview("policy_status_change", affected_employees=0),
-            change_digest=digest,
-            precondition_digest=digest,
-            preview_digest=digest,
-            requested_by=users["elliot"].email,
-            requested_by_user_id=users["elliot"].id,
-            created_at=now - timedelta(days=401),
-            expires_at=now - timedelta(days=400),
-            approved_by=users["marcus"].email,
-            approved_by_user_id=users["marcus"].id,
-            approved_at=now - timedelta(days=400, hours=22),
-            executed_at=now - timedelta(days=400, hours=21),
-        ),
-        ChangeApprovalRequest(
-            id="44444444-4444-4444-8444-444444444444",
-            status="expired",
-            change_type="employee_update",
-            change={
-                "type": "employee_update",
-                "employee_id": employees["kai"].id,
-                "changes": {"department": "Product"},
-            },
-            preview=_preview("employee_update", affected_employees=1),
-            change_digest=digest,
-            precondition_digest=digest,
-            preview_digest=digest,
-            requested_by=users["priya"].email,
-            requested_by_user_id=users["priya"].id,
-            created_at=now - timedelta(days=46),
-            expires_at=now - timedelta(days=45),
-        ),
-    )
-    session.add_all(requests)
-    session.add(
-        ApprovedChangeExecution(
-            approval_id=requests[2].id,
-            change_type="policy_status_change",
-            change_digest=digest,
-            precondition_digest=digest,
-            preview_digest=digest,
-            executed_by=users["marcus"].email,
-            executed_at=requests[2].executed_at,
-            response={
-                "policy_id": policies["Archived VPN Access"].id,
-                "status": "archived",
-            },
-        )
-    )
-    session.flush()
-
-
 def _create_operational_history(
     session: Session,
     users: dict[str, User],
@@ -1666,15 +1465,6 @@ def _create_operational_history(
             None,
             {"status": "draft", "name": "Responsible AI Pilot"},
             14,
-        ),
-        (
-            users["marcus"].email,
-            "ChangeApprovalRequest",
-            33333333,
-            "executed",
-            {"status": "approved"},
-            {"status": "executed"},
-            400,
         ),
         (
             "system",

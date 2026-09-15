@@ -27,16 +27,15 @@ To delegate deliberately, Root translates the work into allowed actions. Morgan 
 
 A **role** collects permissions into a reusable responsibility. Root might configure a role named **People operator** and assign it to Morgan and future colleagues who do the same work.
 
-People operator is an example created for our company. It is not a built-in PolicyOS role. The same is true of names such as **Policy author**, **Reviewer**, **Assignment reader**, or **Payroll operator**. Their names communicate intent; their configured permissions determine what they actually allow.
+People operator is an example created for our company. It is not a built-in PolicyOS role. The same is true of names such as **Policy author**, **Assignment reader**, or **Payroll operator**. Their names communicate intent; their configured permissions determine what they actually allow.
 
 This distinction matters when responsibilities separate:
 
-| Responsibility    | Illustrative actions                                                                          |
-| ----------------- | --------------------------------------------------------------------------------------------- |
-| People operator   | Read, create, and update employee records; preview supported changes                          |
-| Policy author     | Read policies, create policies or versions, and preview their impact                          |
-| Reviewer          | Read the approval queue, approve or reject eligible proposals, and execute an approved change |
-| Assignment reader | Read employee assignment results and explanations                                             |
+| Responsibility    | Illustrative actions                                                 |
+| ----------------- | -------------------------------------------------------------------- |
+| People operator   | Read, create, and update employee records; preview supported changes |
+| Policy author     | Read policies, create policies or versions, and preview their impact |
+| Assignment reader | Read employee assignment results and explanations                    |
 
 A user can hold several roles. Morgan might be both a People operator and an Assignment reader. PolicyOS combines the permissions from all of Morgan's roles: if any role allows an action, that action is allowed.
 

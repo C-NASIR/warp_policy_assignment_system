@@ -22,7 +22,7 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/policy-builder.tsx",
+    "frontend/app/policies/new/_components/policy-builder/policy-builder.tsx",
     "frontend/app/policies/[id]/page.tsx",
     "backend/tests/test_services.py",
     "backend/tests/test_change_previews.py",
@@ -53,7 +53,7 @@ Then open Standard Vacation's detail. It can still match Rachel even though it n
 
 When two different values tie at the highest priority for a one-value field, the backend rejects the conflicting change. Read the error's field and priority information, then inspect the relevant rules. Resolve the business disagreement by correcting priorities, values, or overlapping conditions.
 
-Changing an existing priority is a **New version** workflow. Open the policy, select **New version**, inspect all carried-over settings, change Priority, choose a valid effective date, and preview again. An ordinary signed-in author's version change goes through independent approval; [Review controlled changes](/learn/policyos/review-controlled-changes) covers the remaining steps.
+Changing an existing priority is a **New version** workflow. Open the policy, select **New version**, inspect all carried-over settings, change Priority, choose a valid effective date, preview again, and save the version.
 
 Don't introduce a tied conflict into shared records merely to test the message. The goal is to recognize the cause and express the intended precedence correctly.
 

@@ -92,7 +92,7 @@ def apply_policy_change(
     data: PolicyChangePreview,
     actor: str,
 ) -> AppliedPolicyChange:
-    """Apply a policy change for preview simulation or approved execution."""
+    """Apply a policy change inside a preview simulation."""
     if isinstance(data, PolicyCreateChangePreview):
         policy = Policy(
             name=data.policy.name,

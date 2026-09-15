@@ -12,7 +12,6 @@ permissions:
     "assignments:read",
     "settings:read",
     "changes:preview",
-    "changes:execute",
   ]
 owner: "employee operations"
 status: "draft"
@@ -21,7 +20,7 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/employee-form.tsx",
+    "frontend/app/employees/_components/employee-editor/employee-editor.tsx",
     "backend/tests/test_change_previews.py",
     "backend/tests/test_policy_change_reconciliation.py",
   ]
@@ -46,9 +45,9 @@ Rachel should lose the Design tool only if no other policy, group, or override s
 
 If you created Launch Tools with **Department = Product**, she now matches it directly. An existing Product Launch membership may provide another route to the same policy. This is a useful reason to inspect explanations even when a final value stays the same.
 
-The editor requires employee-update permission. Preview and execution authority are separate, and employee and field scopes still apply. A manager change can also affect other people's derived reporting facts; reviewing only Rachel's visible cards may not show the entire population impact.
+The editor requires employee-update and change-preview permissions, and employee and field scopes still apply. A manager change can also affect other people's derived reporting facts; reviewing only Rachel's visible cards may not show the entire population impact.
 
-If execution reports that the preview is stale or expired, review the current record and calculate a new preview before confirming again. Don't assume the earlier result still describes the intended change.
+If the record changes after previewing, review the current record and calculate a new preview before confirming again. Don't assume the earlier result still describes the intended change.
 
 <PolicyLink href="/employees" permission="employees:read">
   Open Rachel's employee profile

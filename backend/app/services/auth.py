@@ -26,10 +26,10 @@ WILDCARD_SCOPE = "*"
 OPERATION_SCOPES = {
     READ_SCOPE: "Read employees, policies, groups, catalogs, and assignments",
     PREVIEW_SCOPE: "Simulate changes without persisting them",
-    EXECUTE_SCOPE: "Perform mutations and execute approved changes",
+    EXECUTE_SCOPE: "Perform mutations",
     AUDIT_SCOPE: "Read the audit log",
     CREDENTIALS_MANAGE_SCOPE: "Create, list, and revoke API credentials",
-    ACTOR_OVERRIDE_SCOPE: "Set X-Actor to record an approved delegated actor",
+    ACTOR_OVERRIDE_SCOPE: "Set X-Actor to record an authorized delegated actor",
 }
 
 
@@ -169,8 +169,6 @@ def required_scope(method: str, path: str) -> str:
         return AUDIT_SCOPE
     if path.startswith("/change-previews"):
         return PREVIEW_SCOPE
-    if path.startswith("/change-executions"):
-        return EXECUTE_SCOPE
     if path.startswith("/assignment-queries"):
         return READ_SCOPE
     if method.upper() == "GET":

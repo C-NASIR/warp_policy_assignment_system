@@ -172,8 +172,6 @@ SENSITIVE_PERMISSIONS = frozenset(
     {
         "access:manage",
         "api_credentials:manage",
-        "changes:approve",
-        "changes:execute",
     }
 )
 

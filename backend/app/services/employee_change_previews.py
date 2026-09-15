@@ -84,7 +84,7 @@ def employee_assignment_preview(
     before_assignments: list[AssignmentPreviewRead],
     after_assignments: list[AssignmentPreviewRead],
 ) -> EmployeeAssignmentPreviewRead:
-    """Build the stable response used by both preview and approved execution."""
+    """Build the stable response returned by employee change previews."""
     return EmployeeAssignmentPreviewRead(
         type=data.type,
         valid=True,
@@ -101,7 +101,7 @@ def apply_employee_change(
     actor: str,
     visibility: EmployeeVisibility,
 ) -> Employee:
-    """Apply an employee change for preview simulation or approved execution."""
+    """Apply an employee change inside a preview simulation."""
     if isinstance(data, EmployeeCreateChangePreview):
         return _create_employee_change(session, data, actor, visibility)
     employee = visible_employee_or_404(session, visibility, data.employee_id)

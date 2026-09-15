@@ -23,7 +23,7 @@ managers.
 
 ## What is represented
 
-The seed creates 25 employees, 12 human accounts, 10 roles, 8 employee groups,
+The seed creates 25 employees, 11 human accounts, 9 roles, 8 employee groups,
 8 assignment fields, and 15 policies. The records are intentionally connected:
 
 - full-time and contractor baselines establish benefits, payroll, equipment,
@@ -35,11 +35,9 @@ The seed creates 25 employees, 12 human accounts, 10 roles, 8 employee groups,
 - all user roles are assigned explicitly and remain independent of policy results;
 - a revised full-time package creates real assignment history, and a scheduled
   manager-policy version demonstrates a future effective date;
-- active and retired overrides document approved exceptions for expenses,
+- active and retired overrides document exceptions for expenses,
   physical access, and contractor hardware;
 - active, draft, and archived policies exercise the complete lifecycle;
-- pending, rejected, executed, and expired approval requests populate the
-  approval workflow;
 - expired and revoked sessions, acknowledged security events, active and
   revoked API credentials, scheduled reconciliations, and a substantial audit
   trail make operational views useful.
@@ -57,16 +55,13 @@ write. Then compare these accounts:
 
 1. Priya Raman can author and preview policies across the company but cannot
    activate one.
-2. Marcus Li can independently approve and execute another person's request.
-3. Elena Torres can manage employees but sees only HR assignment domains.
-4. Rafael Morales and Amara Nwosu see their own reporting trees and selected
+2. Elena Torres can manage employees but sees only HR assignment domains.
+3. Rafael Morales and Amara Nwosu see their own reporting trees and selected
    operational domains.
-5. Renee Wallace has company-wide read-only audit and access-review visibility.
-6. Kai Chen sees only himself through the explicitly assigned Employee Self
+4. Renee Wallace has company-wide read-only audit and access-review visibility.
+5. Kai Chen sees only himself through the explicitly assigned Employee Self
    Service role.
-7. Luca Romano shows contractor rules and a hardware override. The approval
-   queue also contains a pending leadership-cohort membership request for Imani
-   Reed that is safe to approve and execute during testing.
+6. Luca Romano shows contractor rules and a hardware override.
 
 Useful records to inspect include the two versions of **Core Full-time Employee
 Package**, the future version of **People Manager Responsibilities**, the group

@@ -57,7 +57,7 @@ def test_root_can_manage_roles_and_users(client):
     assert {item["name"] for item in catalog.json()} >= {
         "employees:read",
         "access:manage",
-        "changes:execute",
+        "changes:preview",
     }
 
     role = _create_role(client, ["employees:read", "assignments:read"])

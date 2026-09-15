@@ -43,7 +43,6 @@ const navigation = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard, permission: "*" },
   { label: "Employees", href: "/employees", icon: Users, permission: "employees:read" },
   { label: "Policies", href: "/policies", icon: BookOpenCheck, permission: "policies:read" },
-  { label: "Approvals", href: "/approvals", icon: CheckCircle2, permission: "changes:approve" },
   { label: "Groups", href: "/groups", icon: Network, permission: "groups:read" },
   { label: "Audit log", href: "/audit", icon: ScrollText, permission: "audit:read" },
   { label: "Learn", href: "/learn", icon: BookOpenCheck, permission: null },
@@ -89,14 +88,6 @@ const commands = [
     keywords: "new rule",
     icon: FilePlus2,
     permission: "policies:create",
-  },
-  {
-    label: "Review approvals",
-    description: "Approve and execute sensitive changes",
-    href: "/approvals",
-    keywords: "review requests changes",
-    icon: CheckCircle2,
-    permission: "changes:approve",
   },
   {
     label: "Manage groups",
@@ -168,8 +159,6 @@ function contextualHelp(pathname: string) {
     return { label: "Group membership help", href: "/learn/policyos/use-groups" };
   if (pathname === "/groups")
     return { label: "Group management help", href: "/learn/policyos/use-groups" };
-  if (pathname === "/approvals")
-    return { label: "Approval help", href: "/learn/policyos/review-controlled-changes" };
   if (pathname === "/audit")
     return { label: "Audit help", href: "/learn/policyos/investigate-past-decisions" };
   if (pathname === "/settings")

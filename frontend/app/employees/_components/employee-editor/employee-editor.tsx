@@ -59,7 +59,6 @@ export function EmployeeEditor({
       : createBlankEmployee(),
   );
   const [preview, setPreview] = useState<EmployeeAssignmentPreview | null>(null);
-  const [approval, setApproval] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [success, setSuccess] = useState("");
@@ -106,7 +105,6 @@ export function EmployeeEditor({
   function update<K extends keyof EmployeeInput>(key: K, value: EmployeeInput[K]) {
     setData((current) => ({ ...current, [key]: value }));
     setPreview(null);
-    setApproval(null);
     resetReauthentication();
     setSuccess("");
     setError("");
@@ -169,7 +167,6 @@ export function EmployeeEditor({
             "The assignment preview could not be calculated.",
         );
       setPreview(result as EmployeeAssignmentPreview);
-      setApproval(result.approval?.token ?? null);
       resetReauthentication();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to preview this change.");
@@ -211,15 +208,11 @@ export function EmployeeEditor({
         resetReauthentication();
       }
 
-      const endpoint = approval
-        ? "/api/backend/change-executions"
-        : employee
-          ? `/api/backend/employees/${employee.id}`
-          : "/api/backend/employees";
+      const endpoint = employee ? `/api/backend/employees/${employee.id}` : "/api/backend/employees";
       const response = await fetch(endpoint, {
-        method: approval ? "POST" : employee ? "PATCH" : "POST",
+        method: employee ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(approval ? { approval_token: approval, change } : payload),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
         const failure = await requestFailure(response);
@@ -230,7 +223,6 @@ export function EmployeeEditor({
         throw new Error(failure.message || "The employee change could not be saved.");
       }
       setPreview(null);
-      setApproval(null);
       resetReauthentication();
       setValidationAttempted(false);
       if (!employee) {

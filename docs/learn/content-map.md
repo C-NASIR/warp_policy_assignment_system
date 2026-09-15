@@ -1,10 +1,10 @@
 # Learn curriculum map
 
-The curriculum has 37 ordered lessons in two sections. All 21 Concepts lessons and 16 PolicyOS walkthroughs are drafted.
+The curriculum has 35 ordered lessons in two sections. All 20 Concepts lessons and 15 PolicyOS walkthroughs are drafted.
 
-The learning story begins with a company hiring Rachel and gradually turning individual decisions into policies. After the assignment model is established, an organizational sequence follows the same company from one Root user through delegated responsibilities, scoped visibility, and independent review. PolicyOS walkthroughs then apply both stories in the application.
+The learning story begins with a company hiring Rachel and gradually turning individual decisions into policies. After the assignment model is established, an organizational sequence follows the same company from one Root user through delegated responsibilities and scoped visibility. PolicyOS walkthroughs then apply both stories in the application.
 
-## Concepts — 21 lessons
+## Concepts — 20 lessons
 
 ### From decisions to assignments
 
@@ -41,13 +41,9 @@ The learning story begins with a company hiring Rachel and gradually turning ind
 19. **Access through the reporting tree:** Linked manager accounts, direct and indirect reports, and the mechanisms that remain separate.
 20. **Access to your own information:** Combining a linked account, read permissions, and self scope in the existing application.
 
-### Controlled access
+Lessons 16–20 are one connected organizational sequence. `CON16` is the entry point for the access model, and **Changing things safely** introduces preview safety.
 
-21. **Separate proposing from authorizing:** Policy authorship, activation, approval, execution, and the full supported request lifecycle.
-
-Lessons 16–21 are one connected organizational sequence. `CON16` is the entry point for the access model, and **Changing things safely** introduces preview safety. Independent organizational review has its primary conceptual home in lesson 21.
-
-## PolicyOS — 16 lessons
+## PolicyOS — 15 lessons
 
 1. **Find your way around:** Where employees, policies, assignments, and evidence live.
 2. **Meet your first employee:** Read an employee record and identify the facts policies use.
@@ -64,6 +60,3 @@ Lessons 16–21 are one connected organizational sequence. `CON16` is the entry 
 13. **Investigate past decisions:** Use assignment history and the audit log.
 14. **Manage access:** Give Morgan a configured People operator role and user account.
 15. **Limit access with scopes:** Configure reporting-tree, selected-field, and self access and verify their combination.
-16. **Review controlled changes:** Follow Morgan's exact policy proposal through Jordan's decision and execution.
-
-The existing `manage-access` and `review-controlled-changes` URLs and content IDs remain stable. **Review controlled changes** follows explicit access configuration so readers understand how Morgan and Jordan receive their different responsibilities before using them.

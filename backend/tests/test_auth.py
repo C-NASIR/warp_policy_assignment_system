@@ -107,14 +107,7 @@ def test_credential_is_returned_once_stored_hashed_and_can_be_revoked(client, db
     assert revoked.json()["error"]["code"] == "credential_revoked"
 
 
-def test_operation_scopes_enforce_read_preview_execute_and_audit_boundaries(
-    client,
-    monkeypatch,
-):
-    monkeypatch.setenv(
-        "CHANGE_APPROVAL_SECRET",
-        "test-change-approval-secret-with-at-least-32-bytes",
-    )
+def test_operation_scopes_enforce_read_preview_execute_and_audit_boundaries(client):
     read_credential = _issue_credential(
         client,
         name="reader",
@@ -161,19 +154,13 @@ def test_operation_scopes_enforce_read_preview_execute_and_audit_boundaries(
     )
     assert preview.status_code == 200
     assert client.post(
-        "/change-executions",
+        "/employees",
         headers=preview_headers,
         json={
-            "change": {
-                "type": "employee_create",
-                "employee": {
-                    "name": "Preview Alice",
-                    "state": "CA",
-                    "department": "Engineering",
-                    "employee_type": "regular",
-                },
-            },
-            "approval_token": preview.json()["approval"]["token"],
+            "name": "Preview Alice",
+            "state": "CA",
+            "department": "Engineering",
+            "employee_type": "regular",
         },
     ).status_code == 403
     assert client.get("/audit-logs", headers=read_headers).status_code == 403

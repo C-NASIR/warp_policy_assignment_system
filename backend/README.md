@@ -85,12 +85,10 @@ Overrides are retained for provenance. Updating an override retires the old immu
 - **User:** a human account with a normalized email, Argon2id password hash, lifecycle status, one or more assigned roles, and an optional employee link. Administratively reset passwords are temporary and must be changed at the next login.
 - **Role:** a reusable, named bundle of application permissions plus an employee-data scope, assigned many-to-many to non-Root users.
 - **Role permission:** one allow-only capability such as `employees:read`, `policies:update`, `policies:version:create`, `policies:activate`, or `access:manage`. Effective permissions are the union of every assigned role.
-- **Change approval request:** a persisted human workflow containing the exact proposed change and preview, its requester, expiry, decision, approving user, and execution status. The author cannot approve their own request, and the approving user must execute it.
 - **Employee-data scope:** a role-level visibility boundary of `all`, `reporting_tree`, `self`, or `none`. A user's effective employee visibility is the union of every assigned role; reporting-tree access starts from the employee linked to that user and includes every direct and indirect report.
 - **Assignment-field scope:** a separate role-level data boundary of `all`, `selected`, or `none`. Selected roles name the assignment domains they can access, such as Application Access or Pay Schedule. Effective access is the union across roles, while any `all` role grants every assignment field.
 - **Authentication session:** a revocable, expiring human login session whose opaque browser token is stored only as a SHA-256 hash.
 - **API credential:** a revocable, optionally expiring bearer credential whose opaque token is stored only as a SHA-256 hash and grants named operation scopes.
-- **Approved change execution:** an idempotency record tying one signed preview approval to its committed response and actor.
 - **Scheduled reconciliation:** a centralized pending, processed, or cancelled future trigger referencing the domain entity whose date caused it.
 
 ## Install and run
@@ -101,7 +99,6 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are expected.
 uv sync
 export DATABASE_MODE=real
 export DATABASE_URL=postgresql+psycopg:///policy_assignments
-export CHANGE_APPROVAL_SECRET="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_TOKEN="$(openssl rand -hex 32)"
 export AUTH_BOOTSTRAP_SUBJECT=local-admin
 export AUTH_SESSION_COOKIE_SECURE=false
@@ -113,7 +110,7 @@ uv run python -m fastapi dev main.py
 
 The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created directly from the application models on startup.
 
-Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root is an immutable break-glass superuser; other users receive the union of their assigned role permissions, employee-data scopes, and assignment-field scopes. Employee scope is enforced on employee records and every employee-derived result. Assignment-field scope independently filters assignment fields, policies, assignments, overrides, summaries, group-policy links, change previews and executions, and related audit events. A policy is accessible only when every output in every version belongs to the user's visible assignment fields, preventing partial edits to mixed-domain policies. Out-of-scope direct resource requests return 404 so they do not disclose whether the record exists. Policy responses include record-specific `can_update`, `can_create_version`, `can_activate`, and `can_archive` capabilities. These combine the caller's granular action permissions, assignment-field scope, and the record lifecycle state; the frontend consumes them while the API remains the final enforcement boundary. Permission and scope changes take effect on the next request, including for existing sessions.
+Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root is an immutable break-glass superuser; other users receive the union of their assigned role permissions, employee-data scopes, and assignment-field scopes. Employee scope is enforced on employee records and every employee-derived result. Assignment-field scope independently filters assignment fields, policies, assignments, overrides, summaries, group-policy links, change previews, and related audit events. A policy is accessible only when every output in every version belongs to the user's visible assignment fields, preventing partial edits to mixed-domain policies. Out-of-scope direct resource requests return 404 so they do not disclose whether the record exists. Policy responses include record-specific `can_update`, `can_create_version`, `can_activate`, and `can_archive` capabilities. These combine the caller's granular action permissions, assignment-field scope, and the record lifecycle state; the frontend consumes them while the API remains the final enforcement boundary. Permission and scope changes take effect on the next request, including for existing sessions.
 
 `AUTH_SESSION_TTL_SECONDS` defaults to 12 hours, idle sessions expire after 30 minutes (`AUTH_SESSION_IDLE_TTL_SECONDS`), and sensitive administrative changes require authentication within the last 10 minutes (`AUTH_REAUTH_TTL_SECONDS`). `AUTH_SESSION_COOKIE_SECURE` must be `true` behind production HTTPS. Passwords use Argon2id; only session-token hashes are stored in PostgreSQL. State-changing session requests also require a trusted `Origin`. Root and privileged sessions must enroll TOTP MFA by default. `AUTH_MFA_ENCRYPTION_KEY` must be a stable secret of at least 32 bytes shared by every API process. Recovery codes are stored as one-time Argon2id hashes. Password-reset responses never expose their token unless `AUTH_PASSWORD_RESET_EXPOSE_TOKEN=true` is intentionally enabled for a local delivery adapter or test environment.
 
@@ -132,13 +129,6 @@ uv run python scripts/emergency_root_recovery.py root@example.com
 The tool verifies the separately stored recovery key, prompts for a new password, disables MFA, revokes every Root session, and writes both a critical security event and audit entry in the same transaction. After recovery, sign in, enroll MFA immediately, store the new recovery codes offline, review the access report and security events, then rotate `AUTH_ROOT_RECOVERY_KEY`.
 
 Bearer credentials remain the machine-to-machine authentication mechanism for the MCP server and automation. The bootstrap token grants all operations and exists only to issue the first persistent API credential. It must contain at least 32 bytes, must be stored in the deployment secret manager, and should be removed after administrative credentials have been issued. `AUTH_BOOTSTRAP_SUBJECT` controls its audit identity and defaults to `bootstrap`. A newly issued `wpa_...` token is returned exactly once; the database stores only its SHA-256 hash and safe metadata. Browser code must never contain a shared API credential.
-
-Approved execution requires `CHANGE_APPROVAL_SECRET` containing at least 32
-bytes of secret material. Store it in the deployment secret manager and use the
-same value for every API process. `CHANGE_APPROVAL_TTL_SECONDS` controls token
-lifetime and defaults to 900 seconds; values are constrained to 60–3600 seconds.
-Without a valid secret, previews still work but return no approval token and
-include a warning, while execution requests are rejected.
 
 Run tests with:
 
@@ -161,7 +151,7 @@ The helper creates `policy_assignments_demo` when needed. The seed operation is
 atomic, refuses databases containing tenant data, and is safe to repeat after
 this exact seed has completed. It includes employee and reporting
 relationships, users and scoped roles, dated policies and assignments, groups,
-overrides, approvals, schedules, security history, API credentials, and audit
+overrides, schedules, security history, API credentials, and audit
 logs. See [the company guide](../docs/seed-data-company.md) and
 [plaintext test credentials](../docs/seed-data-credentials.txt). MFA is left
 unenrolled intentionally so each tester can configure it manually.
@@ -242,11 +232,6 @@ state-changing cookie-authenticated requests.
 | POST | `/assignment-queries` | Query recorded past, persisted present, or calculated future assignments for an employee batch |
 | GET | `/assignment-summary` | Summarize assignment coverage across the employee population |
 | POST | `/change-previews` | Simulate a supported mutation and return assignment differences without persisting it |
-| POST | `/change-executions` | Execute an unchanged, signed preview exactly once |
-| GET | `/approval-requests` | List persisted human change requests for approval review |
-| GET | `/approval-requests/{id}` | Read one request and its available approval actions |
-| POST | `/approval-requests/{id}/approve` | Approve another human author's pending request |
-| POST | `/approval-requests/{id}/reject` | Reject another human author's pending request |
 | GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
 | GET | `/employees/{id}/overrides/options` | List the visible assignment-field options available to an override manager |
 | PATCH / DELETE | `/employees/{id}/overrides/{override_id}` | Update or remove an override |
@@ -300,8 +285,8 @@ codes. The exact `state` filter accepts only a canonical two-letter code.
 `GET /employees/reference-data` exposes the complete grouped state catalog;
 employee and state-policy writes reject values outside that catalog. Exact
 filters compose with one another using AND semantics. Batch and
-mutation results such as `POST /assignment-queries`, refresh, preview, and
-execution are explicitly bounded by their request contracts and are not treated
+mutation results such as `POST /assignment-queries`, refresh, and preview are
+explicitly bounded by their request contracts and are not treated
 as pageable resource collections.
 
 ## Assignment and policy impact summaries
@@ -392,43 +377,6 @@ and `source_is_proposed: true`. Domain rows, policy links, assignment history,
 audit logs, and scheduled reconciliation records are not retained after a
 preview.
 
-## Approved-change execution contract
-
-Except for the display-focused policy creation and policy-version responses, a
-successful machine-authenticated preview includes a signed, expiring `approval`
-containing an approval ID, token, exact-change digest, preview-impact digest,
-and expiry time.
-It also signs a digest of the target employee, policy versions, membership, or
-override state relevant to that mutation. The token contains only identifiers,
-timestamps, and digests—the submitted employee or policy data is not embedded
-in it. Call `POST /change-executions` with that token and the exact same
-discriminated `change` object.
-
-A successful non-Root human preview of a policy lifecycle change creates a
-persisted pending request and returns
-`approval_request_id`. A user with `changes:approve` can review and
-approve or reject it through `/approval-requests`; the author cannot decide
-their own request. Approval creates the signed capability internally, and the
-same approving user submits `/change-executions` with only the request ID.
-Active policy versions use this workflow. User-role assignment and revocation
-remain explicit access-administration actions outside policy reconciliation.
-
-Execution verifies the signature and expiry, rejects altered input, locks and
-checks the target-state precondition, applies the change and reconciliation in
-one transaction, and recomputes the comparable before/after impact. A changed
-target or changed impact rolls the whole transaction back with
-`change_approval_stale`; impact-drift errors include the current uncommitted
-preview so the client can show what changed and request new approval. A
-successful response returns real created resource IDs and actual assignment
-changes.
-
-The approval ID is persisted with the successful response. Retrying the same
-token and change returns that response with `replayed: true` instead of applying
-the mutation again, including after token expiry. PostgreSQL advisory transaction
-locking serializes concurrent executions of the same approval. Approval tokens
-remain bearer capabilities in addition to the API credential required for
-execution, and must not be logged or exposed to unrelated users.
-
 ## Authentication, roles, and operation scopes
 
 Authorization is deliberately capability-oriented. Human sessions use the
@@ -443,13 +391,13 @@ and automation clients remain compatible:
 
 - `read`: employees, policies, groups, rule-builder catalogs, and assignments
 - `preview`: non-persisting change simulations
-- `execute`: ordinary mutations and approved-change execution
+- `execute`: ordinary mutations
 - `audit`: audit-log reads
 - `credentials:manage`: credential creation, listing, and revocation
-- `actor:override`: approved use of `X-Actor` for delegated attribution
+- `actor:override`: authorized use of `X-Actor` for delegated attribution
 
-`POST /assignment-queries` is a read despite using POST. Change preview and
-execution are intentionally separate capabilities. Credential administration
+`POST /assignment-queries` is a read despite using POST. Preview access is
+separate from mutation access. Credential administration
 and audit access are also isolated from ordinary reads and writes. Missing,
 invalid, expired, or revoked credentials return a structured `401`; insufficient
 scope returns a structured `403` containing the required and granted scopes.
@@ -537,6 +485,6 @@ Patching Alice's state to Wisconsin (`WI`) removes the California policy match a
 
 ## Current boundaries
 
-Roles can grant all, selected, or no assignment fields; grants combine by union and update sessions immediately. New roles default to no employee or assignment-field scope until access is chosen explicitly. The scope is enforced across catalogs, complete-policy reads and writes, assignments and history, overrides, queries, summaries, group-policy links, previews and executions, and audit events. Root and machine credentials retain global access. Mixed-domain policies are hidden unless every output domain is allowed so a limited administrator cannot partially inspect or mutate one through another route.
+Roles can grant all, selected, or no assignment fields; grants combine by union and update sessions immediately. New roles default to no employee or assignment-field scope until access is chosen explicitly. The scope is enforced across catalogs, complete-policy reads and writes, assignments and history, overrides, queries, summaries, group-policy links, previews, and audit events. Root and machine credentials retain global access. Mixed-domain policies are hidden unless every output domain is allowed so a limited administrator cannot partially inspect or mutate one through another route.
 
-Assignment fields enforce their value contract for policies, previews, executions, and manual overrides. Controlled fields accept only declared options; free text must be selected explicitly when defining a field. This phase still excludes per-policy exceptions, delegated limits on which roles an access administrator may grant, password-reset delivery, MFA, and external identity-provider integration. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.
+Assignment fields enforce their value contract for policies, previews, and manual overrides. Controlled fields accept only declared options; free text must be selected explicitly when defining a field. This phase still excludes per-policy exceptions, delegated limits on which roles an access administrator may grant, password-reset delivery, MFA, and external identity-provider integration. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.

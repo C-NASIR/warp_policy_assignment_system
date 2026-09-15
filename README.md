@@ -1,6 +1,6 @@
 # PolicyOS
 
-PolicyOS is a full-stack policy assignment system for turning date-effective workforce rules into explainable employee assignments. Administrators can define policies, target employees directly or through groups, preview their impact, manage approvals and overrides, and inspect both assignment history and audit records.
+PolicyOS is a full-stack policy assignment system for turning date-effective workforce rules into explainable employee assignments. Administrators can define policies, target employees directly or through groups, preview their impact, manage overrides, and inspect both assignment history and audit records.
 
 The repository contains a Next.js web application and a FastAPI API backed by PostgreSQL.
 
@@ -11,7 +11,7 @@ The repository contains a Next.js web application and a FastAPI API backed by Po
 - Resolves single- and multi-valued assignments while preserving the policy version or override that supplied each value.
 - Explains assignment decisions and retains temporal assignment history.
 - Supports employee groups, manual overrides, future assignment projections, and scheduled reconciliation.
-- Provides preview-and-approval workflows for sensitive changes and an append-only audit trail.
+- Provides non-persisting change previews and an append-only audit trail.
 - Enforces role-based permissions, employee visibility scopes, assignment-field scopes, session security, and MFA for privileged users.
 - Keeps application-role assignment and revocation as explicit access-administration actions.
 
@@ -27,13 +27,13 @@ Next.js frontend (localhost:3000)
 FastAPI backend (localhost:8000)
   |
   +--> Policy matching and assignment reconciliation
-  +--> Authentication, authorization, approvals, and auditing
+  +--> Authentication, authorization, and auditing
   |
   v
 PostgreSQL
 ```
 
-The backend is the source of truth for authentication, authorization, policy evaluation, reconciliation, approvals, and audit data. The frontend performs server-side API calls through a same-origin proxy so browser JavaScript never handles the session token directly.
+The backend is the source of truth for authentication, authorization, policy evaluation, reconciliation, and audit data. The frontend performs server-side API calls through a same-origin proxy so browser JavaScript never handles the session token directly.
 
 ## Repository layout
 

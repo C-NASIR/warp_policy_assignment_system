@@ -27,16 +27,15 @@ Employee facts and reporting relationships
 | --- | --- | --- | --- | --- |
 | Overview health | `/dashboard` | Shows assignment coverage, active policies, current assignments, overrides, and recent audit activity | `frontend/app/dashboard/page.tsx`, `backend/tests/test_impact_summaries.py` | UI verified |
 | Browse employees | `/employees` | Lists visible employees and supports client-side search/filtering | `frontend/app/employees/page.tsx`, `frontend/components/employee-directory.tsx`, `backend/tests/test_collection_filtering.py` | Verified |
-| Onboard or edit employee | `/employees/new`, `/employees/{id}` | Collects trusted facts, requests a change preview, then saves or executes an approved preview; reconciliation updates downstream assignments | `frontend/components/employee-form.tsx`, `backend/tests/test_change_previews.py`, `backend/tests/test_policy_change_reconciliation.py` | Verified |
+| Onboard or edit employee | `/employees/new`, `/employees/{id}` | Collects trusted facts, requests a change preview, then saves; reconciliation updates downstream assignments | `frontend/components/employee-form.tsx`, `backend/tests/test_change_previews.py`, `backend/tests/test_policy_change_reconciliation.py` | Verified |
 | Inspect assignments | `/employees/{id}` | Displays current resolved values; expanding a card shows policy, direct condition evidence or group origin, priority, and override replacement details | `frontend/components/assignment-card.tsx`, `backend/tests/test_assignment_explanations.py` | Verified |
 | Review history | `/employees/{id}` | Shows open and retired assignment rows with source and effective interval | `frontend/components/override-manager.tsx`, `backend/tests/test_assignment_history.py` | Verified |
 | Manage overrides | `/employees/{id}` | Previews create, update, or removal; an active override replaces all policy values for that field and reconciliation is audited | `frontend/components/override-manager.tsx`, `backend/tests/test_overrides.py`, `backend/tests/test_audit_logs.py` | Verified |
 | Browse policy impact | `/policies`, `/policies/{id}` | Separates matched employees from employees and values actually selected after resolution | `frontend/app/policies/[id]/page.tsx`, `backend/tests/test_impact_summaries.py` | Verified |
 | Create a policy | `/policies/new` | Builds conditions, one or more assignment values, priority, and dates; a newly created policy may be active or draft depending on authority | `frontend/components/policy-builder.tsx`, `backend/tests/test_policy_versions.py` | UI verified |
-| Create a policy version | `/policies/new?policyId={id}` | Uses the connected preview contract; active-policy versions require activation authority and can create a persisted human approval request | `frontend/components/policy-builder.tsx`, `backend/tests/test_policy_access.py`, `backend/tests/test_change_executions.py` | Verified |
+| Create a policy version | `/policies/new?policyId={id}` | Uses the connected preview contract; active-policy versions require activation authority before saving | `frontend/components/policy-builder.tsx`, `backend/tests/test_policy_access.py`, `backend/tests/test_policy_versions.py` | Verified |
 | Activate or archive | `/policies/{id}` | Uses record capabilities and reconciles affected employee assignments immediately | `frontend/components/policy-lifecycle.tsx`, `backend/tests/test_policy_change_reconciliation.py` | Verified |
-| Manage groups | `/groups`, `/groups/{id}` | Groups are explicit; membership changes are previewed, while policy attachment and detachment reconcile members immediately | `frontend/components/group-manager.tsx`, `backend/tests/test_groups.py` | Verified |
-| Review approvals | `/approvals` | Another user can approve or reject a pending request; the ordinary approving user executes it; Root may execute an approved request; the author cannot approve it | `frontend/components/approval-queue.tsx`, `backend/app/services/approval_requests.py`, `backend/tests/test_change_executions.py` | Verified |
+| Manage groups | `/groups`, `/groups/{id}` | Groups are explicit; membership and policy attachment changes reconcile members immediately after save | `frontend/components/group-manager.tsx`, `backend/tests/test_groups.py` | Verified |
 | Configure assignment fields | `/settings` | Creates named `one` or `many` output fields with controlled options or explicitly selected free text; cardinality is fixed after creation | `frontend/components/assignment-field-manager.tsx`, `backend/app/models.py` | UI verified |
 | Inspect audit | `/audit` | Filters recent append-only events and exposes actor, entity, action, timestamp, and before/after snapshots | `frontend/components/audit-log-explorer.tsx`, `backend/tests/test_audit_logs.py` | Verified |
 | Manage users and roles | `/access` | Provisions users, links employees, assigns roles, and defines permission, employee, and assignment-field scopes | `frontend/components/access-manager.tsx`, `backend/tests/test_access_control.py`, `backend/tests/test_employee_visibility.py`, `backend/tests/test_assignment_field_visibility.py` | Verified |
@@ -73,13 +72,12 @@ Employee facts and reporting relationships
 | --- | --- | --- |
 | `/dashboard` | Wildcard (`*`) in connected navigation; its data calls also require their own read access | Links shown by page are not individually gated in the current page |
 | `/employees` | `employees:read` | `employees:create` |
-| `/employees/new` | `employees:create` | `changes:preview` and the applicable create/execute authority in connected mode |
+| `/employees/new` | `employees:create` | `changes:preview` and `employees:create` |
 | `/employees/{id}` | `employees:read`; employee scope also applies | `employees:update`, `assignments:read`, `assignments:manage` |
 | `/policies` | `policies:read`; assignment-field scope also applies | `policies:create` |
 | `/policies/{id}` | `policies:read` plus record access | Record capabilities combine scope, state, and `policies:version:create`, `policies:activate`, or `policies:archive` |
 | `/groups` | `groups:read` | `groups:create` |
 | `/groups/{id}` | `groups:read` | `groups:update` |
-| `/approvals` | `changes:approve` | `changes:approve`, `changes:execute` and request-specific capability |
 | `/settings` | `settings:read` | `settings:manage` |
 | `/audit` | `audit:read` | Read only |
 | `/access` | `access:read` | `access:manage` |
@@ -95,11 +93,9 @@ access” rather than promising that every inaccessible record returns 403.
 | Gap | Content decision |
 | --- | --- |
 | No separate employee self-service portal | Describe self scope as a restricted view in the normal PolicyOS application |
-| No built-in approval notification, arbitrary reviewer assignment, or request-search box | Use the request ID and the team's normal handoff process; do not promise messaging |
 | No frontend workflow for batch future assignment queries | Teach the distinction between future calculation and current stored assignments; reserve an API procedure for later reference |
 | No frontend UI for scheduled reconciliation operations or machine credentials | Do not promise UI steps; cover only verified concepts or later API reference |
 | Group membership is previewed, but policy attach/detach is immediate | Keep the steps distinct; do not say every group change has a preview |
-| Persisted approval is limited to supported human policy flows | Do not imply that every preview or denied mutation enters the approval queue |
 | Curriculum records are not automatically provisioned | Use an isolated Rachel/Morgan/Jordan training fixture and verify all results against backend state |
 
 ## Reverification triggers
@@ -109,7 +105,7 @@ Reaudit affected content when any of these change:
 - a route, page heading, navigation label, or Quick Find command;
 - the permission catalog or record capability calculation;
 - assignment cardinality, priority, conflict, group, or override semantics;
-- preview or approval request types;
+- preview response types;
 - backend API response contracts;
 - effective-date or scheduled reconciliation behavior;
 - employee, policy, group, assignment, audit, access, or security UI controls.

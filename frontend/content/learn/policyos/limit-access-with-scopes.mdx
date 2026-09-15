@@ -13,7 +13,7 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/access-manager.tsx",
+    "frontend/app/access/_components/access-manager/access-manager.tsx",
     "backend/app/services/employee_visibility.py",
     "backend/app/services/assignment_field_visibility.py",
     "backend/tests/test_employee_visibility.py",
@@ -59,7 +59,7 @@ Reporting relationships, policy groups, and access roles remain separate:
 - adding Devon to Product Launch changes a route to attached policies; and
 - assigning Team assignment reader changes Rachel's PolicyOS authority.
 
-Role and user changes save directly after the administrator's sensitive-action confirmation. They do not create approval requests.
+Role and user changes save directly after the administrator's sensitive-action confirmation.
 
 <PolicyLink href="/access" permission="access:read">
   Review roles and users

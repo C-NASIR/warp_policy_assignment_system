@@ -262,8 +262,6 @@ def account_security(
         & {
             "access:manage",
             "api_credentials:manage",
-            "changes:approve",
-            "changes:execute",
         }
     )
     return AccountSecurityRead(

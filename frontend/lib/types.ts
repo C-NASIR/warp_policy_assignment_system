@@ -141,7 +141,6 @@ export type EmployeeAssignmentPreview = {
     metadata: Record<string, unknown>;
   }[];
   warnings: string[];
-  approval?: { token: string } | null;
 };
 
 export type PolicyAssignmentPreview = {
@@ -354,28 +353,4 @@ export type AccessReview = {
     subject_name: string;
     message: string;
   }[];
-};
-
-export type ChangeApprovalRequest = {
-  id: string;
-  status: "pending" | "approved" | "rejected" | "executed" | "expired";
-  change_type: string;
-  change: Record<string, unknown>;
-  preview: {
-    affected_employee_count?: number;
-    warnings?: string[];
-  };
-  requested_by: string;
-  requested_by_user_id: number | null;
-  created_at: string;
-  expires_at: string;
-  approved_by: string | null;
-  approved_by_user_id: number | null;
-  approved_at: string | null;
-  rejected_by: string | null;
-  rejected_at: string | null;
-  executed_at: string | null;
-  can_approve: boolean;
-  can_reject: boolean;
-  can_execute: boolean;
 };

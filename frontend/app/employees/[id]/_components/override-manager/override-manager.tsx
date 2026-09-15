@@ -20,7 +20,6 @@ type PendingOverride = {
   override?: EmployeeOverride;
   fieldId?: number;
   value?: string;
-  approvalToken: string | null;
   added: number;
   removed: number;
   changed: number;
@@ -148,7 +147,6 @@ export function OverrideManager({
         override,
         fieldId: selectedField,
         value: selectedValue,
-        approvalToken: result.approval?.token ?? null,
         added: impact.added?.length ?? 0,
         removed: impact.removed?.length ?? 0,
         changed: impact.changed?.length ?? 0,
@@ -165,30 +163,20 @@ export function OverrideManager({
     if (!pending) return;
     setBusy(true);
     setError("");
-    const change = buildChange(pending.action, pending.override, pending.fieldId, pending.value);
     try {
-      const directEndpoint =
+      const endpoint =
         pending.action === "create"
           ? `/api/backend/employees/${employee.id}/overrides`
           : `/api/backend/employees/${employee.id}/overrides/${pending.override?.id}`;
-      const endpoint = pending.approvalToken ? "/api/backend/change-executions" : directEndpoint;
-      const method = pending.approvalToken
-        ? "POST"
-        : pending.action === "create"
-          ? "POST"
-          : pending.action === "update"
-            ? "PATCH"
-            : "DELETE";
-      const directBody =
+      const method =
+        pending.action === "create" ? "POST" : pending.action === "update" ? "PATCH" : "DELETE";
+      const body =
         pending.action === "delete"
           ? undefined
           : JSON.stringify({
               assignment_field_definition_id: pending.fieldId,
               value: pending.value,
             });
-      const body = pending.approvalToken
-        ? JSON.stringify({ approval_token: pending.approvalToken, change })
-        : directBody;
       const response = await fetch(endpoint, {
         method,
         headers: body ? { "Content-Type": "application/json" } : undefined,

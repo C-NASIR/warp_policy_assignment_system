@@ -29,7 +29,6 @@ from app.schemas import (
     PolicyVersionCreate,
     PolicyVersionRead,
 )
-from app.services.access_control import WILDCARD_PERMISSION
 from app.services.assignment_field_visibility import (
     AssignmentFieldVisibility,
     validate_assignment_field_ids,
@@ -307,14 +306,6 @@ def add_version(
         field_visibility,
         (value.assignment_field_definition_id for value in data.values),
     )
-    if (
-        principal.authentication_method == "human_session"
-        and WILDCARD_PERMISSION not in principal.permissions
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Policy versions must be executed through an approved change request",
-        )
     version = create_policy_version_from_input(session, policy, data, actor)
     refresh_employees_affected_by_policy(session, policy)
     return session.scalar(_version_query().where(PolicyVersion.id == version.id))

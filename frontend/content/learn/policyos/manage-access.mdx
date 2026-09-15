@@ -13,7 +13,7 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/access-manager.tsx",
+    "frontend/app/access/_components/access-manager/access-manager.tsx",
     "backend/app/services/access_control.py",
     "backend/tests/test_access_control.py",
     "backend/tests/test_security_hardening.py",
@@ -30,7 +30,7 @@ Open **Access control** through Quick find's **Manage access** command or the li
 
 On **Roles**, create a role named **People operator**. This is a role we are configuring for the example company, not a built-in PolicyOS role.
 
-Give it the permissions needed to view, create, and update employees and to preview supported employee changes. Add assignment-reading permission only if Morgan must inspect the resulting assignments. Do not add policy, access-management, approval, or execution permissions merely because Morgan's company job title sounds administrative.
+Give it the permissions needed to view, create, and update employees and to preview supported employee changes. Add assignment-reading permission only if Morgan must inspect the resulting assignments. Do not add policy or access-management permissions merely because Morgan's company job title sounds administrative.
 
 For this first delegation, choose all employees as the employee scope and all assignment fields if Morgan genuinely supports the whole organization. The next lesson replaces those broad choices with narrower examples.
 
@@ -38,7 +38,7 @@ Before saving, read the form as one access statement:
 
 > A People operator may perform these selected actions, for these employees, in these assignment domains.
 
-Role changes are sensitive operations. The form asks the current administrator to re-enter a password and, when enabled, an MFA code. The role saves directly; this action does not enter the policy approval queue.
+Role changes are sensitive operations. The form asks the current administrator to re-enter a password and, when enabled, an MFA code before saving.
 
 ## Provision Morgan's account
 

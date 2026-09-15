@@ -2,15 +2,15 @@
 
 Learn is a read-only curriculum with two ordered sections:
 
-1. **Concepts:** 21 lessons organized into six subsections, including a six-lesson organizational sequence.
-2. **PolicyOS:** 16 lessons applying those concepts in the application.
+1. **Concepts:** 20 lessons organized into five subsections, including a five-lesson organizational sequence.
+2. **PolicyOS:** 15 lessons applying those concepts in the application.
 
 The [content map](content-map.md) records the agreed titles and scope. The live
-curriculum is in `frontend/content/learn`; its index lists all 37 lessons.
-All 21 Concepts lessons and 16 PolicyOS walkthroughs are drafted.
+curriculum is in `frontend/content/learn`; its index lists all 35 lessons.
+All 20 Concepts lessons and 15 PolicyOS walkthroughs are drafted.
 
 The curriculum follows Rachel's growing fictional company. Root initially operates
-the workspace, then delegates work to Morgan and independent review to Jordan.
+the workspace, then delegates work to Morgan.
 PolicyOS walkthroughs use a connected training deployment. They are
 checked against the current screens and backend contracts; their draft status does
 not claim a completed connected-user acceptance review. Each walkthrough records

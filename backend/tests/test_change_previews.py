@@ -169,11 +169,7 @@ def test_policy_version_preview_reconciles_population_without_persisting(client)
     assert client.get(f"/employees/{bob['id']}/assignments").json() == []
 
 
-def test_policy_create_preview_uses_engine_without_persisting(client, monkeypatch):
-    monkeypatch.setenv(
-        "CHANGE_APPROVAL_SECRET",
-        "policy-preview-contract-secret-at-least-32-bytes",
-    )
+def test_policy_create_preview_uses_engine_without_persisting(client):
     field = _assignment_field(client)
     alice = _employee(client)
     bob = _employee(client, name="Bob", state="TX")

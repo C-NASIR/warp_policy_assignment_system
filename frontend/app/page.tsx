@@ -30,7 +30,7 @@ const features = [
   {
     icon: SlidersHorizontal,
     title: "See the impact before you act.",
-    copy: "Preview who a change affects, resolve competing priorities, and route sensitive changes through approval.",
+    copy: "Preview who a change affects and resolve competing priorities before saving.",
   },
   {
     icon: History,
@@ -219,7 +219,7 @@ export default function LandingPage() {
               },
               {
                 title: "Preview and review",
-                copy: "Understand the impact and get approval for sensitive changes.",
+                copy: "Understand the impact before saving sensitive changes.",
               },
               {
                 title: "Apply with confidence",

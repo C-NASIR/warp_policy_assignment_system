@@ -52,7 +52,7 @@ export function EmployeeAssignmentPreviewPanel({
       <div className="form-section">
         <div className="callout">
           <Info size={14} />
-          <span>This preview was calculated by the policy engine and can be safely approved.</span>
+          <span>This preview was calculated by the policy engine before the change is saved.</span>
         </div>
       </div>
     </>

@@ -10,7 +10,6 @@ from sqlalchemy import (
 
 from app.models import (
     APICredential,
-    ApprovedChangeExecution,
     AssignmentFieldDefinition,
     AuditLog,
     CompiledPolicyClause,
@@ -47,16 +46,6 @@ def test_policy_domain_models_have_required_columns():
             "created_at",
             "expires_at",
             "revoked_at",
-        },
-        ApprovedChangeExecution: {
-            "approval_id",
-            "change_type",
-            "change_digest",
-            "precondition_digest",
-            "preview_digest",
-            "executed_by",
-            "executed_at",
-            "response",
         },
         AuditLog: {
             "id",

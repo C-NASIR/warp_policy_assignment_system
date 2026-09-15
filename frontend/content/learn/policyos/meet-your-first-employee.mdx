@@ -12,7 +12,6 @@ permissions:
     "employees:create",
     "settings:read",
     "changes:preview",
-    "changes:execute",
   ]
 owner: "employee operations"
 status: "draft"
@@ -21,8 +20,8 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/employee-directory.tsx",
-    "frontend/components/employee-form.tsx",
+    "frontend/app/employees/_components/employee-directory/employee-directory.tsx",
+    "frontend/app/employees/_components/employee-editor/employee-editor.tsx",
     "frontend/app/employees/[id]/page.tsx",
     "backend/tests/test_change_previews.py",
   ]
@@ -56,7 +55,7 @@ Choose **Review assignments**. This calculates a proposed result without saving 
 
 An empty assignment list can be correct before your training policies exist. If the workspace already has rules, Rachel may receive additional values; the later examples assume you account for those rules.
 
-Reading the profile requires employee access. Creating this example also needs access to the field catalog, employee creation, change preview, and the applicable execution authority. An administrator can prepare the record if your role only permits reading.
+Reading the profile requires employee access. Creating this example also needs access to the field catalog, employee creation, and change preview. An administrator can prepare the record if your role only permits reading.
 
 Keep the displayed value **Full-time** consistent when writing a condition. The policy builder's condition catalog calls this input **Employee type**.
 

@@ -14,7 +14,7 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/access-manager.tsx",
+    "frontend/app/access/_components/access-manager/access-manager.tsx",
     "backend/app/services/employee_visibility.py",
     "backend/tests/test_employee_visibility.py",
     "backend/tests/test_assignment_field_visibility.py",
@@ -39,4 +39,4 @@ The link is essential for self scope. An unlinked account has no “self” empl
 
 As always, another assigned role can broaden the result. If Rachel also receives an all-employee assignment-reader role, the narrow self role does not override it.
 
-By now the company can divide routine work among people. A more sensitive change introduces a different need: one person proposes it and another decides whether it may proceed.
+By now the company can divide routine work among people while keeping each role's data access appropriately scoped.

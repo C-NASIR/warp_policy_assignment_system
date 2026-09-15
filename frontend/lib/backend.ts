@@ -11,7 +11,6 @@ import type {
   AuditLog,
   AuditLogFacets,
   BackendStatus,
-  ChangeApprovalRequest,
   CollectionPage,
   ConditionField,
   CurrentUser,
@@ -207,7 +206,6 @@ export const getAuthorizationAssignmentFields = () =>
   read<AssignmentField[]>("/authorization/assignment-fields");
 export const getRoles = () => readAll<Role>("/roles");
 export const getUsers = () => readAll<User>("/users");
-export const getApprovalRequests = () => read<ChangeApprovalRequest[]>("/approval-requests");
 export const getAccountSecurity = () => read<AccountSecurity>("/auth/security");
 export const getAccessReview = () => read<AccessReview>("/authorization/access-review");
 export async function getEmployee(id: number) {

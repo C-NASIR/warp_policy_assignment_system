@@ -12,8 +12,6 @@ permissions:
     "groups:update",
     "employees:read",
     "policies:read",
-    "changes:preview",
-    "changes:execute",
   ]
 owner: "groups"
 status: "draft"
@@ -22,8 +20,8 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/group-directory.tsx",
-    "frontend/components/group-manager.tsx",
+    "frontend/app/groups/_components/group-directory/group-directory.tsx",
+    "frontend/app/groups/[id]/_components/group-manager/group-manager.tsx",
     "backend/tests/test_groups.py",
   ]
 reading_time: 2
@@ -38,15 +36,14 @@ Then open **Groups**:
 
 1. Choose **Create group**, enter **Product Launch**, and choose **Create group** to save it.
 2. On its detail page, find **Attached policies**, select **Launch Tools**, and choose **Attach**. This is an immediate change; it doesn't open a preview dialog.
-3. Under **Members**, select Rachel and choose **Review add**.
-4. Read the assignment-impact count, then choose **Confirm and reconcile** to add her membership.
-5. Open Rachel's employee page and expand the Launch tool assignment. Look for **Product Launch** as the group origin.
+3. Under **Members**, select Rachel and choose **Save Changes**.
+4. Open Rachel's employee page and expand the Launch tool assignment. Look for **Product Launch** as the group origin.
 
-Attaching the policy while the new group is empty separates setup from the reviewed membership change. When a group already has members, attaching or detaching a policy immediately reconciles those members.
+Attaching the policy while the new group is empty separates setup from the membership change. When a group already has members, attaching or detaching a policy immediately reconciles those members.
 
 The policy becomes a candidate for Rachel through the group even though her Design department doesn't match its direct Product condition. It still uses the same cardinality and priority rules as directly matched policies.
 
-To remove Rachel, use the remove control beside her name, review the proposed effect, and choose **Confirm and reconcile**. To remove a policy from everyone in the group, use its **Detach** control; that action applies immediately.
+To remove Rachel, use the remove control beside her name and choose **Save Changes**. To remove a policy from everyone in the group, remove it from the draft and save the policy changes.
 
 Removing a route doesn't necessarily remove a value. Rachel could still qualify through another group or a direct match. Verify her final assignment after the change.
 

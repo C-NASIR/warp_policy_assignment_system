@@ -13,8 +13,8 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/override-manager.tsx",
-    "frontend/components/audit-log-explorer.tsx",
+    "frontend/app/employees/[id]/_components/override-manager/override-manager.tsx",
+    "frontend/app/audit/_components/audit-log-explorer/audit-log-explorer.tsx",
     "frontend/lib/backend.ts",
     "frontend/lib/format.ts",
     "backend/tests/test_assignment_history.py",
@@ -41,7 +41,7 @@ Audit search filters the recent events already loaded into the page. No matches 
 
 A new history row can be correct even when its value is unchanged: its source or explanation may have changed. A removed override can remain referenced by historical records without being active today.
 
-Reading assignments and reading audit events are separate permissions. If you can see Rachel's current result but cannot open Audit log, ask the appropriate reviewer to inspect that part of the evidence.
+Reading assignments and reading audit events are separate permissions. If you can see Rachel's current result but cannot open Audit log, ask an authorized colleague to inspect that part of the evidence.
 
 Your aim is to reconstruct three answers: what Rachel had, why that result was selected, and which recorded changes led to it.
 

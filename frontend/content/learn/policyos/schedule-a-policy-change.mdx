@@ -21,7 +21,7 @@ review_by: "2026-12-05"
 verified_by:
   [
     "docs/learn/content-map.md",
-    "frontend/components/policy-builder.tsx",
+    "frontend/app/policies/new/_components/policy-builder/policy-builder.tsx",
     "frontend/app/policies/[id]/page.tsx",
     "backend/tests/test_policy_versions.py",
     "backend/tests/test_reconciliation_worker.py",
@@ -42,11 +42,11 @@ Open **Experienced Employee Vacation**, review **Version history**, and choose *
 5. Leave **Effective until** blank unless the new version should end on a specified date.
 6. Choose **Preview impact** and follow the returned review path.
 
-For ordinary signed-in authors, the connected version preview submits an independent approval request. Use **Open approvals** and follow [Review controlled changes](/learn/policyos/review-controlled-changes). Where the account's authority permits direct execution of the preview, the builder exposes **Create version** instead.
+After reviewing the preview, choose **Create version** to save it. The account must have the policy-version and activation permissions required for the active policy.
 
 The connected preview describes the effect of saving the proposed version on current state. A future version can therefore show no assignment-value changes today. That doesn't establish that its future impact is zero.
 
-After execution, verify that **Version history** contains the new version and its intended start date. When a later version follows an open-ended one, the earlier version ends on the preceding day. Overlapping versions of the same policy are rejected.
+After saving, verify that **Version history** contains the new version and its intended start date. When a later version follows an open-ended one, the earlier version ends on the preceding day. Overlapping versions of the same policy are rejected.
 
 The detail header and rule summary show the latest version, even when it starts in the future. Use Rachel's **Current assignments** to verify today's result. Before the boundary, she should keep the earlier allowance if its policy still wins and no override applies.
 

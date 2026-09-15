@@ -16,7 +16,6 @@
     "update-employee-facts",
     "investigate-past-decisions",
     "manage-access",
-    "limit-access-with-scopes",
-    "review-controlled-changes"
+    "limit-access-with-scopes"
   ]
 }

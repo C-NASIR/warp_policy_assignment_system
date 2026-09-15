@@ -1086,21 +1086,6 @@ class ChangePreviewConflictRead(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class ChangeApprovalRead(BaseModel):
-    approval_id: str
-    token: str
-    issued_at: datetime
-    expires_at: datetime
-    change_digest: str
-    precondition_digest: str
-    preview_digest: str
-
-    @field_validator("issued_at", "expires_at", mode="before")
-    @classmethod
-    def return_utc_timestamps(cls, value: datetime) -> datetime:
-        return ensure_utc(value)
-
-
 class EmployeeAssignmentPreviewRead(BaseModel):
     """Assignment consequences of creating or updating one employee."""
 
@@ -1110,7 +1095,6 @@ class EmployeeAssignmentPreviewRead(BaseModel):
     after_assignments: list[AssignmentPreviewRead]
     conflicts: list[ChangePreviewConflictRead]
     warnings: list[str]
-    approval: ChangeApprovalRead | None = None
 
 
 class ChangePreviewRead(BaseModel):
@@ -1126,8 +1110,6 @@ class ChangePreviewRead(BaseModel):
     changes: list[EmployeeAssignmentPreviewChangeRead]
     conflicts: list[ChangePreviewConflictRead]
     warnings: list[str]
-    approval: ChangeApprovalRead | None = None
-    approval_request_id: str | None = None
 
 
 class NonPolicyChangePreviewRead(ChangePreviewRead):
@@ -1144,80 +1126,3 @@ ChangePreviewResponse = Annotated[
     | NonPolicyChangePreviewRead,
     Field(discriminator="type"),
 ]
-
-
-class ChangeApprovalRequestRead(BaseModel):
-    id: str
-    status: Literal["pending", "approved", "rejected", "executed", "expired"]
-    change_type: str
-    change: dict[str, Any]
-    preview: dict[str, Any]
-    requested_by: str
-    requested_by_user_id: int | None
-    created_at: datetime
-    expires_at: datetime
-    approved_by: str | None
-    approved_by_user_id: int | None
-    approved_at: datetime | None
-    rejected_by: str | None
-    rejected_at: datetime | None
-    executed_at: datetime | None
-    can_approve: bool
-    can_reject: bool
-    can_execute: bool
-
-    @field_validator(
-        "created_at",
-        "expires_at",
-        "approved_at",
-        "rejected_at",
-        "executed_at",
-        mode="before",
-    )
-    @classmethod
-    def normalize_approval_request_timestamps(
-        cls,
-        value: datetime | str | None,
-    ) -> datetime | None:
-        if isinstance(value, str):
-            value = datetime.fromisoformat(value)
-        return ensure_utc(value) if value is not None else None
-
-
-class ApprovedChangeExecutionCreate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    approval_token: str | None = Field(default=None, min_length=1, max_length=4000)
-    change: ChangePreviewCreate | None = None
-    approval_request_id: str | None = Field(default=None, min_length=36, max_length=36)
-
-    @model_validator(mode="after")
-    def require_token_pair_or_request(self) -> ApprovedChangeExecutionCreate:
-        has_pair = self.approval_token is not None and self.change is not None
-        has_request = self.approval_request_id is not None
-        if has_pair == has_request:
-            raise ValueError(
-                "Provide either approval_request_id or approval_token with change"
-            )
-        if (self.approval_token is None) != (self.change is None):
-            raise ValueError("approval_token and change must be provided together")
-        return self
-
-
-class ApprovedChangeExecutionRead(BaseModel):
-    approval_id: str
-    status: Literal["executed"]
-    replayed: bool
-    change_type: str
-    executed_at: datetime
-    executed_by: str
-    affected_employee_count: int
-    changes: list[EmployeeAssignmentPreviewChangeRead]
-    resources: dict[str, int]
-
-    @field_validator("executed_at", mode="before")
-    @classmethod
-    def return_utc_timestamp(cls, value: datetime | str) -> datetime:
-        if isinstance(value, str):
-            value = datetime.fromisoformat(value)
-        return ensure_utc(value)

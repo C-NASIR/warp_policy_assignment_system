@@ -138,16 +138,6 @@ PERMISSIONS: dict[str, tuple[str, str, str]] = {
         "Preview changes",
         "Calculate the effects of supported changes before saving.",
     ),
-    "changes:execute": (
-        "Changes",
-        "Execute approved changes",
-        "Commit a previously approved change preview.",
-    ),
-    "changes:approve": (
-        "Changes",
-        "Approve sensitive changes",
-        "Review and approve another user's pending change request.",
-    ),
 }
 
 
@@ -179,10 +169,6 @@ def required_permissions(method: str, path: str) -> set[str]:
         return {"audit:read"}
     if path.startswith("/change-previews"):
         return {"changes:preview"}
-    if path.startswith("/change-executions"):
-        return {"changes:execute"}
-    if path.startswith("/approval-requests"):
-        return {"changes:approve"}
     if path.startswith("/assignment-fields"):
         return {"settings:read"} if method == "GET" else {"settings:manage"}
     if path.startswith("/condition-fields"):
@@ -252,8 +238,6 @@ def access_review(session: Session) -> dict:
         WILDCARD_PERMISSION,
         "access:manage",
         "api_credentials:manage",
-        "changes:approve",
-        "changes:execute",
     }
     findings: list[dict] = []
     privileged_users = 0
