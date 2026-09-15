@@ -61,6 +61,7 @@ export function OverrideManager({
   useModalAccessibility(Boolean(editing || pending), () => {
     setEditing(null);
     setPending(null);
+    setError("");
   });
 
   async function openEditor(override?: EmployeeOverride) {
@@ -255,7 +256,7 @@ export function OverrideManager({
 
   return (
     <div className="section-stack">
-      {(error || notice) && (
+      {(error || notice) && !editing && !pending && (
         <div
           className={error ? "error-banner" : "success-banner"}
           role={error ? "alert" : "status"}
@@ -412,7 +413,14 @@ export function OverrideManager({
                   You’ll review downstream impact before applying it.
                 </div>
               </div>
-              <button className="icon-button" onClick={() => setEditing(null)} aria-label="Close">
+              <button
+                className="icon-button"
+                onClick={() => {
+                  setEditing(null);
+                  setError("");
+                }}
+                aria-label="Close"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -433,6 +441,12 @@ export function OverrideManager({
             ) : fields?.length ? (
               <>
                 <div className="form-section">
+                  {error && (
+                    <div className="error-banner" role="alert">
+                      <CircleAlert size={14} />
+                      <span>{error}</span>
+                    </div>
+                  )}
                   <label className="field">
                     <span className="field-label">Assignment field</span>
                     <select
@@ -507,8 +521,20 @@ export function OverrideManager({
               {pending.added + pending.removed + pending.changed === 1 ? "value" : "values"}:{" "}
               {pending.added} added, {pending.changed} changed, and {pending.removed} removed.
             </p>
+            {error && (
+              <div className="error-banner" role="alert">
+                <CircleAlert size={14} />
+                <span>{error}</span>
+              </div>
+            )}
             <div className="heading-actions">
-              <Button variant="secondary" onClick={() => setPending(null)}>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setPending(null);
+                  setError("");
+                }}
+              >
                 Cancel
               </Button>
               <Button
