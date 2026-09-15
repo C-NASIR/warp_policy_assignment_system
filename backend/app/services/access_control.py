@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from typing import Literal
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, load_only, selectinload
 
 from app.dates import current_datetime, ensure_utc
 from app.models import (
@@ -226,14 +226,35 @@ def access_review(session: Session) -> dict:
             select(Role)
             .options(
                 selectinload(Role.role_permissions),
-                selectinload(Role.users),
             )
             .order_by(Role.name)
         )
     )
     users = list(
-        session.scalars(select(User).where(User.status == "active").order_by(User.name))
+        session.scalars(
+            select(User)
+            .options(
+                load_only(
+                    User.id,
+                    User.email,
+                    User.name,
+                    User.is_root,
+                    User.mfa_enabled,
+                    User.last_login_at,
+                )
+            )
+            .where(User.status == "active")
+            .order_by(User.name)
+        )
     )
+    user_permissions: dict[int, set[str]] = {}
+    for user_id, permission in session.execute(
+        select(UserRole.user_id, RolePermission.permission).join(
+            RolePermission, RolePermission.role_id == UserRole.role_id
+        )
+    ).all():
+        user_permissions.setdefault(user_id, set()).add(permission)
+    assigned_role_ids = set(session.scalars(select(UserRole.role_id)))
     privileged_permissions = {
         WILDCARD_PERMISSION,
         "access:manage",
@@ -245,7 +266,11 @@ def access_review(session: Session) -> dict:
     dormant_before = current_datetime().timestamp() - 90 * 24 * 60 * 60
 
     for user in users:
-        permissions = effective_permissions(session, user)
+        permissions = (
+            frozenset({WILDCARD_PERMISSION})
+            if user.is_root
+            else frozenset(user_permissions.get(user.id, set()))
+        )
         privileged = user.is_root or bool(permissions & privileged_permissions)
         if privileged:
             privileged_users += 1
@@ -278,9 +303,8 @@ def access_review(session: Session) -> dict:
 
     unused_roles = 0
     for role in roles:
-        user_count = len(role.users)
         permissions = {link.permission for link in role.role_permissions}
-        if user_count == 0:
+        if role.id not in assigned_role_ids:
             unused_roles += 1
             findings.append(
                 {
@@ -342,7 +366,6 @@ def role_by_id(session: Session, role_id: int) -> Role:
         .options(
             selectinload(Role.role_permissions),
             selectinload(Role.assignment_field_links),
-            selectinload(Role.users),
         )
         .where(Role.id == role_id)
     )
@@ -475,7 +498,9 @@ def update_role(
 
 
 def delete_role(session: Session, role: Role, *, actor: str) -> None:
-    if role.users:
+    if session.scalar(
+        select(UserRole.user_id).where(UserRole.role_id == role.id).limit(1)
+    ):
         raise ValueError("A role assigned to users cannot be deleted")
     before = role_snapshot(role)
     role_id = role.id

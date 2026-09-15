@@ -7,6 +7,7 @@ import type {
   AccountSecurity,
   AssignmentHistoryItem,
   AssignmentField,
+  AssignmentFieldScopeOption,
   AssignmentSummary,
   AuditLog,
   AuditLogFacets,
@@ -26,8 +27,10 @@ import type {
   Policy,
   PolicyImpact,
   Role,
+  RoleCandidate,
+  RoleDirectoryItem,
   RootSetupStatus,
-  User,
+  UserDirectoryItem,
 } from "./types";
 
 const configuredApiUrl = process.env.POLICY_API_URL?.replace(/\/$/, "");
@@ -203,9 +206,38 @@ export const getAuditLogPage = (options: {
   );
 export const getPermissions = () => readAll<Permission>("/authorization/permissions");
 export const getAuthorizationAssignmentFields = () =>
-  read<AssignmentField[]>("/authorization/assignment-fields");
-export const getRoles = () => readAll<Role>("/roles");
-export const getUsers = () => readAll<User>("/users");
+  read<AssignmentFieldScopeOption[]>("/authorization/assignment-fields");
+export const getRolePage = (options: { search?: string; limit: number; offset: number }) =>
+  readPage<RoleDirectoryItem>(
+    collectionPath("/roles", {
+      search: options.search,
+      limit: options.limit,
+      offset: options.offset,
+    }),
+  );
+export const getUserPage = (options: {
+  search?: string;
+  status?: string;
+  roleId?: number;
+  limit: number;
+  offset: number;
+}) =>
+  readPage<UserDirectoryItem>(
+    collectionPath("/users", {
+      search: options.search,
+      status: options.status,
+      role_id: options.roleId,
+      limit: options.limit,
+      offset: options.offset,
+    }),
+  );
+export const getRoleCandidate = async (id: number) => {
+  const candidates = await read<RoleCandidate[]>(
+    collectionPath("/authorization/role-candidates", { role_id: id, limit: 1 }),
+  );
+  return candidates[0] ?? null;
+};
+export const getRole = (id: number) => read<Role>(`/roles/${id}`);
 export const getAccountSecurity = () => read<AccountSecurity>("/auth/security");
 export const getAccessReview = () => read<AccessReview>("/authorization/access-review");
 export async function getEmployee(id: number) {

@@ -308,6 +308,52 @@ export type Role = RoleSummary & {
   updated_at: string;
 };
 
+export type RoleDirectoryItem = RoleSummary & {
+  description: string | null;
+  employee_scope: Role["employee_scope"];
+  assignment_field_scope: Role["assignment_field_scope"];
+  assignment_field_count: number;
+  permission_count: number;
+  permission_preview: string[];
+  user_count: number;
+};
+
+export type RoleCandidate = RoleSummary & {
+  employee_scope: Role["employee_scope"];
+  assignment_field_scope: Role["assignment_field_scope"];
+  assignment_field_count: number;
+  permission_count: number;
+  user_count: number;
+};
+
+export type EmployeeLinkSummary = {
+  id: number;
+  name: string;
+  department: string;
+};
+
+export type EmployeeCandidate = EmployeeLinkSummary;
+
+export type AssignmentFieldScopeOption = {
+  id: number;
+  name: string;
+  cardinality: "one" | "many";
+};
+
+export type UserDirectoryItem = {
+  id: number;
+  email: string;
+  name: string;
+  status: User["status"];
+  is_root: boolean;
+  password_change_required: boolean;
+  employee: EmployeeLinkSummary | null;
+  employee_link_hidden: boolean;
+  roles: RoleSummary[];
+  effective_permission_count: number;
+  has_all_permissions: boolean;
+};
+
 export type User = CurrentUser;
 
 export type AccountSession = {

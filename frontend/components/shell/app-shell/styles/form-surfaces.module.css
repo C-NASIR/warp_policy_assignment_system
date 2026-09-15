@@ -167,7 +167,7 @@
   border-radius: 10px;
   background: var(--surface);
 }
-.productScope :global(.access-tabs button) {
+.productScope :global(.access-tabs a) {
   min-height: 34px;
   display: inline-flex;
   align-items: center;
@@ -180,8 +180,9 @@
   font-size: 11px;
   font-weight: 650;
   cursor: pointer;
+  text-decoration: none;
 }
-.productScope :global(.access-tabs button.active) {
+.productScope :global(.access-tabs a.active) {
   background: var(--surface-strong);
   color: white;
 }
@@ -317,6 +318,52 @@
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
+}
+.productScope :global(.role-options.role-picker) {
+  display: block;
+}
+.productScope :global(.role-picker .manager-combobox) {
+  margin-top: 10px;
+}
+.productScope :global(.selected-candidates) {
+  min-height: 24px;
+}
+.productScope :global(.selected-candidate) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.productScope :global(.selected-candidates button) {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.productScope :global(.candidate-detail) {
+  display: grid;
+  gap: 3px;
+}
+.productScope :global(.candidate-detail small) {
+  color: var(--muted);
+  font-size: 9px;
+}
+.productScope :global(.candidate-hidden-link) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.productScope :global(.access-candidate-combobox) {
+  min-width: 210px;
 }
 .productScope :global(.permission-groups legend),
 .productScope :global(.role-options legend) {

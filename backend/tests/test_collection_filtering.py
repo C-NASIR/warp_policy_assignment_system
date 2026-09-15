@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from sqlalchemy import event
+
 from app.dates import current_date, current_datetime
 
 
@@ -440,6 +442,204 @@ def test_credentials_and_scope_catalog_filter_without_exposing_secrets(client):
     assert scopes.status_code == 200
     assert int(scopes.headers["X-Total-Count"]) >= 1
     assert len(scopes.json()) == 1
+
+
+def test_access_directories_are_compact_searchable_and_paginated(client):
+    first_role = client.post(
+        "/roles",
+        json={
+            "name": "Finance administrator",
+            "description": "Finance access",
+            "permissions": ["access:read", "employees:read"],
+            "employee_scope": "all",
+            "assignment_field_scope": "none",
+        },
+    ).json()
+    second_role = client.post(
+        "/roles",
+        json={
+            "name": "People viewer",
+            "description": "People access",
+            "permissions": ["employees:read"],
+            "employee_scope": "all",
+            "assignment_field_scope": "none",
+        },
+    ).json()
+    employee = _employee(
+        client,
+        "Morgan Employee",
+        state="IL",
+        department="People",
+    )
+    first_user = client.post(
+        "/users",
+        json={
+            "name": "Morgan Lee",
+            "email": "morgan@example.com",
+            "temporary_password": "temporary password value",
+            "role_ids": [first_role["id"]],
+            "employee_id": employee["id"],
+        },
+    ).json()
+    second_user = client.post(
+        "/users",
+        json={
+            "name": "Taylor Reed",
+            "email": "taylor@example.com",
+            "temporary_password": "temporary password value",
+            "role_ids": [second_role["id"]],
+        },
+    ).json()
+    assert (
+        client.patch(f"/users/{second_user['id']}", json={"status": "disabled"}).status_code
+        == 200
+    )
+
+    roles = _assert_page(
+        client.get("/roles", params={"search": "people", "limit": 1}),
+        total=1,
+        limit=1,
+        offset=0,
+    )
+    assert roles == [
+        {
+            "id": second_role["id"],
+            "name": "People viewer",
+            "description": "People access",
+            "employee_scope": "all",
+            "assignment_field_scope": "none",
+            "assignment_field_count": 0,
+            "permission_count": 1,
+            "permission_preview": ["View employees"],
+            "user_count": 1,
+        }
+    ]
+    assert "permissions" in client.get(f"/roles/{second_role['id']}").json()
+
+    users = _assert_page(
+        client.get(
+            "/users",
+            params={
+                "search": "morgan",
+                "status": "active",
+                "role_id": first_role["id"],
+                "limit": 1,
+            },
+        ),
+        total=1,
+        limit=1,
+        offset=0,
+    )
+    assert users[0]["id"] == first_user["id"]
+    assert users[0]["employee"] == {
+        "id": employee["id"],
+        "name": "Morgan Employee",
+        "department": "People",
+    }
+    assert users[0]["effective_permission_count"] == 2
+    assert users[0]["has_all_permissions"] is False
+    assert "permissions" not in users[0]
+    assert "last_login_at" not in users[0]
+
+
+def test_access_candidates_exclude_other_user_employee_links(client):
+    role = client.post(
+        "/roles",
+        json={
+            "name": "Employee reader",
+            "permissions": ["employees:read"],
+            "employee_scope": "all",
+            "assignment_field_scope": "none",
+        },
+    ).json()
+    linked_employee = _employee(
+        client,
+        "Linked Employee",
+        state="WI",
+        department="Operations",
+    )
+    available_employee = _employee(
+        client,
+        "Available Employee",
+        state="WI",
+        department="Operations",
+    )
+    user = client.post(
+        "/users",
+        json={
+            "name": "Linked User",
+            "email": "linked@example.com",
+            "temporary_password": "temporary password value",
+            "role_ids": [role["id"]],
+            "employee_id": linked_employee["id"],
+        },
+    ).json()
+
+    create_candidates = client.get("/authorization/employee-candidates").json()
+    assert {item["id"] for item in create_candidates} == {available_employee["id"]}
+    edit_candidates = client.get(
+        "/authorization/employee-candidates",
+        params={"user_id": user["id"], "search": "employee", "limit": 2},
+    ).json()
+    assert {item["id"] for item in edit_candidates} == {
+        linked_employee["id"],
+        available_employee["id"],
+    }
+
+    role_candidates = client.get(
+        "/authorization/role-candidates", params={"search": "reader", "limit": 1}
+    ).json()
+    assert role_candidates == [
+        {
+            "id": role["id"],
+            "name": "Employee reader",
+            "employee_scope": "all",
+            "assignment_field_scope": "none",
+            "assignment_field_count": 0,
+            "permission_count": 1,
+            "user_count": 1,
+        }
+    ]
+
+
+def test_user_directory_uses_a_constant_number_of_selects(client, session_factory):
+    role = client.post(
+        "/roles",
+        json={
+            "name": "Directory reader",
+            "permissions": ["employees:read"],
+            "employee_scope": "all",
+            "assignment_field_scope": "none",
+        },
+    ).json()
+    for index in range(12):
+        response = client.post(
+            "/users",
+            json={
+                "name": f"Directory User {index:02d}",
+                "email": f"directory-{index:02d}@example.com",
+                "temporary_password": "temporary password value",
+                "role_ids": [role["id"]],
+            },
+        )
+        assert response.status_code == 201
+
+    statements: list[str] = []
+    engine = session_factory.kw["bind"]
+
+    def record_select(_connection, _cursor, statement, _parameters, _context, _many):
+        if statement.lstrip().upper().startswith("SELECT"):
+            statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record_select)
+    try:
+        response = client.get("/users", params={"limit": 25})
+    finally:
+        event.remove(engine, "before_cursor_execute", record_select)
+
+    assert response.status_code == 200
+    assert len(response.json()) == 12
+    assert len(statements) <= 6
 
 
 def test_openapi_documents_collection_pagination_contract(client):

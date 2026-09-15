@@ -367,6 +367,7 @@ class UserRole(Base):
     role_id: Mapped[int] = mapped_column(
         ForeignKey("roles.id", ondelete="RESTRICT"),
         primary_key=True,
+        index=True,
     )
 
 

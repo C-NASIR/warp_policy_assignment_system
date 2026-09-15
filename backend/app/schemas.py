@@ -226,6 +226,28 @@ class RoleRead(ORMModel):
     updated_at: datetime
 
 
+class RoleDirectoryRead(BaseModel):
+    id: int
+    name: str
+    description: str | None
+    employee_scope: Literal["all", "reporting_tree", "self", "none"]
+    assignment_field_scope: Literal["all", "selected", "none"]
+    assignment_field_count: int = Field(ge=0)
+    permission_count: int = Field(ge=0)
+    permission_preview: list[str] = Field(default_factory=list)
+    user_count: int = Field(ge=0)
+
+
+class RoleCandidateRead(BaseModel):
+    id: int
+    name: str
+    employee_scope: Literal["all", "reporting_tree", "self", "none"]
+    assignment_field_scope: Literal["all", "selected", "none"]
+    assignment_field_count: int = Field(ge=0)
+    permission_count: int = Field(ge=0)
+    user_count: int = Field(ge=0)
+
+
 class UserCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -265,6 +287,30 @@ class UserRead(ORMModel):
     last_login_at: datetime | None
     roles: list[RoleSummaryRead] = Field(default_factory=list)
     permissions: list[str] = Field(default_factory=list)
+
+
+class EmployeeLinkSummaryRead(BaseModel):
+    id: int
+    name: str
+    department: str
+
+
+class EmployeeCandidateRead(EmployeeLinkSummaryRead):
+    pass
+
+
+class UserDirectoryRead(BaseModel):
+    id: int
+    email: EmailStr
+    name: str
+    status: Literal["active", "suspended", "disabled"]
+    is_root: bool
+    password_change_required: bool
+    employee: EmployeeLinkSummaryRead | None
+    employee_link_hidden: bool = False
+    roles: list[RoleSummaryRead] = Field(default_factory=list)
+    effective_permission_count: int = Field(ge=0)
+    has_all_permissions: bool = False
 
 
 class EmployeeCreate(BaseModel):
@@ -435,6 +481,10 @@ class AssignmentFieldDefinitionRead(AssignmentFieldDefinitionCreate, ORMModel):
 class AssignmentFieldIdentityRead(ORMModel):
     id: int
     name: str
+
+
+class AssignmentFieldScopeOptionRead(AssignmentFieldIdentityRead):
+    cardinality: Literal["one", "many"]
 
 
 class AssignmentFieldOverrideOptionRead(ORMModel):

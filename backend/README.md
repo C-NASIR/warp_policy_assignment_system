@@ -212,10 +212,12 @@ state-changing cookie-authenticated requests.
 | POST | `/auth/sessions/revoke-all` | Sign out every device including the current one |
 | GET | `/authorization/access-review` | Report stale, broad, unused, and privileged access risks |
 | GET | `/authorization/permissions` | List the human application-permission catalog |
-| POST / GET | `/roles` | Create or list roles, permission bundles, and data scopes |
+| POST / GET | `/roles` | Create roles or list compact, searchable, paginated role directory entries |
 | GET / PATCH / DELETE | `/roles/{id}` | Read, update, or delete an unassigned role |
-| GET | `/authorization/assignment-fields` | List the complete assignment-field catalog for role administration |
-| POST / GET | `/users` | Provision or list human users |
+| GET | `/authorization/assignment-fields` | List compact assignment-field scope options for role administration |
+| GET | `/authorization/role-candidates` | Search a bounded role-option catalog for filters and user assignment |
+| GET | `/authorization/employee-candidates` | Search visible, unlinked employees for account linking |
+| POST / GET | `/users` | Provision users or list compact, searchable, paginated user directory entries |
 | GET / PATCH / DELETE | `/users/{id}` | Read, update, or disable a human user |
 | POST | `/users/{id}/reset-password` | Set a temporary password and revoke active sessions |
 | GET | `/auth/scopes` | List supported operation scopes |
