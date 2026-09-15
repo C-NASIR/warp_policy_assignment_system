@@ -93,7 +93,8 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
     assert restored[0]["source_override_id"] is None
 
     history = client.get(
-        f"/employees/{employee['id']}/assignments/history"
+        f"/employees/{employee['id']}/assignments/history",
+        params={"status": "all"},
     ).json()
     assert [item["value"] for item in history] == [
         "weekly",
@@ -109,6 +110,16 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
     ]
     assert all(item["effective_until"] is not None for item in history[:-1])
     assert history[-1]["effective_until"] is None
+
+    inactive_history = client.get(
+        f"/employees/{employee['id']}/assignments/history"
+    ).json()
+    assert [item["value"] for item in inactive_history] == [
+        "weekly",
+        "monthly",
+        "biweekly",
+    ]
+    assert all(item["effective_until"] is not None for item in inactive_history)
 
     at_override_start = client.get(
         f"/employees/{employee['id']}/assignments",

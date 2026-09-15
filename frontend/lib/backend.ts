@@ -244,7 +244,7 @@ export async function getEmployeeOverrides(id: number) {
 
 export async function getEmployeeAssignmentHistoryPage(
   id: number,
-  options: { limit: number; offset: number },
+  options: { limit: number; offset: number; status: "inactive" | "all" },
 ) {
   return readPage<AssignmentHistoryItem>(
     collectionPath(`/employees/${id}/assignments/history`, options),

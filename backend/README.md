@@ -236,7 +236,7 @@ state-changing cookie-authenticated requests.
 | GET | `/employees/reference-data` | Read distinct department and employee-type values visible to the caller |
 | GET / PATCH / DELETE | `/employees/{id}` | Read an employee with a manager summary, or update or delete the employee |
 | GET | `/employees/{id}/assignments` | Read compact current assignment cards, or cards at an optional `as_of` UTC timestamp |
-| GET | `/employees/{id}/assignments/history` | Read paginated, compact assignment history rows |
+| GET | `/employees/{id}/assignments/history` | Read paginated, compact inactive assignment rows by default; use `status=all` for the complete timeline |
 | GET | `/employees/{id}/assignment-summary` | Summarize one employee's assignments for a date |
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
 | POST | `/assignment-queries` | Query recorded past, persisted present, or calculated future assignments for an employee batch |
@@ -352,7 +352,7 @@ An active group policy with a currently effective version applies because of the
 
 Creating, updating, or removing an override recalculates only the employee's assignments; it does not rerun policy matching. Normal assignments have a `source_policy_version_id`, overridden assignments have a `source_override_id`, and a database check constraint requires exactly one of those sources. Override updates return a new override ID because the previous row is retired for provenance.
 
-Reconciliation is chronological and persists assignment history. Calls older than the latest stored assignment start are rejected instead of rewriting established history. `GET /employees/{id}/assignments` returns the values effective now by default; `as_of` uses half-open interval boundaries, and the history endpoint returns both open and closed rows.
+Reconciliation is chronological and persists assignment history. Calls older than the latest stored assignment start are rejected instead of rewriting established history. `GET /employees/{id}/assignments` returns the values effective now by default; `as_of` uses half-open interval boundaries. The history endpoint returns inactive rows by default; `status=all` includes both open and closed rows.
 
 `POST /assignment-queries` accepts `employee_ids` and an `evaluation_date`. It
 deduplicates the batch and returns one of three explicit modes:

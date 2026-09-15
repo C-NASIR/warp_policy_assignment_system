@@ -232,6 +232,7 @@ export function OverrideManager({
       const query = new URLSearchParams({
         limit: String(historyLimit),
         offset: String(history.length),
+        status: "inactive",
       });
       const response = await fetch(
         `/api/backend/employees/${employee.id}/assignments/history?${query}`,
@@ -323,9 +324,9 @@ export function OverrideManager({
       <Panel>
         <div className="panel-header">
           <div>
-            <h2 className="panel-title">Assignment history</h2>
+            <h2 className="panel-title">Past assignments</h2>
             <div className="panel-caption">
-              Current and retired records preserve the answer for any effective date
+              Assignments that are no longer active
             </div>
           </div>
           <Badge>
@@ -370,7 +371,7 @@ export function OverrideManager({
             </tbody>
           </DataTable>
           {history.length === 0 && (
-            <div className="empty-state compact">No assignment history yet.</div>
+            <div className="empty-state compact">No past assignments yet.</div>
           )}
           {historyError && (
             <div className="error-banner" role="alert">

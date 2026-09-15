@@ -474,6 +474,9 @@ def assignment_history(
     assignment_field_definition_id: Annotated[int | None, Query(gt=0)] = None,
     value: Annotated[str | None, Query(max_length=500)] = None,
     source: Literal["policy", "override"] | None = None,
+    assignment_status: Annotated[
+        Literal["inactive", "all"], Query(alias="status")
+    ] = "inactive",
     effective_from: datetime | None = None,
     effective_to: datetime | None = None,
 ) -> list[AssignmentHistoryRead]:
@@ -496,6 +499,11 @@ def assignment_history(
         )
     elif source == "override":
         statement = statement.where(EmployeeAssignment.source_override_id.is_not(None))
+    if assignment_status == "inactive":
+        statement = statement.where(
+            EmployeeAssignment.effective_until.is_not(None),
+            EmployeeAssignment.effective_until <= current_datetime(),
+        )
     if effective_from is not None:
         statement = statement.where(
             EmployeeAssignment.effective_from >= effective_from

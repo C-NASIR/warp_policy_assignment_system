@@ -130,7 +130,8 @@ def test_group_origin_and_changed_reason_create_assignment_history(client):
     ).status_code == 201
 
     history = client.get(
-        f"/employees/{employee['id']}/assignments/history"
+        f"/employees/{employee['id']}/assignments/history",
+        params={"status": "all"},
     ).json()
     assert len(history) == 2
     assert "explanation" not in history[0]
@@ -158,7 +159,8 @@ def test_group_origin_and_changed_reason_create_assignment_history(client):
         json={"state": "WI"},
     ).status_code == 200
     history = client.get(
-        f"/employees/{employee['id']}/assignments/history"
+        f"/employees/{employee['id']}/assignments/history",
+        params={"status": "all"},
     ).json()
     assert len(history) == 3
     current = client.get(f"/employees/{employee['id']}/assignments").json()

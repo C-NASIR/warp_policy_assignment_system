@@ -67,7 +67,10 @@ def _assignments(client, employee):
 
 
 def _assignment_history(client, employee):
-    response = client.get(f"/employees/{employee['id']}/assignments/history")
+    response = client.get(
+        f"/employees/{employee['id']}/assignments/history",
+        params={"status": "all"},
+    )
     assert response.status_code == 200
     return response.json()
 

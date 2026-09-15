@@ -353,6 +353,7 @@ def test_assignment_override_and_audit_collections_support_filters(client):
     history = client.get(
         f"/employees/{alice['id']}/assignments/history",
         params={
+            "status": "all",
             "effective_to": (current_datetime() + timedelta(days=1)).isoformat(),
             "limit": 1,
         },

@@ -39,7 +39,11 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
     canReadAssignments ? getEmployeeAssignments(Number(id)) : [],
     canReadAssignments ? getEmployeeOverrides(Number(id)) : [],
     canReadAssignments
-      ? getEmployeeAssignmentHistoryPage(Number(id), { limit: 20, offset: 0 })
+      ? getEmployeeAssignmentHistoryPage(Number(id), {
+          limit: 20,
+          offset: 0,
+          status: "inactive",
+        })
       : { items: [], total: 0, limit: 20, offset: 0 },
   ]);
   if (!employee) notFound();
