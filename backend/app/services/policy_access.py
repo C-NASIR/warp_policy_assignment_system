@@ -9,7 +9,7 @@ from app.services.auth import EXECUTE_SCOPE, WILDCARD_SCOPE, AuthenticatedPrinci
 
 
 def _has_permission(principal: AuthenticatedPrincipal, permission: str) -> bool:
-    if principal.authentication_method != "human_session":
+    if not principal.is_user:
         return WILDCARD_SCOPE in principal.scopes or EXECUTE_SCOPE in principal.scopes
     return (
         WILDCARD_PERMISSION in principal.permissions

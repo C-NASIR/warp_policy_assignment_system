@@ -48,7 +48,7 @@ def assignment_field_visibility(
     principal: AuthenticatedPrincipal,
 ) -> AssignmentFieldVisibility:
     """Union selected domains across roles; any all-domain role wins."""
-    if principal.authentication_method != "human_session":
+    if not principal.is_user:
         return AssignmentFieldVisibility(unrestricted=True)
     if principal.user_id is None:
         return AssignmentFieldVisibility(unrestricted=False)

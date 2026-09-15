@@ -78,6 +78,88 @@ class APICredential(Base):
     )
 
 
+class OAuthClient(Base):
+    """Public OAuth client registered by an MCP-compatible agent application."""
+
+    __tablename__ = "oauth_clients"
+
+    client_id: Mapped[str] = mapped_column(String(200), primary_key=True)
+    client_name: Mapped[str] = mapped_column(String(200))
+    redirect_uris: Mapped[list[str]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+
+
+class OAuthAuthorizationCode(Base):
+    __tablename__ = "oauth_authorization_codes"
+    __table_args__ = (
+        Index("ix_oauth_authorization_codes_expiry", "expires_at", "used_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    client_id: Mapped[str] = mapped_column(
+        ForeignKey("oauth_clients.client_id", ondelete="CASCADE")
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    redirect_uri: Mapped[str] = mapped_column(String(1000))
+    code_challenge: Mapped[str] = mapped_column(String(200))
+    scopes: Mapped[list[str]] = mapped_column(JSON)
+    resource: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    reauthenticated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    mfa_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class OAuthToken(Base):
+    """A rotating user-bound OAuth access and refresh token pair."""
+
+    __tablename__ = "oauth_tokens"
+    __table_args__ = (
+        Index("ix_oauth_tokens_access_lifecycle", "access_expires_at", "revoked_at"),
+        Index("ix_oauth_tokens_refresh_lifecycle", "refresh_expires_at", "revoked_at"),
+        Index("ix_oauth_tokens_user", "user_id", "revoked_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    access_token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    refresh_token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    token_prefix: Mapped[str] = mapped_column(String(20))
+    client_id: Mapped[str] = mapped_column(
+        ForeignKey("oauth_clients.client_id", ondelete="CASCADE")
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    scopes: Mapped[list[str]] = mapped_column(JSON)
+    resource: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=current_datetime,
+        server_default=func.now(),
+    )
+    access_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    refresh_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    reauthenticated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    mfa_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
 class Role(Base):
     __tablename__ = "roles"
     __table_args__ = (

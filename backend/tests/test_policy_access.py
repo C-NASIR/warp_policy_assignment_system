@@ -18,6 +18,7 @@ def _human(*permissions: str) -> AuthenticatedPrincipal:
         credential_id=None,
         credential_name="human-session",
         authentication_method="human_session",
+        identity_kind="user",
         user_id=7,
         session_id=9,
         permissions=frozenset(permissions),

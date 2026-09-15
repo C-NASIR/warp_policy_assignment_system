@@ -98,9 +98,12 @@ def get_authenticated_principal(
             credential_id=None,
             credential_name="human-session",
             authentication_method="human_session",
+            identity_kind="user",
             user_id=user.id,
             session_id=auth_session.id,
             permissions=effective_permissions(session, user),
+            reauthenticated_at=auth_session.reauthenticated_at,
+            mfa_verified=auth_session.mfa_verified_at is not None,
         )
 
     raise AuthenticationError(
@@ -182,27 +185,38 @@ def authorize_operation(
     session: DatabaseSession,
 ) -> None:
     """Authorize one API operation using its method and public route path."""
-    if principal.authentication_method == "human_session":
+    if principal.is_user:
         required = required_permissions(request.method, request.url.path)
         authorize_permissions(principal.permissions, required)
         if (
             request.method.upper() not in SAFE_SESSION_METHODS
             and required & SENSITIVE_PERMISSIONS
         ):
-            auth_session = session.get(AuthSession, principal.session_id)
             user = session.get(User, principal.user_id)
-            if auth_session is None or user is None:
+            if user is None:
                 raise AuthenticationError(
-                    "The user session is invalid", code="invalid_session"
+                    "The authenticated user is invalid", code="invalid_session"
                 )
             if privileged_mfa_required() and (
-                not user.mfa_enabled or auth_session.mfa_verified_at is None
+                not user.mfa_enabled or not principal.mfa_verified
             ):
                 raise AuthenticationError(
                     "Multi-factor authentication is required for privileged changes",
                     code="mfa_enrollment_required",
                 )
-            if not session_recently_reauthenticated(auth_session):
+            if principal.authentication_method == "human_session":
+                auth_session = session.get(AuthSession, principal.session_id)
+                recently_reauthenticated = (
+                    auth_session is not None
+                    and session_recently_reauthenticated(auth_session)
+                )
+            else:
+                from app.services.human_auth import reauthentication_is_recent
+
+                recently_reauthenticated = reauthentication_is_recent(
+                    principal.reauthenticated_at
+                )
+            if not recently_reauthenticated:
                 raise AuthenticationError(
                     "Re-enter your password before performing this sensitive operation",
                     code="reauthentication_required",

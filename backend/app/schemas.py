@@ -57,6 +57,75 @@ class HumanLoginCreate(BaseModel):
     recovery_code: str | None = Field(default=None, min_length=8, max_length=32)
 
 
+class OAuthClientRegistrationCreate(BaseModel):
+    # Dynamic-registration clients may send optional RFC metadata that PolicyOS
+    # does not need to persist.
+    model_config = ConfigDict(extra="ignore")
+
+    redirect_uris: list[str] = Field(min_length=1, max_length=10)
+    client_name: str = Field(default="MCP client", min_length=1, max_length=200)
+    token_endpoint_auth_method: Literal["none"] = "none"
+    grant_types: list[Literal["authorization_code", "refresh_token"]] = Field(
+        default_factory=lambda: ["authorization_code", "refresh_token"]
+    )
+    response_types: list[Literal["code"]] = Field(default_factory=lambda: ["code"])
+
+
+class OAuthClientRegistrationRead(BaseModel):
+    client_id: str
+    client_name: str
+    redirect_uris: list[str]
+    token_endpoint_auth_method: Literal["none"] = "none"
+    grant_types: list[str] = Field(
+        default_factory=lambda: ["authorization_code", "refresh_token"]
+    )
+    response_types: list[str] = Field(default_factory=lambda: ["code"])
+
+
+class OAuthAuthorizationRequestRead(BaseModel):
+    client_id: str
+    client_name: str
+    redirect_uri: str
+    scope: str
+    state: str | None
+    resource: str
+
+
+class OAuthAuthorizationDecisionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_id: str = Field(min_length=1, max_length=200)
+    redirect_uri: str = Field(min_length=1, max_length=1000)
+    response_type: Literal["code"] = "code"
+    code_challenge: str = Field(min_length=43, max_length=128)
+    code_challenge_method: Literal["S256"] = "S256"
+    scope: str = Field(default="policyos", max_length=500)
+    state: str | None = Field(default=None, max_length=1000)
+    resource: str | None = Field(default=None, max_length=1000)
+    approve: bool
+
+
+class OAuthAuthorizationDecisionRead(BaseModel):
+    redirect_uri: str
+
+
+class OAuthTokenRead(BaseModel):
+    access_token: str
+    token_type: Literal["Bearer"] = "Bearer"
+    expires_in: int
+    refresh_token: str
+    scope: str
+
+
+class OAuthUserInfoRead(BaseModel):
+    sub: str
+    user_id: int
+    client_id: str
+    scopes: list[str]
+    expires_at: int
+    resource: str
+
+
 class PasswordResetRequestCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

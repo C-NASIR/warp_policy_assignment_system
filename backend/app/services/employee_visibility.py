@@ -34,7 +34,7 @@ def employee_visibility(
     principal: AuthenticatedPrincipal,
 ) -> EmployeeVisibility:
     """Resolve role scopes on every request so access changes take effect immediately."""
-    if principal.authentication_method != "human_session":
+    if not principal.is_user:
         return EmployeeVisibility(unrestricted=True, can_create_reports=True)
     if principal.user_id is None:
         return EmployeeVisibility(unrestricted=False)

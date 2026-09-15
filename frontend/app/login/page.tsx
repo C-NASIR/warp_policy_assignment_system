@@ -6,8 +6,18 @@ import { firstAllowedPath } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-export default async function LoginPage() {
+function safeNext(value: string | string[] | undefined): string | undefined {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate?.startsWith("/") && !candidate.startsWith("//") ? candidate : undefined;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const nextPath = safeNext((await searchParams).next);
   const user = await getCurrentUser();
-  if (user) redirect(firstAllowedPath(user));
-  return <LoginForm />;
+  if (user) redirect(nextPath ?? firstAllowedPath(user));
+  return <LoginForm nextPath={nextPath} />;
 }

@@ -138,6 +138,38 @@ export async function getBackendStatus(): Promise<BackendStatus> {
   return response.json() as Promise<BackendStatus>;
 }
 
+export type OAuthAuthorizationRequest = {
+  client_id: string;
+  client_name: string;
+  redirect_uri: string;
+  scope: string;
+  state: string | null;
+  resource: string;
+};
+
+export async function getOAuthAuthorizationRequest(
+  query: string,
+): Promise<OAuthAuthorizationRequest> {
+  const path = `/oauth/authorize?${query}`;
+  const response = await fetch(`${apiUrl()}${path}`, {
+    headers: { ...(await sessionHeaders()), Accept: "application/json" },
+    cache: "no-store",
+  });
+  if (response.status === 401) {
+    redirect(`/login?next=${encodeURIComponent(path)}`);
+  }
+  if (!response.ok) {
+    const result = (await response.json().catch(() => ({}))) as {
+      error_description?: string;
+      error?: { message?: string };
+    };
+    throw new Error(
+      result.error_description ?? result.error?.message ?? "The authorization request is invalid.",
+    );
+  }
+  return response.json() as Promise<OAuthAuthorizationRequest>;
+}
+
 export const getEmployees = () => readAll<EmployeeDirectoryItem>("/employees");
 export const getEmployeePage = (options: {
   search?: string;

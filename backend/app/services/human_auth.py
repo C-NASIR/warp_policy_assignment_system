@@ -737,7 +737,13 @@ def password_reset_token_exposed() -> bool:
 
 
 def session_recently_reauthenticated(record: AuthSession) -> bool:
-    return current_datetime() - ensure_utc(record.reauthenticated_at) < timedelta(
+    return reauthentication_is_recent(record.reauthenticated_at)
+
+
+def reauthentication_is_recent(reauthenticated_at: datetime | None) -> bool:
+    if reauthenticated_at is None:
+        return False
+    return current_datetime() - ensure_utc(reauthenticated_at) < timedelta(
         seconds=reauth_ttl_seconds()
     )
 

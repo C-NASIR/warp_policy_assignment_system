@@ -5,6 +5,7 @@ import hmac
 import os
 import secrets
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -89,15 +90,52 @@ class AuthenticatedPrincipal:
     credential_id: int | None
     credential_name: str
     authentication_method: str
+    identity_kind: str = "service"
     user_id: int | None = None
     session_id: int | None = None
     permissions: frozenset[str] = frozenset()
+    client_id: str | None = None
+    expires_at: datetime | None = None
+    resource: str | None = None
+    reauthenticated_at: datetime | None = None
+    mfa_verified: bool = False
 
     def has_scope(self, scope: str) -> bool:
         return WILDCARD_SCOPE in self.scopes or scope in self.scopes
 
+    @property
+    def is_user(self) -> bool:
+        return self.identity_kind == "user"
+
 
 def authenticate_token(session: Session, token: str) -> AuthenticatedPrincipal:
+    if token.startswith("poa_"):
+        from app.services.access_control import effective_permissions
+        from app.services.oauth import find_active_access_token
+
+        found = find_active_access_token(session, token)
+        if found is None:
+            raise AuthenticationError(
+                "The OAuth access token is invalid or expired",
+                code="invalid_credential",
+            )
+        oauth_token, user = found
+        return AuthenticatedPrincipal(
+            subject=user.email,
+            scopes=frozenset(oauth_token.scopes),
+            credential_id=oauth_token.id,
+            credential_name=f"oauth:{oauth_token.client_id}",
+            authentication_method="oauth_access_token",
+            identity_kind="user",
+            user_id=user.id,
+            permissions=effective_permissions(session, user),
+            client_id=oauth_token.client_id,
+            expires_at=oauth_token.access_expires_at,
+            resource=oauth_token.resource,
+            reauthenticated_at=oauth_token.reauthenticated_at,
+            mfa_verified=oauth_token.mfa_verified,
+        )
+
     bootstrap_token = os.getenv("AUTH_BOOTSTRAP_TOKEN")
     if (
         bootstrap_token

@@ -8,7 +8,7 @@ import { Button, FormField, TextInput } from "@/components/ui";
 import { firstAllowedPath } from "@/lib/permissions";
 import type { CurrentUser } from "@/lib/types";
 
-export function LoginForm() {
+export function LoginForm({ nextPath }: { nextPath?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +51,7 @@ export function LoginForm() {
             "Authentication could not be completed.",
         );
       }
-      router.replace(firstAllowedPath(result as CurrentUser));
+      router.replace(nextPath ?? firstAllowedPath(result as CurrentUser));
       router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Authentication could not be completed.");

@@ -18,29 +18,26 @@ The repository contains a Next.js web application and a FastAPI API backed by Po
 ## Architecture
 
 ```text
-Browser
-  |
-  v
-Next.js frontend (localhost:3000)
-  |  same-origin proxy and HTTP-only session cookie
-  v
-FastAPI backend (localhost:8000)
-  |
-  +--> Policy matching and assignment reconciliation
-  +--> Authentication, authorization, and auditing
-  |
-  v
-PostgreSQL
+Browser --> Next.js frontend (localhost:3000) -- session cookie --+
+                                                               |
+Agent --> MCP server (localhost:8001/mcp) -- OAuth bearer ------+--> FastAPI backend (localhost:8000)
+                                                                      |
+                                                                      +--> Policy matching and assignment reconciliation
+                                                                      +--> Authentication, authorization, and auditing
+                                                                      |
+                                                                      v
+                                                                 PostgreSQL
 ```
 
-The backend is the source of truth for authentication, authorization, policy evaluation, reconciliation, and audit data. The frontend performs server-side API calls through a same-origin proxy so browser JavaScript never handles the session token directly.
+The backend is the source of truth for authentication, authorization, policy evaluation, reconciliation, and audit data. The frontend performs server-side API calls through a same-origin proxy so browser JavaScript never handles the session token directly. The MCP service is an HTTP-only adapter: it exposes curated tools to agents and forwards a user-bound OAuth credential to the backend without accessing PostgreSQL directly.
 
 ## Repository layout
 
 ```text
 .
 ├── backend/    FastAPI application, domain services, worker, and tests
-└── frontend/   Next.js application, UI components, and API integration
+├── frontend/   Next.js application, UI components, and OAuth consent screen
+└── mcp/        Streamable HTTP MCP server and PolicyOS tool adapter
 ```
 
 See the component guides for deeper technical and operational detail:
@@ -88,6 +85,17 @@ See the component guides for deeper technical and operational detail:
    ```
 
 4. Open <http://localhost:3000/signup> to create the one-time Root account. After the workspace is initialized, additional users are provisioned by an administrator from **Access control**.
+
+5. Start the MCP service:
+
+   ```bash
+   cd mcp
+   cp .env.example .env
+   uv sync
+   uv run policyos-mcp
+   ```
+
+   Connect an MCP-compatible client to <http://127.0.0.1:8001/mcp>. The client discovers the backend OAuth endpoints, opens the PolicyOS login and consent page, and receives a user-bound access token. Agent calls receive the same permissions, employee visibility, and assignment-field visibility as that user's browser session.
 
 To explore a populated persistent workspace instead, load the test-only Cedar
 Harbor Wind Systems tenant before starting the backend:
@@ -143,6 +151,13 @@ Run the frontend checks separately:
 cd frontend
 npm run lint
 npm run build
+```
+
+Run the MCP adapter checks separately:
+
+```bash
+cd mcp
+uv run python -m pytest
 ```
 
 ## Important deployment notes

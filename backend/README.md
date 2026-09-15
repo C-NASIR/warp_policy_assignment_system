@@ -128,7 +128,7 @@ uv run python scripts/emergency_root_recovery.py root@example.com
 
 The tool verifies the separately stored recovery key, prompts for a new password, disables MFA, revokes every Root session, and writes both a critical security event and audit entry in the same transaction. After recovery, sign in, enroll MFA immediately, store the new recovery codes offline, review the access report and security events, then rotate `AUTH_ROOT_RECOVERY_KEY`.
 
-Bearer credentials remain the machine-to-machine authentication mechanism for the MCP server and automation. The bootstrap token grants all operations and exists only to issue the first persistent API credential. It must contain at least 32 bytes, must be stored in the deployment secret manager, and should be removed after administrative credentials have been issued. `AUTH_BOOTSTRAP_SUBJECT` controls its audit identity and defaults to `bootstrap`. A newly issued `wpa_...` token is returned exactly once; the database stores only its SHA-256 hash and safe metadata. Browser code must never contain a shared API credential.
+Bearer API credentials remain the machine-to-machine authentication mechanism for unattended automation. The MCP server uses a separate OAuth authorization-code flow with PKCE so interactive agent requests retain the connected user's PolicyOS identity. The bootstrap token grants all operations and exists only to issue the first persistent API credential. It must contain at least 32 bytes, must be stored in the deployment secret manager, and should be removed after administrative credentials have been issued. `AUTH_BOOTSTRAP_SUBJECT` controls its audit identity and defaults to `bootstrap`. Newly issued `wpa_...`, `poa_...`, and `por_...` secrets are stored only as SHA-256 hashes. Browser code must never contain a shared API credential.
 
 Run tests with:
 
@@ -388,8 +388,8 @@ The backend remains authoritative; the frontend uses the same effective list to
 hide inaccessible navigation and mutation controls. OpenAPI publishes
 `x-required-permissions` for every protected operation.
 
-Machine API credentials retain their separate, coarse operation scopes so MCP
-and automation clients remain compatible:
+Machine API credentials retain their separate, coarse operation scopes so
+automation clients can support non-user workloads:
 
 - `read`: employees, policies, groups, rule-builder catalogs, and assignments
 - `preview`: non-persisting change simulations
@@ -406,6 +406,10 @@ scope returns a structured `403` containing the required and granted scopes.
 OpenAPI also exposes the bearer scheme and an `x-required-scopes` value on every
 protected operation, so generated clients and MCP tooling can explain and
 enforce the machine boundary.
+
+Interactive MCP access uses OAuth dynamic client registration, authorization code with S256 PKCE, rotating refresh tokens, and revocation. An OAuth access token resolves to a normal `User` on every request. The backend reloads that user's current permissions, employee scope, assignment-field scope, account status, and password lifecycle before applying the operation. Cookie and OAuth authentication are therefore two credential transports for the same user authorization model. Machine API credentials remain service identities with their existing coarse scopes.
+
+OAuth discovery is published at `/.well-known/oauth-authorization-server`. The browser authorization screen is hosted by the frontend at `/oauth/authorize`; token, registration, revocation, and user-info endpoints remain on the backend. Configure their public locations with `OAUTH_ISSUER_URL`, `OAUTH_AUTHORIZATION_URL`, and `MCP_PUBLIC_URL`.
 
 ## Error contract
 
