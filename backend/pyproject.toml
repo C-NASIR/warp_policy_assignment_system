@@ -17,6 +17,9 @@ dependencies = [
 dev = [
     "pytest>=9.0.2",
     "httpx>=0.28.1",
+    # The repository-level type checker may use the backend environment while
+    # analyzing the sibling MCP service.
+    "mcp>=2.2.0,<3",
 ]
 
 [tool.pytest.ini_options]

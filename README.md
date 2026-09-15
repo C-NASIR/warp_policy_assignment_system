@@ -37,7 +37,7 @@ The backend is the source of truth for authentication, authorization, policy eva
 .
 ├── backend/    FastAPI application, domain services, worker, and tests
 ├── frontend/   Next.js application, UI components, and OAuth consent screen
-└── mcp/        Streamable HTTP MCP server and PolicyOS tool adapter
+└── mcp_server/ Streamable HTTP MCP server and PolicyOS tool adapter
 ```
 
 See the component guides for deeper technical and operational detail:
@@ -89,7 +89,7 @@ See the component guides for deeper technical and operational detail:
 5. Start the MCP service:
 
    ```bash
-   cd mcp
+   cd mcp_server
    cp .env.example .env
    uv sync
    uv run policyos-mcp
@@ -156,7 +156,7 @@ npm run build
 Run the MCP adapter checks separately:
 
 ```bash
-cd mcp
+cd mcp_server
 uv run python -m pytest
 ```
 

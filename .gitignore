@@ -4,4 +4,4 @@ __pycache__/
 *.py[cod]
 *.db
 backend/.env
-mcp/.env
+mcp_server/.env
