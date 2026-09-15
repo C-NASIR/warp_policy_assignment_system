@@ -247,6 +247,35 @@
   font-size: 10px;
   line-height: 1.5;
 }
+.productScope :global(.fixed-cardinality) {
+  margin-top: 16px;
+}
+.productScope :global(.fixed-cardinality-value) {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+}
+.productScope :global(.fixed-cardinality-value strong),
+.productScope :global(.fixed-cardinality-value small) {
+  display: block;
+}
+.productScope :global(.fixed-cardinality-value strong) {
+  font-size: 10px;
+}
+.productScope :global(.fixed-cardinality-value small) {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.productScope :global(.assignment-field-form-footer > .form-hint) {
+  min-width: 0;
+}
+.productScope :global(.assignment-field-form-footer .heading-actions) {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
 .productScope :global(.audit-table-scroll) {
   overflow-x: auto;
 }
@@ -264,7 +293,7 @@
   width: 260px;
 }
 .productScope :global(.audit-table .audit-action-column) {
-  width: 100px;
+  width: 180px;
 }
 .productScope :global(.audit-table .audit-details-column) {
   width: 50px;
@@ -272,6 +301,9 @@
 .productScope :global(.audit-table td) {
   height: 70px;
   vertical-align: middle;
+}
+.productScope :global(.audit-event-row) {
+  cursor: pointer;
 }
 .productScope :global(.audit-table th:last-child),
 .productScope :global(.audit-table td:last-child) {
@@ -312,6 +344,7 @@
 .productScope :global(.audit-detail-row td) {
   padding: 0 !important;
   background: #f8f7fc;
+  text-align: left;
 }
 .productScope :global(.audit-record-reference) {
   padding: 10px 16px;
@@ -331,6 +364,23 @@
   min-width: 0;
   padding: 14px 16px;
   background: #f8f7fc;
+  text-align: left;
+}
+.productScope :global(.audit-payload > .audit-payload-before) {
+  background: var(--danger-soft);
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+.productScope :global(.audit-payload > .audit-payload-after) {
+  background: var(--success-soft);
+  box-shadow: inset 3px 0 0 var(--success);
+}
+.productScope :global(.audit-payload .audit-payload-before .label),
+.productScope :global(.audit-payload .audit-payload-before pre) {
+  color: var(--danger);
+}
+.productScope :global(.audit-payload .audit-payload-after .label),
+.productScope :global(.audit-payload .audit-payload-after pre) {
+  color: var(--success);
 }
 .productScope :global(.audit-payload pre) {
   max-height: 220px;

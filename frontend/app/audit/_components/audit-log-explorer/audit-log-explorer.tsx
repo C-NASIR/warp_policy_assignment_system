@@ -162,9 +162,11 @@ function AuditRow({
   expanded: boolean;
   onToggle(): void;
 }) {
+  const changedSnapshots = diffAuditSnapshots(event.before, event.after);
+
   return (
     <>
-      <tr>
+      <tr className="audit-event-row" onClick={onToggle}>
         <td>
           <time className="audit-time" dateTime={event.timestamp}>
             <span>{formatDate(event.timestamp)}</span>
@@ -199,7 +201,10 @@ function AuditRow({
         <td>
           <button
             className="icon-button audit-expand-button"
-            onClick={onToggle}
+            onClick={(clickEvent) => {
+              clickEvent.stopPropagation();
+              onToggle();
+            }}
             aria-expanded={expanded}
             aria-label={expanded ? "Hide event payload" : "Show event payload"}
           >
@@ -214,13 +219,13 @@ function AuditRow({
               Technical reference · {event.entity_type} #{event.entity_id}
             </div>
             <div className="audit-payload">
-              <div>
+              <div className="audit-payload-before">
                 <span className="label">Before</span>
-                <pre>{JSON.stringify(event.before, null, 2) || "None"}</pre>
+                <pre>{formatAuditSnapshot(changedSnapshots.before)}</pre>
               </div>
-              <div>
+              <div className="audit-payload-after">
                 <span className="label">After</span>
-                <pre>{JSON.stringify(event.after, null, 2) || "None"}</pre>
+                <pre>{formatAuditSnapshot(changedSnapshots.after)}</pre>
               </div>
             </div>
           </td>
@@ -228,6 +233,78 @@ function AuditRow({
       )}
     </>
   );
+}
+
+function diffAuditSnapshots(
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown> | null,
+) {
+  if (!before || !after) return { before, after };
+  return diffAuditRecords(before, after);
+}
+
+function diffAuditRecords(before: Record<string, unknown>, after: Record<string, unknown>) {
+  const changedBefore: Record<string, unknown> = {};
+  const changedAfter: Record<string, unknown> = {};
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+
+  for (const key of keys) {
+    const beforeHasKey = Object.hasOwn(before, key);
+    const afterHasKey = Object.hasOwn(after, key);
+
+    if (!beforeHasKey) {
+      changedAfter[key] = after[key];
+      continue;
+    }
+    if (!afterHasKey) {
+      changedBefore[key] = before[key];
+      continue;
+    }
+
+    const change = diffAuditValues(before[key], after[key]);
+    if (!change) continue;
+    changedBefore[key] = change.before;
+    changedAfter[key] = change.after;
+  }
+
+  return { before: changedBefore, after: changedAfter };
+}
+
+function diffAuditValues(before: unknown, after: unknown) {
+  if (auditValuesEqual(before, after)) return null;
+  if (isAuditRecord(before) && isAuditRecord(after)) {
+    return diffAuditRecords(before, after);
+  }
+  return { before, after };
+}
+
+function auditValuesEqual(before: unknown, after: unknown): boolean {
+  if (Object.is(before, after)) return true;
+  if (Array.isArray(before) && Array.isArray(after)) {
+    return (
+      before.length === after.length &&
+      before.every((value, index) => auditValuesEqual(value, after[index]))
+    );
+  }
+  if (isAuditRecord(before) && isAuditRecord(after)) {
+    const beforeKeys = Object.keys(before);
+    const afterKeys = Object.keys(after);
+    return (
+      beforeKeys.length === afterKeys.length &&
+      beforeKeys.every(
+        (key) => Object.hasOwn(after, key) && auditValuesEqual(before[key], after[key]),
+      )
+    );
+  }
+  return false;
+}
+
+function isAuditRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function formatAuditSnapshot(snapshot: Record<string, unknown> | null) {
+  return snapshot === null ? "None" : JSON.stringify(snapshot, null, 2);
 }
 
 function summarizeChange(

@@ -100,9 +100,7 @@ export function AssignmentFieldManager({
       );
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(
-          result.error?.message ?? "The assignment field could not be saved.",
-        );
+        throw new Error(result.error?.message ?? "The assignment field could not be saved.");
       const saved = result as AssignmentField;
       setFields((current) =>
         editingField
@@ -250,7 +248,9 @@ export function AssignmentFieldManager({
               <div>
                 <h2>{editingField ? "Edit allowed values" : "Create assignment field"}</h2>
                 <div className="panel-caption">
-                  Choose carefully—cardinality defines resolution behavior.
+                  {editingField
+                    ? "Update the values available for this assignment field."
+                    : "Choose carefully—cardinality defines resolution behavior."}
                 </div>
               </div>
               <button className="icon-button" onClick={() => setOpen(false)} aria-label="Close">
@@ -266,7 +266,10 @@ export function AssignmentFieldManager({
               )}
               <label className="field">
                 <span className="field-label">
-                  Field name <span className="required">Required</span>
+                  Field name
+                  <span className="required">
+                    {editingField ? "Fixed after creation" : "Required"}
+                  </span>
                 </span>
                 <input
                   className="input"
@@ -280,39 +283,53 @@ export function AssignmentFieldManager({
                   placeholder="e.g. Holiday calendar"
                 />
               </label>
-              <fieldset className="choice-grid">
-                <legend className="field-label">Cardinality</legend>
-                <label className={`choice-card${newCardinality === "one" ? " selected" : ""}`}>
-                  <input
-                    type="radio"
-                    name="cardinality"
-                    value="one"
-                    checked={newCardinality === "one"}
-                    disabled={Boolean(editingField)}
-                    onChange={() => setNewCardinality("one")}
-                  />
-                  <span>
-                    <strong>One value</strong>
+              {editingField ? (
+                <div className="fixed-cardinality">
+                  <span className="field-label">
+                    Cardinality <span className="required">Fixed after creation</span>
+                  </span>
+                  <div className="fixed-cardinality-value">
+                    <strong>{newCardinality === "one" ? "One value" : "Many values"}</strong>
                     <small>
-                      Competing policies resolve by priority, then deterministically by version.
+                      {newCardinality === "one"
+                        ? "Competing policies resolve by priority, then deterministically by version."
+                        : "Unique values from all matching policies are combined as a set."}
                     </small>
-                  </span>
-                </label>
-                <label className={`choice-card${newCardinality === "many" ? " selected" : ""}`}>
-                  <input
-                    type="radio"
-                    name="cardinality"
-                    value="many"
-                    checked={newCardinality === "many"}
-                    disabled={Boolean(editingField)}
-                    onChange={() => setNewCardinality("many")}
-                  />
-                  <span>
-                    <strong>Many values</strong>
-                    <small>Unique values from all matching policies are combined as a set.</small>
-                  </span>
-                </label>
-              </fieldset>
+                  </div>
+                </div>
+              ) : (
+                <fieldset className="choice-grid">
+                  <legend className="field-label">Cardinality</legend>
+                  <label className={`choice-card${newCardinality === "one" ? " selected" : ""}`}>
+                    <input
+                      type="radio"
+                      name="cardinality"
+                      value="one"
+                      checked={newCardinality === "one"}
+                      onChange={() => setNewCardinality("one")}
+                    />
+                    <span>
+                      <strong>One value</strong>
+                      <small>
+                        Competing policies resolve by priority, then deterministically by version.
+                      </small>
+                    </span>
+                  </label>
+                  <label className={`choice-card${newCardinality === "many" ? " selected" : ""}`}>
+                    <input
+                      type="radio"
+                      name="cardinality"
+                      value="many"
+                      checked={newCardinality === "many"}
+                      onChange={() => setNewCardinality("many")}
+                    />
+                    <span>
+                      <strong>Many values</strong>
+                      <small>Unique values from all matching policies are combined as a set.</small>
+                    </span>
+                  </label>
+                </fieldset>
+              )}
               <label className="field">
                 <span className="field-label">Value control</span>
                 <select
@@ -345,7 +362,7 @@ export function AssignmentFieldManager({
                 </label>
               )}
             </div>
-            <div className="form-footer">
+            <div className="form-footer assignment-field-form-footer">
               <span className="form-hint">
                 {editingField
                   ? "Existing policy history keeps its stored values. New changes use this list."
