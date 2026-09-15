@@ -7,7 +7,7 @@ import { hasPermission } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Employees" };
 
-const pageSize = 50;
+const pageSize = 10;
 
 export default async function EmployeesPage({
   searchParams,

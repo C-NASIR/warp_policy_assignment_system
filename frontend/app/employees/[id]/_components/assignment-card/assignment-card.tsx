@@ -3,36 +3,16 @@
 import { ChevronDown, ChevronUp, Network, ShieldCheck, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui";
-import { formatStateValue, titleCase } from "@/lib/format";
-import type { Assignment, StateOption } from "@/lib/types";
+import { titleCase } from "@/lib/format";
+import type { CurrentAssignment } from "@/lib/types";
 
-type Explanation = {
-  reason?: string;
-  policy?: { name?: string };
-  origins?: {
-    type?: string;
-    group_name?: string;
-    matched_clauses?: {
-      conditions?: { field?: string; operator?: string; expected?: unknown; actual?: unknown }[];
-    }[];
-  }[];
-  selection?: { priority?: number };
-  override?: { value?: string };
-  replaced_policy_assignments?: { value?: string; policy_name?: string }[];
-};
-
-export function AssignmentCard({
-  assignment,
-  states,
-}: {
-  assignment: Assignment;
-  states: StateOption[];
-}) {
+export function AssignmentCard({ assignment }: { assignment: CurrentAssignment }) {
   const [open, setOpen] = useState(false);
-  const explanation = assignment.explanation as Explanation;
+  const explanation = assignment.explanation;
   const isOverride = assignment.source_override_id !== null;
   const policyName = explanation.policy?.name ?? (isOverride ? "Manual override" : "Policy rule");
   const groupName = explanation.origins?.find((item) => item.type === "group")?.group_name;
+  const replacedAssignment = explanation.selection?.replaced_policy_assignments[0];
   const evidence =
     explanation.origins
       ?.flatMap((item) => item.matched_clauses ?? [])
@@ -76,7 +56,7 @@ export function AssignmentCard({
               )}
               <span>
                 {isOverride
-                  ? `This value was assigned manually${explanation.replaced_policy_assignments?.[0] ? ` and replaced ${explanation.replaced_policy_assignments[0].value} from ${explanation.replaced_policy_assignments[0].policy_name}.` : "."}`
+                  ? `This value was assigned manually${replacedAssignment ? ` and replaced ${replacedAssignment.value}${replacedAssignment.policy_name ? ` from ${replacedAssignment.policy_name}` : " from a policy"}.` : "."}`
                   : groupName
                     ? `${policyName} applies because this employee belongs to the ${groupName} group.`
                     : `${policyName} matched this employee and won the priority comparison.`}
@@ -88,15 +68,10 @@ export function AssignmentCard({
                   <div className="evidence-row" key={`${item.field}-${index}`}>
                     <span>
                       {titleCase(item.field ?? "Condition")} {item.operator}{" "}
-                      {item.field === "state"
-                        ? formatStateValue(item.expected, states)
-                        : String(item.expected)}
+                      {item.expected_label ?? String(item.expected)}
                     </span>
                     <Badge tone="success">
-                      Matched ·{" "}
-                      {item.field === "state"
-                        ? formatStateValue(item.actual, states)
-                        : String(item.actual)}
+                      Matched · {item.actual_label ?? String(item.actual)}
                     </Badge>
                   </div>
                 ))}

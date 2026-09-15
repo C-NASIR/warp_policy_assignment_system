@@ -119,6 +119,12 @@ def test_reporting_tree_scope_filters_every_employee_boundary(client):
         grandchild["id"],
     }
     assert all(set(item) == {"id", "label"} for item in candidates.json())
+    assert client.get("/assignment-fields").status_code == 403
+    override_options = client.get(
+        f"/employees/{report['id']}/overrides/options"
+    )
+    assert override_options.status_code == 200
+    assert override_options.json() == []
     assert client.get(f"/employees/{peer['id']}").status_code == 404
     assert client.patch(
         f"/employees/{peer['id']}",

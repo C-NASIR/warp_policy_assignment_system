@@ -10,6 +10,7 @@ import type {
   Employee,
   EmployeeAssignmentPreview,
   EmployeeManagerCandidate,
+  EmployeeManagerSummary,
   EmployeeReferenceData,
 } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
@@ -29,15 +30,15 @@ const createBlankEmployee = (): EmployeeInput => ({
 
 export function EmployeeEditor({
   employee,
-  employees = [],
-  referenceData,
+  manager,
+  referenceData: initialReferenceData,
   mfaEnabled = false,
   compact = false,
   trigger,
 }: {
   employee?: Employee;
-  employees?: Employee[];
-  referenceData: EmployeeReferenceData;
+  manager?: EmployeeManagerSummary | null;
+  referenceData?: EmployeeReferenceData;
   mfaEnabled?: boolean;
   compact?: boolean;
   trigger?: ReactNode;
@@ -68,6 +69,11 @@ export function EmployeeEditor({
   const [mfaCode, setMfaCode] = useState("");
   const [passwordInvalid, setPasswordInvalid] = useState(false);
   const [mfaInvalid, setMfaInvalid] = useState(false);
+  const [referenceData, setReferenceData] = useState<EmployeeReferenceData | null>(
+    initialReferenceData ?? null,
+  );
+  const [referenceLoading, setReferenceLoading] = useState(false);
+  const [referenceError, setReferenceError] = useState("");
   useModalAccessibility(compact && open, () => {
     resetReauthentication();
     setOpen(false);
@@ -78,17 +84,16 @@ export function EmployeeEditor({
     return () => window.clearTimeout(timeout);
   }, [compact, success]);
 
-  const currentManager = employees.find((item) => item.id === data.manager_id);
   const initialManagerCandidate: EmployeeManagerCandidate | undefined = data.manager_id
     ? {
         id: data.manager_id,
-        label: currentManager
-          ? `${currentManager.name} · ${currentManager.department} · ${formatEmployeeId(currentManager.id)}`
+        label: manager
+          ? `${manager.name} · ${formatEmployeeId(manager.id)}`
           : `Employee ${formatEmployeeId(data.manager_id)}`,
       }
     : undefined;
-  const departments = referenceData.departments;
-  const employeeTypes = referenceData.employee_types;
+  const departments = referenceData?.departments ?? [];
+  const employeeTypes = referenceData?.employee_types ?? [];
   const payload = useMemo(
     () => ({
       ...data,
@@ -113,6 +118,23 @@ export function EmployeeEditor({
     setMfaCode("");
     setPasswordInvalid(false);
     setMfaInvalid(false);
+  }
+
+  async function loadReferenceData() {
+    if (referenceData || referenceLoading) return;
+    setReferenceLoading(true);
+    setReferenceError("");
+    try {
+      const response = await fetch("/api/backend/employees/reference-data");
+      if (!response.ok) throw new Error("Employee options could not be loaded.");
+      setReferenceData((await response.json()) as EmployeeReferenceData);
+    } catch (reason) {
+      setReferenceError(
+        reason instanceof Error ? reason.message : "Employee options could not be loaded.",
+      );
+    } finally {
+      setReferenceLoading(false);
+    }
   }
 
   const change = employee
@@ -297,7 +319,7 @@ export function EmployeeEditor({
                 State <span className="required">Required</span>
               </span>
               <StateCombobox
-                states={referenceData.states}
+                states={referenceData?.states ?? []}
                 value={data.state}
                 invalid={validationAttempted && !data.state}
                 onChange={(value) => update("state", value)}
@@ -444,6 +466,7 @@ export function EmployeeEditor({
           setError("");
           resetReauthentication();
           setOpen(true);
+          void loadReferenceData();
         }}
       >
         {trigger}
@@ -469,7 +492,22 @@ export function EmployeeEditor({
                 <X size={16} />
               </button>
             </div>
-            <div className="modal-body">{form}</div>
+            <div className="modal-body">
+              {referenceLoading ? (
+                <div className="empty-state compact">Loading employee options…</div>
+              ) : referenceError ? (
+                <div className="section-stack">
+                  <div className="error-banner" role="alert">
+                    {referenceError}
+                  </div>
+                  <Button variant="secondary" onClick={() => void loadReferenceData()}>
+                    Try again
+                  </Button>
+                </div>
+              ) : (
+                form
+              )}
+            </div>
           </section>
         </div>
       )}

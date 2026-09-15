@@ -90,10 +90,7 @@ def test_assignment_explains_condition_match_and_priority_competition(client):
     ).json()[0]
     explanation = assignment["explanation"]
     assert explanation["reason"] == "policy"
-    assert explanation["policy"] == {
-        "id": california["id"],
-        "name": "California Policy",
-    }
+    assert explanation["policy"] == {"name": "California Policy"}
     condition = explanation["origins"][0]["matched_clauses"][0][
         "conditions"
     ][0]
@@ -102,22 +99,14 @@ def test_assignment_explains_condition_match_and_priority_competition(client):
         "operator": "=",
         "expected": "CA",
         "actual": "CA",
-        "result": True,
+        "expected_label": "California",
+        "actual_label": "California",
     }
-    candidates = explanation["selection"]["candidates"]
-    assert [
-        (
-            item["policy_id"],
-            item["value"],
-            item["priority"],
-            item["selected"],
-            item["outcome"],
-        )
-        for item in candidates
-    ] == [
-        (california["id"], "biweekly", 20, True, "selected"),
-        (engineering["id"], "weekly", 10, False, "lower_priority"),
-    ]
+    assert explanation["selection"] == {
+        "priority": 20,
+        "replaced_policy_assignments": [],
+    }
+    assert "candidates" not in explanation["selection"]
 
 
 def test_group_origin_and_changed_reason_create_assignment_history(client):
@@ -144,17 +133,23 @@ def test_group_origin_and_changed_reason_create_assignment_history(client):
         f"/employees/{employee['id']}/assignments/history"
     ).json()
     assert len(history) == 2
+    assert "explanation" not in history[0]
+    historical = client.get(
+        f"/employees/{employee['id']}/assignments",
+        params={"as_of": history[0]["effective_from"]},
+    ).json()
     assert [
-        origin["type"] for origin in history[0]["explanation"]["origins"]
+        origin["type"] for origin in historical[0]["explanation"]["origins"]
     ] == ["condition_match"]
+    current = client.get(f"/employees/{employee['id']}/assignments").json()
     assert [
-        origin["type"] for origin in history[1]["explanation"]["origins"]
+        origin["type"] for origin in current[0]["explanation"]["origins"]
     ] == ["condition_match", "group"]
-    group_origin = history[1]["explanation"]["origins"][1]
+    group_origin = current[0]["explanation"]["origins"][1]
     assert group_origin == {
         "type": "group",
-        "group_id": group["id"],
         "group_name": "California Employees",
+        "matched_clauses": [],
     }
     assert history[0]["effective_until"] is not None
 
@@ -166,15 +161,10 @@ def test_group_origin_and_changed_reason_create_assignment_history(client):
         f"/employees/{employee['id']}/assignments/history"
     ).json()
     assert len(history) == 3
+    current = client.get(f"/employees/{employee['id']}/assignments").json()
     assert [
-        origin["type"] for origin in history[2]["explanation"]["origins"]
+        origin["type"] for origin in current[0]["explanation"]["origins"]
     ] == ["group"]
-
-    historical = client.get(
-        f"/employees/{employee['id']}/assignments",
-        params={"as_of": history[0]["effective_from"]},
-    ).json()
-    assert historical[0]["explanation"] == history[0]["explanation"]
 
 
 def test_override_and_future_projection_include_explanations(client):
@@ -201,14 +191,11 @@ def test_override_and_future_projection_include_explanations(client):
     current = client.get(f"/employees/{employee['id']}/assignments").json()[0]
     explanation = current["explanation"]
     assert explanation["reason"] == "manual_override"
-    assert explanation["override"] == {
-        "id": override.json()["id"],
-        "value": "monthly",
-    }
+    assert explanation["override"] == {"value": "monthly"}
     assert explanation["selection"]["replaced_policy_assignments"] == [
         {
             "value": "biweekly",
-            "source_policy_version_id": policy["versions"][0]["id"],
+            "policy_name": "California Policy",
         }
     ]
 
@@ -225,7 +212,17 @@ def test_override_and_future_projection_include_explanations(client):
     projected = future.json()[0]["assignments"][0]
     assert projected["value"] == "monthly"
     assert projected["explanation"]["reason"] == "manual_override"
-    assert projected["explanation"]["override"] == explanation["override"]
+    assert projected["explanation"]["override"] == {
+        "id": override.json()["id"],
+        "value": "monthly",
+    }
+    assert projected["explanation"]["selection"]["replaced_policy_assignments"] == [
+        {
+            "value": "biweekly",
+            "source_policy_version_id": policy["versions"][0]["id"],
+            "policy_name": "California Policy",
+        }
+    ]
     assert projected["explanation"]["evaluation_date"] == (
         current_date() + timedelta(days=30)
     ).isoformat()

@@ -11,12 +11,23 @@ from app.dependencies import (
     DatabaseSession,
     EmployeeScope,
 )
-from app.models import Employee, EmployeeAssignment, EmployeeOverride
+from app.models import (
+    AssignmentFieldDefinition,
+    Employee,
+    EmployeeAssignment,
+    EmployeeOverride,
+)
 from app.pagination import Pagination, paginate_scalars
 from app.schemas import (
+    AssignmentExplanationSummaryRead,
+    AssignmentFieldOverrideOptionRead,
+    AssignmentFieldIdentityRead,
+    AssignmentHistoryRead,
     AssignmentRead,
     AssignmentSummaryRead,
+    CurrentAssignmentRead,
     EmployeeCreate,
+    EmployeeDetailRead,
     EmployeeDirectoryRead,
     EmployeeManagerCandidateRead,
     EmployeeOverrideCreate,
@@ -48,7 +59,7 @@ from app.services.employees import create_employee, delete_employee, update_empl
 from app.services.impact_summaries import build_assignment_summary
 from app.services.org_chart import get_descendant_ids
 from app.services.reconciliation import reconcile_employees
-from app.states import STATES, matching_state_codes, normalize_state_code
+from app.states import STATES, matching_state_codes, normalize_state_code, state_label
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -56,6 +67,103 @@ router = APIRouter(prefix="/employees", tags=["employees"])
 def _search_employee_id(search: str) -> int | None:
     candidate = search.strip().removeprefix("#")
     return int(candidate) if candidate.isdigit() else None
+
+
+def _assignment_field_summary(
+    assignment: EmployeeAssignment,
+) -> AssignmentFieldIdentityRead:
+    return AssignmentFieldIdentityRead.model_validate(
+        assignment.assignment_field_definition
+    )
+
+
+def _display_condition(condition: dict) -> dict:
+    field = str(condition.get("field", ""))
+    expected = condition.get("expected")
+    actual = condition.get("actual")
+    return {
+        "field": field,
+        "operator": str(condition.get("operator", "")),
+        "expected": expected,
+        "actual": actual,
+        "expected_label": (
+            state_label(str(expected)) if field == "state" and expected else None
+        ),
+        "actual_label": (
+            state_label(str(actual)) if field == "state" and actual else None
+        ),
+    }
+
+
+def _display_explanation(
+    assignment: EmployeeAssignment,
+) -> AssignmentExplanationSummaryRead:
+    explanation = assignment.explanation or {}
+    origins = []
+    for origin in explanation.get("origins", []):
+        origins.append(
+            {
+                "type": origin.get("type", "persisted_policy_link"),
+                "group_name": origin.get("group_name"),
+                "matched_clauses": [
+                    {
+                        "conditions": [
+                            _display_condition(condition)
+                            for condition in clause.get("conditions", [])
+                        ]
+                    }
+                    for clause in origin.get("matched_clauses", [])
+                ],
+            }
+        )
+    selection = explanation.get("selection") or {}
+    return AssignmentExplanationSummaryRead.model_validate(
+        {
+            "reason": explanation.get("reason")
+            or (
+                "manual_override"
+                if assignment.source_override_id is not None
+                else "policy"
+            ),
+            "policy": explanation.get("policy"),
+            "origins": origins,
+            "selection": {
+                "priority": selection.get("priority"),
+                "replaced_policy_assignments": selection.get(
+                    "replaced_policy_assignments", []
+                ),
+            },
+            "override": explanation.get("override"),
+        }
+    )
+
+
+def _current_assignment_read(
+    assignment: EmployeeAssignment,
+) -> CurrentAssignmentRead:
+    return CurrentAssignmentRead(
+        id=assignment.id,
+        value=assignment.value,
+        source_policy_version_id=assignment.source_policy_version_id,
+        source_override_id=assignment.source_override_id,
+        explanation=_display_explanation(assignment),
+        assignment_field_definition=_assignment_field_summary(assignment),
+    )
+
+
+def _assignment_history_read(
+    assignment: EmployeeAssignment,
+) -> AssignmentHistoryRead:
+    return AssignmentHistoryRead(
+        id=assignment.id,
+        value=assignment.value,
+        source_type=(
+            "override" if assignment.source_override_id is not None else "policy"
+        ),
+        effective_from=assignment.effective_from,
+        effective_until=assignment.effective_until,
+        assignment_field_definition=_assignment_field_summary(assignment),
+    )
 
 
 @router.post("", response_model=EmployeeRead, status_code=status.HTTP_201_CREATED)
@@ -243,7 +351,7 @@ def reference_data(
     )
 
 
-@router.get("/{employee_id}", response_model=EmployeeRead)
+@router.get("/{employee_id}", response_model=EmployeeDetailRead)
 def get(
     employee_id: int,
     session: DatabaseSession,
@@ -314,7 +422,7 @@ def delete(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/{employee_id}/assignments", response_model=list[AssignmentRead])
+@router.get("/{employee_id}/assignments", response_model=list[CurrentAssignmentRead])
 def assignments(
     employee_id: int,
     session: DatabaseSession,
@@ -326,7 +434,7 @@ def assignments(
     assignment_field_definition_id: Annotated[int | None, Query(gt=0)] = None,
     value: Annotated[str | None, Query(max_length=500)] = None,
     source: Literal["policy", "override"] | None = None,
-) -> list[EmployeeAssignment]:
+) -> list[CurrentAssignmentRead]:
     visible_employee_or_404(session, visibility, employee_id)
     statement = employee_assignments_as_of_statement(employee_id, as_of)
     statement = field_visibility.apply(
@@ -346,12 +454,15 @@ def assignments(
         )
     elif source == "override":
         statement = statement.where(EmployeeAssignment.source_override_id.is_not(None))
-    return paginate_scalars(session, statement, pagination, response)
+    return [
+        _current_assignment_read(assignment)
+        for assignment in paginate_scalars(session, statement, pagination, response)
+    ]
 
 
 @router.get(
     "/{employee_id}/assignments/history",
-    response_model=list[AssignmentRead],
+    response_model=list[AssignmentHistoryRead],
 )
 def assignment_history(
     employee_id: int,
@@ -365,7 +476,7 @@ def assignment_history(
     source: Literal["policy", "override"] | None = None,
     effective_from: datetime | None = None,
     effective_to: datetime | None = None,
-) -> list[EmployeeAssignment]:
+) -> list[AssignmentHistoryRead]:
     visible_employee_or_404(session, visibility, employee_id)
     statement = employee_assignment_history_statement(employee_id)
     statement = field_visibility.apply(
@@ -391,7 +502,28 @@ def assignment_history(
         )
     if effective_to is not None:
         statement = statement.where(EmployeeAssignment.effective_from <= effective_to)
-    return paginate_scalars(session, statement, pagination, response)
+    return [
+        _assignment_history_read(assignment)
+        for assignment in paginate_scalars(session, statement, pagination, response)
+    ]
+
+
+@router.get(
+    "/{employee_id}/overrides/options",
+    response_model=list[AssignmentFieldOverrideOptionRead],
+)
+def override_options(
+    employee_id: int,
+    session: DatabaseSession,
+    visibility: EmployeeScope,
+    field_visibility: AssignmentFieldScope,
+) -> list[AssignmentFieldDefinition]:
+    visible_employee_or_404(session, visibility, employee_id)
+    statement = field_visibility.apply(
+        select(AssignmentFieldDefinition),
+        AssignmentFieldDefinition.id,
+    )
+    return list(session.scalars(statement.order_by(AssignmentFieldDefinition.id)))
 
 
 @router.get("/{employee_id}/overrides", response_model=list[EmployeeOverrideRead])

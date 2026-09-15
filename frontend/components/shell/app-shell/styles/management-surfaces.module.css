@@ -141,6 +141,13 @@
   border-top: 0;
   border-bottom: 1px solid var(--border);
 }
+.productScope :global(.membership-draft-actions .heading-actions) {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+.productScope :global(.membership-draft-actions > span) {
+  min-width: 0;
+}
 .productScope :global(.confirm-card) {
   position: relative;
   width: min(440px, 100%);

@@ -58,6 +58,9 @@ def apply_employee_overrides(
                         {
                             "value": item.value,
                             "source_policy_version_id": item.source_policy_version_id,
+                            "policy_name": (item.explanation or {})
+                            .get("policy", {})
+                            .get("name"),
                         }
                         for item in resolved_assignments
                         if item.assignment_field_definition_id

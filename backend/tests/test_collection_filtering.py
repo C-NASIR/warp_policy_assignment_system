@@ -352,10 +352,23 @@ def test_assignment_override_and_audit_collections_support_filters(client):
 
     history = client.get(
         f"/employees/{alice['id']}/assignments/history",
-        params={"effective_to": (current_datetime() + timedelta(days=1)).isoformat()},
+        params={
+            "effective_to": (current_datetime() + timedelta(days=1)).isoformat(),
+            "limit": 1,
+        },
     )
     assert history.status_code == 200
     assert int(history.headers["X-Total-Count"]) >= 2
+    assert len(history.json()) == 1
+    assert set(history.json()[0]) == {
+        "id",
+        "value",
+        "source_type",
+        "effective_from",
+        "effective_until",
+        "assignment_field_definition",
+    }
+    assert set(history.json()[0]["assignment_field_definition"]) == {"id", "name"}
 
     audits = client.get(
         "/audit-logs",

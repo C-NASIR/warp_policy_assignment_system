@@ -252,9 +252,21 @@ def test_selected_assignment_fields_filter_reads_and_mutations(client):
     assert hidden_version.status_code == 404
 
     assignments = client.get(f"/employees/{employee['id']}/assignments").json()
-    assert {item["assignment_field_definition_id"] for item in assignments} == {
+    assert {item["assignment_field_definition"]["id"] for item in assignments} == {
         access["id"]
     }
+    override_options = client.get(
+        f"/employees/{employee['id']}/overrides/options"
+    )
+    assert override_options.status_code == 200
+    assert override_options.json() == [
+        {
+            "id": access["id"],
+            "name": "application_access",
+            "cardinality": "many",
+            "input": {"type": "text", "options": []},
+        }
+    ]
     directory_entry = next(
         item for item in client.get("/employees").json() if item["id"] == employee["id"]
     )

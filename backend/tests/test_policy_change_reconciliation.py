@@ -72,6 +72,24 @@ def _assignment_history(client, employee):
     return response.json()
 
 
+def _current_identity(assignment):
+    return (
+        assignment["id"],
+        assignment["value"],
+        "override" if assignment["source_override_id"] is not None else "policy",
+        assignment["assignment_field_definition"],
+    )
+
+
+def _history_identity(assignment):
+    return (
+        assignment["id"],
+        assignment["value"],
+        assignment["source_type"],
+        assignment["assignment_field_definition"],
+    )
+
+
 def _audit_logs(client):
     response = client.get("/audit-logs")
     assert response.status_code == 200
@@ -182,7 +200,9 @@ def test_future_policy_version_does_not_change_current_assignments(client):
     assert response.status_code == 201
 
     assert _assignments(client, alice) == [original]
-    assert _assignment_history(client, alice) == [original]
+    assert [_history_identity(item) for item in _assignment_history(client, alice)] == [
+        _current_identity(original)
+    ]
 
 
 def test_archiving_and_reactivating_policy_reconcile_direct_assignments(client):
@@ -326,7 +346,9 @@ def test_conflicting_policy_creation_rolls_back_policy_audits_and_partial_fanout
     assert _assignments(client, alice) == []
     assert _assignment_history(client, alice) == []
     assert _assignments(client, bob) == [bob_original]
-    assert _assignment_history(client, bob) == [bob_original]
+    assert [_history_identity(item) for item in _assignment_history(client, bob)] == [
+        _current_identity(bob_original)
+    ]
     assert _audit_logs(client) == audits_before
 
 
@@ -377,7 +399,11 @@ def test_conflicting_new_version_rolls_back_version_range_audits_and_partial_fan
     assert versions[0]["id"] == changing["versions"][0]["id"]
     assert versions[0]["effective_until"] is None
     assert _assignments(client, alice) == [alice_original]
-    assert _assignment_history(client, alice) == [alice_original]
+    assert [_history_identity(item) for item in _assignment_history(client, alice)] == [
+        _current_identity(alice_original)
+    ]
     assert _assignments(client, bob) == [bob_original]
-    assert _assignment_history(client, bob) == [bob_original]
+    assert [_history_identity(item) for item in _assignment_history(client, bob)] == [
+        _current_identity(bob_original)
+    ]
     assert _audit_logs(client) == audits_before

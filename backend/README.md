@@ -56,9 +56,10 @@ condition evidence or group origins, the field's cardinality and selection
 strategy, and competing candidates with their priorities and outcomes. Override
 explanations identify the override and the policy values it replaced. A material
 explanation change closes the old assignment and creates a new historical row
-even when the final value and winning source remain unchanged. Past and current
-reads return the stored explanation; future projections build the same shape in
-memory without persisting it.
+even when the final value and winning source remain unchanged. Assignment-query
+reads return that complete stored explanation. Employee detail reads project a
+typed display summary, and history lists omit explanation payloads entirely.
+Future projections build the complete shape in memory without persisting it.
 
 `AuditLog` is the system-wide mutation journal. Assignment history answers what was true at a point in time; audit logs answer what changed, when, and which actor caused it. Audit entries are written through one service in the same database transaction as the domain mutation, so both the mutation and its audit entries commit or roll back together. API mutations use the authenticated credential's subject as their actor. `X-Actor` is accepted only from a credential with `actor:override`; this makes delegated attribution explicit instead of allowing callers to spoof it. Automated reconciliation always records assignment mutations as `system`.
 
@@ -233,9 +234,9 @@ state-changing cookie-authenticated requests.
 | POST / GET | `/employees` | Create or list employees |
 | GET | `/employees/manager-candidates` | Search a bounded, visibility-scoped set of valid manager choices |
 | GET | `/employees/reference-data` | Read distinct department and employee-type values visible to the caller |
-| GET / PATCH / DELETE | `/employees/{id}` | Read, update, or delete an employee |
-| GET | `/employees/{id}/assignments` | Read current assignments, or assignments at an optional `as_of` UTC timestamp |
-| GET | `/employees/{id}/assignments/history` | Read complete assignment history |
+| GET / PATCH / DELETE | `/employees/{id}` | Read an employee with a manager summary, or update or delete the employee |
+| GET | `/employees/{id}/assignments` | Read compact current assignment cards, or cards at an optional `as_of` UTC timestamp |
+| GET | `/employees/{id}/assignments/history` | Read paginated, compact assignment history rows |
 | GET | `/employees/{id}/assignment-summary` | Summarize one employee's assignments for a date |
 | POST | `/employees/{id}/refresh` | Recompute matching policies and assignments |
 | POST | `/assignment-queries` | Query recorded past, persisted present, or calculated future assignments for an employee batch |
@@ -247,6 +248,7 @@ state-changing cookie-authenticated requests.
 | POST | `/approval-requests/{id}/approve` | Approve another human author's pending request |
 | POST | `/approval-requests/{id}/reject` | Reject another human author's pending request |
 | GET / POST | `/employees/{id}/overrides` | List or create manual overrides |
+| GET | `/employees/{id}/overrides/options` | List the visible assignment-field options available to an override manager |
 | PATCH / DELETE | `/employees/{id}/overrides/{override_id}` | Update or remove an override |
 | POST / GET | `/groups` | Create or list groups |
 | GET / PATCH | `/groups/{id}` | Read or update a group |

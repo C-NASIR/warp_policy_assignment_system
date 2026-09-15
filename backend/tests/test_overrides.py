@@ -64,6 +64,8 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
     )
     assert response.status_code == 201
     override = response.json()
+    assert set(override) == {"id", "value", "assignment_field_definition"}
+    assert set(override["assignment_field_definition"]) == {"id", "name"}
     assert client.get(f"/employees/{employee['id']}/overrides").json() == [override]
 
     overridden = assignments(client, employee["id"])
@@ -99,11 +101,11 @@ def test_one_value_override_replaces_updates_and_restores_policy_result(client):
         "biweekly",
         "weekly",
     ]
-    assert [item["source_override_id"] for item in history] == [
-        None,
-        override["id"],
-        replacement["id"],
-        None,
+    assert [item["source_type"] for item in history] == [
+        "policy",
+        "override",
+        "override",
+        "policy",
     ]
     assert all(item["effective_until"] is not None for item in history[:-1])
     assert history[-1]["effective_until"] is None

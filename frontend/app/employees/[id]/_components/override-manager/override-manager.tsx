@@ -6,7 +6,12 @@ import { useState } from "react";
 import { Badge, Button, DataTable, Panel } from "@/components/ui";
 import { AssignmentValueInput } from "@/components/shared";
 import { formatDate } from "@/lib/format";
-import type { Assignment, AssignmentField, Employee, EmployeeOverride } from "@/lib/types";
+import type {
+  AssignmentFieldOption,
+  AssignmentHistoryItem,
+  Employee,
+  EmployeeOverride,
+} from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
 
 type OverrideAction = "create" | "update" | "delete";
@@ -23,38 +28,63 @@ type PendingOverride = {
 
 export function OverrideManager({
   employee,
-  fields,
   initialOverrides,
-  history,
+  initialHistory,
+  historyTotal: initialHistoryTotal,
+  historyLimit,
   canManage = true,
 }: {
   employee: Employee;
-  fields: AssignmentField[];
   initialOverrides: EmployeeOverride[];
-  history: Assignment[];
+  initialHistory: AssignmentHistoryItem[];
+  historyTotal: number;
+  historyLimit: number;
   canManage?: boolean;
 }) {
   const router = useRouter();
   const [overrides, setOverrides] = useState(initialOverrides);
+  const [history, setHistory] = useState(initialHistory);
+  const [historyTotal, setHistoryTotal] = useState(initialHistoryTotal);
+  const [historyBusy, setHistoryBusy] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const [fields, setFields] = useState<AssignmentFieldOption[] | null>(null);
+  const [fieldsBusy, setFieldsBusy] = useState(false);
+  const [fieldsError, setFieldsError] = useState("");
   const [editing, setEditing] = useState<EmployeeOverride | "new" | null>(null);
-  const [fieldId, setFieldId] = useState(fields[0]?.id ?? 0);
+  const [fieldId, setFieldId] = useState(0);
   const [value, setValue] = useState("");
   const [pending, setPending] = useState<PendingOverride | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const selectedField = fields.find((field) => field.id === fieldId);
+  const selectedField = fields?.find((field) => field.id === fieldId);
   useModalAccessibility(Boolean(editing || pending), () => {
     setEditing(null);
     setPending(null);
   });
 
-  function openEditor(override?: EmployeeOverride) {
+  async function openEditor(override?: EmployeeOverride) {
     setEditing(override ?? "new");
-    setFieldId(override?.assignment_field_definition_id ?? fields[0]?.id ?? 0);
+    setFieldId(override?.assignment_field_definition.id ?? fields?.[0]?.id ?? 0);
     setValue(override?.value ?? "");
     setError("");
     setNotice("");
+    if (fields || fieldsBusy) return;
+    setFieldsBusy(true);
+    setFieldsError("");
+    try {
+      const response = await fetch(`/api/backend/employees/${employee.id}/overrides/options`);
+      if (!response.ok) throw new Error("Override options could not be loaded.");
+      const options = (await response.json()) as AssignmentFieldOption[];
+      setFields(options);
+      setFieldId(override?.assignment_field_definition.id ?? options[0]?.id ?? 0);
+    } catch (reason) {
+      setFieldsError(
+        reason instanceof Error ? reason.message : "Override options could not be loaded.",
+      );
+    } finally {
+      setFieldsBusy(false);
+    }
   }
 
   function buildChange(
@@ -89,7 +119,7 @@ export function OverrideManager({
   }
 
   async function preview(action: OverrideAction, override?: EmployeeOverride) {
-    const selectedField = action === "delete" ? override?.assignment_field_definition_id : fieldId;
+    const selectedField = action === "delete" ? override?.assignment_field_definition.id : fieldId;
     const selectedValue = action === "delete" ? override?.value : value.trim();
     if (action !== "delete" && (!selectedField || !selectedValue)) {
       setError("Choose an assignment field and enter the manual value.");
@@ -165,20 +195,16 @@ export function OverrideManager({
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(
-          result.error?.message ?? "The override could not be applied.",
-        );
+        throw new Error(result.error?.message ?? "The override could not be applied.");
       const createdId = result.resources?.override_id ?? result.id;
       if (pending.action === "delete")
         setOverrides((current) => current.filter((item) => item.id !== pending.override?.id));
       else {
-        const field = fields.find((item) => item.id === pending.fieldId)!;
+        const field = fields?.find((item) => item.id === pending.fieldId);
+        if (!field) throw new Error("The selected assignment field is no longer available.");
         const next: EmployeeOverride = {
           id: pending.override?.id ?? createdId,
-          employee_id: employee.id,
-          assignment_field_definition_id: pending.fieldId!,
           value: pending.value!,
-          retired_at: null,
           assignment_field_definition: field,
         };
         setOverrides((current) =>
@@ -196,6 +222,33 @@ export function OverrideManager({
       setError(reason instanceof Error ? reason.message : "Unable to apply the override.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function loadMoreHistory() {
+    setHistoryBusy(true);
+    setHistoryError("");
+    try {
+      const query = new URLSearchParams({
+        limit: String(historyLimit),
+        offset: String(history.length),
+      });
+      const response = await fetch(
+        `/api/backend/employees/${employee.id}/assignments/history?${query}`,
+      );
+      if (!response.ok) throw new Error("Assignment history could not be loaded.");
+      const next = (await response.json()) as AssignmentHistoryItem[];
+      setHistory((current) => [
+        ...current,
+        ...next.filter((item) => !current.some((existing) => existing.id === item.id)),
+      ]);
+      setHistoryTotal(Number(response.headers.get("x-total-count") ?? historyTotal));
+    } catch (reason) {
+      setHistoryError(
+        reason instanceof Error ? reason.message : "Assignment history could not be loaded.",
+      );
+    } finally {
+      setHistoryBusy(false);
     }
   }
 
@@ -219,7 +272,7 @@ export function OverrideManager({
             </div>
           </div>
           {canManage && (
-            <Button variant="secondary" size="small" onClick={() => openEditor()}>
+            <Button variant="secondary" size="small" onClick={() => void openEditor()}>
               <Plus size={13} /> Add override
             </Button>
           )}
@@ -243,7 +296,7 @@ export function OverrideManager({
                     <div className="row-actions">
                       <button
                         className="icon-button"
-                        onClick={() => openEditor(override)}
+                        onClick={() => void openEditor(override)}
                         aria-label={`Edit ${override.assignment_field_definition.name} override`}
                       >
                         <Pencil size={13} />
@@ -277,7 +330,7 @@ export function OverrideManager({
           </div>
           <Badge>
             <Clock3 size={11} />
-            {history.length} records
+            {historyTotal} records
           </Badge>
         </div>
         <div className="panel-body flush">
@@ -300,8 +353,8 @@ export function OverrideManager({
                   </td>
                   <td>{assignment.value}</td>
                   <td>
-                    <Badge tone={assignment.source_override_id ? "warning" : "accent"}>
-                      {assignment.source_override_id ? "Override" : "Policy"}
+                    <Badge tone={assignment.source_type === "override" ? "warning" : "accent"}>
+                      {assignment.source_type === "override" ? "Override" : "Policy"}
                     </Badge>
                   </td>
                   <td>
@@ -318,6 +371,28 @@ export function OverrideManager({
           </DataTable>
           {history.length === 0 && (
             <div className="empty-state compact">No assignment history yet.</div>
+          )}
+          {historyError && (
+            <div className="error-banner" role="alert">
+              {historyError}
+            </div>
+          )}
+          {history.length > 0 && (
+            <div className="pagination-footer">
+              <span>
+                Showing {history.length} of {historyTotal} records
+              </span>
+              {history.length < historyTotal && (
+                <Button
+                  variant="secondary"
+                  size="small"
+                  disabled={historyBusy}
+                  onClick={() => void loadMoreHistory()}
+                >
+                  {historyBusy ? "Loading…" : "Load more"}
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </Panel>
@@ -340,57 +415,77 @@ export function OverrideManager({
                 <X size={16} />
               </button>
             </div>
-            <div className="form-section">
-              <label className="field">
-                <span className="field-label">Assignment field</span>
-                <select
-                  className="select"
-                  value={fieldId}
-                  onChange={(event) => {
-                    setFieldId(Number(event.target.value));
-                    setValue("");
-                  }}
+            {fieldsBusy ? (
+              <div className="empty-state compact">Loading override options…</div>
+            ) : fieldsError ? (
+              <div className="section-stack">
+                <div className="error-banner" role="alert">
+                  {fieldsError}
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => void openEditor(editing === "new" ? undefined : editing)}
                 >
-                  {fields.map((field) => (
-                    <option key={field.id} value={field.id}>
-                      {field.name} · {field.cardinality}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="field">
-                <span className="field-label">Manual value</span>
-                <AssignmentValueInput
-                  field={selectedField}
-                  value={value}
-                  label="Manual value"
-                  onChange={setValue}
-                />
+                  Try again
+                </Button>
               </div>
-              <div className="callout">
-                <ShieldCheck size={14} />
-                <span>
-                  This value wins over all policy results for the selected field until the override
-                  is removed.
-                </span>
-              </div>
-            </div>
-            <div className="form-footer">
-              <span className="form-hint">
-                The preview will show replaced or restored assignments.
-              </span>
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  preview(
-                    editing === "new" ? "create" : "update",
-                    editing === "new" ? undefined : editing,
-                  )
-                }
-              >
-                {busy ? "Calculating…" : "Review impact"}
-              </Button>
-            </div>
+            ) : fields?.length ? (
+              <>
+                <div className="form-section">
+                  <label className="field">
+                    <span className="field-label">Assignment field</span>
+                    <select
+                      className="select"
+                      value={fieldId}
+                      onChange={(event) => {
+                        setFieldId(Number(event.target.value));
+                        setValue("");
+                      }}
+                    >
+                      {fields.map((field) => (
+                        <option key={field.id} value={field.id}>
+                          {field.name} · {field.cardinality}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="field">
+                    <span className="field-label">Manual value</span>
+                    <AssignmentValueInput
+                      field={selectedField}
+                      value={value}
+                      label="Manual value"
+                      onChange={setValue}
+                    />
+                  </div>
+                  <div className="callout">
+                    <ShieldCheck size={14} />
+                    <span>
+                      This value wins over all policy results for the selected field until the
+                      override is removed.
+                    </span>
+                  </div>
+                </div>
+                <div className="form-footer">
+                  <span className="form-hint">
+                    The preview will show replaced or restored assignments.
+                  </span>
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      preview(
+                        editing === "new" ? "create" : "update",
+                        editing === "new" ? undefined : editing,
+                      )
+                    }
+                  >
+                    {busy ? "Calculating…" : "Review impact"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="empty-state compact">No assignment fields are available.</div>
+            )}
           </section>
         </div>
       )}

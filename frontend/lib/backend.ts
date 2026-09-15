@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type {
   AccessReview,
   AccountSecurity,
-  Assignment,
+  AssignmentHistoryItem,
   AssignmentField,
   AssignmentSummary,
   AuditLog,
@@ -15,7 +15,9 @@ import type {
   CollectionPage,
   ConditionField,
   CurrentUser,
+  CurrentAssignment,
   Employee,
+  EmployeeDetail,
   EmployeeDirectoryItem,
   EmployeeReferenceData,
   EmployeeOverride,
@@ -209,11 +211,11 @@ export const getApprovalRequests = () => read<ChangeApprovalRequest[]>("/approva
 export const getAccountSecurity = () => read<AccountSecurity>("/auth/security");
 export const getAccessReview = () => read<AccessReview>("/authorization/access-review");
 export async function getEmployee(id: number) {
-  return readOptional<Employee>(`/employees/${id}`);
+  return readOptional<EmployeeDetail>(`/employees/${id}`);
 }
 
 export async function getEmployeeAssignments(id: number) {
-  return readAll<Assignment>(`/employees/${id}/assignments`);
+  return readAll<CurrentAssignment>(`/employees/${id}/assignments`);
 }
 
 export async function getPolicy(id: number) {
@@ -240,6 +242,11 @@ export async function getEmployeeOverrides(id: number) {
   return readAll<EmployeeOverride>(`/employees/${id}/overrides`);
 }
 
-export async function getEmployeeAssignmentHistory(id: number) {
-  return readAll<Assignment>(`/employees/${id}/assignments/history`);
+export async function getEmployeeAssignmentHistoryPage(
+  id: number,
+  options: { limit: number; offset: number },
+) {
+  return readPage<AssignmentHistoryItem>(
+    collectionPath(`/employees/${id}/assignments/history`, options),
+  );
 }

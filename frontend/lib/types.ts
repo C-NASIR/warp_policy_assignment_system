@@ -10,6 +10,15 @@ export type Employee = {
   manager_id: number | null;
 };
 
+export type EmployeeManagerSummary = {
+  id: number;
+  name: string;
+};
+
+export type EmployeeDetail = Employee & {
+  manager: EmployeeManagerSummary | null;
+};
+
 export type EmployeeDirectoryItem = Employee & {
   active_assignment_count: number;
 };
@@ -61,17 +70,53 @@ export type AssignmentField = {
   };
 };
 
-export type Assignment = {
+export type AssignmentFieldOption = Omit<AssignmentField, "conflict_resolution">;
+
+export type AssignmentFieldSummary = {
   id: number;
-  employee_id: number;
-  assignment_field_definition_id: number;
+  name: string;
+};
+
+export type AssignmentConditionEvidence = {
+  field: string;
+  operator: string;
+  expected: unknown;
+  actual: unknown;
+  expected_label: string | null;
+  actual_label: string | null;
+};
+
+export type AssignmentExplanation = {
+  reason: "policy" | "manual_override";
+  policy: { name: string } | null;
+  origins: {
+    type: "condition_match" | "group" | "persisted_policy_link";
+    group_name: string | null;
+    matched_clauses: { conditions: AssignmentConditionEvidence[] }[];
+  }[];
+  selection: {
+    priority: number | null;
+    replaced_policy_assignments: { value: string; policy_name: string | null }[];
+  } | null;
+  override: { value: string } | null;
+};
+
+export type CurrentAssignment = {
+  id: number;
   value: string;
   source_policy_version_id: number | null;
   source_override_id: number | null;
-  explanation: Record<string, unknown>;
+  explanation: AssignmentExplanation;
+  assignment_field_definition: AssignmentFieldSummary;
+};
+
+export type AssignmentHistoryItem = {
+  id: number;
+  value: string;
+  source_type: "policy" | "override";
   effective_from: string;
   effective_until: string | null;
-  assignment_field_definition: AssignmentField;
+  assignment_field_definition: AssignmentFieldSummary;
 };
 
 export type AssignmentPreview = {
@@ -209,11 +254,8 @@ export type GroupDirectoryItem = Group & {
 
 export type EmployeeOverride = {
   id: number;
-  employee_id: number;
-  assignment_field_definition_id: number;
   value: string;
-  retired_at: string | null;
-  assignment_field_definition: AssignmentField;
+  assignment_field_definition: AssignmentFieldSummary;
 };
 
 export type AuditLog = {

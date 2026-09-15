@@ -190,6 +190,8 @@ def required_permissions(method: str, path: str) -> set[str]:
     if path.startswith(("/assignment-summary", "/assignment-queries")):
         return {"assignments:read"}
     if path.startswith("/employees"):
+        if path.endswith("/overrides/options"):
+            return {"assignments:manage"}
         if "/assignments" in path or "/overrides" in path or path.endswith("/refresh"):
             return {"assignments:read"} if method == "GET" else {"assignments:manage"}
         if method == "GET":

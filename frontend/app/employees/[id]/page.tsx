@@ -7,14 +7,11 @@ import { AssignmentCard } from "./_components/assignment-card/assignment-card";
 import { OverrideManager } from "./_components/override-manager/override-manager";
 import { Badge, Panel, PanelBody, PanelHeader } from "@/components/ui";
 import {
-  getAssignmentFields,
   getCurrentUser,
   getEmployee,
-  getEmployeeAssignmentHistory,
+  getEmployeeAssignmentHistoryPage,
   getEmployeeAssignments,
-  getEmployeeReferenceData,
   getEmployeeOverrides,
-  getEmployees,
 } from "@/lib/backend";
 import { formatDate, formatEmployeeId, initials } from "@/lib/format";
 import { hasPermission } from "@/lib/permissions";
@@ -37,19 +34,15 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
   const { id } = await params;
   const user = await getCurrentUser();
   const canReadAssignments = hasPermission(user, "assignments:read");
-  const canReadSettings = hasPermission(user, "settings:read");
-  const [employee, assignments, allEmployees, fields, overrides, history, referenceData] =
-    await Promise.all([
-      getEmployee(Number(id)),
-      canReadAssignments ? getEmployeeAssignments(Number(id)) : [],
-      getEmployees(),
-      canReadSettings ? getAssignmentFields() : [],
-      canReadAssignments ? getEmployeeOverrides(Number(id)) : [],
-      canReadAssignments ? getEmployeeAssignmentHistory(Number(id)) : [],
-      getEmployeeReferenceData(),
-    ]);
+  const [employee, assignments, overrides, historyPage] = await Promise.all([
+    getEmployee(Number(id)),
+    canReadAssignments ? getEmployeeAssignments(Number(id)) : [],
+    canReadAssignments ? getEmployeeOverrides(Number(id)) : [],
+    canReadAssignments
+      ? getEmployeeAssignmentHistoryPage(Number(id), { limit: 20, offset: 0 })
+      : { items: [], total: 0, limit: 20, offset: 0 },
+  ]);
   if (!employee) notFound();
-  const manager = allEmployees.find((item) => item.id === employee.manager_id);
   const policyCount = new Set(
     assignments.map((item) => item.source_policy_version_id).filter(Boolean),
   ).size;
@@ -74,8 +67,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
         {hasPermission(user, "employees:update") && (
           <EmployeeEditor
             employee={employee}
-            employees={allEmployees}
-            referenceData={referenceData}
+            manager={employee.manager}
             mfaEnabled={user?.mfa_enabled ?? false}
             trigger={
               <>
@@ -98,11 +90,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                 {assignments.length ? (
                   <div className="assignment-list">
                     {assignments.map((item) => (
-                      <AssignmentCard
-                        assignment={item}
-                        states={referenceData.states}
-                        key={item.id}
-                      />
+                      <AssignmentCard assignment={item} key={item.id} />
                     ))}
                   </div>
                 ) : (
@@ -134,7 +122,7 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                 </div>
                 <div>
                   <span className="label">Manager</span>
-                  <div className="profile-value">{manager?.name ?? "No manager"}</div>
+                  <div className="profile-value">{employee.manager?.name ?? "No manager"}</div>
                 </div>
                 <div>
                   <span className="label">Employee ID</span>
@@ -145,10 +133,12 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
           </Panel>
           {canReadAssignments && (
             <OverrideManager
+              key={`${overrides.map((item) => item.id).join("-")}:${historyPage.total}`}
               employee={employee}
-              fields={fields}
               initialOverrides={overrides}
-              history={history}
+              initialHistory={historyPage.items}
+              historyTotal={historyPage.total}
+              historyLimit={historyPage.limit}
               canManage={hasPermission(user, "assignments:manage")}
             />
           )}

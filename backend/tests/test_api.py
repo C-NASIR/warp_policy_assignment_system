@@ -379,3 +379,9 @@ def test_employee_manager_id_can_be_created_and_updated(client):
     )
     assert updated.status_code == 200
     assert updated.json()["manager_id"] == second_manager["id"]
+    detail = client.get(f"/employees/{response.json()['id']}")
+    assert detail.status_code == 200
+    assert detail.json()["manager"] == {
+        "id": second_manager["id"],
+        "name": "Second manager",
+    }

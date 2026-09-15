@@ -292,6 +292,15 @@ class EmployeeRead(EmployeeCreate, ORMModel):
     state_label: str
 
 
+class EmployeeManagerSummaryRead(ORMModel):
+    id: int
+    name: str
+
+
+class EmployeeDetailRead(EmployeeRead):
+    manager: EmployeeManagerSummaryRead | None
+
+
 class StateRead(BaseModel):
     code: str = Field(min_length=2, max_length=2)
     name: str
@@ -423,6 +432,18 @@ class AssignmentFieldDefinitionRead(AssignmentFieldDefinitionCreate, ORMModel):
     id: int
 
 
+class AssignmentFieldIdentityRead(ORMModel):
+    id: int
+    name: str
+
+
+class AssignmentFieldOverrideOptionRead(ORMModel):
+    id: int
+    name: str
+    cardinality: Literal["one", "many"]
+    input: AssignmentFieldInputRead
+
+
 class AssignmentFieldDefinitionUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -494,11 +515,8 @@ class EmployeeOverrideUpdate(BaseModel):
 
 class EmployeeOverrideRead(ORMModel):
     id: int
-    employee_id: int
-    assignment_field_definition_id: int
     value: str
-    retired_at: datetime | None
-    assignment_field_definition: AssignmentFieldDefinitionRead
+    assignment_field_definition: AssignmentFieldIdentityRead
 
 
 class PolicyValueCreate(BaseModel):
@@ -624,6 +642,76 @@ class AssignmentRead(ORMModel):
     effective_from: datetime
     effective_until: datetime | None
     assignment_field_definition: AssignmentFieldDefinitionRead
+
+    @field_validator("effective_from", "effective_until", mode="before")
+    @classmethod
+    def return_utc_timestamps(cls, value: datetime | None) -> datetime | None:
+        return ensure_utc(value) if value is not None else None
+
+
+class AssignmentConditionEvidenceRead(BaseModel):
+    field: str
+    operator: str
+    expected: Any
+    actual: Any
+    expected_label: str | None = None
+    actual_label: str | None = None
+
+
+class AssignmentClauseEvidenceRead(BaseModel):
+    conditions: list[AssignmentConditionEvidenceRead] = Field(default_factory=list)
+
+
+class AssignmentOriginSummaryRead(BaseModel):
+    type: Literal["condition_match", "group", "persisted_policy_link"]
+    group_name: str | None = None
+    matched_clauses: list[AssignmentClauseEvidenceRead] = Field(default_factory=list)
+
+
+class AssignmentPolicySummaryRead(BaseModel):
+    name: str
+
+
+class AssignmentOverrideSummaryRead(BaseModel):
+    value: str
+
+
+class ReplacedPolicyAssignmentRead(BaseModel):
+    value: str
+    policy_name: str | None = None
+
+
+class AssignmentSelectionSummaryRead(BaseModel):
+    priority: int | None = None
+    replaced_policy_assignments: list[ReplacedPolicyAssignmentRead] = Field(
+        default_factory=list
+    )
+
+
+class AssignmentExplanationSummaryRead(BaseModel):
+    reason: Literal["policy", "manual_override"]
+    policy: AssignmentPolicySummaryRead | None = None
+    origins: list[AssignmentOriginSummaryRead] = Field(default_factory=list)
+    selection: AssignmentSelectionSummaryRead | None = None
+    override: AssignmentOverrideSummaryRead | None = None
+
+
+class CurrentAssignmentRead(BaseModel):
+    id: int
+    value: str
+    source_policy_version_id: int | None
+    source_override_id: int | None
+    explanation: AssignmentExplanationSummaryRead
+    assignment_field_definition: AssignmentFieldIdentityRead
+
+
+class AssignmentHistoryRead(BaseModel):
+    id: int
+    value: str
+    source_type: Literal["policy", "override"]
+    effective_from: datetime
+    effective_until: datetime | None
+    assignment_field_definition: AssignmentFieldIdentityRead
 
     @field_validator("effective_from", "effective_until", mode="before")
     @classmethod

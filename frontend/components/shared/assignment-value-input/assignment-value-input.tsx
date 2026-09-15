@@ -1,6 +1,6 @@
 "use client";
 
-import type { AssignmentField } from "@/lib/types";
+import type { AssignmentFieldOption } from "@/lib/types";
 
 export function AssignmentValueInput({
   field,
@@ -9,7 +9,7 @@ export function AssignmentValueInput({
   label = "assignment value",
   onChange,
 }: {
-  field: AssignmentField | undefined;
+  field: AssignmentFieldOption | undefined;
   value: string;
   invalid?: boolean;
   label?: string;
