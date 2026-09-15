@@ -39,7 +39,7 @@ The backend is the source of truth for authentication, authorization, policy eva
 
 ```text
 .
-├── backend/    FastAPI application, domain services, worker, tests, and Alembic scaffold
+├── backend/    FastAPI application, domain services, worker, and tests
 └── frontend/   Next.js application, UI components, and API integration
 ```
 
