@@ -407,9 +407,25 @@ OpenAPI also exposes the bearer scheme and an `x-required-scopes` value on every
 protected operation, so generated clients and MCP tooling can explain and
 enforce the machine boundary.
 
-Interactive MCP access uses OAuth dynamic client registration, authorization code with S256 PKCE, rotating refresh tokens, and revocation. An OAuth access token resolves to a normal `User` on every request. The backend reloads that user's current permissions, employee scope, assignment-field scope, account status, and password lifecycle before applying the operation. Cookie and OAuth authentication are therefore two credential transports for the same user authorization model. Machine API credentials remain service identities with their existing coarse scopes.
+Interactive MCP access uses the standard OAuth authorization-code flow with S256
+PKCE, rotating refresh tokens, revocation, and RFC 9207 issuer binding. Current
+clients may identify themselves with an HTTPS Client ID Metadata Document;
+dynamic client registration remains available for compatibility with older MCP
+clients. An OAuth access token resolves to a normal `User` on every request. The
+backend reloads that user's current permissions, employee scope,
+assignment-field scope, account status, and password lifecycle before applying
+the operation. Cookie and OAuth authentication are therefore two credential
+transports for the same user authorization model. Machine API credentials remain
+service identities with their existing coarse scopes.
 
-OAuth discovery is published at `/.well-known/oauth-authorization-server`. The browser authorization screen is hosted by the frontend at `/oauth/authorize`; token, registration, revocation, and user-info endpoints remain on the backend. Configure their public locations with `OAUTH_ISSUER_URL`, `OAUTH_AUTHORIZATION_URL`, and `MCP_PUBLIC_URL`.
+OAuth discovery is published at `/.well-known/oauth-authorization-server`.
+`OAUTH_AUTHORIZATION_URL` is the client-facing endpoint on the authorization
+server origin and defaults to `/oauth/authorize/start`. That endpoint preserves
+the OAuth request and opens the frontend consent screen configured by
+`OAUTH_AUTHORIZATION_UI_URL`. Token, registration, revocation, and user-info
+endpoints remain on the backend. Configure those values together with
+`OAUTH_ISSUER_URL` and `MCP_PUBLIC_URL`; production authorization endpoints must
+use HTTPS.
 
 ## Error contract
 

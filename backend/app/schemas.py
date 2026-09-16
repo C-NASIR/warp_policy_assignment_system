@@ -69,6 +69,7 @@ class OAuthClientRegistrationCreate(BaseModel):
         default_factory=lambda: ["authorization_code", "refresh_token"]
     )
     response_types: list[Literal["code"]] = Field(default_factory=lambda: ["code"])
+    application_type: Literal["native", "web"] | None = None
 
 
 class OAuthClientRegistrationRead(BaseModel):
@@ -80,6 +81,7 @@ class OAuthClientRegistrationRead(BaseModel):
         default_factory=lambda: ["authorization_code", "refresh_token"]
     )
     response_types: list[str] = Field(default_factory=lambda: ["code"])
+    application_type: Literal["native", "web"] | None = None
 
 
 class OAuthAuthorizationRequestRead(BaseModel):

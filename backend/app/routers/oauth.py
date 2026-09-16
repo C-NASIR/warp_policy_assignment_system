@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Form, Query
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Form, Query, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.dependencies import Authenticated, DatabaseSession, HumanSession
 from app.schemas import (
@@ -19,6 +19,7 @@ from app.services.oauth import (
     OAuthProtocolError,
     authorization_redirect,
     authorization_server_metadata,
+    authorization_ui_redirect,
     exchange_authorization_code,
     exchange_refresh_token,
     register_client,
@@ -44,6 +45,16 @@ def oauth_metadata() -> dict:
     return authorization_server_metadata()
 
 
+@public_router.get("/oauth/authorize/start", include_in_schema=False)
+def oauth_authorize_start(request: Request) -> RedirectResponse:
+    """Launch the browser-based authorization UI from the issuer origin."""
+    return RedirectResponse(
+        authorization_ui_redirect(request.url.query),
+        status_code=302,
+        headers={"Cache-Control": "no-store", "Pragma": "no-cache"},
+    )
+
+
 @public_router.post(
     "/oauth/register",
     response_model=OAuthClientRegistrationRead,
@@ -61,6 +72,7 @@ def oauth_register(
         client_id=client.client_id,
         client_name=client.client_name,
         redirect_uris=list(client.redirect_uris),
+        application_type=data.application_type,
     )
 
 

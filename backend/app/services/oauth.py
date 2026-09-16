@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import ipaddress
+import json
 import os
 import secrets
+import socket
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse, urlunparse
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -23,6 +29,8 @@ from app.schemas import OAuthClientRegistrationCreate
 from app.services.human_auth import record_security_event
 
 OAUTH_SCOPE = "policyos"
+CLIENT_METADATA_MAX_BYTES = 64 * 1024
+CLIENT_METADATA_TIMEOUT_SECONDS = 5
 
 
 class OAuthProtocolError(ValueError):
@@ -53,8 +61,15 @@ def oauth_issuer_url() -> str:
 
 def oauth_authorization_url() -> str:
     return os.getenv(
-        "OAUTH_AUTHORIZATION_URL", "http://localhost:3000/oauth/authorize"
-    )
+        "OAUTH_AUTHORIZATION_URL",
+        f"{oauth_issuer_url()}/oauth/authorize/start",
+    ).rstrip("/")
+
+
+def oauth_authorization_ui_url() -> str:
+    return os.getenv(
+        "OAUTH_AUTHORIZATION_UI_URL", "http://localhost:3000/oauth/authorize"
+    ).rstrip("/")
 
 
 def mcp_resource_url() -> str:
@@ -88,7 +103,33 @@ def authorization_server_metadata() -> dict:
         "token_endpoint_auth_methods_supported": ["none"],
         "code_challenge_methods_supported": ["S256"],
         "scopes_supported": [OAUTH_SCOPE],
+        "client_id_metadata_document_supported": True,
+        "authorization_response_iss_parameter_supported": True,
     }
+
+
+def authorization_ui_redirect(query: str) -> str:
+    """Send the browser to the fixed consent UI with OAuth inputs intact."""
+    target = oauth_authorization_ui_url()
+    parsed = urlparse(target)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or parsed.hostname is None
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.fragment
+    ):
+        raise RuntimeError("OAUTH_AUTHORIZATION_UI_URL must be an absolute HTTP(S) URL")
+    if parsed.scheme == "http" and parsed.hostname.casefold() not in {
+        "localhost",
+        "127.0.0.1",
+        "::1",
+    }:
+        raise RuntimeError(
+            "OAUTH_AUTHORIZATION_UI_URL must use HTTPS except on a loopback host"
+        )
+    combined_query = "&".join(part for part in (parsed.query, query) if part)
+    return urlunparse(parsed._replace(query=combined_query))
 
 
 def register_client(
@@ -118,9 +159,7 @@ def validate_authorization_request(
     scope: str | None,
     resource: str | None,
 ) -> tuple[OAuthClient, list[str], str]:
-    client = session.get(OAuthClient, client_id)
-    if client is None:
-        raise OAuthProtocolError("invalid_request", "The OAuth client is not registered")
+    client = resolve_oauth_client(session, client_id)
     if redirect_uri not in client.redirect_uris:
         raise OAuthProtocolError("invalid_request", "The redirect URI is not registered")
     if response_type != "code":
@@ -136,6 +175,37 @@ def validate_authorization_request(
             "invalid_target", "The requested resource is not this PolicyOS MCP server"
         )
     return client, scopes, requested_resource
+
+
+def resolve_oauth_client(session: Session, client_id: str) -> OAuthClient:
+    """Resolve a pre/DCR-registered client or a current MCP client metadata URL."""
+    existing = session.get(OAuthClient, client_id)
+    if not _is_client_metadata_document_id(client_id):
+        if existing is None:
+            raise OAuthProtocolError(
+                "invalid_request", "The OAuth client is not registered"
+            )
+        return existing
+
+    metadata = _fetch_client_metadata_document(client_id)
+    redirect_uris = _validate_client_metadata_document(client_id, metadata)
+    client_name = str(metadata.get("client_name") or "MCP client").strip()
+    if not client_name or len(client_name) > 200:
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "client_name must contain 1 to 200 characters"
+        )
+    if existing is None:
+        existing = OAuthClient(
+            client_id=client_id,
+            client_name=client_name,
+            redirect_uris=redirect_uris,
+        )
+        session.add(existing)
+    else:
+        existing.client_name = client_name
+        existing.redirect_uris = redirect_uris
+    session.flush()
+    return existing
 
 
 def authorization_redirect(
@@ -166,7 +236,11 @@ def authorization_redirect(
     if not approve:
         return _redirect_with_query(
             redirect_uri,
-            {"error": "access_denied", "state": state},
+            {
+                "error": "access_denied",
+                "state": state,
+                "iss": oauth_issuer_url(),
+            },
         )
 
     raw_code = f"pocd_{secrets.token_urlsafe(48)}"
@@ -192,7 +266,10 @@ def authorization_redirect(
         event_type="agent_access_authorized",
         details={"client_id": client.client_id, "client_name": client.client_name},
     )
-    return _redirect_with_query(redirect_uri, {"code": raw_code, "state": state})
+    return _redirect_with_query(
+        redirect_uri,
+        {"code": raw_code, "state": state, "iss": oauth_issuer_url()},
+    )
 
 
 def exchange_authorization_code(
@@ -388,6 +465,148 @@ def _validate_redirect_uri(value: str) -> str:
             "Redirect URIs must use HTTPS, except for HTTP loopback clients",
         )
     return value
+
+
+def _is_client_metadata_document_id(client_id: str) -> bool:
+    if len(client_id) > 200:
+        return False
+    parsed = urlparse(client_id)
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname is not None
+        and parsed.username is None
+        and parsed.password is None
+        and bool(parsed.path and parsed.path != "/")
+        and not parsed.query
+        and not parsed.fragment
+    )
+
+
+def _fetch_client_metadata_document(client_id: str) -> dict[str, Any]:
+    """Fetch a CIMD document without redirects or access to non-public hosts."""
+    parsed = urlparse(client_id)
+    assert parsed.hostname is not None
+    try:
+        port = parsed.port or 443
+    except ValueError as exc:
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "The client metadata URL has an invalid port"
+        ) from exc
+    _require_public_metadata_host(parsed.hostname, port)
+
+    class _NoRedirects(HTTPRedirectHandler):
+        def redirect_request(self, request, file_pointer, code, message, headers, url):
+            del request, file_pointer, code, message, headers, url
+            return None
+
+    request = Request(
+        client_id,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "PolicyOS-OAuth/1.0",
+        },
+    )
+    try:
+        with build_opener(_NoRedirects).open(
+            request, timeout=CLIENT_METADATA_TIMEOUT_SECONDS
+        ) as response:
+            content_length = response.headers.get("Content-Length")
+            if content_length and int(content_length) > CLIENT_METADATA_MAX_BYTES:
+                raise OAuthProtocolError(
+                    "invalid_client_metadata",
+                    "The client metadata document is too large",
+                )
+            body = response.read(CLIENT_METADATA_MAX_BYTES + 1)
+    except OAuthProtocolError:
+        raise
+    except (HTTPError, URLError, OSError, ValueError) as exc:
+        raise OAuthProtocolError(
+            "invalid_client_metadata",
+            "The client metadata document could not be retrieved",
+        ) from exc
+    if len(body) > CLIENT_METADATA_MAX_BYTES:
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "The client metadata document is too large"
+        )
+    try:
+        metadata = json.loads(body)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "The client metadata document is not valid JSON"
+        ) from exc
+    if not isinstance(metadata, dict):
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "The client metadata document must be an object"
+        )
+    return metadata
+
+
+def _require_public_metadata_host(hostname: str, port: int) -> None:
+    """Reduce server-side request forgery risk when resolving public CIMD URLs."""
+    try:
+        addresses = {
+            item[4][0]
+            for item in socket.getaddrinfo(
+                hostname,
+                port,
+                type=socket.SOCK_STREAM,
+            )
+        }
+    except socket.gaierror as exc:
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "The client metadata host could not be resolved"
+        ) from exc
+    contains_non_public_address = any(
+        not ipaddress.ip_address(value).is_global for value in addresses
+    )
+    if not addresses or contains_non_public_address:
+        raise OAuthProtocolError(
+            "invalid_client_metadata",
+            "The client metadata host must resolve only to public addresses",
+        )
+
+
+def _validate_client_metadata_document(
+    client_id: str, metadata: dict[str, Any]
+) -> list[str]:
+    if metadata.get("client_id") != client_id:
+        raise OAuthProtocolError(
+            "invalid_client_metadata",
+            "The client metadata client_id must exactly match its document URL",
+        )
+    redirect_uris = metadata.get("redirect_uris")
+    if (
+        not isinstance(redirect_uris, list)
+        or not 1 <= len(redirect_uris) <= 10
+        or any(not isinstance(value, str) for value in redirect_uris)
+    ):
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "redirect_uris must contain 1 to 10 URLs"
+        )
+    normalized_redirects = [_validate_redirect_uri(value) for value in redirect_uris]
+    if len(set(normalized_redirects)) != len(normalized_redirects):
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "redirect_uris must be unique"
+        )
+    if metadata.get("token_endpoint_auth_method", "none") != "none":
+        raise OAuthProtocolError(
+            "invalid_client_metadata", "Only public clients are supported"
+        )
+    grant_types = metadata.get(
+        "grant_types", ["authorization_code", "refresh_token"]
+    )
+    response_types = metadata.get("response_types", ["code"])
+    if (
+        not isinstance(grant_types, list)
+        or "authorization_code" not in grant_types
+        or not isinstance(response_types, list)
+        or "code" not in response_types
+    ):
+        raise OAuthProtocolError(
+            "invalid_client_metadata",
+            "The client must support the authorization code flow",
+        )
+    return normalized_redirects
 
 
 def _redirect_with_query(uri: str, values: dict[str, str | None]) -> str:

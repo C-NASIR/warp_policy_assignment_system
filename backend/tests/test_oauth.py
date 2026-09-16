@@ -27,12 +27,14 @@ def _register(client) -> dict:
     response = client.post(
         "/oauth/register",
         json={
-            "client_name": "Codex test client",
+            "client_name": "MCP test client",
             "redirect_uris": ["http://127.0.0.1:8765/callback"],
             "token_endpoint_auth_method": "none",
+            "application_type": "native",
         },
     )
     assert response.status_code == 201, response.text
+    assert response.json()["application_type"] == "native"
     return response.json()
 
 
@@ -50,12 +52,13 @@ def _authorize(client, registered: dict) -> tuple[str, str]:
     }
     details = client.get("/oauth/authorize", params=payload)
     assert details.status_code == 200, details.text
-    assert details.json()["client_name"] == "Codex test client"
+    assert details.json()["client_name"] == "MCP test client"
     approved = client.post("/oauth/authorize", json={**payload, "approve": True})
     assert approved.status_code == 200, approved.text
     parsed = urlparse(approved.json()["redirect_uri"])
     query = parse_qs(parsed.query)
     assert query["state"] == ["test-state"]
+    assert query["iss"] == ["http://127.0.0.1:8000"]
     return query["code"][0], verifier
 
 
@@ -223,10 +226,98 @@ def test_dynamic_registration_rejects_untrusted_http_redirects(client):
     assert response.json()["error"] == "invalid_redirect_uri"
 
 
-def test_oauth_metadata_advertises_pkce_and_dynamic_registration(client):
+def test_oauth_metadata_advertises_client_neutral_mcp_capabilities(client):
     response = client.get("/.well-known/oauth-authorization-server")
     assert response.status_code == 200
     metadata = response.json()
     assert metadata["code_challenge_methods_supported"] == ["S256"]
     assert metadata["token_endpoint_auth_methods_supported"] == ["none"]
     assert metadata["registration_endpoint"].endswith("/oauth/register")
+    assert metadata["authorization_endpoint"] == (
+        "http://127.0.0.1:8000/oauth/authorize/start"
+    )
+    assert metadata["client_id_metadata_document_supported"] is True
+    assert metadata["authorization_response_iss_parameter_supported"] is True
+
+
+def test_issuer_authorization_endpoint_launches_browser_ui(client):
+    response = client.get(
+        "/oauth/authorize/start",
+        params={
+            "client_id": "test-client",
+            "redirect_uri": "http://127.0.0.1:8765/callback",
+            "response_type": "code",
+            "state": "state with spaces",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    location = response.headers["location"]
+    assert location.startswith("http://localhost:3000/oauth/authorize?")
+    query = parse_qs(urlparse(location).query)
+    assert query == {
+        "client_id": ["test-client"],
+        "redirect_uri": ["http://127.0.0.1:8765/callback"],
+        "response_type": ["code"],
+        "state": ["state with spaces"],
+    }
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_client_id_metadata_document_can_register_current_mcp_client(
+    client, monkeypatch
+):
+    client_id = "https://agent.example/client.json"
+    monkeypatch.setattr(
+        "app.services.oauth._fetch_client_metadata_document",
+        lambda value: {
+            "client_id": value,
+            "client_name": "Portable MCP client",
+            "redirect_uris": ["http://127.0.0.1:9876/callback"],
+            "token_endpoint_auth_method": "none",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+        },
+    )
+    _start_root_session(client)
+    _, challenge = _pkce()
+    response = client.get(
+        "/oauth/authorize",
+        params={
+            "client_id": client_id,
+            "redirect_uri": "http://127.0.0.1:9876/callback",
+            "response_type": "code",
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+            "scope": "policyos",
+            "resource": "http://127.0.0.1:8001/mcp",
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["client_name"] == "Portable MCP client"
+
+
+def test_client_id_metadata_document_must_match_its_url(client, monkeypatch):
+    client_id = "https://agent.example/client.json"
+    monkeypatch.setattr(
+        "app.services.oauth._fetch_client_metadata_document",
+        lambda _: {
+            "client_id": "https://attacker.example/client.json",
+            "client_name": "Wrong client",
+            "redirect_uris": ["https://attacker.example/callback"],
+        },
+    )
+    _start_root_session(client)
+    _, challenge = _pkce()
+    response = client.get(
+        "/oauth/authorize",
+        params={
+            "client_id": client_id,
+            "redirect_uri": "https://attacker.example/callback",
+            "response_type": "code",
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+        },
+    )
+    assert response.status_code == 400
+    assert response.json()["error"] == "invalid_client_metadata"
