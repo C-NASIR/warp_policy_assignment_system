@@ -83,6 +83,10 @@
 .productScope :global(.auth-card > .auth-submit) {
   margin-top: 24px;
 }
+.productScope :global(.auth-actions) {
+  display: grid;
+  gap: var(--space-3);
+}
 .productScope :global(.auth-switch) {
   display: block;
   margin: 22px 0 0;

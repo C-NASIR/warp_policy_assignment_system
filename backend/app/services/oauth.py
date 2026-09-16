@@ -102,7 +102,8 @@ def authorization_server_metadata() -> dict:
         "grant_types_supported": ["authorization_code", "refresh_token"],
         "token_endpoint_auth_methods_supported": ["none"],
         "code_challenge_methods_supported": ["S256"],
-        "scopes_supported": [OAUTH_SCOPE],
+        # PolicyOS has one implicit scope. Do not advertise it until Codex stops
+        # retrying explicit access_denied responses for discovered scopes.
         "client_id_metadata_document_supported": True,
         "authorization_response_iss_parameter_supported": True,
     }
@@ -160,7 +161,10 @@ def validate_authorization_request(
     resource: str | None,
 ) -> tuple[OAuthClient, list[str], str]:
     client = resolve_oauth_client(session, client_id)
-    if redirect_uri not in client.redirect_uris:
+    if not any(
+        _redirect_uri_matches(redirect_uri, registered)
+        for registered in client.redirect_uris
+    ):
         raise OAuthProtocolError("invalid_request", "The redirect URI is not registered")
     if response_type != "code":
         raise OAuthProtocolError("unsupported_response_type", "Only code is supported")
@@ -238,6 +242,7 @@ def authorization_redirect(
             redirect_uri,
             {
                 "error": "access_denied",
+                "error_description": "The user denied access",
                 "state": state,
                 "iss": oauth_issuer_url(),
             },
@@ -467,6 +472,44 @@ def _validate_redirect_uri(value: str) -> str:
     return value
 
 
+def _redirect_uri_matches(requested: str, registered: str) -> bool:
+    """Match redirect URIs, allowing only a loopback client's port to vary."""
+    if requested == registered:
+        return True
+
+    requested_uri = urlparse(requested)
+    registered_uri = urlparse(registered)
+    loopback_hosts = {"localhost", "127.0.0.1", "::1"}
+    if (
+        requested_uri.scheme != "http"
+        or registered_uri.scheme != "http"
+        or requested_uri.hostname not in loopback_hosts
+        or requested_uri.hostname != registered_uri.hostname
+        or requested_uri.username is not None
+        or requested_uri.password is not None
+        or registered_uri.username is not None
+        or registered_uri.password is not None
+    ):
+        return False
+
+    try:
+        _ports = requested_uri.port, registered_uri.port
+    except ValueError:
+        return False
+
+    return (
+        requested_uri.path,
+        requested_uri.params,
+        requested_uri.query,
+        requested_uri.fragment,
+    ) == (
+        registered_uri.path,
+        registered_uri.params,
+        registered_uri.query,
+        registered_uri.fragment,
+    )
+
+
 def _is_client_metadata_document_id(client_id: str) -> bool:
     if len(client_id) > 200:
         return False
@@ -495,8 +538,8 @@ def _fetch_client_metadata_document(client_id: str) -> dict[str, Any]:
     _require_public_metadata_host(parsed.hostname, port)
 
     class _NoRedirects(HTTPRedirectHandler):
-        def redirect_request(self, request, file_pointer, code, message, headers, url):
-            del request, file_pointer, code, message, headers, url
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            del req, fp, code, msg, headers, newurl
             return None
 
     request = Request(

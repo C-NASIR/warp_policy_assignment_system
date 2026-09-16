@@ -22,7 +22,17 @@ export function OAuthConsent({ request }: { request: AuthorizationParameters }) 
       const response = await fetch("/api/backend/oauth/authorize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...request, approve }),
+        body: JSON.stringify({
+          client_id: request.client_id,
+          redirect_uri: request.redirect_uri,
+          response_type: request.response_type,
+          code_challenge: request.code_challenge,
+          code_challenge_method: request.code_challenge_method,
+          scope: request.scope,
+          state: request.state,
+          resource: request.resource,
+          approve,
+        }),
       });
       const result = (await response.json().catch(() => ({}))) as {
         redirect_uri?: string;
@@ -67,12 +77,14 @@ export function OAuthConsent({ request }: { request: AuthorizationParameters }) 
           <LockKeyhole size={13} />
           <span>Your password and MFA codes are never shared with the agent.</span>
         </div>
-        <Button disabled={busy} fullWidth onClick={() => decide(true)}>
-          {busy ? "Please wait…" : "Allow access"}
-        </Button>
-        <Button disabled={busy} fullWidth variant="secondary" onClick={() => decide(false)}>
-          Deny
-        </Button>
+        <div className="auth-actions">
+          <Button disabled={busy} fullWidth onClick={() => decide(true)}>
+            {busy ? "Please wait…" : "Allow access"}
+          </Button>
+          <Button disabled={busy} fullWidth variant="secondary" onClick={() => decide(false)}>
+            Deny
+          </Button>
+        </div>
       </section>
     </main>
   );

@@ -9,6 +9,8 @@ from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.types import ToolAnnotations
 
+OAUTH_SCOPE = "policyos"
+
 
 def backend_url() -> str:
     return os.getenv("POLICYOS_BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
@@ -37,10 +39,13 @@ class BackendTokenVerifier(TokenVerifier):
         if response.status_code != 200:
             return None
         data = response.json()
+        scopes = data["scopes"]
+        if OAUTH_SCOPE not in scopes:
+            return None
         return AccessToken(
             token=token,
             client_id=data["client_id"],
-            scopes=data["scopes"],
+            scopes=scopes,
             expires_at=data["expires_at"],
             resource=data["resource"],
             subject=data["sub"],
@@ -75,7 +80,9 @@ server = MCPServer(
     auth=AuthSettings(
         issuer_url=issuer_url(),
         resource_server_url=public_url(),
-        required_scopes=["policyos"],
+        # The verifier still enforces PolicyOS's fixed scope. Omitting it from
+        # discovery avoids Codex retrying an explicit access_denied response.
+        required_scopes=None,
         validate_token_resource=True,
     ),
 )

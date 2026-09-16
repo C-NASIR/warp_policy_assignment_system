@@ -17,7 +17,6 @@ def test_server_advertises_oauth_protected_resource_metadata():
         assert metadata.json() == {
             "resource": "http://127.0.0.1:8001/mcp",
             "authorization_servers": ["http://127.0.0.1:8000"],
-            "scopes_supported": ["policyos"],
             "bearer_methods_supported": ["header"],
         }
 

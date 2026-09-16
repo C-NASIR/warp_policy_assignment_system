@@ -140,6 +140,35 @@ def test_oauth_pkce_tokens_are_user_bound_hashed_rotatable_and_revocable(client,
     assert revoked.status_code == 401
 
 
+def test_oauth_denial_returns_one_terminal_access_denied_callback(client):
+    registered = _register(client)
+    _start_root_session(client)
+    _, challenge = _pkce()
+    payload = {
+        "client_id": registered["client_id"],
+        "redirect_uri": registered["redirect_uris"][0],
+        "response_type": "code",
+        "code_challenge": challenge,
+        "code_challenge_method": "S256",
+        "scope": "policyos",
+        "state": "denial-state",
+        "resource": "http://127.0.0.1:8001/mcp",
+        "approve": False,
+    }
+
+    response = client.post("/oauth/authorize", json=payload)
+
+    assert response.status_code == 200, response.text
+    callback = urlparse(response.json()["redirect_uri"])
+    assert callback.path == "/callback"
+    assert parse_qs(callback.query) == {
+        "error": ["access_denied"],
+        "error_description": ["The user denied access"],
+        "state": ["denial-state"],
+        "iss": ["http://127.0.0.1:8000"],
+    }
+
+
 def test_oauth_user_has_the_same_employee_visibility_as_the_browser(client):
     _start_root_session(client)
     own_employee = client.post(
@@ -238,6 +267,7 @@ def test_oauth_metadata_advertises_client_neutral_mcp_capabilities(client):
     )
     assert metadata["client_id_metadata_document_supported"] is True
     assert metadata["authorization_response_iss_parameter_supported"] is True
+    assert "scopes_supported" not in metadata
 
 
 def test_issuer_authorization_endpoint_launches_browser_ui(client):
@@ -295,6 +325,89 @@ def test_client_id_metadata_document_can_register_current_mcp_client(
     )
     assert response.status_code == 200, response.text
     assert response.json()["client_name"] == "Portable MCP client"
+
+
+def test_client_id_metadata_document_allows_ephemeral_loopback_port(
+    client, monkeypatch
+):
+    client_id = "https://agent.example/client.json"
+    monkeypatch.setattr(
+        "app.services.oauth._fetch_client_metadata_document",
+        lambda value: {
+            "client_id": value,
+            "client_name": "Native MCP client",
+            "application_type": "native",
+            "redirect_uris": [
+                "http://127.0.0.1/callback",
+                "http://localhost/callback",
+            ],
+            "token_endpoint_auth_method": "none",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+        },
+    )
+    _start_root_session(client)
+
+    for redirect_uri in (
+        "http://127.0.0.1:49152/callback",
+        "http://localhost:49153/callback",
+    ):
+        _, challenge = _pkce()
+        response = client.get(
+            "/oauth/authorize",
+            params={
+                "client_id": client_id,
+                "redirect_uri": redirect_uri,
+                "response_type": "code",
+                "code_challenge": challenge,
+                "code_challenge_method": "S256",
+                "scope": "policyos",
+                "resource": "http://127.0.0.1:8001/mcp",
+            },
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["redirect_uri"] == redirect_uri
+
+
+def test_loopback_redirect_port_exception_does_not_allow_other_uri_changes(
+    client, monkeypatch
+):
+    client_id = "https://agent.example/client.json"
+    monkeypatch.setattr(
+        "app.services.oauth._fetch_client_metadata_document",
+        lambda value: {
+            "client_id": value,
+            "client_name": "Native MCP client",
+            "application_type": "native",
+            "redirect_uris": ["http://127.0.0.1/callback?channel=codex"],
+            "token_endpoint_auth_method": "none",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+        },
+    )
+    _start_root_session(client)
+    _, challenge = _pkce()
+    common = {
+        "client_id": client_id,
+        "response_type": "code",
+        "code_challenge": challenge,
+        "code_challenge_method": "S256",
+    }
+
+    for redirect_uri in (
+        "http://127.0.0.1:49152/other?channel=codex",
+        "http://127.0.0.1:49152/callback?channel=other",
+        "http://localhost:49152/callback?channel=codex",
+        "https://127.0.0.1:49152/callback?channel=codex",
+    ):
+        response = client.get(
+            "/oauth/authorize",
+            params={**common, "redirect_uri": redirect_uri},
+        )
+        assert response.status_code == 400
+        assert response.json()["error_description"] == (
+            "The redirect URI is not registered"
+        )
 
 
 def test_client_id_metadata_document_must_match_its_url(client, monkeypatch):
