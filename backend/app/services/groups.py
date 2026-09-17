@@ -106,7 +106,7 @@ def add_employee_to_group(
             before=None,
             after=key,
         )
-        _refresh_employee(session, employee)
+        _refresh_employee(session, employee, actor=actor)
     return employee
 
 
@@ -135,7 +135,7 @@ def remove_employee_from_group(
             before=before,
             after=None,
         )
-        _refresh_employee(session, employee)
+        _refresh_employee(session, employee, actor=actor)
 
 
 def list_group_policies(session: Session, group_id: int) -> list[Policy]:
@@ -164,7 +164,7 @@ def add_policy_to_group(
     key = {"group_id": group_id, "policy_id": policy_id}
     if session.get(GroupPolicy, key) is None:
         _attach_policy(session, key, actor)
-        _refresh_group_members(session, group_id)
+        _refresh_group_members(session, group_id, actor)
     return policy
 
 
@@ -182,7 +182,7 @@ def remove_policy_from_group(
     )
     if group_policy is not None:
         _detach_policy(session, group_policy, actor)
-        _refresh_group_members(session, group_id)
+        _refresh_group_members(session, group_id, actor)
 
 
 def update_group_policies(
@@ -214,7 +214,7 @@ def update_group_policies(
             changed = True
 
     if changed:
-        _refresh_group_members(session, group_id)
+        _refresh_group_members(session, group_id, actor)
 
 
 def _attach_policy(session: Session, key: dict[str, int], actor: str) -> None:
@@ -267,12 +267,13 @@ def _get_policy(session: Session, policy_id: int) -> Policy:
     return policy
 
 
-def _refresh_group_members(session: Session, group_id: int) -> None:
+def _refresh_group_members(session: Session, group_id: int, actor: str) -> None:
     reconciliation_at = current_datetime()
     reconcile_employees(
         session,
         [employee.id for employee in list_group_employees(session, group_id)],
         reconciliation_at,
+        actor=actor,
     )
 
 
@@ -280,6 +281,13 @@ def _refresh_employee(
     session: Session,
     employee: Employee,
     reconciliation_at: datetime | None = None,
+    *,
+    actor: str = "system",
 ) -> None:
     reconciliation_at = reconciliation_at or current_datetime()
-    reconcile_employees(session, [employee.id], reconciliation_at)
+    reconcile_employees(
+        session,
+        [employee.id],
+        reconciliation_at,
+        actor=actor,
+    )

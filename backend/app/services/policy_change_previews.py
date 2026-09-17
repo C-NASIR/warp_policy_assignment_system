@@ -122,7 +122,7 @@ def apply_policy_change(
         version_data,
         actor,
     )
-    refresh_employees_affected_by_policy(session, policy)
+    refresh_employees_affected_by_policy(session, policy, actor=actor)
     return AppliedPolicyChange(policy=policy, version=version)
 
 

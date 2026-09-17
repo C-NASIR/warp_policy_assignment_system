@@ -712,6 +712,7 @@ def delete_override(
 def refresh(
     employee_id: int,
     session: DatabaseSession,
+    actor: AuditActor,
     visibility: EmployeeScope,
     field_visibility: AssignmentFieldScope,
 ) -> list[EmployeeAssignment]:
@@ -721,6 +722,7 @@ def refresh(
         session,
         [employee_id],
         reconciliation_at,
+        actor=actor,
     )
     return [
         assignment

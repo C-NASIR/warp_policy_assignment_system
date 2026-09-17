@@ -12,6 +12,8 @@ def refresh_employees_affected_by_policy(
     session: Session,
     policy: Policy,
     reconciliation_at: datetime | None = None,
+    *,
+    actor: str = "system",
 ) -> None:
     """Synchronously reconcile employees after a material policy change.
 
@@ -25,4 +27,9 @@ def refresh_employees_affected_by_policy(
     session.flush()
     reconciliation_at = ensure_utc(reconciliation_at or current_datetime())
     employee_ids = list(session.scalars(select(Employee.id).order_by(Employee.id)))
-    reconcile_employees(session, employee_ids, reconciliation_at)
+    reconcile_employees(
+        session,
+        employee_ids,
+        reconciliation_at,
+        actor=actor,
+    )

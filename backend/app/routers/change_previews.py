@@ -235,7 +235,7 @@ def _apply_change(
             )
             sync_policy_version_schedules(session, policy)
             sync_all_employee_tenure_schedules(session)
-            refresh_employees_affected_by_policy(session, policy)
+            refresh_employees_affected_by_policy(session, policy, actor=actor)
         context.resources["policy_id"] = policy.id
         return
 

@@ -95,7 +95,12 @@ def create_employee_override(
         after=snapshot_override(override),
         timestamp=reconciliation_at,
     )
-    reconcile_employees(session, [employee.id], reconciliation_at)
+    reconcile_employees(
+        session,
+        [employee.id],
+        reconciliation_at,
+        actor=actor,
+    )
     return override
 
 
@@ -149,7 +154,12 @@ def update_employee_override(
         after=snapshot_override(replacement),
         timestamp=reconciliation_at,
     )
-    reconcile_employees(session, [employee.id], reconciliation_at)
+    reconcile_employees(
+        session,
+        [employee.id],
+        reconciliation_at,
+        actor=actor,
+    )
     return replacement
 
 
@@ -175,7 +185,12 @@ def delete_employee_override(
         after=None,
         timestamp=reconciliation_at,
     )
-    reconcile_employees(session, [employee.id], reconciliation_at)
+    reconcile_employees(
+        session,
+        [employee.id],
+        reconciliation_at,
+        actor=actor,
+    )
 
 
 def _validate_override_cardinality(

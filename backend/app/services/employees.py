@@ -52,7 +52,12 @@ def create_employee(
             after=after,
         ),
     )
-    reconcile_employees(session, impacted_ids, reconciliation_at)
+    reconcile_employees(
+        session,
+        impacted_ids,
+        reconciliation_at,
+        actor=actor,
+    )
     sync_employee_tenure_schedules(session, employee, as_of=reconciliation_at)
     return employee
 
@@ -101,7 +106,12 @@ def update_employee(
             after=after,
         ),
     )
-    reconcile_employees(session, impacted_ids, reconciliation_at)
+    reconcile_employees(
+        session,
+        impacted_ids,
+        reconciliation_at,
+        actor=actor,
+    )
     if "start_date" in changed_columns:
         sync_employee_tenure_schedules(session, employee, as_of=reconciliation_at)
     return employee
@@ -140,4 +150,9 @@ def delete_employee(
         after=None,
         timestamp=reconciliation_at,
     )
-    reconcile_employees(session, impacted_ids, reconciliation_at)
+    reconcile_employees(
+        session,
+        impacted_ids,
+        reconciliation_at,
+        actor=actor,
+    )

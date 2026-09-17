@@ -48,6 +48,7 @@ def _audit_logs(client, **params) -> list[dict]:
 
 def test_policy_and_version_audits_include_actor_and_version_snapshots(client):
     field = _create_field(client)
+    _create_employee(client)
     headers = {"X-Actor": "admin_42"}
     today = current_date()
     first = client.post(
@@ -118,6 +119,10 @@ def test_policy_and_version_audits_include_actor_and_version_snapshots(client):
         {"assignment_field_definition_id": field["id"], "value": "biweekly"}
     ]
 
+    assignment_events = _audit_logs(client, entity_type="EmployeeAssignment")
+    assert [event["action"] for event in assignment_events] == ["created", "ended"]
+    assert all(event["actor"] == "admin_42" for event in assignment_events)
+
 
 def test_group_membership_policy_and_assignment_audits_are_material_only(client):
     field = _create_field(client, "badge")
@@ -172,7 +177,7 @@ def test_group_membership_policy_and_assignment_audits_are_material_only(client)
         entity_id=1,
     )
     assert [event["action"] for event in assignment_events] == ["created", "ended"]
-    assert all(event["actor"] == "system" for event in assignment_events)
+    assert all(event["actor"] == "admin_7" for event in assignment_events)
     assert assignment_events[0]["after"]["field"] == "badge"
     assert assignment_events[0]["after"]["value"] == "engineer"
     assert assignment_events[1]["before"]["value"] == "engineer"
@@ -222,7 +227,38 @@ def test_override_lifecycle_audits_override_and_assignment_replacement(client):
         "created",
         "ended",
     ]
-    assert all(event["actor"] == "system" for event in assignment_events)
+    assert all(event["actor"] == "admin_9" for event in assignment_events)
+
+
+def test_human_session_email_is_used_for_override_and_assignment_audits(client):
+    email = "elliot.root@example.com"
+    setup = client.post(
+        "/auth/setup-root",
+        json={
+            "name": "Elliot Root",
+            "email": email,
+            "password": "correct horse battery staple",
+        },
+    )
+    assert setup.status_code == 201
+    client.headers.pop("Authorization", None)
+    client.headers["Origin"] = "http://localhost:3000"
+
+    field = _create_field(client)
+    employee = _create_employee(client)
+    created = client.post(
+        f"/employees/{employee['id']}/overrides",
+        json={
+            "assignment_field_definition_id": field["id"],
+            "value": "weekly",
+        },
+    )
+    assert created.status_code == 201
+
+    override_events = _audit_logs(client, entity_type="EmployeeOverride")
+    assignment_events = _audit_logs(client, entity_type="EmployeeAssignment")
+    assert [event["actor"] for event in override_events] == [email]
+    assert [event["actor"] for event in assignment_events] == [email]
 
 
 def test_audit_read_endpoint_requires_audit_scope(client):

@@ -122,7 +122,7 @@ def create(
         after=snapshot_entity(policy),
     )
     create_policy_version_from_input(session, policy, data, actor)
-    refresh_employees_affected_by_policy(session, policy)
+    refresh_employees_affected_by_policy(session, policy, actor=actor)
     created = session.scalar(_query().where(Policy.id == policy.id))
     assert created is not None
     return policy_read(principal, created)
@@ -247,7 +247,7 @@ def patch(
         if before["status"] != after["status"]:
             sync_policy_version_schedules(session, policy)
             sync_all_employee_tenure_schedules(session)
-            refresh_employees_affected_by_policy(session, policy)
+            refresh_employees_affected_by_policy(session, policy, actor=actor)
     changed = session.scalar(_query().where(Policy.id == policy.id))
     assert changed is not None
     return policy_read(principal, changed)
@@ -307,7 +307,7 @@ def add_version(
         (value.assignment_field_definition_id for value in data.values),
     )
     version = create_policy_version_from_input(session, policy, data, actor)
-    refresh_employees_affected_by_policy(session, policy)
+    refresh_employees_affected_by_policy(session, policy, actor=actor)
     return session.scalar(_version_query().where(PolicyVersion.id == version.id))
 
 
