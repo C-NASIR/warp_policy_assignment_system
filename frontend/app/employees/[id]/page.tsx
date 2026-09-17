@@ -94,7 +94,12 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
                 {assignments.length ? (
                   <div className="assignment-list">
                     {assignments.map((item) => (
-                      <AssignmentCard assignment={item} key={item.id} />
+                      <AssignmentCard
+                        assignment={item}
+                        canViewPolicies={hasPermission(user, "policies:read")}
+                        canViewGroups={hasPermission(user, "groups:read")}
+                        key={item.id}
+                      />
                     ))}
                   </div>
                 ) : (

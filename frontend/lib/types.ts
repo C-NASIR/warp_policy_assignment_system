@@ -78,27 +78,58 @@ export type AssignmentFieldSummary = {
 };
 
 export type AssignmentConditionEvidence = {
-  field: string;
-  operator: string;
+  field?: string;
+  operator?: string;
   expected: unknown;
   actual: unknown;
-  expected_label: string | null;
-  actual_label: string | null;
+  expected_label?: string | null;
+  actual_label?: string | null;
+  result?: boolean | null;
+};
+
+export type AssignmentOrigin = {
+  type?: string;
+  group_id?: number | null;
+  group_name?: string | null;
+  matched_clauses?: {
+    clause_id?: number | null;
+    conditions?: AssignmentConditionEvidence[];
+  }[];
+};
+
+export type AssignmentCandidate = {
+  policy_id?: number | null;
+  policy_name?: string | null;
+  policy_version_id?: number | null;
+  version_number?: number | null;
+  value?: string | null;
+  priority?: number | null;
+  selected?: boolean;
+  outcome?: string | null;
+  origins?: AssignmentOrigin[];
 };
 
 export type AssignmentExplanation = {
-  reason: "policy" | "manual_override";
-  policy: { name: string } | null;
-  origins: {
-    type: "condition_match" | "group" | "persisted_policy_link";
-    group_name: string | null;
-    matched_clauses: { conditions: AssignmentConditionEvidence[] }[];
-  }[];
-  selection: {
-    priority: number | null;
-    replaced_policy_assignments: { value: string; policy_name: string | null }[];
+  reason?: string;
+  evaluation_date?: string | null;
+  policy?: { id?: number | null; name?: string | null } | null;
+  policy_version?: { id?: number | null; version_number?: number | null } | null;
+  origins?: AssignmentOrigin[];
+  selection?: {
+    field?: string | null;
+    field_id?: number | null;
+    cardinality?: string | null;
+    strategy?: string | null;
+    source_selection?: string | null;
+    priority?: number | null;
+    candidates?: AssignmentCandidate[];
+    replaced_policy_assignments?: {
+      value?: string | null;
+      source_policy_version_id?: number | null;
+      policy_name?: string | null;
+    }[];
   } | null;
-  override: { value: string } | null;
+  override?: { id?: number | null; value?: string | null } | null;
 };
 
 export type CurrentAssignment = {

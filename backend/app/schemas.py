@@ -777,41 +777,72 @@ class AssignmentConditionEvidenceRead(BaseModel):
     actual: Any
     expected_label: str | None = None
     actual_label: str | None = None
+    result: bool | None = None
 
 
 class AssignmentClauseEvidenceRead(BaseModel):
+    clause_id: int | None = None
     conditions: list[AssignmentConditionEvidenceRead] = Field(default_factory=list)
 
 
 class AssignmentOriginSummaryRead(BaseModel):
-    type: Literal["condition_match", "group", "persisted_policy_link"]
+    type: str
+    group_id: int | None = None
     group_name: str | None = None
     matched_clauses: list[AssignmentClauseEvidenceRead] = Field(default_factory=list)
 
 
 class AssignmentPolicySummaryRead(BaseModel):
-    name: str
+    id: int | None = None
+    name: str | None = None
+
+
+class AssignmentPolicyVersionSummaryRead(BaseModel):
+    id: int | None = None
+    version_number: int | None = None
 
 
 class AssignmentOverrideSummaryRead(BaseModel):
-    value: str
+    id: int | None = None
+    value: str | None = None
 
 
 class ReplacedPolicyAssignmentRead(BaseModel):
-    value: str
+    value: str | None = None
+    source_policy_version_id: int | None = None
     policy_name: str | None = None
 
 
-class AssignmentSelectionSummaryRead(BaseModel):
+class AssignmentCandidateSummaryRead(BaseModel):
+    policy_id: int | None = None
+    policy_name: str | None = None
+    policy_version_id: int | None = None
+    version_number: int | None = None
+    value: str | None = None
     priority: int | None = None
+    selected: bool = False
+    outcome: str | None = None
+    origins: list[AssignmentOriginSummaryRead] = Field(default_factory=list)
+
+
+class AssignmentSelectionSummaryRead(BaseModel):
+    field: str | None = None
+    field_id: int | None = None
+    cardinality: str | None = None
+    strategy: str | None = None
+    source_selection: str | None = None
+    priority: int | None = None
+    candidates: list[AssignmentCandidateSummaryRead] = Field(default_factory=list)
     replaced_policy_assignments: list[ReplacedPolicyAssignmentRead] = Field(
         default_factory=list
     )
 
 
 class AssignmentExplanationSummaryRead(BaseModel):
-    reason: Literal["policy", "manual_override"]
+    reason: str
+    evaluation_date: str | None = None
     policy: AssignmentPolicySummaryRead | None = None
+    policy_version: AssignmentPolicyVersionSummaryRead | None = None
     origins: list[AssignmentOriginSummaryRead] = Field(default_factory=list)
     selection: AssignmentSelectionSummaryRead | None = None
     override: AssignmentOverrideSummaryRead | None = None

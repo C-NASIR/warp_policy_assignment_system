@@ -92,31 +92,83 @@ def _display_condition(condition: dict) -> dict:
         "actual_label": (
             state_label(str(actual)) if field == "state" and actual else None
         ),
+        "result": condition.get("result"),
     }
+
+
+def _display_origins(value: object) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    origins = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        raw_clauses = item.get("matched_clauses", [])
+        clauses = []
+        if isinstance(raw_clauses, list):
+            for clause in raw_clauses:
+                if not isinstance(clause, dict):
+                    continue
+                raw_conditions = clause.get("conditions", [])
+                clauses.append(
+                    {
+                        "clause_id": clause.get("clause_id"),
+                        "conditions": [
+                            _display_condition(condition)
+                            for condition in raw_conditions
+                            if isinstance(condition, dict)
+                        ]
+                        if isinstance(raw_conditions, list)
+                        else [],
+                    }
+                )
+        origins.append(
+            {
+                "type": str(item.get("type", "persisted_policy_link")),
+                "group_id": item.get("group_id"),
+                "group_name": item.get("group_name"),
+                "matched_clauses": clauses,
+            }
+        )
+    return origins
 
 
 def _display_explanation(
     assignment: EmployeeAssignment,
 ) -> AssignmentExplanationSummaryRead:
     explanation = assignment.explanation or {}
-    origins = []
-    for origin in explanation.get("origins", []):
-        origins.append(
-            {
-                "type": origin.get("type", "persisted_policy_link"),
-                "group_name": origin.get("group_name"),
-                "matched_clauses": [
-                    {
-                        "conditions": [
-                            _display_condition(condition)
-                            for condition in clause.get("conditions", [])
-                        ]
-                    }
-                    for clause in origin.get("matched_clauses", [])
-                ],
-            }
-        )
+    origins = _display_origins(explanation.get("origins"))
     selection = explanation.get("selection") or {}
+    if not isinstance(selection, dict):
+        selection = {}
+    raw_candidates = selection.get("candidates", [])
+    candidates = []
+    if isinstance(raw_candidates, list):
+        for candidate in raw_candidates:
+            if not isinstance(candidate, dict):
+                continue
+            candidates.append(
+                {
+                    "policy_id": candidate.get("policy_id"),
+                    "policy_name": candidate.get("policy_name"),
+                    "policy_version_id": candidate.get("policy_version_id"),
+                    "version_number": candidate.get("version_number"),
+                    "value": candidate.get("value"),
+                    "priority": candidate.get("priority"),
+                    "selected": bool(candidate.get("selected", False)),
+                    "outcome": candidate.get("outcome"),
+                    "origins": _display_origins(candidate.get("origins")),
+                }
+            )
+    raw_replaced = selection.get("replaced_policy_assignments", [])
+    replaced = (
+        [item for item in raw_replaced if isinstance(item, dict)]
+        if isinstance(raw_replaced, list)
+        else []
+    )
+    policy = explanation.get("policy")
+    policy_version = explanation.get("policy_version")
+    override = explanation.get("override")
     return AssignmentExplanationSummaryRead.model_validate(
         {
             "reason": explanation.get("reason")
@@ -125,15 +177,23 @@ def _display_explanation(
                 if assignment.source_override_id is not None
                 else "policy"
             ),
-            "policy": explanation.get("policy"),
+            "evaluation_date": explanation.get("evaluation_date"),
+            "policy": policy if isinstance(policy, dict) else None,
+            "policy_version": (
+                policy_version if isinstance(policy_version, dict) else None
+            ),
             "origins": origins,
             "selection": {
+                "field": selection.get("field"),
+                "field_id": selection.get("field_id"),
+                "cardinality": selection.get("cardinality"),
+                "strategy": selection.get("strategy"),
+                "source_selection": selection.get("source_selection"),
                 "priority": selection.get("priority"),
-                "replaced_policy_assignments": selection.get(
-                    "replaced_policy_assignments", []
-                ),
+                "candidates": candidates,
+                "replaced_policy_assignments": replaced,
             },
-            "override": explanation.get("override"),
+            "override": override if isinstance(override, dict) else None,
         }
     )
 

@@ -58,7 +58,11 @@ explanations identify the override and the policy values it replaced. A material
 explanation change closes the old assignment and creates a new historical row
 even when the final value and winning source remain unchanged. Assignment-query
 reads return that complete stored explanation. Employee detail reads project a
-typed display summary, and history lists omit explanation payloads entirely.
+typed, backward-compatible display shape containing the recorded policy and
+version, all origins and condition evidence, candidate values and outcomes,
+cardinality and selection strategy, evaluation date, and override replacement
+provenance. Missing fields in older snapshots remain optional; snapshots are
+never rewritten in place. History lists omit explanation payloads entirely.
 Future projections build the complete shape in memory without persisting it.
 
 `AuditLog` is the system-wide mutation journal. Assignment history answers what was true at a point in time; audit logs answer what changed, when, and which actor caused it. Audit entries are written through one service in the same database transaction as the domain mutation, so both the mutation and its audit entries commit or roll back together. API mutations use the authenticated credential's subject as their actor. `X-Actor` is accepted only from a credential with `actor:override`; this makes delegated attribution explicit instead of allowing callers to spoof it. Automated reconciliation always records assignment mutations as `system`.
