@@ -35,8 +35,24 @@ authorization, redirect, and MCP URLs must use HTTPS.
 
 ## Tools
 
-The initial catalog covers employee search and assignments, batch assignment
-queries, policies and impact, groups, field catalogs, audit search, change
-previews, employee changes, policy creation and versioning, and assignment
-reconciliation. The backend remains authoritative for validation,
-authorization, visibility, conflicts, and auditing.
+The catalog covers every bearer-authenticated product operation used by the
+frontend: employees and assignment history, manual overrides, policies and
+impact, groups and their employee/policy attachments, assignment fields,
+dashboard and audit data, roles, users, and access reviews. It also provides
+batch assignment queries and explicit assignment reconciliation.
+
+Human-session operations remain browser-only: setup, login, logout, password
+recovery and self-service changes, MFA enrollment, session management,
+reauthentication, and OAuth consent. Those routes require the frontend's secure
+session cookie so the connected user's current password and MFA codes never
+pass through an agent.
+
+The backend remains authoritative for validation, authorization, visibility,
+conflicts, and auditing.
+
+Tool payloads publish strict JSON schemas for the fields accepted by the
+backend. Unsupported properties are rejected as MCP argument errors before a
+request is sent. Expected backend failures are returned as MCP tool errors with
+the HTTP status and the backend's error category, code, message, issue paths,
+and metadata (including required permissions when supplied). Unexpected server
+failures remain generic so internal exception details are not disclosed.
