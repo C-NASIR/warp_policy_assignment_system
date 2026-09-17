@@ -1,253 +1,216 @@
 # PolicyOS
 
-PolicyOS is a full-stack policy assignment system for turning date-effective workforce rules into explainable employee assignments. Administrators can define policies, target employees directly or through groups, preview their impact, manage overrides, and inspect both assignment history and audit records.
+An implemented policy-assignment system that turns date-effective workforce rules into deterministic, explainable employee assignments.
 
-The repository contains a Next.js web application and a FastAPI API backed by PostgreSQL.
+This repository is an independent implementation of Warp's **Policy Assignment System** project prompt. It is not an official Warp product.
 
-## What the project does
+![PolicyOS explains why a manager received a USD 10,000 expense limit, including the winning policy, matched fact, priority, and candidate decision.](docs/assets/readme/employee-assignment-explanation.jpg)
 
-- Builds policies from trusted employee and organization attributes, including derived values such as tenure and reporting relationships.
-- Versions policies with effective date ranges and deterministic priority-based conflict resolution.
-- Resolves single- and multi-valued assignments while preserving the policy version or override that supplied each value.
-- Explains assignment decisions and retains temporal assignment history.
-- Supports employee groups, manual overrides, future assignment projections, and scheduled reconciliation.
-- Provides non-persisting change previews and an append-only audit trail.
-- Enforces role-based permissions, employee visibility scopes, assignment-field scopes, session security, and MFA for privileged users.
-- Keeps application-role assignment and revocation as explicit access-administration actions.
+## Thirty-second summary
 
-## Architecture
+- **Versioned over time:** immutable policy versions have inclusive effective-date ranges; past assignments are recorded, today's are materialized, and future assignments can be calculated without changing state.
+- **Deterministic under overlap:** one-valued fields use priority and reject ambiguous equal-priority values; many-valued fields combine unique values with deterministic provenance.
+- **Reconciled when inputs change:** employee facts, org relationships, groups, policies, effective dates, and tenure thresholds all drive targeted or scheduled reconciliation.
+- **Safe to operate:** employee and policy changes can be previewed through the real domain services before commit.
+- **Built to explain:** every assignment stores an immutable explanation; temporal assignment history and the append-only audit journal answer complementary questions.
 
-```text
-Browser --> Next.js frontend (localhost:3000) -- session cookie --+
-                                                               |
-Agent --> MCP server (localhost:8001/mcp) -- OAuth bearer ------+--> FastAPI backend (localhost:8000)
-                                                                      |
-                                                                      +--> Policy matching and assignment reconciliation
-                                                                      +--> Authentication, authorization, and auditing
-                                                                      |
-                                                                      v
-                                                                 PostgreSQL
-```
+## Run the complete demo
 
-The backend is the source of truth for authentication, authorization, policy evaluation, reconciliation, and audit data. The frontend performs server-side API calls through a same-origin proxy so browser JavaScript never handles the session token directly. The MCP service is an HTTP-only adapter: it exposes curated tools to agents and forwards a user-bound OAuth credential to the backend without accessing PostgreSQL directly.
-
-## Repository layout
-
-```text
-.
-├── backend/    FastAPI application, domain services, worker, and tests
-├── frontend/   Next.js application, UI components, and OAuth consent screen
-└── mcp_server/ Streamable HTTP MCP server and PolicyOS tool adapter
-```
-
-See the component guides for deeper technical and operational detail:
-
-- [System design](docs/system-design.md)
-- [Backend documentation](backend/README.md)
-- [Frontend documentation](frontend/README.md)
-- [Learning center plan](docs/learn/README.md)
-- [Persistent test seed and fictional company](docs/seed-data-company.md)
-
-## Prerequisites
-
-- Docker with the Compose plugin (for the complete demo), or
-- Python 3.12 or newer
-- [uv](https://docs.astral.sh/uv/)
-- PostgreSQL
-- Node.js and npm compatible with Next.js 16
-
-## Quick start
-
-### Docker demo
-
-With Docker installed, the complete seeded application starts with one command:
+From the repository root, the complete seeded application starts with one command:
 
 ```bash
 docker compose up --build
 ```
 
-Compose starts PostgreSQL, applies every Alembic migration, loads the
-test-only Cedar Harbor Wind Systems company, and then starts the API, frontend,
-periodic demo reconciliation runner, and MCP server. PostgreSQL is kept on the
-private Compose network rather than exposed on the host.
+The first run builds the images and can take several minutes depending on network and Docker cache. Compose starts PostgreSQL, applies the Alembic migration, loads the fictional Cedar Harbor Wind Systems dataset, and then starts the FastAPI API, production Next.js frontend, demo reconciliation scheduler, and MCP adapter. PostgreSQL remains private to the Compose network.
 
-- Application: <http://localhost:3000>
-- API documentation: <http://localhost:8000/docs>
-- MCP endpoint: <http://localhost:8001/mcp>
-- Recommended first login: `nadia.okafor@cedarharbor.example` / `HarborRoot!2026`
-- All fictional test accounts: [Cedar Harbor credentials](docs/seed-data-credentials.txt)
-
-The committed Compose defaults, including its deterministic secret-like
-values, are strictly for this disposable localhost demo. Never reuse them in
-production. The browser receives no database credentials or backend-only
-secrets; its authenticated API calls use the existing HTTP-only, same-origin
-session proxy. Plain HTTP requires `AUTH_SESSION_COOKIE_SECURE=false` here only.
+| Service | URL |
+|---|---|
+| PolicyOS | <http://localhost:3000> |
+| OpenAPI | <http://localhost:8000/docs> |
+| MCP | <http://localhost:8001/mcp> |
 
 Useful lifecycle commands:
 
 ```bash
-# Follow all logs, or only selected services
-docker compose logs -f
-docker compose logs -f backend frontend reconciliation-worker
+docker compose logs -f              # follow the stack
+docker compose down                 # stop; preserve demo data
+docker compose down -v              # stop and completely reset demo data
+./scripts/smoke_test_compose.sh     # verify a running seeded stack
+```
 
-# Stop containers while preserving the named PostgreSQL volume
-docker compose down
+The committed Compose secrets and credentials are intentionally public, test-only values for this disposable localhost environment. Do not reuse them.
 
-# Completely reset the demo, including all database data
-docker compose down -v
+### Demo login
 
-# Rebuild after source or dependency changes
-docker compose up --build
+Start with the seeded Root account, which can inspect every product surface:
 
-# Validate an already running, seeded stack
+```text
+Email:    nadia.okafor@cedarharbor.example
+Password: HarborRoot!2026
+Role:     Root — full workspace visibility
+```
+
+The account works immediately for the read and preview walkthrough below. MFA is intentionally unenrolled; privileged writes require the evaluator to enroll a TOTP authenticator first. See [all fictional accounts](docs/seed-data-credentials.txt) to compare scoped roles. None of these credentials is suitable for a real environment.
+
+## Five-minute walkthrough
+
+1. Sign in at <http://localhost:3000/login> and open **Employees**.
+2. Open **Rafael Morales** (`/employees/6`). Expand **Expense Approval Limit** to see the winning priority-45 policy, its `Is Manager` evidence, and the lower-priority candidates. Expand **Inspection Evidence Vault** to see a group-derived policy origin.
+3. Open **Priya Raman** (`/employees/10`). Expand **Expense Approval Limit** to see a manual value and the policy result it replaced.
+4. Still on Priya, choose **Edit employee**, change Department from Engineering to Product, and select **Review assignments**. The engine previews three changed assignment fields without persisting the proposal; close the editor rather than confirming it.
+5. Open **People Manager Responsibilities** (`/policies/8`) to inspect its rule, outputs, dated version history, and population impact.
+6. Return to either employee for recorded **Past assignments**, then open **Audit log** for actor, mutation, and assignment events.
+7. Optional: sign in as Priya, Elena, Rafael, or Kai using the [role comparison credentials](docs/seed-data-credentials.txt) to see action, employee, and assignment-field scopes applied together.
+
+## Warp criteria mapped to implementation
+
+| Warp criterion | PolicyOS implementation |
+|---|---|
+| Define assignment rules | Administrators build nested rules from trusted employee, department, location, tenure, and org-chart fields, then attach policies to explicit groups when needed. Canonical trees are compiled to OR-of-AND clauses. [Compiler tests](backend/tests/test_policy_compiler.py) |
+| Resolve an employee set for any date | Batch queries distinguish recorded history for past dates, persisted assignments for today, and non-persisting calculation for future dates. [Assignment-query tests](backend/tests/test_assignment_queries.py) |
+| Cardinality and conflicts | Fields declare `one` or `many`. Highest priority resolves `one`; equal-priority different values return a structured conflict. `many` unions values and selects duplicate provenance deterministically. [Resolution tests](backend/tests/test_assignment_values.py) |
+| Reconcile changing inputs | Employee and manager changes, group membership and attachments, policy mutations, policy boundaries, and tenure anniversaries flow through the same resolver. Due events are processed by an advisory-locked worker. [Reconciliation tests](backend/tests/test_policy_change_reconciliation.py) |
+| Non-engineer UX | Guided policy authoring, employee onboarding, previews, lifecycle controls, explanations, history, groups, overrides, audit filters, and an in-product learning center are implemented in the Next.js application. [Frontend guide](frontend/README.md) |
+| Explainability and auditability | Materialized assignments retain policy/override provenance, match evidence, candidate outcomes, and decision strategy. Assignment history records what was true; the transactional audit journal records who changed what. [Explanation tests](backend/tests/test_assignment_explanations.py) |
+| Architecture and scale judgment | PostgreSQL transactions and constraints protect the current synchronous model; the full-population policy fan-out is identified explicitly, with an outbox/batched evolution path. [System design](docs/system-design.md#12-scaling-characteristics) |
+| Developer experience | One-command Compose startup, Alembic-owned schema, health-gated services, an idempotent seed, OpenAPI, smoke tests, and focused component/domain suites make the system runnable and inspectable. [Compose file](compose.yaml) |
+
+## Core resolution model
+
+```mermaid
+flowchart LR
+    F["Employee facts<br/>and org context"] --> V["Effective<br/>policy versions"]
+    V --> M["Direct and<br/>group matches"]
+    M --> C["Candidate<br/>field values"]
+    C --> R["Cardinality and<br/>priority resolution"]
+    R --> O["Manual<br/>overrides"]
+    O --> A["Temporal assignments<br/>with explanations"]
+```
+
+For a one-valued field, the highest priority wins only when the candidates at that priority agree; conflicting values are rejected rather than silently tie-broken. A many-valued field combines unique values, choosing a duplicate value's recorded source by priority and then policy-version ID. Active overrides replace every policy-derived value for their field, but do not conceal a policy conflict. Every persisted result stores the exact explanation used at resolution time.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    B[Browser] -->|HTTP-only session| N["Next.js UI<br/>same-origin proxy"]
+    N --> A["FastAPI<br/>authorization boundary"]
+    M["Optional MCP adapter<br/>OAuth user token"] --> A
+    S["Demo scheduler"] --> W["One-shot<br/>reconciliation worker"]
+    A --> E["Policy engine and<br/>domain services"]
+    W --> E
+    E --> P[(PostgreSQL)]
+```
+
+FastAPI and the shared domain services own validation, authorization, resolution, reconciliation, and audit writes. PostgreSQL is the source of truth; Alembic alone changes its schema. Browser requests pass through a same-origin Next.js proxy so JavaScript never handles the session token. The worker uses the same services as API mutations; Compose invokes its one-shot command on a demo-only interval. MCP is an optional HTTP adapter over the same user authorization model, not a separate data path.
+
+Read the [system design](docs/system-design.md) for the domain model, time semantics, invariants, failure handling, and scaling path.
+
+## Product evidence
+
+### Preview before mutation
+
+![PolicyOS previews the assignment changes caused by moving Priya Raman from Engineering to Product before the change is confirmed.](docs/assets/readme/change-preview.jpg)
+
+The preview runs the real employee mutation and reconciliation services inside a savepoint that is always rolled back.
+
+### Versioned policy and population impact
+
+![People Manager Responsibilities shows its rule, three assignment outputs, version number, effective date, priority, and population impact.](docs/assets/readme/policy-impact-and-version.jpg)
+
+### Override provenance
+
+![Priya Raman's manual USD 5,000 expense limit shows the USD 2,500 policy result it replaced and the stored decision strategy.](docs/assets/readme/manual-override-provenance.jpg)
+
+## Correctness highlights
+
+- A policy has at most one effective version on a date; overlapping version ranges are rejected.
+- Equal-priority, different values for a one-valued field are explicit conflicts.
+- Each assignment has exactly one source: a policy version or an override.
+- Assignment history uses validated half-open `[effective_from, effective_until)` intervals.
+- Reconciliation locks open rows and rejects writes earlier than established history.
+- Manager updates reject missing managers, self-management, and reporting cycles.
+- Preview and commit call the same domain services; previews are rollback-only.
+- Domain mutations, assignment changes, schedules, and audit entries share transactions.
+- Scheduled events have unique identities; the worker uses an advisory lock and locked batches for safe retries.
+
+The enforcement split between database constraints and service invariants is documented in [Correctness invariants](docs/system-design.md#8-correctness-invariants).
+
+## Testing and verification
+
+Current verified results:
+
+- **Backend:** 224 tests passed.
+- **Frontend:** 20 Vitest component/unit tests passed; ESLint and the Next.js production build passed.
+- **MCP adapter:** 7 tests passed.
+- **Database:** `alembic check` reported no model/migration drift.
+- **Docker:** clean production image build and seeded startup passed; the smoke test verified service health, public URLs, authenticated seed data, migration head, and seed/migration idempotence.
+
+The normal validation entry points are:
+
+```bash
+# Backend (requires a dedicated disposable PostgreSQL database)
+cd backend
+TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments_test uv run pytest
+
+# Frontend
+cd ../frontend
+npm test && npm run lint && npm run build
+
+# MCP adapter
+cd ../mcp_server
+uv run pytest
+
+# With the Compose demo running
+cd ..
+docker compose exec -T backend alembic check
 ./scripts/smoke_test_compose.sh
 ```
 
-To start a migrated but empty workspace, reset any existing seeded volume and
-disable the seed for that invocation:
+Tests cover resolution, version boundaries, group and org-chart rules, tenure scheduling, reconciliation, history, previews, explanations, authorization, visibility, audit behavior, migrations, and the demo seed. The repository currently has a focused learning-content workflow rather than a badge-worthy comprehensive CI pipeline, so no CI status is implied here.
 
-```bash
-docker compose down -v
-POLICYOS_SEED_DEMO=false docker compose up --build
+## Technology choices
+
+| Choice | Why it is here |
+|---|---|
+| Next.js 16 + React 19 | Product UI, server-rendered routes, and the same-origin session proxy. |
+| FastAPI + Pydantic | Typed HTTP contracts around explicit domain services and structured conflicts. |
+| SQLAlchemy 2 + Alembic | Transactional mappings with a single, reviewable schema lifecycle. |
+| PostgreSQL 17 | Referential integrity, temporal indexes, JSON explanation snapshots, row locks, advisory locks, and transactional audit writes. |
+| MCP + OAuth/PKCE | Optional user-bound agent access without bypassing backend authorization. |
+| Docker Compose | A reproducible evaluator environment with health-gated startup and seeded data. |
+
+## Tradeoffs and current boundaries
+
+PolicyOS deliberately favors immediate, inspectable correctness over maximum write throughput. Material policy changes and their previews currently consider the full employee population synchronously; batch resolution deduplicates IDs but still evaluates employees individually. The natural scale evolution is an atomic outbox plus dependency-indexed, idempotent reconciliation batches—not an implemented queue hidden behind a claim.
+
+Future calculations apply future policy versions and date-derived tenure to **current** employee facts, org relationships, groups, and overrides. Historical employee facts are not independently versioned, so assignment history is authoritative but retroactive recomputation is not offered. The current model is one workspace, not explicit SaaS multi-tenancy. Scheduled future employee facts, time-bounded overrides, production scheduling, and queue/observability infrastructure remain outside this version.
+
+See [Scaling characteristics](docs/system-design.md#12-scaling-characteristics) and [Current boundaries](docs/system-design.md#14-current-boundaries) for the complete distinction between implemented behavior and evolution paths.
+
+## Repository guide
+
+```text
+backend/      FastAPI application, policy engine, worker, migrations, tests
+frontend/     Next.js product UI, explanation components, learning center
+mcp_server/   Optional Streamable HTTP MCP adapter
+docs/         System design, demo scenario, credentials, learning materials
+scripts/      Demo seed and Compose smoke-test entry points
+compose.yaml  Complete evaluator stack
 ```
 
-Configuration can be overridden directly in the command environment; no env
-file is required. Host ports use `POLICYOS_FRONTEND_PORT`,
-`POLICYOS_BACKEND_PORT`, and `POLICYOS_MCP_PORT`. If those public URLs change,
-also override `NEXT_PUBLIC_SITE_URL`, `OAUTH_ISSUER_URL`, the OAuth URLs, and
-`MCP_PUBLIC_URL` consistently. `POLICYOS_RECONCILIATION_INTERVAL_SECONDS`
-controls the demo worker cadence.
+- [System design](docs/system-design.md)
+- [Backend behavior and API](backend/README.md)
+- [Frontend guide](frontend/README.md)
+- [MCP adapter](mcp_server/README.md)
+- [Cedar Harbor demo company](docs/seed-data-company.md)
+- [Test-only credentials](docs/seed-data-credentials.txt)
 
-The `init` service is the only schema owner: after PostgreSQL reports healthy,
-it runs `alembic upgrade head` and then the idempotent seed. Runtime services
-wait for `init` to exit successfully. API startup verifies the migration head
-and never creates schema. Reusing the volume safely re-runs initialization
-without duplicating Cedar Harbor data.
+### Local development without Docker
 
-The reconciliation application command remains one-shot. Compose wraps it in a
-clearly demo-only periodic shell runner; production should invoke
-`python -m app.workers.reconciliation` with a real scheduler.
+Manual development remains available but is intentionally secondary to the evaluator demo. Use the [backend setup](backend/README.md#install-and-run), [frontend setup](frontend/README.md#run-locally), and [MCP setup](mcp_server/README.md#run-locally). PostgreSQL is required, and `uv run alembic upgrade head` must run before the API or worker; application startup verifies the migration head and never creates schema.
 
-### Run the application
+---
 
-1. Create the local PostgreSQL database:
-
-   ```bash
-   createdb policy_assignments
-   ```
-
-2. Configure and start the backend:
-
-   ```bash
-   cd backend
-   cp .env.example .env
-   uv sync
-   uv run alembic upgrade head
-   uv run python -m fastapi dev main.py
-   ```
-
-   Before using the application beyond local evaluation, replace every `replace-with-a-random-secret` value in `backend/.env`. Generate each secret independently with `openssl rand -hex 32`.
-
-3. In another terminal, configure and start the frontend:
-
-   ```bash
-   cd frontend
-   cp .env.example .env.local
-   npm install
-   npm run dev
-   ```
-
-4. Open <http://localhost:3000/signup> to create the one-time Root account. After the workspace is initialized, additional users are provisioned by an administrator from **Access control**.
-
-5. Start the MCP service:
-
-   ```bash
-   cd mcp_server
-   cp .env.example .env
-   uv sync
-   uv run policyos-mcp
-   ```
-
-   Connect an MCP-compatible client to <http://127.0.0.1:8001/mcp>. The client discovers the backend OAuth endpoints, opens the PolicyOS login and consent page, and receives a user-bound access token. Agent calls receive the same permissions, employee visibility, and assignment-field visibility as that user's browser session.
-
-To explore a populated persistent workspace instead, load the test-only Cedar
-Harbor Wind Systems tenant before starting the backend:
-
-```bash
-./scripts/load_test_data.sh
-```
-
-The script creates the disposable `policy_assignments_demo` database when it is
-missing, applies every Alembic migration, and then loads the complete seed
-atomically.
-
-The backend selects its database through `backend/.env`:
-
-```dotenv
-DATABASE_MODE=demo
-DATABASE_URL=postgresql+psycopg:///policy_assignments
-DEMO_DATABASE_URL=postgresql+psycopg:///policy_assignments_demo
-```
-
-Change only `DATABASE_MODE` to `real` or `demo`; the two databases remain
-separate.
-
-Read the [company scenario](docs/seed-data-company.md) and use the
-[test credentials](docs/seed-data-credentials.txt) to compare roles and workflows.
-
-The API is available at <http://127.0.0.1:8000>, with interactive OpenAPI documentation at <http://127.0.0.1:8000/docs>. Alembic owns the database schema; API startup fails fast when the selected database is not at the current migration head.
-
-## Scheduled reconciliation
-
-Future policy boundaries and tenure changes are stored as scheduled reconciliation events. Run the one-shot worker from an external scheduler as often as your deployment requires:
-
-```bash
-cd backend
-uv run python -m app.workers.reconciliation
-```
-
-The worker uses a PostgreSQL advisory lock, so overlapping invocations safely leave only one active processor.
-
-## Validation
-
-Verify that the configured application database is at the migration head and
-matches the SQLAlchemy metadata:
-
-```bash
-cd backend
-uv run alembic check
-```
-
-Backend tests require a dedicated disposable PostgreSQL database because the suite creates and drops application tables:
-
-```bash
-createdb policy_assignments_test
-cd backend
-TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/policy_assignments_test \
-  uv run pytest
-```
-
-Run the frontend checks separately:
-
-```bash
-cd frontend
-npm run lint
-npm run build
-```
-
-Run the MCP adapter checks separately:
-
-```bash
-cd mcp_server
-uv run python -m pytest
-```
-
-## Important deployment notes
-
-- PostgreSQL is the only supported database for the API, worker, and tests.
-- Apply `uv run alembic upgrade head` before starting a new API release.
-- Set `AUTH_SESSION_COOKIE_SECURE=true` when serving the application over HTTPS.
-- Use stable, independently generated secrets and share the same values across all API instances.
-- Set `CORS_ALLOWED_ORIGINS` and `NEXT_PUBLIC_SITE_URL` to the exact production frontend origin.
-- Run the reconciliation worker through an external scheduler; the API does not start an internal timer.
-- The frontend requires `POLICY_API_URL` and has no offline operational-data or mutation mode.
+The design preference throughout is correctness before optimization: explicit conflicts instead of silent ambiguity, preview before mutation, and stored provenance instead of explanations reconstructed after the facts have changed.
