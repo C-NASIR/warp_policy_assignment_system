@@ -88,6 +88,7 @@ fi
 
 echo "Loading Cedar Harbor Wind Systems test data..."
 cd "$REPOSITORY_ROOT/backend"
+DATABASE_MODE=real DATABASE_URL="$database_url" uv run alembic upgrade head
 DATABASE_MODE=real DATABASE_URL="$database_url" uv run python -m scripts.seed_demo_company "${seed_arguments[@]}"
 
 echo

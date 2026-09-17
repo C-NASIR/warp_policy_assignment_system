@@ -28,10 +28,11 @@ def main() -> None:
         os.environ["DATABASE_MODE"] = "real"
         os.environ["DATABASE_URL"] = args.database_url
 
-    from app.database import SessionLocal, create_tables
+    from app.database import SessionLocal, prepare_database
     from app.demo_seed import seed_demo_company
 
-    create_tables()
+    # The target database must already be at the latest Alembic revision.
+    prepare_database()
     with SessionLocal.begin() as session:
         summary = seed_demo_company(session, reference_time=args.reference_date)
 

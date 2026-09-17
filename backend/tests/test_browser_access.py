@@ -70,7 +70,7 @@ def test_allowed_response_exposes_frontend_metadata(browser_client):
     assert "Access-Control-Allow-Credentials" not in response.headers
 
 
-def test_protected_auth_error_is_readable_by_allowed_frontend():
+def test_protected_auth_error_is_readable_by_allowed_frontend(session_factory):
     client = TestClient(app)
     try:
         response = client.get(

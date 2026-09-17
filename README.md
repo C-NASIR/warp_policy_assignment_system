@@ -70,6 +70,7 @@ See the component guides for deeper technical and operational detail:
    cd backend
    cp .env.example .env
    uv sync
+   uv run alembic upgrade head
    uv run python -m fastapi dev main.py
    ```
 
@@ -105,7 +106,8 @@ Harbor Wind Systems tenant before starting the backend:
 ```
 
 The script creates the disposable `policy_assignments_demo` database when it is
-missing and then loads the complete seed atomically.
+missing, applies every Alembic migration, and then loads the complete seed
+atomically.
 
 The backend selects its database through `backend/.env`:
 
@@ -121,7 +123,7 @@ separate.
 Read the [company scenario](docs/seed-data-company.md) and use the
 [test credentials](docs/seed-data-credentials.txt) to compare roles and workflows.
 
-The API is available at <http://127.0.0.1:8000>, with interactive OpenAPI documentation at <http://127.0.0.1:8000/docs>. The backend creates the schema directly from the application models.
+The API is available at <http://127.0.0.1:8000>, with interactive OpenAPI documentation at <http://127.0.0.1:8000/docs>. Alembic owns the database schema; API startup fails fast when the selected database is not at the current migration head.
 
 ## Scheduled reconciliation
 
@@ -135,6 +137,14 @@ uv run python -m app.workers.reconciliation
 The worker uses a PostgreSQL advisory lock, so overlapping invocations safely leave only one active processor.
 
 ## Validation
+
+Verify that the configured application database is at the migration head and
+matches the SQLAlchemy metadata:
+
+```bash
+cd backend
+uv run alembic check
+```
 
 Backend tests require a dedicated disposable PostgreSQL database because the suite creates and drops application tables:
 
@@ -163,6 +173,7 @@ uv run python -m pytest
 ## Important deployment notes
 
 - PostgreSQL is the only supported database for the API, worker, and tests.
+- Apply `uv run alembic upgrade head` before starting a new API release.
 - Set `AUTH_SESSION_COOKIE_SECURE=true` when serving the application over HTTPS.
 - Use stable, independently generated secrets and share the same values across all API instances.
 - Set `CORS_ALLOWED_ORIGINS` and `NEXT_PUBLIC_SITE_URL` to the exact production frontend origin.

@@ -12,9 +12,11 @@ class Base(DeclarativeBase):
     pass
 
 
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+
 # Keep local configuration beside the backend while allowing process-level
 # environment variables to override every value in deployed environments.
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+load_dotenv(BACKEND_ROOT / ".env")
 
 
 # Local Homebrew PostgreSQL installs create a role matching the macOS user and
@@ -61,11 +63,41 @@ def get_db() -> Generator[Session, None, None]:
             raise
 
 
-def create_tables() -> None:
-    from app import models  # noqa: F401
+class DatabaseMigrationError(RuntimeError):
+    """Raised when the selected database is not at the application schema head."""
+
+
+def require_current_schema() -> None:
+    """Fail fast when Alembic migrations have not been applied."""
+    from alembic.config import Config
+    from alembic.runtime.migration import MigrationContext
+    from alembic.script import ScriptDirectory
+
+    configuration = Config(BACKEND_ROOT / "alembic.ini")
+    scripts = ScriptDirectory.from_config(configuration)
+    expected_heads = set(scripts.get_heads())
+    with engine.connect() as connection:
+        current_heads = set(MigrationContext.configure(connection).get_current_heads())
+    if current_heads != expected_heads:
+        current = ", ".join(sorted(current_heads)) or "unversioned"
+        expected = ", ".join(sorted(expected_heads)) or "no migration head"
+        raise DatabaseMigrationError(
+            "Database schema is not current "
+            f"(current: {current}; expected: {expected}). "
+            "Run `uv run alembic upgrade head` before starting PolicyOS."
+        )
+
+
+def prepare_database() -> None:
+    """Synchronize application-owned catalog rows after migrations have run.
+
+    Schema lifecycle is owned by Alembic. This startup hook only maintains the
+    trusted condition-field catalog whose values are defined by application
+    code.
+    """
     from app.services.condition_fields import sync_condition_field_definitions
 
-    Base.metadata.create_all(bind=engine)
+    require_current_schema()
     with SessionLocal.begin() as session:
         # Multiple Uvicorn processes may start together. Serialize the small
         # system-catalog upsert so the unique field keys remain race-free.

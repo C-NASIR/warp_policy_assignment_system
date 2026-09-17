@@ -4,7 +4,7 @@ Version 1 is a FastAPI backend that records past assignments, serves current ass
 
 ## Architecture
 
-The application uses FastAPI and Pydantic at the API boundary, explicit application services for domain behavior, SQLAlchemy 2 for persistence, and PostgreSQL through Psycopg 3. PostgreSQL is the only supported database for the API, worker, and tests. The schema is created directly from the application models.
+The application uses FastAPI and Pydantic at the API boundary, explicit application services for domain behavior, SQLAlchemy 2 for persistence, and PostgreSQL through Psycopg 3. PostgreSQL is the only supported database for the API, worker, and tests. Alembic owns the schema lifecycle, while SQLAlchemy models remain the application mapping and migration-autogeneration source.
 
 ```text
 Employee
@@ -40,7 +40,7 @@ The employee reporting graph is a self-referencing `manager_id` relationship wit
 
 Effective ranges are inclusive. Versions for one policy may not overlap, and an archived policy has no effective version. Scheduling a later version automatically closes the previous open-ended version on the preceding day. An effective-date gap is valid and means that policy contributes no behavior during the gap. Creating a future version immediately reconciles current state but does not apply that version early; automatic reconciliation when its effective date arrives remains a separate scheduling concern.
 
-Future changes are represented centrally in `ScheduledReconciliation` while their authoritative dates remain on the owning domain records. Policy-version creation immediately synchronizes pending `becomes_effective` and `expires` events. Because `effective_until` is inclusive, expiration is scheduled for midnight UTC on the following day. The scheduling service can query and reconcile due events transactionally, but version 1 does not include a periodic worker that invokes it.
+Future changes are represented centrally in `ScheduledReconciliation` while their authoritative dates remain on the owning domain records. Policy-version creation immediately synchronizes pending `becomes_effective` and `expires` events. Because `effective_until` is inclusive, expiration is scheduled for midnight UTC on the following day. The scheduling service queries and reconciles due events transactionally. A PostgreSQL-only one-shot worker is included and is intended to be invoked by an external scheduler.
 
 Groups are explicit collections of employees. A group contributes its attached policies as candidates for every member; it does not produce assignments of its own. Direct matches and group-inherited policies are deduplicated and sent through the same policy engine, so priority and conflict behavior is identical regardless of where a policy came from.
 
@@ -105,10 +105,40 @@ export AUTH_SESSION_COOKIE_SECURE=false
 export AUTH_MFA_ENCRYPTION_KEY="$(openssl rand -hex 32)"
 export AUTH_ROOT_RECOVERY_KEY="$(openssl rand -hex 32)"
 export CORS_ALLOWED_ORIGINS=http://localhost:3000
+uv run alembic upgrade head
 uv run python -m fastapi dev main.py
 ```
 
-The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected at startup. Missing tables are created directly from the application models on startup.
+The API runs at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. A PostgreSQL server and migrated database must exist before startup. The URL above is also the local default when `DATABASE_URL` is omitted; set it explicitly outside local development. Plain `postgresql://` URLs are accepted and normalized to the installed Psycopg 3 driver. Any non-PostgreSQL URL is rejected. Startup verifies that the selected database is at the current Alembic head, then synchronizes the application-owned condition-field catalog; it never creates or alters schema objects.
+
+### Schema migrations
+
+Apply committed migrations before starting the API, worker, or seed loader:
+
+```bash
+uv run alembic upgrade head
+```
+
+After changing SQLAlchemy models, generate and review a revision, then verify
+that no model drift remains:
+
+```bash
+uv run alembic revision --autogenerate -m "describe the schema change"
+uv run alembic upgrade head
+uv run alembic check
+```
+
+The initial migration represents the schema that existed before Alembic was
+introduced. An existing PolicyOS database created by that exact model version
+can adopt migration tracking once, after its schema has been backed up and
+verified:
+
+```bash
+uv run alembic stamp head
+```
+
+Do not stamp an empty, older, or manually altered database; run migrations from
+`base` or reconcile the schema first. Future releases always use `upgrade head`.
 
 Every business API endpoint except `GET /` requires either a valid human session or `Authorization: Bearer <credential>`. The frontend creates the one-time Root account through `POST /auth/setup-root`, then uses login sessions stored in an HTTP-only, SameSite `strict` cookie. Root is an immutable break-glass superuser; other users receive the union of their assigned role permissions, employee-data scopes, and assignment-field scopes. Employee scope is enforced on employee records and every employee-derived result. Assignment-field scope independently filters assignment fields, policies, assignments, overrides, summaries, group-policy links, change previews, and related audit events. A policy is accessible only when every output in every version belongs to the user's visible assignment fields, preventing partial edits to mixed-domain policies. Out-of-scope direct resource requests return 404 so they do not disclose whether the record exists. Policy responses include record-specific `can_update`, `can_create_version`, `can_activate`, and `can_archive` capabilities. These combine the caller's granular action permissions, assignment-field scope, and the record lifecycle state; the frontend consumes them while the API remains the final enforcement boundary. Permission and scope changes take effect on the next request, including for existing sessions.
 
@@ -509,4 +539,4 @@ Patching Alice's state to Wisconsin (`WI`) removes the California policy match a
 
 Roles can grant all, selected, or no assignment fields; grants combine by union and update sessions immediately. New roles default to no employee or assignment-field scope until access is chosen explicitly. The scope is enforced across catalogs, complete-policy reads and writes, assignments and history, overrides, queries, summaries, group-policy links, previews, and audit events. Root and machine credentials retain global access. Mixed-domain policies are hidden unless every output domain is allowed so a limited administrator cannot partially inspect or mutate one through another route.
 
-Assignment fields enforce their value contract for policies, previews, and manual overrides. Controlled fields accept only declared options; free text must be selected explicitly when defining a field. This phase still excludes per-policy exceptions, delegated limits on which roles an access administrator may grant, password-reset delivery, MFA, and external identity-provider integration. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.
+Assignment fields enforce their value contract for policies, previews, and manual overrides. Controlled fields accept only declared options; free text must be selected explicitly when defining a field. This phase still excludes per-policy exceptions, delegated limits on which roles an access administrator may grant, password-reset delivery, and external identity-provider integration. The domain engine also still excludes retroactive assignment-history rewriting, scheduled future employee facts and relationship changes, time-bounded overrides, override reasons and authorship, administrator-defined condition formulas, an internal worker timer or deployment scheduler, queues, and caching. API credentials remain intended for the MCP server and automation rather than browser users.

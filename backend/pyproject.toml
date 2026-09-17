@@ -1,10 +1,11 @@
 [project]
 name = "warp-policy-assignment-system"
 version = "0.1.0"
-description = "Add your description here"
+description = "Date-effective workforce policy assignment and reconciliation service"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.16.5",
     "argon2-cffi>=25.1.0",
     "cryptography>=46.0.0",
     "fastapi[standard]>=0.141.1",

@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.browser_access import configure_browser_access
-from app.database import create_tables
+from app.database import prepare_database
 from app.dependencies import DatabaseSession, authorize_operation
 from app.error_contract import (
     conflict_response,
@@ -147,7 +147,7 @@ class PolicyAssignmentAPI(FastAPI):
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    create_tables()
+    prepare_database()
     yield
 
 

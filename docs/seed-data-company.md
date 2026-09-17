@@ -96,10 +96,11 @@ To use another existing testing database:
   --database-url postgresql+psycopg:///my_policyos_test_database
 ```
 
-The command creates missing tables and commits the entire dataset atomically. It
-refuses to run when tenant data is already present, preventing fictional records
-from being mixed into an existing workspace. Re-running it after this exact seed
-has completed reports the existing seed without duplicating records.
+The command applies committed Alembic migrations and commits the entire dataset
+atomically. It refuses to run when tenant data is already present, preventing
+fictional records from being mixed into an existing workspace. Re-running it
+after this exact seed has completed reports the existing seed without
+duplicating records.
 
 Configure the frontend's `POLICY_API_URL` for the backend connected to this
 database, then use the accounts in [seed-data-credentials.txt](seed-data-credentials.txt).

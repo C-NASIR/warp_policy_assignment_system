@@ -2,6 +2,9 @@ import os
 from collections.abc import Generator
 
 import pytest
+from alembic import command
+from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
@@ -41,6 +44,11 @@ def session_factory():
     engine = create_engine(test_database_url, poolclass=NullPool)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+    with engine.connect() as connection:
+        migration_heads = MigrationContext.configure(connection).get_current_heads()
+    if not migration_heads:
+        migration_config = Config("alembic.ini")
+        command.stamp(migration_config, "head")
     factory = sessionmaker(bind=engine, expire_on_commit=False)
     with factory.begin() as session:
         sync_condition_field_definitions(session)
