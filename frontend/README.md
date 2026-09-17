@@ -10,6 +10,13 @@ curriculum and authoring workflow live in `../docs/learn`.
 
 ## Run locally
 
+The repository-wide production-mode container demo is available from the
+repository root with `docker compose up --build`. It builds Next.js standalone
+output and runs `node server.js` as a non-root user. Inside that container,
+`POLICY_API_URL=http://backend:8000` keeps the same-origin session proxy on the
+private Compose network while the browser continues to use
+`http://localhost:3000`.
+
 Configure the FastAPI backend URL before starting the frontend:
 
 ```dotenv

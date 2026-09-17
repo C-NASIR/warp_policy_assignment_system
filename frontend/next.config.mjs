@@ -7,6 +7,7 @@ const learnRedirects = JSON.parse(
 
 /** @type {import("next").NextConfig} */
 const nextConfig = {
+  output: "standalone",
   redirects() {
     return Object.entries(learnRedirects).map(([source, destination]) => ({
       source,

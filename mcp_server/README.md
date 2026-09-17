@@ -6,6 +6,13 @@ accesses the PolicyOS database.
 
 ## Run locally
 
+The default repository Compose stack includes this service at
+`http://localhost:8001/mcp` and configures its internal API connection through
+the `backend` service. Its container health check uses the MCP server's public,
+non-sensitive OAuth protected-resource metadata endpoint at
+`/.well-known/oauth-protected-resource/mcp`; no extra application protocol is
+introduced.
+
 Start the backend and frontend first, then:
 
 ```bash

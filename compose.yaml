@@ -1,0 +1,146 @@
+name: policyos
+
+# Every value below is for the disposable localhost demo only. Override all
+# secret-like values before adapting this file for any real deployment.
+x-backend-environment: &backend-environment
+  DATABASE_MODE: real
+  DATABASE_URL: postgresql+psycopg://policyos:${POLICYOS_POSTGRES_PASSWORD:-policyos-demo-postgres-password-2026-only}@postgres:5432/policyos
+  AUTH_MFA_ENCRYPTION_KEY: ${AUTH_MFA_ENCRYPTION_KEY:-policyos-demo-mfa-encryption-key-2026-never-use-in-production}
+  AUTH_ROOT_RECOVERY_KEY: ${AUTH_ROOT_RECOVERY_KEY:-policyos-demo-root-recovery-key-2026-never-use-in-production}
+  CHANGE_APPROVAL_SECRET: ${CHANGE_APPROVAL_SECRET:-policyos-demo-change-approval-key-2026-never-use-in-production}
+  AUTH_BOOTSTRAP_TOKEN: ${AUTH_BOOTSTRAP_TOKEN:-policyos-demo-bootstrap-token-2026-never-use-in-production}
+  AUTH_BOOTSTRAP_SUBJECT: ${AUTH_BOOTSTRAP_SUBJECT:-compose-demo-admin}
+  AUTH_SESSION_COOKIE_SECURE: "false"
+  AUTH_SESSION_TTL_SECONDS: ${AUTH_SESSION_TTL_SECONDS:-43200}
+  AUTH_SESSION_IDLE_TTL_SECONDS: ${AUTH_SESSION_IDLE_TTL_SECONDS:-1800}
+  AUTH_REAUTH_TTL_SECONDS: ${AUTH_REAUTH_TTL_SECONDS:-600}
+  AUTH_REQUIRE_PRIVILEGED_MFA: ${AUTH_REQUIRE_PRIVILEGED_MFA:-true}
+  AUTH_PASSWORD_RESET_EXPOSE_TOKEN: ${AUTH_PASSWORD_RESET_EXPOSE_TOKEN:-true}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+  OAUTH_ISSUER_URL: ${OAUTH_ISSUER_URL:-http://localhost:8000}
+  OAUTH_AUTHORIZATION_URL: ${OAUTH_AUTHORIZATION_URL:-http://localhost:8000/oauth/authorize/start}
+  OAUTH_AUTHORIZATION_UI_URL: ${OAUTH_AUTHORIZATION_UI_URL:-http://localhost:3000/oauth/authorize}
+  MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-http://localhost:8001/mcp}
+
+services:
+  postgres:
+    image: postgres:17.6-bookworm
+    environment:
+      POSTGRES_DB: policyos
+      POSTGRES_USER: policyos
+      POSTGRES_PASSWORD: ${POLICYOS_POSTGRES_PASSWORD:-policyos-demo-postgres-password-2026-only}
+    volumes:
+      - policyos-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U policyos -d policyos"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    networks: [policyos]
+
+  init:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      <<: *backend-environment
+      POLICYOS_SEED_DEMO: ${POLICYOS_SEED_DEMO:-true}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        alembic upgrade head
+        case "$${POLICYOS_SEED_DEMO}" in
+          true|1|yes|on) python -m scripts.seed_demo_company ;;
+          false|0|no|off) echo "Cedar Harbor demo seed disabled" ;;
+          *) echo "POLICYOS_SEED_DEMO must be true or false" >&2; exit 2 ;;
+        esac
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks: [policyos]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      <<: *backend-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      init:
+        condition: service_completed_successfully
+    ports:
+      - "${POLICYOS_BACKEND_PORT:-8000}:8000"
+    restart: unless-stopped
+    networks: [policyos]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        POLICY_API_URL: http://backend:8000
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    environment:
+      POLICY_API_URL: http://backend:8000
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${POLICYOS_FRONTEND_PORT:-3000}:3000"
+    restart: unless-stopped
+    networks: [policyos]
+
+  reconciliation-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      <<: *backend-environment
+      POLICYOS_RECONCILIATION_INTERVAL_SECONDS: ${POLICYOS_RECONCILIATION_INTERVAL_SECONDS:-60}
+    command: ["/app/scripts/run_demo_reconciliation_scheduler.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    stop_grace_period: 20s
+    restart: unless-stopped
+    networks: [policyos]
+
+  mcp:
+    build:
+      context: ./mcp_server
+      dockerfile: Dockerfile
+    environment:
+      POLICYOS_BACKEND_URL: http://backend:8000
+      POLICYOS_OAUTH_ISSUER: ${OAUTH_ISSUER_URL:-http://localhost:8000}
+      POLICYOS_MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-http://localhost:8001/mcp}
+      POLICYOS_MCP_HOST: 0.0.0.0
+      POLICYOS_MCP_PORT: 8001
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${POLICYOS_MCP_PORT:-8001}:8001"
+    restart: unless-stopped
+    networks: [policyos]
+
+volumes:
+  policyos-postgres-data:
+
+networks:
+  policyos:
+    name: policyos-demo

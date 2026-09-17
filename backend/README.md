@@ -93,6 +93,12 @@ Overrides are retained for provenance. Updating an override retires the old immu
 
 ## Install and run
 
+For the repository-wide Docker demo, run `docker compose up --build` from the
+repository root. Its one-shot `init` service applies Alembic migrations and,
+unless `POLICYOS_SEED_DEMO=false`, loads Cedar Harbor before this API or the
+worker can start. The API container itself still only verifies migration head;
+it never creates or upgrades schema.
+
 Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are expected.
 
 ```bash

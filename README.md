@@ -49,12 +49,83 @@ See the component guides for deeper technical and operational detail:
 
 ## Prerequisites
 
+- Docker with the Compose plugin (for the complete demo), or
 - Python 3.12 or newer
 - [uv](https://docs.astral.sh/uv/)
 - PostgreSQL
 - Node.js and npm compatible with Next.js 16
 
 ## Quick start
+
+### Docker demo
+
+With Docker installed, the complete seeded application starts with one command:
+
+```bash
+docker compose up --build
+```
+
+Compose starts PostgreSQL, applies every Alembic migration, loads the
+test-only Cedar Harbor Wind Systems company, and then starts the API, frontend,
+periodic demo reconciliation runner, and MCP server. PostgreSQL is kept on the
+private Compose network rather than exposed on the host.
+
+- Application: <http://localhost:3000>
+- API documentation: <http://localhost:8000/docs>
+- MCP endpoint: <http://localhost:8001/mcp>
+- Recommended first login: `nadia.okafor@cedarharbor.example` / `HarborRoot!2026`
+- All fictional test accounts: [Cedar Harbor credentials](docs/seed-data-credentials.txt)
+
+The committed Compose defaults, including its deterministic secret-like
+values, are strictly for this disposable localhost demo. Never reuse them in
+production. The browser receives no database credentials or backend-only
+secrets; its authenticated API calls use the existing HTTP-only, same-origin
+session proxy. Plain HTTP requires `AUTH_SESSION_COOKIE_SECURE=false` here only.
+
+Useful lifecycle commands:
+
+```bash
+# Follow all logs, or only selected services
+docker compose logs -f
+docker compose logs -f backend frontend reconciliation-worker
+
+# Stop containers while preserving the named PostgreSQL volume
+docker compose down
+
+# Completely reset the demo, including all database data
+docker compose down -v
+
+# Rebuild after source or dependency changes
+docker compose up --build
+
+# Validate an already running, seeded stack
+./scripts/smoke_test_compose.sh
+```
+
+To start a migrated but empty workspace, reset any existing seeded volume and
+disable the seed for that invocation:
+
+```bash
+docker compose down -v
+POLICYOS_SEED_DEMO=false docker compose up --build
+```
+
+Configuration can be overridden directly in the command environment; no env
+file is required. Host ports use `POLICYOS_FRONTEND_PORT`,
+`POLICYOS_BACKEND_PORT`, and `POLICYOS_MCP_PORT`. If those public URLs change,
+also override `NEXT_PUBLIC_SITE_URL`, `OAUTH_ISSUER_URL`, the OAuth URLs, and
+`MCP_PUBLIC_URL` consistently. `POLICYOS_RECONCILIATION_INTERVAL_SECONDS`
+controls the demo worker cadence.
+
+The `init` service is the only schema owner: after PostgreSQL reports healthy,
+it runs `alembic upgrade head` and then the idempotent seed. Runtime services
+wait for `init` to exit successfully. API startup verifies the migration head
+and never creates schema. Reusing the volume safely re-runs initialization
+without duplicating Cedar Harbor data.
+
+The reconciliation application command remains one-shot. Compose wraps it in a
+clearly demo-only periodic shell runner; production should invoke
+`python -m app.workers.reconciliation` with a real scheduler.
 
 ### Run the application
 
