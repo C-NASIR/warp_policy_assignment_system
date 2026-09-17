@@ -62,6 +62,35 @@ The account works immediately for the read and preview walkthrough below. MFA is
 5. Open **People Manager Responsibilities** (`/policies/8`) to inspect its rule, outputs, dated version history, and population impact.
 6. Return to either employee for recorded **Past assignments**, then open **Audit log** for actor, mutation, and assignment events.
 7. Optional: sign in as Priya, Elena, Rafael, or Kai using the [role comparison credentials](docs/seed-data-credentials.txt) to see action, employee, and assignment-field scopes applied together.
+8. Optional: connect an MCP-compatible client to `http://localhost:8001/mcp`, authorize as a seeded user, and ask it to explain Priya Raman's expense limit or preview her move from Engineering to Product.
+
+## AI-native administration through MCP
+
+PolicyOS also exposes an optional Model Context Protocol server, allowing MCP-compatible agents to inspect and administer the policy system using natural language.
+
+The MCP adapter publishes 52 strictly typed tools covering employee search, assignment explanations and history, policy impact, change previews, groups, manual overrides, reconciliation, audit records, roles, users, and access reviews.
+
+Example agent requests include:
+
+- “Explain why Priya has a USD 5,000 expense approval limit and show what the policy engine would assign without her override.”
+- “Preview the assignment changes if Priya moves from Engineering to Product. Do not save anything.”
+- “Find California employees and show which policies apply to them today.”
+- “Show the population affected by the People Manager Responsibilities policy.”
+- “Reconcile Rafael’s assignments and explain any resulting changes.”
+
+This is intentionally an interface over the existing application—not a second implementation of its business logic:
+
+- The MCP server communicates only with FastAPI and never accesses PostgreSQL directly.
+- Agents authenticate through OAuth authorization code flow with PKCE.
+- Authorization is user-bound, so agents inherit the connected administrator’s permissions and employee visibility.
+- The frontend handles login, MFA, and consent; credentials never pass through the agent.
+- Tools publish strict input schemas and distinguish read-only, mutating, and destructive operations.
+- Material changes can be previewed through the real rollback-only domain workflow before being committed.
+- Agent activity passes through the same validation, reconciliation, and audit paths as browser activity.
+
+This keeps the assignment engine deterministic and auditable while making the system ready for AI-native operational workflows.
+
+See the [MCP adapter documentation](mcp_server/README.md) for connection, authentication, tool coverage, and local setup.
 
 ## Warp criteria mapped to implementation
 
@@ -75,6 +104,7 @@ The account works immediately for the read and preview walkthrough below. MFA is
 | Explainability and auditability | Materialized assignments retain policy/override provenance, match evidence, candidate outcomes, and decision strategy. Assignment history records what was true; the transactional audit journal records who changed what. [Explanation tests](backend/tests/test_assignment_explanations.py) |
 | Architecture and scale judgment | PostgreSQL transactions and constraints protect the current synchronous model; the full-population policy fan-out is identified explicitly, with an outbox/batched evolution path. [System design](docs/system-design.md#12-scaling-characteristics) |
 | Developer experience | One-command Compose startup, Alembic-owned schema, health-gated services, an idempotent seed, OpenAPI, smoke tests, and focused component/domain suites make the system runnable and inspectable. [Compose file](compose.yaml) |
+| AI-native extension | A 52-tool Streamable HTTP MCP server exposes the product through user-bound OAuth/PKCE while preserving backend authorization, previews, validation, and audit behavior. [MCP adapter](mcp_server/README.md) |
 
 ## Core resolution model
 
