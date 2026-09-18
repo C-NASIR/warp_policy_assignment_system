@@ -1,28 +1,12 @@
 # PolicyOS frontend
 
-PolicyOS is the role-aware interface for the policy assignment engine in this repository. It gives authorized users a dashboard, employee directory, assignment explanations, employee onboarding and editing with impact previews, policy authoring with effective dates and deterministic priorities, group management, manual overrides, assignment history, policy lifecycle controls, assignment-field setup, an inspectable audit log, human access administration, and an authenticated Fumadocs learning center at `/learn`.
+The frontend is the Next.js 16 and React 19 interface for PolicyOS. It covers employee and policy administration, assignment explanations and history, impact previews, groups, overrides, audit records, access control, account security, and the public learning center at `/learn`.
 
-Use **Command/Ctrl + K** anywhere in the app to open Quick Find and jump directly to a page or common action.
-
-Learning content lives in `content/learn` as schema-validated MDX. The collection,
-ordering, and metadata contract are defined in `lib/learn-source.ts`; the broader
-curriculum and authoring workflow live in `../docs/learn`.
+The FastAPI backend remains authoritative for authentication, authorization, validation, reference data, policy evaluation, reconciliation, and audit data. This application owns presentation, navigation, form state, and accessible interaction behavior.
 
 ## Run locally
 
-The repository-wide production-mode container demo is available from the
-repository root with `docker compose up --build`. It builds Next.js standalone
-output and runs `node server.js` as a non-root user. Inside that container,
-`POLICY_API_URL=http://backend:8000` keeps the same-origin session proxy on the
-private Compose network while the browser continues to use
-`http://localhost:3000`.
-
-Configure the FastAPI backend URL before starting the frontend:
-
-```dotenv
-POLICY_API_URL=http://127.0.0.1:8000
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
+Start the backend first, then run from `frontend/`:
 
 ```bash
 cp .env.example .env.local
@@ -30,17 +14,57 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). `POLICY_API_URL` is required; the frontend does not contain an offline data source or local mutation path. Directory filters and pagination are executed by the backend, employee form suggestions and audit facets come from backend reference endpoints, and both new-policy and new-version previews run through the backend policy engine.
+Open <http://localhost:3000>. The Docker image uses Node.js 22; use a current Node.js release compatible with Next.js 16 for local development.
 
-The public homepage at `/` introduces PolicyOS. Visitors choose **Sign in** (`/login`) or **Sign up** (`/signup`); the workspace overview lives at `/dashboard`. When the workspace is uninitialized, sign up redirects to the one-time Root account setup at `/setup`. After initialization, the signup page directs people to their administrator for an account.
+| Variable               | Purpose                                                 |
+| ---------------------- | ------------------------------------------------------- |
+| `POLICY_API_URL`       | Server-side FastAPI base URL; required                  |
+| `NEXT_PUBLIC_SITE_URL` | Public frontend origin used for metadata and OAuth URLs |
 
-Root can create least-privilege roles and provision users under **Access control**. Each role combines action permissions with two independent data boundaries: employee visibility (`all`, reporting tree, linked employee, or none) and assignment-field access (`all`, selected fields, or none). This lets an IT administrator work only with Application Access while a payroll administrator works only with Pay Schedule, even when both can perform the same actions. Roles are assigned to and revoked from users only through explicit access-administration actions; policies produce employee assignments only. Policy drafting, version creation, activation, and archiving are separate grants. Policy responses supply record-specific capabilities so the interface does not duplicate lifecycle and scope decisions in React. User accounts can be linked to an employee record so self and reporting-tree scopes have a clear anchor. New users receive a temporary password and must replace it on first login. Navigation and mutation controls reflect effective role permissions, while connected data is filtered by the backend. Browser requests use the same-origin `/api/backend/*` proxy, and the backend session token remains in an HTTP-only cookie rather than client-side JavaScript.
+The defaults connect to a backend at `http://127.0.0.1:8000`. The complete production-mode demo can instead be started from the repository root with `docker compose up --build`.
+
+## Application behavior
+
+- Server components read backend data directly with the HTTP-only PolicyOS session cookie.
+- Browser mutations go through the same-origin `/api/backend/*` proxy. It forwards only the session cookie and approved headers, checks the origin on state-changing requests, and never exposes the session token to client JavaScript.
+- Navigation and controls reflect the signed-in user's permissions and record capabilities, but the backend is always the enforcement boundary.
+- Directory search, filtering, pagination, form options, previews, and policy resolution come from backend endpoints; there is no offline data or local mutation path.
+- `/setup` creates the one-time Root account for an empty workspace. After setup, administrators provision users and roles under `/access`.
+- `Command/Ctrl + K` opens Quick Find for pages, actions, and learning content.
+- Browsers that implement WebMCP receive five navigation-only tools as progressive enhancement. Operational MCP access is provided by the separate [MCP server](../mcp_server/README.md).
+
+## Learning content
+
+Learning articles live in `content/learn` as schema-validated MDX. `lib/learn-source.ts` defines their metadata contract and ordering; the authoring workflow is documented in [`docs/learn`](../docs/learn/README.md).
+
+Validate learning content after changing articles, metadata, ownership, or links:
+
+```bash
+npm run learn:quality
+```
 
 ## Checks
 
+Run the same frontend checks summarized by the project README:
+
 ```bash
+npm test
 npm run lint
 npm run build
 ```
 
-The backend is the source of truth for all operational data, authentication, authorization, reference values, assignment resolution, reconciliation, readiness, and audit records. This includes the grouped state and territory catalog used by the searchable employee and policy inputs. The frontend owns presentation concerns such as labels, navigation, form state, and current-page display sorting.
+Use `npm run format:check` to check Prettier formatting and `npm run format` to apply it.
+
+## Code map
+
+```text
+app/                    Routes, pages, and route-specific components
+app/api/backend/        Same-origin FastAPI proxy
+components/features/    Cross-route product features
+components/shared/      Reusable domain-aware controls
+components/ui/          UI primitives
+lib/backend.ts          Server-side API client
+lib/permissions.ts      Presentation-level permission helpers
+content/learn/          Learning-center MDX
+scripts/                Learning-content validation
+```
