@@ -44,6 +44,9 @@ export default async function OverviewPage() {
       ? Math.round((item.assigned_employee_count / summary.employee_count) * 100)
       : 0,
   }));
+  const coverageRate = summary.employee_count
+    ? Math.round((summary.employees_with_assignments / summary.employee_count) * 100)
+    : 0;
   const metrics = [
     {
       label: "Employees",
@@ -86,21 +89,51 @@ export default async function OverviewPage() {
           <Plus size={15} /> Create policy
         </ButtonLink>
       </div>
-      <section className="metric-grid" aria-label="Assignment system metrics">
-        {metrics.map((metric) => {
-          const Icon = metric.icon;
-          return (
-            <article className="metric-card" key={metric.label}>
-              <div className="metric-icon">
-                <Icon size={16} strokeWidth={1.8} />
-              </div>
-              <div className="metric-delta">{metric.delta}</div>
-              <div className="metric-value">{metric.value}</div>
-              <div className="metric-label">{metric.label}</div>
-            </article>
-          );
-        })}
+      <section className="overview-snapshot" aria-label="Assignment system snapshot">
+        <div className="coverage-score">
+          <div className="coverage-score-head">
+            <span className="section-kicker">Assignment coverage</span>
+            <CircleCheckBig size={16} aria-hidden="true" />
+          </div>
+          <div className="coverage-score-value">{coverageRate}%</div>
+          <p>
+            {summary.employees_with_assignments.toLocaleString()} employees have at least one
+            resolved assignment.
+          </p>
+          <div
+            className="coverage-score-track"
+            role="progressbar"
+            aria-label="Employee assignment coverage"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={coverageRate}
+          >
+            <span style={{ width: `${coverageRate}%` }} />
+          </div>
+        </div>
+        <div className="snapshot-metrics">
+          {metrics.map((metric) => {
+            const Icon = metric.icon;
+            return (
+              <article className="snapshot-metric" key={metric.label}>
+                <div className="snapshot-metric-head">
+                  <span>{metric.label}</span>
+                  <Icon size={14} strokeWidth={1.8} aria-hidden="true" />
+                </div>
+                <strong>{metric.value}</strong>
+                <small>{metric.delta}</small>
+              </article>
+            );
+          })}
+        </div>
       </section>
+      <div className="section-heading">
+        <div>
+          <span className="section-kicker">Workspace health</span>
+          <h2>Coverage and recent decisions</h2>
+        </div>
+        <span className="section-note">Live from the assignment engine</span>
+      </div>
       <section className="dashboard-grid">
         <Panel as="article">
           <div className="panel-header">
@@ -151,6 +184,12 @@ export default async function OverviewPage() {
           </div>
         </Panel>
       </section>
+      <div className="section-heading quick-actions-heading">
+        <div>
+          <span className="section-kicker">Shortcuts</span>
+          <h2>Start a workflow</h2>
+        </div>
+      </div>
       <section className="quick-actions" aria-label="Quick actions">
         <Link className="quick-action" href="/employees/new">
           <span className="quick-action-icon">

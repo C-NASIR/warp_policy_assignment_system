@@ -65,9 +65,59 @@
   font-size: 24px;
   letter-spacing: -0.03em;
 }
+.productScope :global(.detail-title-row) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.productScope :global(.detail-title-row .detail-title) {
+  margin-bottom: 0;
+}
 .productScope :global(.detail-meta) {
   color: var(--muted);
   font-size: 11px;
+}
+.productScope :global(.detail-title-row + .detail-meta) {
+  margin-top: 5px;
+}
+.productScope :global(.detail-summary-strip) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  margin-bottom: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.productScope :global(.detail-summary-strip > div) {
+  min-width: 0;
+  padding: 13px 15px;
+  border-right: 1px solid var(--border);
+}
+.productScope :global(.detail-summary-strip > div:last-child) {
+  border-right: 0;
+}
+.productScope :global(.detail-summary-strip span),
+.productScope :global(.detail-summary-strip strong) {
+  display: block;
+}
+.productScope :global(.detail-summary-strip span) {
+  color: var(--faint);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+.productScope :global(.detail-summary-strip strong) {
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .productScope :global(.detail-grid) {
   display: grid;
@@ -452,4 +502,19 @@
   color: var(--muted);
   font-size: 11px;
   line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .productScope :global(.detail-summary-strip) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .productScope :global(.detail-summary-strip > div) {
+    border-bottom: 1px solid var(--border);
+  }
+  .productScope :global(.detail-summary-strip > div:nth-child(even)) {
+    border-right: 0;
+  }
+  .productScope :global(.detail-summary-strip > div:nth-last-child(-n + 2)) {
+    border-bottom: 0;
+  }
 }

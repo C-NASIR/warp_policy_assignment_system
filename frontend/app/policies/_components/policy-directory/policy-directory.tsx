@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, BookOpenCheck, Search, X } from "lucid
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
-import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
+import { Badge, Button, DataTable, Panel, TextInput } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import type { Policy, PolicyImpact } from "@/lib/types";
 
@@ -69,37 +69,81 @@ export function PolicyDirectory({
     setStatus("all");
     router.push("/policies?status=all");
   }
+
+  function selectStatus(nextStatus: string) {
+    setStatus(nextStatus);
+    const query = new URLSearchParams();
+    if (search.trim()) query.set("search", search.trim());
+    query.set("status", nextStatus);
+    router.push(`/policies?${query}`);
+  }
+
+  function clearSearch() {
+    setSearch("");
+    router.push(`/policies?status=${status}`);
+  }
   return (
     <>
-      <form className="toolbar" onSubmit={applyFilters}>
-        <div className="toolbar-left">
-          <label className="search-box">
-            <Search size={14} />
-            <TextInput
-              className="input"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search policies"
-              aria-label="Search policies"
-            />
-          </label>
-          <SelectInput
-            className="filter-select"
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            aria-label="Filter by policy status"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
-          </SelectInput>
-          <Button variant="secondary" type="submit">
-            Apply
-          </Button>
+      <section className="directory-controls" aria-label="Policy directory controls">
+        <div className="directory-controls-head">
+          <div>
+            <span className="section-kicker">Policy library</span>
+            <strong>{total} policies in this view</strong>
+          </div>
+          <div className="filter-tabs" role="group" aria-label="Filter policies by status">
+            {[
+              ["active", "Active"],
+              ["draft", "Draft"],
+              ["archived", "Archived"],
+              ["all", "All"],
+            ].map(([value, label]) => (
+              <button
+                className={status === value ? "active" : undefined}
+                type="button"
+                key={value}
+                onClick={() => selectStatus(value)}
+                aria-pressed={status === value}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="results-count">{total} policies</div>
-      </form>
+        <form className="toolbar" onSubmit={applyFilters}>
+          <div className="toolbar-left">
+            <label className="search-box">
+              <Search size={14} />
+              <TextInput
+                className="input"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search policies"
+                aria-label="Search policies"
+              />
+            </label>
+            <Button variant="secondary" type="submit">
+              Search
+            </Button>
+          </div>
+          <span className="results-count">Sorted by {sort.key}</span>
+        </form>
+        {filters.search && (
+          <div className="active-filter-row" aria-label="Applied filters">
+            <span>Applied</span>
+            <button
+              className="filter-chip"
+              type="button"
+              onClick={clearSearch}
+              aria-label={`Remove search filter ${filters.search}`}
+            >
+              Search: {filters.search} <X size={11} aria-hidden="true" />
+            </button>
+            <button className="clear-filters" type="button" onClick={resetFilters}>
+              Reset view
+            </button>
+          </div>
+        )}
+      </section>
       <Panel as="div" clipped>
         {sorted.length ? (
           <DataTable>

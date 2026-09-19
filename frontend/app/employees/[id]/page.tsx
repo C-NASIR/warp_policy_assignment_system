@@ -61,7 +61,14 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
         <div className="detail-identity">
           <div className="detail-avatar">{initials(employee.name)}</div>
           <div>
-            <h1 className="detail-title">{employee.name}</h1>
+            <div className="detail-title-row">
+              <h1 className="detail-title">{employee.name}</h1>
+              {canReadAssignments && (
+                <Badge tone={assignments.length ? "success" : "neutral"}>
+                  {assignments.length ? "Covered" : "No assignments"}
+                </Badge>
+              )}
+            </div>
             <div className="detail-meta">
               {employee.department} · {employee.employee_type} ·{" "}
               {employee.location ?? employee.state_label}
@@ -82,6 +89,32 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
           />
         )}
       </div>
+      <section className="detail-summary-strip" aria-label="Employee summary">
+        <div>
+          <span>Employee ID</span>
+          <strong>{formatEmployeeId(employee.id)}</strong>
+        </div>
+        <div>
+          <span>Started</span>
+          <strong>{formatDate(employee.start_date)}</strong>
+        </div>
+        {canReadAssignments && (
+          <>
+            <div>
+              <span>Assignment values</span>
+              <strong>{assignments.length}</strong>
+            </div>
+            <div>
+              <span>Source policies</span>
+              <strong>{policyCount}</strong>
+            </div>
+            <div>
+              <span>Overrides</span>
+              <strong>{overrideCount}</strong>
+            </div>
+          </>
+        )}
+      </section>
       <div className={canReadAssignments ? "detail-grid" : "section-stack"}>
         <div className="section-stack">
           {canReadAssignments && (

@@ -437,56 +437,126 @@
   font-size: 13px;
   line-height: 1.55;
 }
-.productScope :global(.metric-grid) {
+.productScope :global(.overview-snapshot) {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1.8fr);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.productScope :global(.coverage-score) {
+  min-height: 214px;
+  padding: 22px;
+  background: var(--surface-strong);
+  color: white;
+}
+.productScope :global(.coverage-score-head),
+.productScope :global(.snapshot-metric-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
-.productScope :global(.metric-card) {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  box-shadow: none;
+.productScope :global(.coverage-score .section-kicker) {
+  color: #b8b8b3;
 }
-.productScope :global(.metric-card) {
-  position: relative;
-  min-height: 142px;
+.productScope :global(.coverage-score-head svg) {
+  color: var(--brand-accent);
+}
+.productScope :global(.coverage-score-value) {
+  margin-top: 29px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 42px;
+  font-weight: 600;
+  letter-spacing: -0.065em;
+  line-height: 1;
+}
+.productScope :global(.coverage-score p) {
+  max-width: 260px;
+  margin: 10px 0 20px;
+  color: #aaa9a5;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.productScope :global(.coverage-score-track) {
+  height: 3px;
   overflow: hidden;
-  padding: 19px;
-  border-radius: 12px;
+  border-radius: 99px;
+  background: rgb(255 255 255 / 0.14);
 }
-.productScope :global(.metric-icon) {
-  width: 31px;
-  height: 31px;
+.productScope :global(.coverage-score-track span) {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-accent);
+}
+.productScope :global(.snapshot-metrics) {
   display: grid;
-  place-items: center;
-  margin-bottom: 18px;
-  border-radius: 8px;
-  background: var(--surface-subtle);
-  color: var(--muted);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.productScope :global(.metric-value) {
-  font-size: 25px;
-  font-weight: 720;
+.productScope :global(.snapshot-metric) {
+  min-height: 107px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+.productScope :global(.snapshot-metric:nth-child(n + 3)) {
+  border-bottom: 0;
+}
+.productScope :global(.snapshot-metric-head) {
+  color: var(--muted);
+  font-size: 10px;
+}
+.productScope :global(.snapshot-metric-head svg) {
+  color: var(--faint);
+}
+.productScope :global(.snapshot-metric strong),
+.productScope :global(.snapshot-metric small) {
+  display: block;
+}
+.productScope :global(.snapshot-metric strong) {
+  margin-top: 12px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 22px;
+  font-weight: 600;
   letter-spacing: -0.04em;
 }
-.productScope :global(.metric-label) {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 11px;
+.productScope :global(.snapshot-metric small) {
+  margin-top: 4px;
+  color: var(--faint);
+  font-size: 9px;
 }
-.productScope :global(.metric-delta) {
-  position: absolute;
-  top: 20px;
-  right: 18px;
-  color: var(--success);
-  font-size: 10px;
+.productScope :global(.section-heading) {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 30px;
+}
+.productScope :global(.section-kicker) {
+  display: block;
+  color: var(--brand-accent-ink);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
   font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.productScope :global(.section-heading h2) {
+  margin: 5px 0 0;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+.productScope :global(.section-note) {
+  color: var(--faint);
+  font-size: 10px;
 }
 .productScope :global(.dashboard-grid) {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.75fr);
   gap: 14px;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 .productScope :global(.panel-header) {
   min-height: 58px;
@@ -585,7 +655,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 .productScope :global(.quick-action) {
   display: flex;
@@ -628,8 +698,8 @@
 }
 
 @media (max-width: 1050px) {
-  .productScope :global(.metric-grid) {
-    grid-template-columns: repeat(2, 1fr);
+  .productScope :global(.overview-snapshot) {
+    grid-template-columns: minmax(230px, 0.75fr) minmax(0, 1.25fr);
   }
   .productScope :global(.dashboard-grid) {
     grid-template-columns: 1fr;
@@ -677,9 +747,17 @@
     align-items: flex-start;
     flex-direction: column;
   }
-  .productScope :global(.metric-grid),
   .productScope :global(.quick-actions) {
     grid-template-columns: 1fr;
+  }
+  .productScope :global(.overview-snapshot) {
+    grid-template-columns: 1fr;
+  }
+  .productScope :global(.coverage-score) {
+    min-height: auto;
+  }
+  .productScope :global(.snapshot-metric:nth-child(odd)) {
+    border-left: 0;
   }
   .productScope :global(.coverage-row) {
     grid-template-columns: 1fr 48px;

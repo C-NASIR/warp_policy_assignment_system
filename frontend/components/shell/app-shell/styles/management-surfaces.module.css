@@ -70,6 +70,15 @@
   font-size: 12px;
   font-weight: 720;
 }
+.productScope :global(.management-card-eyebrow) {
+  margin-bottom: 4px;
+  color: var(--faint);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
 .productScope :global(.management-card-meta) {
   display: flex;
   gap: 14px;
@@ -81,6 +90,79 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+.productScope :global(.management-card-stat) {
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+.productScope :global(.group-overview-panel) {
+  overflow: hidden;
+}
+.productScope :global(.group-workspace) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.productScope :global(.group-overview) {
+  min-height: 126px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 20px;
+}
+.productScope :global(.group-overview-identity) {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.productScope :global(.group-overview-icon) {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--surface-strong);
+  color: white;
+}
+.productScope :global(.group-overview-identity .section-kicker) {
+  margin-bottom: 6px;
+}
+.productScope :global(.group-overview-aside) {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.productScope :global(.group-overview-stats) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(60px, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+}
+.productScope :global(.group-overview-stats > div) {
+  min-width: 68px;
+  padding: 10px 12px;
+  border-right: 1px solid var(--border);
+}
+.productScope :global(.group-overview-stats > div:last-child) {
+  border-right: 0;
+}
+.productScope :global(.group-overview-stats span),
+.productScope :global(.group-overview-stats strong) {
+  display: block;
+}
+.productScope :global(.group-overview-stats span) {
+  color: var(--faint);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+.productScope :global(.group-overview-stats strong) {
+  margin-top: 5px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 14px;
+  font-weight: 620;
 }
 .productScope :global(.attach-row) {
   display: grid;
@@ -357,6 +439,37 @@
   gap: 1px;
   border-top: 1px solid var(--border);
   background: var(--border);
+}
+
+@media (max-width: 900px) {
+  .productScope :global(.group-workspace) {
+    grid-template-columns: 1fr;
+  }
+  .productScope :global(.group-overview) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .productScope :global(.group-overview-aside) {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 560px) {
+  .productScope :global(.group-overview-aside) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .productScope :global(.group-overview-stats) {
+    width: 100%;
+  }
+  .productScope :global(.group-overview-stats > div) {
+    min-width: 0;
+  }
+  .productScope :global(.management-card-stat) {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 .productScope :global(.audit-payload > div) {
   min-width: 0;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, CircleAlert, FileKey2, Pencil, Trash2, Users, X } from "lucide-react";
+import { Check, CircleAlert, FileKey2, Network, Pencil, Trash2, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { initials } from "@/lib/format";
@@ -148,46 +148,75 @@ export function GroupManager({
           {error || notice}
         </div>
       )}
-      <Panel>
-        <div className="panel-header">
-          <div>
-            {editingName ? (
-              <div className="heading-actions">
-                <input
-                  className="input"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  aria-label="Group name"
-                />
-                <Button onClick={rename} disabled={busy === "rename"}>
-                  <Check size={14} /> Save
-                </Button>
-                <button
-                  className="icon-button"
-                  onClick={() => {
-                    setEditingName(false);
-                    setName(group.name);
-                  }}
-                  aria-label="Cancel rename"
-                >
-                  <X size={14} />
-                </button>
+      <Panel className="group-overview-panel">
+        <div className="group-overview">
+          <div className="group-overview-identity">
+            <div className="group-overview-icon">
+              <Network size={18} aria-hidden="true" />
+            </div>
+            <div>
+              <span className="section-kicker">Explicit group</span>
+              {editingName ? (
+                <div className="heading-actions">
+                  <input
+                    className="input"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    aria-label="Group name"
+                  />
+                  <Button onClick={rename} disabled={busy === "rename"}>
+                    <Check size={14} /> Save
+                  </Button>
+                  <button
+                    className="icon-button"
+                    onClick={() => {
+                      setEditingName(false);
+                      setName(group.name);
+                    }}
+                    aria-label="Cancel rename"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="detail-title-row">
+                    <h1 className="detail-title">{name}</h1>
+                    <Badge tone={members.length ? "success" : "neutral"}>
+                      {members.length ? "In use" : "Empty"}
+                    </Badge>
+                  </div>
+                  <div className="detail-meta">
+                    Membership and policy changes reconcile assignments immediately.
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="group-overview-aside">
+            <div className="group-overview-stats" aria-label="Group summary">
+              <div>
+                <span>Members</span>
+                <strong>{members.length}</strong>
               </div>
-            ) : (
-              <>
-                <h2 className="panel-title">{name}</h2>
-                <div className="panel-caption">Explicit group · changes reconcile immediately</div>
-              </>
+              <div>
+                <span>Policies</span>
+                <strong>{attachedPolicies.length}</strong>
+              </div>
+              <div>
+                <span>Pending</span>
+                <strong>{membershipChangeCount + policyChangeCount}</strong>
+              </div>
+            </div>
+            {canManage && !editingName && (
+              <Button variant="secondary" size="small" onClick={() => setEditingName(true)}>
+                <Pencil size={13} /> Rename
+              </Button>
             )}
           </div>
-          {canManage && !editingName && (
-            <Button variant="secondary" size="small" onClick={() => setEditingName(true)}>
-              <Pencil size={13} /> Rename
-            </Button>
-          )}
         </div>
       </Panel>
-      <div className="detail-grid">
+      <div className="detail-grid group-workspace">
         <Panel>
           <div className="panel-header">
             <div>

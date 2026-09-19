@@ -42,6 +42,17 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
       <div className="detail-hero">
         <div>
           <div className={`heading-actions ${styles.versionBadge}`}>
+            <Badge
+              tone={
+                policy.status === "active"
+                  ? "success"
+                  : policy.status === "draft"
+                    ? "accent"
+                    : "neutral"
+              }
+            >
+              {titleCase(policy.status)}
+            </Badge>
             <Badge>Version {current?.version_number ?? "—"}</Badge>
           </div>
           <h1 className="detail-title">{policy.name}</h1>
@@ -58,6 +69,28 @@ export default async function PolicyDetailPage({ params }: PageProps<"/policies/
           )}
         </div>
       </div>
+      <section className="detail-summary-strip" aria-label="Policy summary">
+        <div>
+          <span>Rule matches</span>
+          <strong>{impact?.matched_employee_count ?? 0}</strong>
+        </div>
+        <div>
+          <span>Selected employees</span>
+          <strong>{impact?.selected_employee_count ?? 0}</strong>
+        </div>
+        <div>
+          <span>Assignment values</span>
+          <strong>{assignmentValueCount}</strong>
+        </div>
+        <div>
+          <span>Priority</span>
+          <strong>{current?.priority ?? "—"}</strong>
+        </div>
+        <div>
+          <span>Versions</span>
+          <strong>{policy.versions.length}</strong>
+        </div>
+      </section>
       <div className="detail-grid">
         <div className="section-stack">
           <Panel>

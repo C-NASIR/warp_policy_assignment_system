@@ -34,6 +34,12 @@ export function EmployeeDirectory({
     key: "name" | "department" | "location" | "employee_type";
     direction: "asc" | "desc";
   }>({ key: "name", direction: "asc" });
+  const activeFilters = [
+    filters.search ? { key: "search", label: `Search: ${filters.search}` } : null,
+    filters.state ? { key: "state", label: `State: ${filters.state}` } : null,
+    filters.department ? { key: "department", label: filters.department } : null,
+    filters.employeeType ? { key: "employee_type", label: filters.employeeType } : null,
+  ].filter((item): item is { key: string; label: string } => Boolean(item));
 
   const sorted = [...employees].sort((left, right) => {
     const leftValue =
@@ -71,56 +77,101 @@ export function EmployeeDirectory({
     router.push("/employees");
   }
 
+  function removeFilter(key: string) {
+    const query = new URLSearchParams();
+    if (filters.search && key !== "search") query.set("search", filters.search);
+    if (filters.state && key !== "state") query.set("state", filters.state);
+    if (filters.department && key !== "department") query.set("department", filters.department);
+    if (filters.employeeType && key !== "employee_type")
+      query.set("employee_type", filters.employeeType);
+    if (key === "search") setSearch("");
+    if (key === "state") setState("");
+    if (key === "department") setDepartment("");
+    if (key === "employee_type") setType("");
+    router.push(query.size ? `/employees?${query}` : "/employees");
+  }
+
   return (
     <>
-      <form className="toolbar" onSubmit={applyFilters}>
-        <div className="toolbar-left">
-          <label className="search-box">
-            <Search size={14} />
-            <TextInput
-              className="input"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search employees"
-              aria-label="Search employees"
-            />
-          </label>
-          <StateCombobox
-            states={referenceData.states}
-            value={state}
-            required={false}
-            placeholder="All states/jurisdictions"
-            ariaLabel="Filter by state or jurisdiction"
-            onChange={setState}
-          />
-          <SelectInput
-            className="filter-select"
-            value={department}
-            onChange={(event) => setDepartment(event.target.value)}
-            aria-label="Filter by department"
-          >
-            <option value="">All departments</option>
-            {referenceData.departments.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </SelectInput>
-          <SelectInput
-            className="filter-select"
-            value={type}
-            onChange={(event) => setType(event.target.value)}
-            aria-label="Filter by employment type"
-          >
-            <option value="">All worker types</option>
-            {referenceData.employee_types.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </SelectInput>
-          <Button variant="secondary" type="submit">
-            Apply
-          </Button>
+      <section className="directory-controls" aria-label="Employee directory controls">
+        <div className="directory-controls-head">
+          <div>
+            <span className="section-kicker">Directory</span>
+            <strong>{total} employees</strong>
+          </div>
+          <span className="results-count">
+            {activeFilters.length
+              ? `${activeFilters.length} active ${activeFilters.length === 1 ? "filter" : "filters"}`
+              : "Showing all employees"}
+          </span>
         </div>
-        <div className="results-count">{total} employees</div>
-      </form>
+        <form className="toolbar" onSubmit={applyFilters}>
+          <div className="toolbar-left">
+            <label className="search-box">
+              <Search size={14} />
+              <TextInput
+                className="input"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search employees"
+                aria-label="Search employees"
+              />
+            </label>
+            <StateCombobox
+              states={referenceData.states}
+              value={state}
+              required={false}
+              placeholder="All states/jurisdictions"
+              ariaLabel="Filter by state or jurisdiction"
+              onChange={setState}
+            />
+            <SelectInput
+              className="filter-select"
+              value={department}
+              onChange={(event) => setDepartment(event.target.value)}
+              aria-label="Filter by department"
+            >
+              <option value="">All departments</option>
+              {referenceData.departments.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </SelectInput>
+            <SelectInput
+              className="filter-select"
+              value={type}
+              onChange={(event) => setType(event.target.value)}
+              aria-label="Filter by employment type"
+            >
+              <option value="">All worker types</option>
+              {referenceData.employee_types.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </SelectInput>
+            <Button variant="secondary" type="submit">
+              Apply filters
+            </Button>
+          </div>
+        </form>
+        {activeFilters.length > 0 && (
+          <div className="active-filter-row" aria-label="Applied filters">
+            <span>Applied</span>
+            {activeFilters.map((filter) => (
+              <button
+                className="filter-chip"
+                type="button"
+                key={filter.key}
+                onClick={() => removeFilter(filter.key)}
+                aria-label={`Remove ${filter.label} filter`}
+              >
+                {filter.label} <X size={11} aria-hidden="true" />
+              </button>
+            ))}
+            <button className="clear-filters" type="button" onClick={resetFilters}>
+              Clear all
+            </button>
+          </div>
+        )}
+      </section>
 
       <Panel as="div" clipped>
         {sorted.length ? (
