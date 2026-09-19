@@ -62,8 +62,8 @@
 .productScope :global(.input:focus),
 .productScope :global(.select:focus),
 .productScope :global(.textarea:focus) {
-  border-color: #8078ff;
-  box-shadow: 0 0 0 3px rgb(99 91 255 / 0.11);
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .productScope :global(.input.field-invalid),
 .productScope :global(.select.field-invalid),
@@ -127,8 +127,8 @@
   flex: 0 0 auto;
   place-items: center;
   border-radius: 9px;
-  background: #eeeef7;
-  color: #4f4a9b;
+  background: var(--surface-muted);
+  color: var(--ink);
   font-size: 10px;
   font-weight: 750;
 }
@@ -201,7 +201,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 .productScope :global(.stat-card span) {
   color: var(--muted);

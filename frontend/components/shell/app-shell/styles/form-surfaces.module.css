@@ -13,7 +13,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 .productScope :global(.form-section) {
   padding: 20px;
@@ -105,7 +105,7 @@
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--surface);
-  box-shadow: 0 14px 36px rgb(24 24 27 / 0.14);
+  box-shadow: var(--shadow-md);
 }
 .productScope :global(.manager-combobox-option) {
   width: 100%;
@@ -565,8 +565,8 @@
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--canvas);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 0.26);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
 }
 .productScope :global(.modal-head) {
   position: sticky;
@@ -576,7 +576,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 15px 18px;
-  background: rgb(244 244 240 / 0.94);
+  background: rgb(255 255 255 / 0.94);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
 }

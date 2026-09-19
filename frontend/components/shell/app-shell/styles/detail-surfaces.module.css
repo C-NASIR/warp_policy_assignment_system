@@ -24,16 +24,16 @@
   padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: rgb(255 255 255 / 0.72);
+  background: var(--surface);
   color: var(--muted);
   font-size: 10px;
   font-weight: 680;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   transition: 140ms ease;
 }
 .productScope :global(.page-back-link:hover) {
-  border-color: #c9c5e8;
-  background: var(--surface);
+  border-color: var(--border-strong);
+  background: var(--surface-subtle);
   color: var(--accent-ink);
   transform: translateX(-1px);
 }
@@ -55,8 +55,8 @@
   display: grid;
   place-items: center;
   border-radius: 13px;
-  background: linear-gradient(145deg, #eeedff, #dcd9ff);
-  color: #433e9f;
+  background: var(--surface-strong);
+  color: white;
   font-size: 14px;
   font-weight: 780;
 }
@@ -446,10 +446,10 @@
   display: flex;
   gap: 10px;
   padding: 13px;
-  border: 1px solid #d8d5ff;
+  border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--accent-soft);
-  color: #454170;
+  color: var(--muted);
   font-size: 11px;
   line-height: 1.5;
 }

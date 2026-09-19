@@ -19,8 +19,8 @@
 .table td {
   height: 3.875rem;
   padding: 0.625rem var(--space-4);
-  border-bottom: 1px solid #eeeeea;
-  color: #474843;
+  border-bottom: 1px solid var(--line-subtle);
+  color: #3f3f3b;
   font-size: var(--text-xs);
 }
 
@@ -33,7 +33,7 @@
 }
 
 .table tbody tr:hover {
-  background: #fafaf7;
+  background: var(--surface-subtle);
 }
 
 .table a:hover :global(.primary-cell) {

@@ -23,10 +23,10 @@
   gap: 18px;
   margin-bottom: 18px;
   padding: 18px 20px;
-  border: 1px solid #d9d5f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--accent-soft);
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 .productScope :global(.inline-create .full-row) {
   grid-column: 1 / -1;
@@ -46,16 +46,14 @@
   border: 1px solid var(--border);
   border-radius: 11px;
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    border-color 0.12s ease,
+    background-color 0.12s ease;
 }
 .productScope :global(.management-card:hover) {
-  transform: translateY(-1px);
-  border-color: #c9c5e8;
-  box-shadow: 0 8px 24px rgb(27 25 38 / 0.08);
+  border-color: var(--border-strong);
+  background: var(--surface-subtle);
 }
 .productScope :global(.management-card-icon),
 .productScope :global(.override-icon) {
@@ -154,8 +152,8 @@
   padding: 26px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--canvas);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 0.24);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
 }
 .productScope :global(.confirm-card h2) {
   margin: 13px 0 7px;
@@ -202,8 +200,8 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--canvas);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 0.24);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
 }
 .productScope :global(.choice-grid) {
   display: grid;
@@ -226,13 +224,13 @@
   cursor: pointer;
 }
 .productScope :global(.choice-card.selected) {
-  border-color: #9d96e8;
+  border-color: var(--brand-accent);
   background: var(--accent-soft);
-  box-shadow: 0 0 0 2px rgb(113 102 218 / 0.08);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 .productScope :global(.choice-card input) {
   margin-top: 2px;
-  accent-color: var(--accent);
+  accent-color: var(--brand-accent);
 }
 .productScope :global(.choice-card strong),
 .productScope :global(.choice-card small) {
@@ -343,7 +341,7 @@
 }
 .productScope :global(.audit-detail-row td) {
   padding: 0 !important;
-  background: #f8f7fc;
+  background: var(--surface-subtle);
   text-align: left;
 }
 .productScope :global(.audit-record-reference) {
@@ -363,7 +361,7 @@
 .productScope :global(.audit-payload > div) {
   min-width: 0;
   padding: 14px 16px;
-  background: #f8f7fc;
+  background: var(--surface-subtle);
   text-align: left;
 }
 .productScope :global(.audit-payload > .audit-payload-before) {

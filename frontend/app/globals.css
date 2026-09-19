@@ -3,26 +3,43 @@
 @import "fumadocs-ui/css/preset.css";
 
 :root {
-  --canvas: #f4f4f0;
+  /* Product neutrals */
+  --canvas: #fafafa;
   --surface: #ffffff;
-  --surface-subtle: #f8f8f5;
-  --surface-strong: #18181b;
-  --ink: #1d1d1f;
-  --muted: #6f716d;
-  --faint: #a4a69f;
-  --border: #e3e3dc;
-  --border-strong: #d0d1ca;
-  --accent: #635bff;
-  --accent-soft: #eeedff;
-  --accent-ink: #4338ca;
-  --success: #16794b;
-  --success-soft: #e8f7ef;
-  --warning: #9a6412;
-  --warning-soft: #fff5db;
-  --danger: #b53535;
-  --danger-soft: #fff0ef;
-  --sidebar: #202124;
-  --sidebar-muted: #a6a7aa;
+  --surface-subtle: #f5f5f4;
+  --surface-muted: #f1f0ef;
+  --surface-strong: #202020;
+  --ink: #0a0a0a;
+  --muted: #63635e;
+  --faint: #8d8d86;
+  --border: #e5e5e5;
+  --border-strong: #d8d8d5;
+  --line-subtle: #eeeeec;
+
+  /* Product interaction and Warp-inspired brand accents */
+  --accent: #202020;
+  --accent-soft: #f1f0ef;
+  --accent-ink: #202020;
+  --brand-accent: #ff3d00;
+  --brand-accent-hover: #e93600;
+  --brand-accent-soft: #fff0ea;
+  --brand-accent-ink: #b72c00;
+  --focus-ring: rgb(255 61 0 / 0.18);
+
+  /* Semantic states */
+  --info: #0090ff;
+  --info-soft: #e9f4ff;
+  --info-ink: #0067b1;
+  --success: #238b57;
+  --success-soft: #e9f7ef;
+  --warning: #a34f00;
+  --warning-soft: #fff3e7;
+  --danger: #b42318;
+  --danger-soft: #fff0ee;
+
+  /* Application chrome */
+  --sidebar: #fafafa;
+  --sidebar-muted: #73736f;
 
   /* Spacing */
   --space-1: 0.25rem;
@@ -51,9 +68,9 @@
   --leading-normal: 1.5;
 
   /* Elevation */
-  --shadow-sm: 0 1px 2px rgb(20 20 20 / 0.04), 0 1px 8px rgb(20 20 20 / 0.025);
-  --shadow-md: 0 12px 30px rgb(20 20 20 / 0.08);
-  --shadow-lg: 0 24px 70px rgb(30 30 35 / 0.11);
+  --shadow-sm: 0 1px 2px rgb(10 10 10 / 0.035);
+  --shadow-md: 0 8px 24px rgb(10 10 10 / 0.08);
+  --shadow-lg: 0 24px 64px rgb(10 10 10 / 0.14);
 }
 
 @theme inline {
@@ -103,11 +120,11 @@ a {
   text-decoration: none;
 }
 ::selection {
-  background: #dcd9ff;
-  color: #23203f;
+  background: var(--brand-accent-soft);
+  color: var(--ink);
 }
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--brand-accent);
   outline-offset: 2px;
 }
 button:disabled {

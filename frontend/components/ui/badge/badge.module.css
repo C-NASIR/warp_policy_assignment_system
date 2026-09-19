@@ -6,9 +6,10 @@
   min-height: 1.4375rem;
   padding: 0 0.5rem;
   border: 0;
-  border-radius: var(--radius-pill);
-  background: #f0f0ec;
-  color: #5b5d57;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--muted);
   font-size: 0.625rem;
   font-weight: 680;
   white-space: nowrap;
@@ -36,6 +37,7 @@
 .accent {
   background: var(--accent-soft);
   color: var(--accent-ink);
+  border-color: var(--border);
 }
 
 .neutral {

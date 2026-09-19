@@ -5,7 +5,7 @@
 .productScope :global(.app-layout) {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-columns: 244px minmax(0, 1fr);
 }
 .productScope :global(.sidebar) {
   position: sticky;
@@ -13,40 +13,50 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 20px 14px;
+  padding: 12px 10px;
   background: var(--sidebar);
-  color: white;
+  color: var(--ink);
   overflow-y: auto;
-  border-right: 1px solid rgb(255 255 255 / 0.05);
+  border-right: 1px solid var(--border);
 }
 .productScope :global(.brand) {
   display: flex;
   align-items: center;
   gap: 11px;
-  min-height: 42px;
-  padding: 0 10px 18px;
-  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  min-height: 44px;
+  padding: 0 8px 12px;
+  border-bottom: 1px solid var(--border);
 }
 .productScope :global(.brand-mark) {
+  position: relative;
   width: 28px;
   height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: linear-gradient(145deg, #786fff, #554be7);
-  box-shadow: inset 0 1px rgb(255 255 255 / 0.25);
-  font-weight: 800;
-  font-size: 14px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: var(--surface-strong);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+}
+.productScope :global(.brand-mark::after) {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 4px;
+  background: var(--brand-accent);
 }
 .productScope :global(.brand-title) {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 650;
   letter-spacing: -0.01em;
 }
 .productScope :global(.brand-subtitle) {
   color: var(--sidebar-muted);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-top: 2px;
 }
@@ -58,45 +68,46 @@
   place-items: center;
   border: 0;
   border-radius: 8px;
-  background: rgb(255 255 255 / 0.06);
-  color: white;
+  background: var(--surface-muted);
+  color: var(--muted);
   cursor: pointer;
 }
 .productScope :global(.nav-label) {
-  padding: 22px 10px 8px;
-  color: #77797e;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.11em;
+  padding: 18px 8px 7px;
+  color: var(--faint);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .productScope :global(.nav-list) {
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 .productScope :global(.nav-item) {
-  min-height: 40px;
+  min-height: 34px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 0 11px;
-  border-radius: 9px;
-  color: #b8b9bc;
+  gap: 10px;
+  padding: 0 9px;
+  border-radius: 8px;
+  color: var(--sidebar-muted);
   font-size: 13px;
-  font-weight: 550;
-  transition: 150ms ease;
+  font-weight: 500;
+  transition: 100ms ease;
 }
 .productScope :global(.nav-item:hover) {
-  background: rgb(255 255 255 / 0.06);
-  color: white;
+  background: rgb(0 0 0 / 0.035);
+  color: var(--ink);
 }
 .productScope :global(.nav-item.active) {
-  background: rgb(255 255 255 / 0.1);
-  color: white;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  background: rgb(0 0 0 / 0.055);
+  color: #171717;
+  box-shadow: none;
 }
 .productScope :global(.nav-item.active svg) {
-  color: #918aff;
+  color: var(--ink);
 }
 .productScope :global(.sidebar-footer) {
   margin-top: auto;
@@ -107,20 +118,20 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
-  margin: 16px 4px 0;
-  padding: 9px 10px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  border-radius: 9px;
-  background: rgb(255 255 255 / 0.04);
-  color: #c8c9cc;
+  margin: 14px 2px 0;
+  padding: 8px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
   font-size: 11px;
   text-align: left;
   cursor: pointer;
 }
 .productScope :global(.sidebar-command:hover) {
-  border-color: rgb(255 255 255 / 0.18);
-  background: rgb(255 255 255 / 0.08);
-  color: white;
+  border-color: var(--border-strong);
+  background: var(--surface-subtle);
+  color: var(--ink);
 }
 .productScope :global(kbd) {
   display: inline-flex;
@@ -140,7 +151,7 @@
   align-items: center;
   gap: 10px;
   padding-top: 14px;
-  border-top: 1px solid rgb(255 255 255 / 0.08);
+  border-top: 1px solid var(--border);
 }
 .productScope :global(.company-avatar) {
   width: 30px;
@@ -148,8 +159,8 @@
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #f2ad58;
-  color: #35210c;
+  background: var(--brand-accent-soft);
+  color: var(--brand-accent-ink);
   font-size: 11px;
   font-weight: 800;
 }
@@ -173,7 +184,7 @@
   align-items: center;
   gap: 10px;
   padding-top: 14px;
-  border-top: 1px solid rgb(255 255 255 / 0.08);
+  border-top: 1px solid var(--border);
 }
 .productScope :global(.account-avatar) {
   width: 30px;
@@ -181,7 +192,7 @@
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: var(--accent);
+  background: var(--brand-accent);
   color: white;
   font-size: 10px;
   font-weight: 800;
@@ -207,24 +218,24 @@
   cursor: pointer;
 }
 .productScope :global(.account-logout:hover) {
-  background: rgb(255 255 255 / 0.08);
-  color: white;
+  background: var(--surface-muted);
+  color: var(--ink);
 }
 .productScope :global(.main-column) {
   min-width: 0;
 }
 .productScope :global(.topbar) {
-  height: 64px;
+  height: 52px;
   position: sticky;
   top: 0;
   z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 34px;
-  background: rgb(244 244 240 / 0.88);
+  padding: 0 28px;
+  background: rgb(255 255 255 / 0.9);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(12px);
 }
 .productScope :global(.topbar-context) {
   display: flex;
@@ -259,8 +270,8 @@
   gap: 8px;
 }
 .productScope :global(.icon-button) {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   border: 1px solid var(--border);
@@ -268,15 +279,15 @@
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 .productScope :global(.icon-button:hover) {
   border-color: var(--border-strong);
   color: var(--ink);
 }
 .productScope :global(.command-trigger) {
-  min-width: 238px;
-  height: 36px;
+  min-width: 228px;
+  height: 32px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -284,11 +295,11 @@
   padding: 0 9px 0 11px;
   border: 1px solid var(--border);
   border-radius: 9px;
-  background: rgb(255 255 255 / 0.8);
+  background: var(--surface-subtle);
   color: var(--faint);
   font-size: 11px;
   text-align: left;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   cursor: pointer;
 }
 .productScope :global(.command-trigger:hover) {
@@ -310,7 +321,7 @@
   height: 6px;
   border: 1.5px solid white;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--brand-accent);
 }
 .productScope :global(.activity-popover) {
   position: absolute;
@@ -322,7 +333,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
-  box-shadow: 0 20px 55px rgb(24 24 27 / 0.16);
+  box-shadow: var(--shadow-lg);
   animation: pop-in 0.16s ease-out;
 }
 .productScope :global(.popover-head) {
@@ -354,7 +365,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 8px;
-  border-bottom: 1px solid #eeeeea;
+  border-bottom: 1px solid var(--line-subtle);
 }
 .productScope :global(.popover-item:last-child) {
   border-bottom: 0;
@@ -389,7 +400,7 @@
 .productScope :global(.content) {
   max-width: 1450px;
   margin: 0 auto;
-  padding: 34px;
+  padding: 40px;
 }
 .productScope :global(.page-heading) {
   display: flex;
@@ -400,7 +411,8 @@
 }
 .productScope :global(.eyebrow) {
   margin: 0 0 7px;
-  color: var(--accent-ink);
+  color: var(--brand-accent-ink);
+  font-family: var(--font-geist-mono), monospace;
   font-size: 10px;
   font-weight: 750;
   letter-spacing: 0.13em;
@@ -433,7 +445,7 @@
 .productScope :global(.metric-card) {
   border: 1px solid var(--border);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 .productScope :global(.metric-card) {
   position: relative;
@@ -508,7 +520,7 @@
   align-items: center;
   gap: 16px;
   padding: 14px 0;
-  border-bottom: 1px solid #eeeeea;
+  border-bottom: 1px solid var(--line-subtle);
 }
 .productScope :global(.coverage-row:last-child) {
   border-bottom: 0;
@@ -526,7 +538,7 @@
   height: 6px;
   overflow: hidden;
   border-radius: 99px;
-  background: #ecece7;
+  background: var(--surface-muted);
 }
 .productScope :global(.progress-bar) {
   height: 100%;
@@ -582,13 +594,12 @@
   padding: 14px 15px;
   border: 1px solid var(--border);
   border-radius: 11px;
-  background: rgb(255 255 255 / 0.64);
-  transition: 150ms ease;
+  background: var(--surface);
+  transition: 120ms ease;
 }
 .productScope :global(.quick-action:hover) {
-  border-color: #c9c6ff;
-  background: white;
-  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  background: var(--surface-subtle);
 }
 .productScope :global(.quick-action-icon) {
   width: 34px;
@@ -633,7 +644,7 @@
     position: fixed;
     left: 0;
     z-index: 50;
-    width: 232px;
+    width: 244px;
     transform: translateX(-100%);
     transition: transform 180ms ease;
   }

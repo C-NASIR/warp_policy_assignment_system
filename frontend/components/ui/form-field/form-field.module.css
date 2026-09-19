@@ -8,7 +8,7 @@
 }
 
 .label {
-  color: #4c4d49;
+  color: var(--muted);
   font-size: 0.6875rem;
   font-weight: 650;
 }
@@ -34,8 +34,8 @@
 }
 
 .control:focus {
-  border-color: #9d96e8;
-  box-shadow: 0 0 0 3px rgb(99 91 255 / 0.11);
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .control[aria-invalid="true"],

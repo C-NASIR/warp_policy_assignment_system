@@ -20,7 +20,7 @@
   cursor: pointer;
 }
 .productScope :global(.sort-button:hover) {
-  background: #ecece7;
+  background: var(--surface-muted);
   color: var(--ink);
 }
 .productScope :global(.command-backdrop) {
@@ -38,10 +38,10 @@
 .productScope :global(.command-menu) {
   width: min(610px, 100%);
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 0.35);
-  border-radius: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   background: var(--surface);
-  box-shadow: 0 32px 90px rgb(0 0 0 / 0.28);
+  box-shadow: var(--shadow-lg);
   animation: command-in 0.18s ease-out;
 }
 .productScope :global(.command-input) {
@@ -98,7 +98,7 @@
   color: var(--muted);
 }
 .productScope :global(.command-item.active .command-icon) {
-  border-color: #d6d1ff;
+  border-color: var(--border-strong);
   color: var(--accent-ink);
 }
 .productScope :global(.command-item strong),
@@ -154,7 +154,7 @@
   font-weight: 700;
 }
 .productScope :global(.context-help:hover) {
-  border-color: #c8c3ff;
+  border-color: var(--border-strong);
   color: var(--accent-ink);
 }
 .productScope :global(.rule-summary) {
@@ -164,10 +164,10 @@
 .productScope :global(.rule-summary.nested) {
   margin: 3px 0;
   padding: 12px;
-  border: 1px solid #dedbea;
-  border-left: 3px solid #8b83ed;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand-accent);
   border-radius: 8px;
-  background: #faf9ff;
+  background: var(--surface-subtle);
 }
 .productScope :global(.rule-summary-label) {
   color: var(--muted);
@@ -202,7 +202,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 9px;
-  background: #e8e8e2;
+  background: var(--surface-muted);
 }
 .productScope :global(.skeleton::after) {
   content: "";

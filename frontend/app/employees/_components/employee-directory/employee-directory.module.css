@@ -1,5 +1,6 @@
 .currentDot {
   width: 0.3125rem;
   height: 0.3125rem;
+  background: var(--success);
   box-shadow: none;
 }

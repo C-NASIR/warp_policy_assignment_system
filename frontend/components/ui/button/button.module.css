@@ -1,5 +1,5 @@
 .button {
-  min-height: 2.375rem;
+  min-height: 2.25rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -10,25 +10,28 @@
   background: var(--surface-strong);
   color: white;
   font-size: var(--text-xs);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
   transition:
-    transform 150ms ease,
-    box-shadow 150ms ease,
+    color 120ms ease,
     border-color 150ms ease,
     background-color 150ms ease;
 }
 
 .button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  background: #000000;
 }
 
 .secondary {
   border-color: var(--border-strong);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: #bfbfbb;
+  background: var(--surface-subtle);
 }
 
 .danger {
@@ -37,7 +40,7 @@
 }
 
 .danger:hover:not(:disabled) {
-  background: #8f312d;
+  background: #8f1d15;
 }
 
 .small {

@@ -11,13 +11,13 @@
 }
 .productScope :global(.rule-group) {
   padding: 15px;
-  border: 1px solid #dedce8;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #faf9ff;
+  background: var(--surface-subtle);
 }
 .productScope :global(.rule-group.nested) {
   margin: 10px 0;
-  border-left: 3px solid #8c85ff;
+  border-left: 3px solid var(--brand-accent);
   background: white;
 }
 .productScope :global(.rule-group-head) {
@@ -207,7 +207,7 @@
   border: 3px solid var(--surface);
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 0 0 1px #c9c5ff;
+  box-shadow: 0 0 0 1px var(--border-strong);
 }
 .productScope :global(.version-title) {
   font-size: 10px;
