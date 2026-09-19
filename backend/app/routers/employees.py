@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime  # noqa: I001
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
