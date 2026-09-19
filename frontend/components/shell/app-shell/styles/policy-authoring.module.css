@@ -4,10 +4,27 @@
 
 /* Policy authoring */
 .productScope :global(.builder-shell) {
+  min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
   gap: 16px;
   align-items: start;
+}
+.productScope :global(.builder-shell > .form-panel:first-child .form-section) {
+  position: relative;
+}
+.productScope
+  :global(.builder-shell > .form-panel:first-child .form-section + .form-section::before) {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 31px;
+  width: 12px;
+  height: 12px;
+  border-right: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface);
+  transform: rotate(45deg);
 }
 .productScope :global(.rule-group) {
   padding: 15px;
@@ -19,6 +36,17 @@
   margin: 10px 0;
   border-left: 3px solid var(--brand-accent);
   background: white;
+}
+.productScope :global(.rule-group.nested::before) {
+  content: "Nested logic";
+  display: block;
+  margin: -5px 0 10px;
+  color: var(--brand-accent-ink);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .productScope :global(.rule-group-head) {
   display: flex;
@@ -42,6 +70,10 @@
   grid-template-columns: minmax(130px, 1fr) 88px minmax(150px, 1fr) 30px;
   gap: 7px;
   margin-bottom: 8px;
+}
+.productScope :global(.condition-row > *),
+.productScope :global(.output-row > *) {
+  min-width: 0;
 }
 .productScope :global(.condition-row .input),
 .productScope :global(.condition-row .select) {
@@ -141,6 +173,20 @@
 .productScope :global(.impact-label) {
   color: #bcbcc2;
   font-size: 10px;
+}
+.productScope :global(.impact-meta) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 15px;
+}
+.productScope :global(.impact-meta span) {
+  padding: 4px 7px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 6px;
+  color: #d6d6d2;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 8px;
 }
 .productScope :global(.match-list) {
   display: grid;

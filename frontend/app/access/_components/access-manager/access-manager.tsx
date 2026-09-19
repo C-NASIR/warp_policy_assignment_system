@@ -16,7 +16,15 @@ import {
 } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useMemo, useState } from "react";
 import { PaginationControls } from "@/components/shared";
-import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  Panel,
+  SelectInput,
+  TextInput,
+} from "@/components/ui";
 import { formatEmployeeId } from "@/lib/format";
 import type {
   AssignmentFieldScopeOption,
@@ -182,6 +190,8 @@ function UsersPanel({
   const [search, setSearch] = useState(filters.search);
   const [status, setStatus] = useState(filters.status);
   const [role, setRole] = useState<RoleCandidate | null>(initialRoleFilter);
+  const [pendingDisable, setPendingDisable] = useState<UserDirectoryItem | null>(null);
+  const [disabling, setDisabling] = useState(false);
 
   function applyFilters(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -200,11 +210,15 @@ function UsersPanel({
   }
 
   async function disable(user: UserDirectoryItem) {
-    if (!window.confirm(`Disable ${user.name}? Their active sessions will end immediately.`))
-      return;
-    const response = await fetch(`/api/backend/users/${user.id}`, { method: "DELETE" });
-    if (!response.ok) return onError(await errorMessage(response));
-    onComplete(`${user.name} was disabled.`);
+    setDisabling(true);
+    try {
+      const response = await fetch(`/api/backend/users/${user.id}`, { method: "DELETE" });
+      if (!response.ok) return onError(await errorMessage(response));
+      setPendingDisable(null);
+      onComplete(`${user.name} was disabled.`);
+    } finally {
+      setDisabling(false);
+    }
   }
 
   return (
@@ -257,7 +271,12 @@ function UsersPanel({
             </thead>
             <tbody>
               {page.items.map((user) => (
-                <tr key={user.id}>
+                <tr
+                  className={
+                    user.is_root || user.has_all_permissions ? "access-privileged-row" : undefined
+                  }
+                  key={user.id}
+                >
                   <td>
                     <span className="primary-cell">{user.name}</span>
                     <span className="secondary-cell">{user.email}</span>
@@ -284,11 +303,13 @@ function UsersPanel({
                     )}
                   </td>
                   <td>
-                    <span className="primary-cell">
-                      {user.has_all_permissions
-                        ? "All permissions"
-                        : `${user.effective_permission_count} permissions`}
-                    </span>
+                    {user.has_all_permissions ? (
+                      <Badge tone="accent">All permissions</Badge>
+                    ) : (
+                      <span className="primary-cell">
+                        {user.effective_permission_count} permissions
+                      </span>
+                    )}
                     {user.password_change_required && (
                       <span className="secondary-cell">Password change required</span>
                     )}
@@ -314,7 +335,7 @@ function UsersPanel({
                               className="icon-button danger-button"
                               aria-label={`Disable ${user.name}`}
                               disabled={user.status === "disabled"}
-                              onClick={() => disable(user)}
+                              onClick={() => setPendingDisable(user)}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -353,6 +374,15 @@ function UsersPanel({
           itemLabel="users"
         />
       </Panel>
+      <ConfirmDialog
+        open={Boolean(pendingDisable)}
+        title={`Disable ${pendingDisable?.name ?? "user"}?`}
+        description="This immediately ends every active session for the user. Their audit history remains available and an administrator can restore access later."
+        confirmLabel="Disable user"
+        busy={disabling}
+        onCancel={() => setPendingDisable(null)}
+        onConfirm={() => pendingDisable && void disable(pendingDisable)}
+      />
     </>
   );
 }
@@ -374,6 +404,8 @@ function RolesPanel({
 }) {
   const router = useRouter();
   const [search, setSearch] = useState(searchFilter);
+  const [pendingDelete, setPendingDelete] = useState<RoleDirectoryItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   function applySearch(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -383,10 +415,15 @@ function RolesPanel({
   }
 
   async function remove(role: RoleDirectoryItem) {
-    if (!window.confirm(`Delete the ${role.name} role?`)) return;
-    const response = await fetch(`/api/backend/roles/${role.id}`, { method: "DELETE" });
-    if (!response.ok) return onError(await errorMessage(response));
-    onComplete(`${role.name} was deleted.`);
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/backend/roles/${role.id}`, { method: "DELETE" });
+      if (!response.ok) return onError(await errorMessage(response));
+      setPendingDelete(null);
+      onComplete(`${role.name} was deleted.`);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -409,56 +446,65 @@ function RolesPanel({
         <div className="results-count">{page.total} roles</div>
       </form>
       <div className="role-grid">
-        {page.items.map((role) => (
-          <Panel as="article" className="role-card" key={role.id}>
-            <div className="role-card-head">
-              <div className="role-icon">
-                <ShieldCheck size={16} />
-              </div>
-              {canManage && (
-                <div className="row-actions">
-                  <button
-                    className="icon-button"
-                    aria-label={`Edit ${role.name}`}
-                    onClick={() => onEdit(role.id)}
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    className="icon-button danger-button"
-                    aria-label={`Delete ${role.name}`}
-                    disabled={role.user_count > 0}
-                    onClick={() => remove(role)}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+        {page.items.map((role) => {
+          const broadAccess =
+            role.employee_scope === "all" || role.assignment_field_scope === "all";
+          return (
+            <Panel
+              as="article"
+              className={`role-card${broadAccess ? " broad-access" : ""}`}
+              key={role.id}
+            >
+              <div className="role-card-head">
+                <div className="role-icon">
+                  <ShieldCheck size={16} />
                 </div>
-              )}
-            </div>
-            <h2>{role.name}</h2>
-            <p>{role.description || "No description provided."}</p>
-            <div className="role-card-meta">
-              <span>{role.permission_count} permissions</span>
-              <span>{role.user_count} users</span>
-            </div>
-            <div className="permission-chip-list">
-              <Badge tone="accent">{employeeScopeLabels[role.employee_scope]}</Badge>
-              <Badge tone="accent">
-                {role.assignment_field_scope === "selected"
-                  ? `${role.assignment_field_count} assignment fields`
-                  : assignmentFieldScopeLabels[role.assignment_field_scope]}
-              </Badge>
-              {role.permission_preview.map((permission) => (
-                <Badge key={permission}>{permission}</Badge>
-              ))}
-              {role.permission_count > role.permission_preview.length && (
+                {canManage && (
+                  <div className="row-actions">
+                    <button
+                      className="icon-button"
+                      aria-label={`Edit ${role.name}`}
+                      onClick={() => onEdit(role.id)}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      className="icon-button danger-button"
+                      aria-label={`Delete ${role.name}`}
+                      disabled={role.user_count > 0}
+                      onClick={() => setPendingDelete(role)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <h2>{role.name}</h2>
+              {broadAccess && <Badge tone="accent">Broad access</Badge>}
+              <p>{role.description || "No description provided."}</p>
+              <div className="role-card-meta">
+                <span>{role.permission_count} permissions</span>
+                <span>{role.user_count} users</span>
+              </div>
+              <div className="permission-chip-list">
+                <Badge tone="accent">{employeeScopeLabels[role.employee_scope]}</Badge>
                 <Badge tone="accent">
-                  +{role.permission_count - role.permission_preview.length}
+                  {role.assignment_field_scope === "selected"
+                    ? `${role.assignment_field_count} assignment fields`
+                    : assignmentFieldScopeLabels[role.assignment_field_scope]}
                 </Badge>
-              )}
-            </div>
-          </Panel>
-        ))}
+                {role.permission_preview.map((permission) => (
+                  <Badge key={permission}>{permission}</Badge>
+                ))}
+                {role.permission_count > role.permission_preview.length && (
+                  <Badge tone="accent">
+                    +{role.permission_count - role.permission_preview.length}
+                  </Badge>
+                )}
+              </div>
+            </Panel>
+          );
+        })}
         {page.items.length === 0 && (
           <Panel as="div" className="empty-state">
             <div className="empty-icon">
@@ -476,6 +522,15 @@ function RolesPanel({
         limit={page.limit}
         offset={page.offset}
         itemLabel="roles"
+      />
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title={`Delete ${pendingDelete?.name ?? "role"}?`}
+        description="This permanently removes the unused role. Existing audit records remain available, but the role cannot be recovered."
+        confirmLabel="Delete role"
+        busy={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && void remove(pendingDelete)}
       />
     </>
   );

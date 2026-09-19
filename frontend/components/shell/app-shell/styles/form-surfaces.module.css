@@ -10,6 +10,7 @@
   align-items: start;
 }
 .productScope :global(.form-panel) {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -21,6 +22,25 @@
 }
 .productScope :global(.form-section:last-child) {
   border-bottom: 0;
+}
+.productScope :global(.form-section-heading) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+  margin-bottom: 17px;
+}
+.productScope :global(.form-section-heading .form-section-description) {
+  margin-bottom: 0;
+}
+.productScope :global(.section-number) {
+  min-width: 25px;
+  padding-top: 2px;
+  color: var(--brand-accent-ink);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
 }
 .productScope :global(.form-section-title) {
   margin-bottom: 5px;
@@ -194,6 +214,17 @@
 .productScope :global(.role-card) {
   min-height: 220px;
   padding: 18px;
+}
+.productScope :global(.role-card.broad-access) {
+  border-color: var(--border-strong);
+  box-shadow: inset 3px 0 0 var(--ink);
+}
+.productScope :global(.role-card.broad-access .role-icon) {
+  background: var(--surface-strong);
+  color: white;
+}
+.productScope :global(.access-privileged-row td:first-child) {
+  box-shadow: inset 3px 0 0 var(--ink);
 }
 .productScope :global(.role-card-head) {
   display: flex;
@@ -467,6 +498,9 @@
   background: var(--surface-subtle);
 }
 .productScope :global(.preview-kicker) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin-bottom: 4px;
   color: var(--success);
   font-size: 9px;
@@ -478,8 +512,75 @@
   margin: 0;
   font-size: 13px;
 }
+.productScope :global(.preview-summary) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 14px -18px -16px;
+  border-top: 1px solid var(--border);
+  background: var(--border);
+}
+.productScope :global(.preview-summary span) {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+.productScope :global(.preview-summary strong) {
+  color: var(--ink);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+}
 .productScope :global(.preview-content) {
   padding: 15px 18px;
+}
+.productScope :global(.preview-notice) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.productScope :global(.preview-notice.warning) {
+  border-color: #ead6aa;
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.productScope :global(.preview-notice.conflict) {
+  border-color: #efc7c3;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.productScope :global(.preview-notice span),
+.productScope :global(.preview-notice strong) {
+  display: block;
+}
+.productScope :global(.stale-preview-banner) {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 13px 15px;
+  border-bottom: 1px solid #ead6aa;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.productScope :global(.stale-preview-banner span),
+.productScope :global(.stale-preview-banner strong) {
+  display: block;
+}
+.productScope :global(.preview-stale-content) {
+  opacity: 0.48;
+  pointer-events: none;
+  user-select: none;
 }
 .productScope :global(.preview-assignment) {
   display: flex;

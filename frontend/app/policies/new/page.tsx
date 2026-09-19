@@ -46,7 +46,9 @@ export default async function NewPolicyPage({ searchParams }: PageProps<"/polici
             impact before anything changes.
           </p>
         </div>
-        <Badge tone="accent">Draft</Badge>
+        <Badge tone="accent">
+          {basePolicy ? "New version" : activateOnCreate ? "Activates on save" : "Draft"}
+        </Badge>
       </div>
       <PolicyBuilder
         conditionFields={conditionFields}

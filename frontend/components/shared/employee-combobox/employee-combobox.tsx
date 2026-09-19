@@ -16,12 +16,14 @@ export function EmployeeCombobox({
   excludedEmployeeIds = noExcludedEmployeeIds,
   invalid = false,
   required = false,
+  errorMessageId,
   onChange,
 }: {
   initialEmployee?: Employee;
   excludedEmployeeIds?: number[];
   invalid?: boolean;
   required?: boolean;
+  errorMessageId?: string;
   onChange(employee: Employee | null): void;
 }) {
   const listboxId = useId();
@@ -107,6 +109,7 @@ export function EmployeeCombobox({
           aria-expanded={open}
           aria-activedescendant={activeIndex >= 0 ? `${listboxId}-${activeIndex}` : undefined}
           aria-invalid={invalid}
+          aria-errormessage={invalid ? errorMessageId : undefined}
           autoComplete="off"
           required={required}
           value={query}

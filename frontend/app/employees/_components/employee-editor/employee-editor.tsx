@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Eye, Sparkles, X } from "lucide-react";
+import { Check, CircleAlert, Eye, RefreshCw, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { ManagerCombobox } from "./manager-combobox";
@@ -14,7 +14,7 @@ import type {
   EmployeeReferenceData,
 } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
-import { Button, SelectInput } from "@/components/ui";
+import { Button, SelectInput, WorkflowProgress } from "@/components/ui";
 import { StateCombobox } from "@/components/shared";
 
 type EmployeeInput = Omit<Employee, "id" | "state_label">;
@@ -59,6 +59,7 @@ export function EmployeeEditor({
       : createBlankEmployee(),
   );
   const [preview, setPreview] = useState<EmployeeAssignmentPreview | null>(null);
+  const [previewStale, setPreviewStale] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [success, setSuccess] = useState("");
@@ -104,7 +105,7 @@ export function EmployeeEditor({
 
   function update<K extends keyof EmployeeInput>(key: K, value: EmployeeInput[K]) {
     setData((current) => ({ ...current, [key]: value }));
-    setPreview(null);
+    if (preview) setPreviewStale(true);
     resetReauthentication();
     setSuccess("");
     setError("");
@@ -152,6 +153,7 @@ export function EmployeeEditor({
       return;
     }
     setError("");
+    if (preview) setPreviewStale(true);
     setSubmitting(true);
     try {
       const response = await fetch("/api/backend/change-previews", {
@@ -167,6 +169,7 @@ export function EmployeeEditor({
             "The assignment preview could not be calculated.",
         );
       setPreview(result as EmployeeAssignmentPreview);
+      setPreviewStale(false);
       resetReauthentication();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to preview this change.");
@@ -208,7 +211,9 @@ export function EmployeeEditor({
         resetReauthentication();
       }
 
-      const endpoint = employee ? `/api/backend/employees/${employee.id}` : "/api/backend/employees";
+      const endpoint = employee
+        ? `/api/backend/employees/${employee.id}`
+        : "/api/backend/employees";
       const response = await fetch(endpoint, {
         method: employee ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -223,6 +228,7 @@ export function EmployeeEditor({
         throw new Error(failure.message || "The employee change could not be saved.");
       }
       setPreview(null);
+      setPreviewStale(false);
       resetReauthentication();
       setValidationAttempted(false);
       if (!employee) {
@@ -242,204 +248,260 @@ export function EmployeeEditor({
   }
 
   const form = (
-    <div className="form-shell">
-      <div className="form-panel">
-        <div className="form-section">
-          <div className="form-section-title">Employment details</div>
-          <div className="form-section-description">
-            These facts are evaluated against every active policy rule.
-          </div>
-          {error && <div className="error-banner">{error}</div>}
-          {success && !compact && (
-            <div className="success-banner" role="status">
-              <Check size={14} />
-              {success}
+    <>
+      <WorkflowProgress
+        compact={compact}
+        currentStep={preview && !previewStale ? 3 : preview ? 2 : 1}
+        steps={[
+          { label: "Define", description: "Employee facts" },
+          { label: "Review", description: "Resolved assignments" },
+          { label: "Confirm", description: employee ? "Save changes" : "Create employee" },
+        ]}
+      />
+      <div className="form-shell">
+        <div className="form-panel">
+          <div className="form-section">
+            <div className="form-section-heading">
+              <span className="section-number">01</span>
+              <div>
+                <div className="form-section-title">Define employee facts</div>
+                <div className="form-section-description">
+                  These facts are evaluated against every active policy rule. Fields marked required
+                  must be complete before review.
+                </div>
+              </div>
             </div>
-          )}
-          <div className="field-grid">
-            <label className="field full">
-              <span className="field-label">
-                Full name <span className="required">Required</span>
-              </span>
-              <input
-                className={`input${validationAttempted && !data.name.trim() ? " field-invalid" : ""}`}
-                required
-                aria-invalid={validationAttempted && !data.name.trim()}
-                value={data.name}
-                onChange={(e) => update("name", e.target.value)}
-                placeholder="e.g. Avery Chen"
-              />
-            </label>
-            <label className="field">
-              <span className="field-label">
-                Department <span className="required">Required</span>
-              </span>
-              <SelectInput
-                required
-                aria-invalid={validationAttempted && !data.department}
-                value={data.department}
-                onChange={(e) => update("department", e.target.value)}
-              >
-                <option value="" disabled>
-                  Select a department
-                </option>
-                {departments.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </SelectInput>
-            </label>
-            <label className="field">
-              <span className="field-label">
-                Employment type <span className="required">Required</span>
-              </span>
-              <SelectInput
-                required
-                aria-invalid={validationAttempted && !data.employee_type}
-                value={data.employee_type}
-                onChange={(e) => update("employee_type", e.target.value)}
-              >
-                <option value="" disabled>
-                  Select an employment type
-                </option>
-                {employeeTypes.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </SelectInput>
-            </label>
-            <label className="field">
-              <span className="field-label">
-                State <span className="required">Required</span>
-              </span>
-              <StateCombobox
-                states={referenceData?.states ?? []}
-                value={data.state}
-                invalid={validationAttempted && !data.state}
-                onChange={(value) => update("state", value)}
-              />
-            </label>
-            <label className="field">
-              <span className="field-label">Work location</span>
-              <input
-                className="input"
-                value={data.location ?? ""}
-                onChange={(e) => update("location", e.target.value)}
-                placeholder="e.g. San Francisco"
-              />
-            </label>
-            <label className="field">
-              <span className="field-label">
-                Start date <span className="required">Required</span>
-              </span>
-              <input
-                className={`input${validationAttempted && !data.start_date ? " field-invalid" : ""}`}
-                required
-                aria-invalid={validationAttempted && !data.start_date}
-                type="date"
-                value={data.start_date}
-                onChange={(e) => update("start_date", e.target.value)}
-              />
-            </label>
-            <div className="field">
-              <label className="field-label" htmlFor="manager">
-                Manager
-              </label>
-              <ManagerCombobox
-                employeeId={employee?.id}
-                initialCandidate={initialManagerCandidate}
-                onChange={(managerId) => update("manager_id", managerId)}
-              />
-            </div>
-          </div>
-        </div>
-        {reauthenticationRequired && (
-          <div
-            className={`sensitive-confirmation employee-sensitive-confirmation${mfaEnabled ? " with-mfa" : ""}`}
-          >
-            <div className="sensitive-confirmation-copy">
-              <strong>Confirm your identity</strong>
-              <span>
-                Your session needs fresh authentication before this reviewed change can be applied.
-              </span>
-            </div>
-            <label className="field">
-              <span className="field-label">
-                Password <span className="required">Required</span>
-              </span>
-              <input
-                className={`input${passwordInvalid ? " field-invalid" : ""}`}
-                type="password"
-                autoComplete="current-password"
-                autoFocus
-                aria-required="true"
-                aria-invalid={passwordInvalid}
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  setPasswordInvalid(false);
-                  setError("");
-                }}
-              />
-            </label>
-            {mfaEnabled && (
-              <label className="field">
+            {error && (
+              <div className="error-banner" id="employee-form-error" role="alert">
+                <CircleAlert size={14} />
+                {error}
+              </div>
+            )}
+            {success && !compact && (
+              <div className="success-banner" role="status">
+                <Check size={14} />
+                {success}
+              </div>
+            )}
+            <div className="field-grid">
+              <label className="field full">
                 <span className="field-label">
-                  MFA code <span className="required">Required</span>
+                  Full name <span className="required">Required</span>
                 </span>
                 <input
-                  className={`input${mfaInvalid ? " field-invalid" : ""}`}
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
+                  className={`input${validationAttempted && !data.name.trim() ? " field-invalid" : ""}`}
+                  autoFocus={compact}
+                  required
+                  aria-invalid={validationAttempted && !data.name.trim()}
+                  aria-errormessage={
+                    validationAttempted && !data.name.trim() ? "employee-form-error" : undefined
+                  }
+                  value={data.name}
+                  onChange={(e) => update("name", e.target.value)}
+                  placeholder="e.g. Avery Chen"
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">
+                  Department <span className="required">Required</span>
+                </span>
+                <SelectInput
+                  required
+                  aria-invalid={validationAttempted && !data.department}
+                  aria-errormessage={
+                    validationAttempted && !data.department ? "employee-form-error" : undefined
+                  }
+                  value={data.department}
+                  onChange={(e) => update("department", e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select a department
+                  </option>
+                  {departments.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </SelectInput>
+              </label>
+              <label className="field">
+                <span className="field-label">
+                  Employment type <span className="required">Required</span>
+                </span>
+                <SelectInput
+                  required
+                  aria-invalid={validationAttempted && !data.employee_type}
+                  aria-errormessage={
+                    validationAttempted && !data.employee_type ? "employee-form-error" : undefined
+                  }
+                  value={data.employee_type}
+                  onChange={(e) => update("employee_type", e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select an employment type
+                  </option>
+                  {employeeTypes.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </SelectInput>
+              </label>
+              <label className="field">
+                <span className="field-label">
+                  State <span className="required">Required</span>
+                </span>
+                <StateCombobox
+                  states={referenceData?.states ?? []}
+                  value={data.state}
+                  invalid={validationAttempted && !data.state}
+                  ariaErrorMessage="employee-form-error"
+                  onChange={(value) => update("state", value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Work location</span>
+                <input
+                  className="input"
+                  value={data.location ?? ""}
+                  onChange={(e) => update("location", e.target.value)}
+                  placeholder="e.g. San Francisco"
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">
+                  Start date <span className="required">Required</span>
+                </span>
+                <input
+                  className={`input${validationAttempted && !data.start_date ? " field-invalid" : ""}`}
+                  required
+                  aria-invalid={validationAttempted && !data.start_date}
+                  aria-errormessage={
+                    validationAttempted && !data.start_date ? "employee-form-error" : undefined
+                  }
+                  type="date"
+                  value={data.start_date}
+                  onChange={(e) => update("start_date", e.target.value)}
+                />
+              </label>
+              <div className="field">
+                <label className="field-label" htmlFor="manager">
+                  Manager
+                </label>
+                <ManagerCombobox
+                  employeeId={employee?.id}
+                  initialCandidate={initialManagerCandidate}
+                  onChange={(managerId) => update("manager_id", managerId)}
+                />
+              </div>
+            </div>
+          </div>
+          {reauthenticationRequired && (
+            <div
+              className={`sensitive-confirmation employee-sensitive-confirmation${mfaEnabled ? " with-mfa" : ""}`}
+            >
+              <div className="sensitive-confirmation-copy">
+                <strong>Confirm your identity</strong>
+                <span>
+                  Your session needs fresh authentication before this reviewed change can be
+                  applied.
+                </span>
+              </div>
+              <label className="field">
+                <span className="field-label">
+                  Password <span className="required">Required</span>
+                </span>
+                <input
+                  className={`input${passwordInvalid ? " field-invalid" : ""}`}
+                  type="password"
+                  autoComplete="current-password"
+                  autoFocus
                   aria-required="true"
-                  aria-invalid={mfaInvalid}
-                  value={mfaCode}
+                  aria-invalid={passwordInvalid}
+                  aria-errormessage={passwordInvalid ? "employee-form-error" : undefined}
+                  value={password}
                   onChange={(event) => {
-                    setMfaCode(event.target.value);
-                    setMfaInvalid(false);
+                    setPassword(event.target.value);
+                    setPasswordInvalid(false);
                     setError("");
                   }}
                 />
               </label>
-            )}
-          </div>
-        )}
-        <div className="form-footer employee-editor-footer">
-          <div className="heading-actions">
-            <Button variant="secondary" type="button" onClick={review} disabled={submitting}>
-              <Eye size={14} />
-              {submitting ? "Calculating…" : "Review assignments"}
-            </Button>
-            {preview && (
-              <Button type="button" onClick={confirm} disabled={submitting}>
-                <Check size={14} />
+              {mfaEnabled && (
+                <label className="field">
+                  <span className="field-label">
+                    MFA code <span className="required">Required</span>
+                  </span>
+                  <input
+                    className={`input${mfaInvalid ? " field-invalid" : ""}`}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    aria-required="true"
+                    aria-invalid={mfaInvalid}
+                    aria-errormessage={mfaInvalid ? "employee-form-error" : undefined}
+                    value={mfaCode}
+                    onChange={(event) => {
+                      setMfaCode(event.target.value);
+                      setMfaInvalid(false);
+                      setError("");
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          )}
+          <div className="form-footer employee-editor-footer">
+            <div className="heading-actions">
+              <Button variant="secondary" type="button" onClick={review} disabled={submitting}>
+                {previewStale ? <RefreshCw size={14} /> : <Eye size={14} />}
                 {submitting
-                  ? "Confirming…"
-                  : reauthenticationRequired
-                    ? "Authenticate and confirm"
-                    : employee
-                      ? "Confirm changes"
-                      : "Create employee"}
+                  ? "Calculating…"
+                  : previewStale
+                    ? "Refresh assignment preview"
+                    : "Review assignments"}
               </Button>
-            )}
+              {preview && !previewStale && (
+                <Button type="button" onClick={confirm} disabled={submitting}>
+                  <Check size={14} />
+                  {submitting
+                    ? "Confirming…"
+                    : reauthenticationRequired
+                      ? "Authenticate and confirm"
+                      : employee
+                        ? "Confirm changes"
+                        : "Create employee"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <aside className="form-panel preview-panel">
-        {!preview ? (
-          <div className="preview-empty">
-            <div className="preview-empty-icon">
-              <Sparkles size={19} />
+        <aside className="form-panel preview-panel" aria-label="Assignment decision preview">
+          {!preview ? (
+            <div className="preview-empty">
+              <div className="preview-empty-icon">
+                <Sparkles size={19} />
+              </div>
+              <h3>Assignment preview</h3>
+              <p>
+                Complete the employee profile, then review exactly which policies and assignments
+                will apply.
+              </p>
             </div>
-            <h3>Assignment preview</h3>
-            <p>
-              Complete the employee profile, then review exactly which policies and assignments will
-              apply.
-            </p>
-          </div>
-        ) : (
-          <EmployeeAssignmentPreviewPanel preview={preview} />
-        )}
-      </aside>
-    </div>
+          ) : (
+            <>
+              {previewStale && (
+                <div className="stale-preview-banner" role="status">
+                  <RefreshCw size={14} />
+                  <span>
+                    <strong>Preview out of date</strong>
+                    Employee facts changed. Refresh before confirming.
+                  </span>
+                </div>
+              )}
+              <div className={previewStale ? "preview-stale-content" : undefined}>
+                <EmployeeAssignmentPreviewPanel preview={preview} />
+              </div>
+            </>
+          )}
+        </aside>
+      </div>
+    </>
   );
 
   if (!compact) return form;

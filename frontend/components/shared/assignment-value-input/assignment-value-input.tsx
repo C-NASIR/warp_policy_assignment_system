@@ -7,12 +7,14 @@ export function AssignmentValueInput({
   value,
   invalid = false,
   label = "assignment value",
+  errorMessageId,
   onChange,
 }: {
   field: AssignmentFieldOption | undefined;
   value: string;
   invalid?: boolean;
   label?: string;
+  errorMessageId?: string;
   onChange(value: string): void;
 }) {
   if (field?.input.type === "select") {
@@ -21,6 +23,7 @@ export function AssignmentValueInput({
         className={`select${invalid ? " field-invalid" : ""}`}
         required
         aria-invalid={invalid}
+        aria-errormessage={invalid ? errorMessageId : undefined}
         aria-label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -40,6 +43,7 @@ export function AssignmentValueInput({
       className={`input${invalid ? " field-invalid" : ""}`}
       required
       aria-invalid={invalid}
+      aria-errormessage={invalid ? errorMessageId : undefined}
       aria-label={label}
       value={value}
       onChange={(event) => onChange(event.target.value)}

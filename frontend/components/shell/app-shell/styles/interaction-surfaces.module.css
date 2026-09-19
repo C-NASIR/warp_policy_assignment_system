@@ -265,6 +265,16 @@
 }
 
 @media (max-width: 700px) {
+  .productScope :global(.security-overview) {
+    grid-template-columns: 1fr;
+  }
+  .productScope :global(.security-overview > div) {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .productScope :global(.security-overview > div:last-child) {
+    border-bottom: 0;
+  }
   .productScope :global(.context-help) {
     width: 34px;
     padding: 0;
@@ -311,6 +321,9 @@
   .productScope :global(.stat-grid),
   .productScope :global(.review-finding) {
     grid-template-columns: 1fr;
+  }
+  .productScope :global(.review-finding-actions) {
+    justify-content: flex-start;
   }
   .productScope :global(.stat-card) {
     min-height: 90px;

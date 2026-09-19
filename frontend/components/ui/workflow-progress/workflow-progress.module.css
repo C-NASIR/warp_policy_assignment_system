@@ -1,0 +1,105 @@
+.workflow {
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.workflow ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0.875rem 1rem;
+  color: var(--faint);
+}
+
+.step + .step {
+  border-left: 1px solid var(--border);
+}
+
+.marker {
+  width: 1.625rem;
+  height: 1.625rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-subtle);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.125rem;
+}
+
+.copy strong {
+  color: inherit;
+  font-size: 0.6875rem;
+}
+
+.copy small {
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 0.5625rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current {
+  background: var(--brand-accent-soft);
+  color: var(--brand-accent-ink);
+}
+
+.current .marker {
+  border-color: var(--brand-accent);
+  background: var(--surface);
+}
+
+.complete {
+  color: var(--ink);
+}
+
+.complete .marker {
+  border-color: var(--success);
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.compact {
+  margin-bottom: var(--space-3);
+}
+
+@media (max-width: 700px) {
+  .workflow ol {
+    grid-template-columns: 1fr;
+  }
+
+  .step {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .step + .step {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .copy small {
+    white-space: normal;
+  }
+}

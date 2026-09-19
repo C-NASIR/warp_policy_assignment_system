@@ -21,6 +21,7 @@ export function StateCombobox({
   required = true,
   placeholder = "Search by state name or abbreviation",
   ariaLabel,
+  ariaErrorMessage,
   onChange,
 }: {
   states: StateOption[];
@@ -29,6 +30,7 @@ export function StateCombobox({
   required?: boolean;
   placeholder?: string;
   ariaLabel?: string;
+  ariaErrorMessage?: string;
   onChange(value: string): void;
 }) {
   const listboxId = useId();
@@ -96,6 +98,7 @@ export function StateCombobox({
             activeIndex >= 0 ? `${listboxId}-${filtered[activeIndex]?.code}` : undefined
           }
           aria-invalid={invalid}
+          aria-errormessage={invalid ? ariaErrorMessage : undefined}
           aria-label={ariaLabel}
           autoComplete="off"
           required={required}

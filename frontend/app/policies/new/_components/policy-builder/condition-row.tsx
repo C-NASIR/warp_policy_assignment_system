@@ -28,6 +28,7 @@ export function ConditionRow({
   validationAttempted,
   removeDisabled = false,
   removeLabel,
+  errorMessageId,
   onChange,
   onRemove,
 }: {
@@ -38,6 +39,7 @@ export function ConditionRow({
   validationAttempted: boolean;
   removeDisabled?: boolean;
   removeLabel: string;
+  errorMessageId?: string;
   onChange(patch: Partial<BuilderCondition>): void;
   onRemove(): void;
 }) {
@@ -56,6 +58,7 @@ export function ConditionRow({
         className={`select${fieldInvalid ? " field-invalid" : ""}`}
         required
         aria-invalid={fieldInvalid}
+        aria-errormessage={fieldInvalid ? errorMessageId : undefined}
         value={condition.field}
         onChange={(event) => {
           const next = conditionFields.find((field) => field.key === event.target.value);
@@ -94,6 +97,7 @@ export function ConditionRow({
           employees={employees}
           referenceData={referenceData}
           invalid={valueInvalid}
+          errorMessageId={errorMessageId}
           onChange={(value) => onChange({ value })}
         />
       )}

@@ -402,6 +402,20 @@
   margin: 0 auto;
   padding: 40px;
 }
+.productScope :global(.system-banner) {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 40px;
+  border-bottom: 1px solid #ead6aa;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.productScope :global(.system-banner strong) {
+  color: inherit;
+}
 .productScope :global(.page-heading) {
   display: flex;
   align-items: flex-end;
@@ -742,6 +756,9 @@
   }
   .productScope :global(.content) {
     padding: 24px 18px;
+  }
+  .productScope :global(.system-banner) {
+    padding: 10px 18px;
   }
   .productScope :global(.page-heading) {
     align-items: flex-start;

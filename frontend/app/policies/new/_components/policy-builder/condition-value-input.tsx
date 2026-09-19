@@ -15,6 +15,7 @@ export function ConditionValueInput({
   employees,
   referenceData,
   invalid,
+  errorMessageId,
   onChange,
 }: {
   definition: ConditionField;
@@ -22,6 +23,7 @@ export function ConditionValueInput({
   employees: Employee[];
   referenceData: EmployeeReferenceData;
   invalid: boolean;
+  errorMessageId?: string;
   onChange(value: string): void;
 }) {
   const input = definition.input;
@@ -31,6 +33,7 @@ export function ConditionValueInput({
       <EmployeeCombobox
         initialEmployee={employees.find((employee) => String(employee.id) === value)}
         invalid={invalid}
+        errorMessageId={errorMessageId}
         required
         onChange={(employee) => onChange(employee ? String(employee.id) : "")}
       />
@@ -43,6 +46,7 @@ export function ConditionValueInput({
         states={referenceData.states}
         value={value}
         invalid={invalid}
+        ariaErrorMessage={errorMessageId}
         onChange={onChange}
       />
     );
@@ -60,6 +64,7 @@ export function ConditionValueInput({
         className={`select${invalid ? " field-invalid" : ""}`}
         required
         aria-invalid={invalid}
+        aria-errormessage={invalid ? errorMessageId : undefined}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
@@ -79,6 +84,7 @@ export function ConditionValueInput({
         className={`select${invalid ? " field-invalid" : ""}`}
         required
         aria-invalid={invalid}
+        aria-errormessage={invalid ? errorMessageId : undefined}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
@@ -99,6 +105,7 @@ export function ConditionValueInput({
           className={`input${invalid ? " field-invalid" : ""}`}
           required
           aria-invalid={invalid}
+          aria-errormessage={invalid ? errorMessageId : undefined}
           type="number"
           min={input.minimum ?? 1}
           step={1}
@@ -116,6 +123,7 @@ export function ConditionValueInput({
       className={`input${invalid ? " field-invalid" : ""}`}
       required
       aria-invalid={invalid}
+      aria-errormessage={invalid ? errorMessageId : undefined}
       type={input.type === "date" ? "date" : input.type === "number" ? "number" : "text"}
       min={input.type === "number" ? (input.minimum ?? undefined) : undefined}
       step={input.type === "number" ? 1 : undefined}

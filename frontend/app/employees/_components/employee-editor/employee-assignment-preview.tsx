@@ -1,4 +1,5 @@
-import { Info } from "lucide-react";
+import { AlertTriangle, Info, ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui";
 import type { AssignmentPreview, EmployeeAssignmentPreview } from "@/lib/types";
 
 type AssignmentChange = "added" | "changed" | "removed" | "unchanged";
@@ -18,6 +19,7 @@ export function EmployeeAssignmentPreviewPanel({
 }) {
   const rows = assignmentRows(preview.before_assignments, preview.after_assignments);
   const changedCount = rows.filter((row) => row.change !== "unchanged").length;
+  const unchangedCount = rows.length - changedCount;
   const title =
     preview.type === "employee_create"
       ? preview.after_assignments.length === 0
@@ -30,10 +32,38 @@ export function EmployeeAssignmentPreviewPanel({
   return (
     <>
       <div className="preview-header">
-        <div className="preview-kicker">Resolution complete</div>
+        <div className="preview-kicker">
+          <ShieldCheck size={11} /> Resolution complete
+        </div>
         <h3 className="preview-title">{title}</h3>
+        <div className="preview-summary" aria-label="Assignment change summary">
+          <span>
+            <strong>{changedCount}</strong> changed
+          </span>
+          <span>
+            <strong>{unchangedCount}</strong> unchanged
+          </span>
+          <span>
+            <strong>{preview.warnings.length}</strong> warnings
+          </span>
+        </div>
       </div>
       <div className="preview-content">
+        {preview.warnings.map((warning) => (
+          <div className="preview-notice warning" key={warning}>
+            <AlertTriangle size={13} />
+            <span>{warning}</span>
+          </div>
+        ))}
+        {preview.conflicts.map((conflict) => (
+          <div className="preview-notice conflict" key={`${conflict.code}-${conflict.message}`}>
+            <AlertTriangle size={13} />
+            <span>
+              <strong>Conflict</strong>
+              {conflict.message}
+            </span>
+          </div>
+        ))}
         {rows.length === 0 ? (
           <div className="secondary-cell">No policy currently assigns values to this employee.</div>
         ) : (
@@ -44,7 +74,7 @@ export function EmployeeAssignmentPreviewPanel({
                 <div className="preview-value">{assignmentTransition(row)}</div>
                 <div className="secondary-cell">{sourceTransition(row)}</div>
               </div>
-              <span className={`preview-change ${row.change}`}>{changeLabel(row.change)}</span>
+              <Badge tone={changeTone(row.change)}>{changeLabel(row.change)}</Badge>
             </div>
           ))
         )}
@@ -147,4 +177,11 @@ function changeLabel(change: AssignmentChange) {
   if (change === "removed") return "Remove";
   if (change === "changed") return "Change";
   return "No change";
+}
+
+function changeTone(change: AssignmentChange) {
+  if (change === "added") return "success" as const;
+  if (change === "removed") return "danger" as const;
+  if (change === "changed") return "warning" as const;
+  return "neutral" as const;
 }

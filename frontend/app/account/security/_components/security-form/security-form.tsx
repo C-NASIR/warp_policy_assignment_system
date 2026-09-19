@@ -4,7 +4,7 @@ import { Check, CircleAlert, KeyRound, Laptop, ShieldCheck, TriangleAlert } from
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { type SubmitEvent, useState } from "react";
-import { Badge, Button, Panel } from "@/components/ui";
+import { Badge, Button, ConfirmDialog, Panel } from "@/components/ui";
 import type { AccountSecurity } from "@/lib/types";
 import styles from "./security-form.module.css";
 
@@ -32,6 +32,10 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [pendingRevocation, setPendingRevocation] = useState<"others" | "all" | null>(null);
+  const unreviewedEvents = security.events.filter(
+    (item) => item.severity !== "info" && !item.acknowledged_at,
+  ).length;
 
   async function call(path: string, method = "POST", body?: object) {
     const response = await fetch(`/api/backend${path}`, {
@@ -156,6 +160,7 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
         ...value,
         sessions: value.sessions.filter((item) => item.current),
       }));
+      setPendingRevocation(null);
       setNotice("Every other device has been signed out.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Sessions could not be revoked.");
@@ -188,43 +193,117 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
   }
 
   return (
-    <div className="detail-grid">
-      <div className="detail-main">
-        {error && (
-          <div className="error-banner" role="alert">
-            <CircleAlert size={14} />
-            {error}
-          </div>
-        )}
-        {notice && (
-          <div className="success-banner" role="status">
-            <Check size={14} />
-            {notice}
-          </div>
-        )}
-        {security.mfa_required && !security.mfa_enabled && (
-          <div className="error-banner" role="alert">
-            <TriangleAlert size={14} />
-            Root access requires MFA before privileged changes can be made.
-          </div>
-        )}
-        <Panel className="security-panel">
-          <div className="panel-header">
-            <div>
-              <h2 className="panel-title">Multi-factor authentication</h2>
-              <div className="panel-caption">
-                Protect privileged access with a TOTP authenticator and one-time recovery codes.
-              </div>
+    <>
+      <div className="security-overview" aria-label="Current security status">
+        <div>
+          <span>MFA protection</span>
+          <strong>{security.mfa_enabled ? "Enabled" : "Action required"}</strong>
+          <Badge tone={security.mfa_enabled ? "success" : "warning"}>
+            {security.mfa_enabled ? "Protected" : "Set up MFA"}
+          </Badge>
+        </div>
+        <div>
+          <span>Active devices</span>
+          <strong>{security.sessions.length}</strong>
+          <small>
+            {security.sessions.length === 1 ? "Current device only" : "Review regularly"}
+          </small>
+        </div>
+        <div>
+          <span>Unreviewed events</span>
+          <strong>{unreviewedEvents}</strong>
+          <Badge tone={unreviewedEvents ? "warning" : "success"}>
+            {unreviewedEvents ? "Needs review" : "Up to date"}
+          </Badge>
+        </div>
+      </div>
+      <div className="detail-grid security-workspace">
+        <div className="detail-main">
+          {error && (
+            <div className="error-banner" role="alert">
+              <CircleAlert size={14} />
+              {error}
             </div>
-            <Badge tone={security.mfa_enabled ? "success" : "warning"}>
-              <ShieldCheck size={11} />
-              {security.mfa_enabled ? "Enabled" : "Not enabled"}
-            </Badge>
-          </div>
-          <div className="panel-body">
-            {!security.mfa_enabled ? (
-              !mfaSecret ? (
-                <form className="security-form" onSubmit={startMfa}>
+          )}
+          {notice && (
+            <div className="success-banner" role="status">
+              <Check size={14} />
+              {notice}
+            </div>
+          )}
+          {security.mfa_required && !security.mfa_enabled && (
+            <div className="error-banner" role="alert">
+              <TriangleAlert size={14} />
+              Root access requires MFA before privileged changes can be made.
+            </div>
+          )}
+          <Panel className="security-panel">
+            <div className="panel-header">
+              <div>
+                <h2 className="panel-title">Multi-factor authentication</h2>
+                <div className="panel-caption">
+                  Protect privileged access with a TOTP authenticator and one-time recovery codes.
+                </div>
+              </div>
+              <Badge tone={security.mfa_enabled ? "success" : "warning"}>
+                <ShieldCheck size={11} />
+                {security.mfa_enabled ? "Enabled" : "Not enabled"}
+              </Badge>
+            </div>
+            <div className="panel-body">
+              {!security.mfa_enabled ? (
+                !mfaSecret ? (
+                  <form className="security-form" onSubmit={startMfa}>
+                    <label className="field">
+                      <span className="field-label">Current password</span>
+                      <input
+                        className="input"
+                        required
+                        type="password"
+                        autoComplete="current-password"
+                        value={mfaPassword}
+                        onChange={(event) => setMfaPassword(event.target.value)}
+                      />
+                    </label>
+                    <Button disabled={busy} type="submit">
+                      Set up authenticator
+                    </Button>
+                  </form>
+                ) : (
+                  <form className="security-form" onSubmit={confirmMfa}>
+                    {mfaProvisioningUri && (
+                      <div className="mfa-qr">
+                        <QRCodeSVG
+                          value={mfaProvisioningUri}
+                          size={200}
+                          level="M"
+                          title="PolicyOS authenticator setup QR code"
+                        />
+                        <span>Scan with your authenticator app</span>
+                      </div>
+                    )}
+                    <div className="auth-requirement">
+                      Can&apos;t scan it? Enter this setup key manually:{" "}
+                      <strong>{mfaSecret}</strong>
+                    </div>
+                    <label className="field">
+                      <span className="field-label">6-digit authenticator code</span>
+                      <input
+                        className="input"
+                        required
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        value={mfaCode}
+                        onChange={(event) => setMfaCode(event.target.value)}
+                      />
+                    </label>
+                    <Button disabled={busy} type="submit">
+                      Verify and enable
+                    </Button>
+                  </form>
+                )
+              ) : (
+                <form className="security-form" onSubmit={disableMfa}>
                   <label className="field">
                     <span className="field-label">Current password</span>
                     <input
@@ -236,28 +315,8 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
                       onChange={(event) => setMfaPassword(event.target.value)}
                     />
                   </label>
-                  <Button disabled={busy} type="submit">
-                    Set up authenticator
-                  </Button>
-                </form>
-              ) : (
-                <form className="security-form" onSubmit={confirmMfa}>
-                  {mfaProvisioningUri && (
-                    <div className="mfa-qr">
-                      <QRCodeSVG
-                        value={mfaProvisioningUri}
-                        size={200}
-                        level="M"
-                        title="PolicyOS authenticator setup QR code"
-                      />
-                      <span>Scan with your authenticator app</span>
-                    </div>
-                  )}
-                  <div className="auth-requirement">
-                    Can&apos;t scan it? Enter this setup key manually: <strong>{mfaSecret}</strong>
-                  </div>
                   <label className="field">
-                    <span className="field-label">6-digit authenticator code</span>
+                    <span className="field-label">Authenticator code</span>
                     <input
                       className="input"
                       required
@@ -267,221 +326,230 @@ export function SecurityForm({ initialSecurity }: { initialSecurity: AccountSecu
                       onChange={(event) => setMfaCode(event.target.value)}
                     />
                   </label>
-                  <Button disabled={busy} type="submit">
-                    Verify and enable
+                  <Button variant="danger" disabled={busy} type="submit">
+                    Disable MFA
                   </Button>
                 </form>
-              )
-            ) : (
-              <form className="security-form" onSubmit={disableMfa}>
+              )}
+              {recoveryCodes.length > 0 && (
+                <div className="auth-requirement">
+                  <strong>Recovery codes</strong>
+                  <pre>{recoveryCodes.join("\n")}</pre>
+                </div>
+              )}
+            </div>
+          </Panel>
+          <Panel className="security-panel">
+            <div className="panel-header">
+              <div>
+                <h2 className="panel-title">Password</h2>
+                <div className="panel-caption">
+                  Changing your password signs out every other active session.
+                </div>
+              </div>
+              <Badge tone="accent">
+                <KeyRound size={11} />
+                Protected
+              </Badge>
+            </div>
+            <div className="panel-body">
+              <form className="security-form" onSubmit={changePassword}>
                 <label className="field">
                   <span className="field-label">Current password</span>
                   <input
                     className="input"
                     required
                     type="password"
-                    value={mfaPassword}
-                    onChange={(event) => setMfaPassword(event.target.value)}
+                    autoComplete="current-password"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Authenticator code</span>
+                  <span className="field-label">New password</span>
                   <input
                     className="input"
                     required
-                    inputMode="numeric"
-                    value={mfaCode}
-                    onChange={(event) => setMfaCode(event.target.value)}
+                    type="password"
+                    minLength={12}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
                   />
                 </label>
-                <Button variant="danger" disabled={busy} type="submit">
-                  Disable MFA
+                <label className="field">
+                  <span className="field-label">Confirm new password</span>
+                  <input
+                    className="input"
+                    required
+                    type="password"
+                    minLength={12}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    value={confirmation}
+                    onChange={(event) => setConfirmation(event.target.value)}
+                  />
+                </label>
+                <Button disabled={busy} type="submit">
+                  Change password
                 </Button>
               </form>
-            )}
-            {recoveryCodes.length > 0 && (
-              <div className="auth-requirement">
-                <strong>Recovery codes</strong>
-                <pre>{recoveryCodes.join("\n")}</pre>
-              </div>
-            )}
-          </div>
-        </Panel>
-        <Panel className="security-panel">
-          <div className="panel-header">
-            <div>
-              <h2 className="panel-title">Password</h2>
-              <div className="panel-caption">
-                Changing your password signs out every other active session.
+            </div>
+          </Panel>
+          <Panel className="security-panel">
+            <div className="panel-header">
+              <div>
+                <h2 className="panel-title">Confirm your identity</h2>
+                <div className="panel-caption">
+                  Sensitive administrative actions require a recent password and MFA check.
+                </div>
               </div>
             </div>
-            <Badge tone="accent">
-              <KeyRound size={11} />
-              Protected
-            </Badge>
-          </div>
-          <div className="panel-body">
-            <form className="security-form" onSubmit={changePassword}>
-              <label className="field">
-                <span className="field-label">Current password</span>
-                <input
-                  className="input"
-                  required
-                  type="password"
-                  autoComplete="current-password"
-                  value={currentPassword}
-                  onChange={(event) => setCurrentPassword(event.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">New password</span>
-                <input
-                  className="input"
-                  required
-                  type="password"
-                  minLength={12}
-                  maxLength={128}
-                  autoComplete="new-password"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Confirm new password</span>
-                <input
-                  className="input"
-                  required
-                  type="password"
-                  minLength={12}
-                  maxLength={128}
-                  autoComplete="new-password"
-                  value={confirmation}
-                  onChange={(event) => setConfirmation(event.target.value)}
-                />
-              </label>
-              <Button disabled={busy} type="submit">
-                Change password
-              </Button>
-            </form>
-          </div>
-        </Panel>
-        <Panel className="security-panel">
-          <div className="panel-header">
-            <div>
-              <h2 className="panel-title">Confirm your identity</h2>
-              <div className="panel-caption">
-                Sensitive administrative actions require a recent password and MFA check.
-              </div>
-            </div>
-          </div>
-          <div className="panel-body">
-            <form className="security-form" onSubmit={stepUp}>
-              <label className="field">
-                <span className="field-label">Password</span>
-                <input
-                  className="input"
-                  required
-                  type="password"
-                  value={stepPassword}
-                  onChange={(event) => setStepPassword(event.target.value)}
-                />
-              </label>
-              {security.mfa_enabled && (
+            <div className="panel-body">
+              <form className="security-form" onSubmit={stepUp}>
                 <label className="field">
-                  <span className="field-label">Authenticator code</span>
+                  <span className="field-label">Password</span>
                   <input
                     className="input"
                     required
-                    inputMode="numeric"
-                    value={stepCode}
-                    onChange={(event) => setStepCode(event.target.value)}
+                    type="password"
+                    autoComplete="current-password"
+                    value={stepPassword}
+                    onChange={(event) => setStepPassword(event.target.value)}
                   />
                 </label>
+                {security.mfa_enabled && (
+                  <label className="field">
+                    <span className="field-label">Authenticator code</span>
+                    <input
+                      className="input"
+                      required
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={stepCode}
+                      onChange={(event) => setStepCode(event.target.value)}
+                    />
+                  </label>
+                )}
+                <Button disabled={busy} type="submit">
+                  Verify identity
+                </Button>
+              </form>
+            </div>
+          </Panel>
+        </div>
+        <aside className="detail-aside">
+          <Panel>
+            <div className="panel-header">
+              <div>
+                <h2 className="panel-title">Active devices</h2>
+                <div className="panel-caption">
+                  Sessions expire after inactivity and have a fixed lifetime.
+                </div>
+              </div>
+              <Laptop size={16} />
+            </div>
+            <div className="panel-body">
+              <div className="security-list">
+                {security.sessions.map((item) => (
+                  <div className="security-list-item" key={item.id}>
+                    <strong>
+                      {item.current
+                        ? "This device"
+                        : item.user_agent?.split(" ").slice(0, 3).join(" ") || "Unknown device"}
+                    </strong>
+                    <small>
+                      {item.last_ip || "Unknown address"} ·{" "}
+                      {new Date(item.last_seen_at).toLocaleString()}
+                    </small>
+                  </div>
+                ))}
+              </div>
+              <div className="security-actions">
+                <Button
+                  variant="secondary"
+                  disabled={busy || security.sessions.length < 2}
+                  onClick={() => setPendingRevocation("others")}
+                >
+                  Sign out others
+                </Button>
+                <Button
+                  variant="danger"
+                  disabled={busy}
+                  onClick={() => setPendingRevocation("all")}
+                >
+                  Sign out all
+                </Button>
+              </div>
+            </div>
+          </Panel>
+          <Panel>
+            <div className="panel-header">
+              <div>
+                <h2 className="panel-title">Security events</h2>
+                <div className="panel-caption">
+                  Review failed sign-ins, new addresses, and account changes.
+                </div>
+              </div>
+            </div>
+            <div className="panel-body">
+              {security.events.length === 0 && (
+                <p className="form-hint">No security events recorded.</p>
               )}
-              <Button disabled={busy} type="submit">
-                Verify identity
-              </Button>
-            </form>
-          </div>
-        </Panel>
+              <div className="security-list">
+                {security.events.map((item) => (
+                  <div className="security-list-item" key={item.id}>
+                    <span className="security-event-heading">
+                      <strong>{item.event_type.replaceAll("_", " ")}</strong>
+                      <Badge
+                        tone={
+                          item.severity === "critical"
+                            ? "danger"
+                            : item.severity === "warning"
+                              ? "warning"
+                              : "neutral"
+                        }
+                      >
+                        {item.severity}
+                      </Badge>
+                    </span>
+                    <small>{new Date(item.created_at).toLocaleString()}</small>
+                    {!item.acknowledged_at && item.severity !== "info" && (
+                      <Button
+                        className={styles.eventAction}
+                        variant="secondary"
+                        size="small"
+                        onClick={() => acknowledge(item.id)}
+                      >
+                        Acknowledge
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Panel>
+        </aside>
       </div>
-      <aside className="detail-aside">
-        <Panel>
-          <div className="panel-header">
-            <div>
-              <h2 className="panel-title">Active devices</h2>
-              <div className="panel-caption">
-                Sessions expire after inactivity and have a fixed lifetime.
-              </div>
-            </div>
-            <Laptop size={16} />
-          </div>
-          <div className="panel-body">
-            <div className="security-list">
-              {security.sessions.map((item) => (
-                <div className="security-list-item" key={item.id}>
-                  <strong>
-                    {item.current
-                      ? "This device"
-                      : item.user_agent?.split(" ").slice(0, 3).join(" ") || "Unknown device"}
-                  </strong>
-                  <small>
-                    {item.last_ip || "Unknown address"} ·{" "}
-                    {new Date(item.last_seen_at).toLocaleString()}
-                  </small>
-                </div>
-              ))}
-            </div>
-            <div className="security-actions">
-              <Button
-                variant="secondary"
-                disabled={busy || security.sessions.length < 2}
-                onClick={revokeOthers}
-              >
-                Sign out others
-              </Button>
-              <Button variant="danger" disabled={busy} onClick={revokeAll}>
-                Sign out all
-              </Button>
-            </div>
-          </div>
-        </Panel>
-        <Panel>
-          <div className="panel-header">
-            <div>
-              <h2 className="panel-title">Security events</h2>
-              <div className="panel-caption">
-                Review failed sign-ins, new addresses, and account changes.
-              </div>
-            </div>
-          </div>
-          <div className="panel-body">
-            {security.events.length === 0 && (
-              <p className="form-hint">No security events recorded.</p>
-            )}
-            <div className="security-list">
-              {security.events.map((item) => (
-                <div className="security-list-item" key={item.id}>
-                  <strong>{item.event_type.replaceAll("_", " ")}</strong>
-                  <small>
-                    {new Date(item.created_at).toLocaleString()} · {item.severity}
-                  </small>
-                  {!item.acknowledged_at && item.severity !== "info" && (
-                    <Button
-                      className={styles.eventAction}
-                      variant="secondary"
-                      size="small"
-                      onClick={() => acknowledge(item.id)}
-                    >
-                      Acknowledge
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
-      </aside>
-    </div>
+      <ConfirmDialog
+        open={pendingRevocation !== null}
+        title={pendingRevocation === "all" ? "Sign out every device?" : "Sign out other devices?"}
+        description={
+          pendingRevocation === "all"
+            ? "This ends every active session, including this one. You will return to the sign-in screen and must authenticate again."
+            : "This ends every session except the one on this device. Other devices must authenticate again."
+        }
+        confirmLabel={
+          pendingRevocation === "all" ? "Sign out all devices" : "Sign out other devices"
+        }
+        busy={busy}
+        onCancel={() => setPendingRevocation(null)}
+        onConfirm={() => {
+          if (pendingRevocation === "all") void revokeAll();
+          else if (pendingRevocation === "others") void revokeOthers();
+        }}
+      />
+    </>
   );
 }

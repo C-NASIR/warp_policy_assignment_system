@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   UserPlus,
   Users,
+  WifiOff,
   X,
 } from "lucide-react";
 import { KeyboardEvent, useEffect, useState } from "react";
@@ -576,6 +577,15 @@ export function AppShell({
               )}
             </div>
           </header>
+          {!backendReady && (
+            <div className="system-banner" role="alert">
+              <WifiOff size={14} />
+              <span>
+                <strong>Assignment engine unavailable.</strong> Data may be incomplete and changes
+                cannot be saved. Try again after the service recovers.
+              </span>
+            </div>
+          )}
           <main className="content" id="main-content">
             {children}
           </main>

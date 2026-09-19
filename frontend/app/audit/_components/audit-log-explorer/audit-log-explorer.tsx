@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Search, ScrollText } from "lucide-react";
+import { ChevronDown, ChevronUp, FilterX, Search, ScrollText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 import { PaginationControls } from "@/components/shared";
@@ -28,6 +28,7 @@ export function AuditLogExplorer({
   const [entity, setEntity] = useState(filters.entityType);
   const [action, setAction] = useState(filters.action);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const hasFilters = Boolean(filters.search || filters.entityType || filters.action);
   function applyFilters(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const query = new URLSearchParams();
@@ -92,8 +93,26 @@ export function AuditLogExplorer({
           <Button variant="secondary" type="submit">
             Apply
           </Button>
+          {hasFilters && (
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setEntity("");
+                setAction("");
+                router.push("/audit");
+              }}
+            >
+              <FilterX size={13} /> Clear
+            </Button>
+          )}
         </div>
-        <span className="results-count">{total} events</span>
+        <span className="results-count" role="status">
+          {total
+            ? `${offset + 1}–${Math.min(offset + limit, total)} of ${total} events`
+            : "0 events"}
+        </span>
       </form>
       <Panel as="div" clipped>
         <div className="audit-table-scroll">
@@ -163,6 +182,10 @@ function AuditRow({
   onToggle(): void;
 }) {
   const changedSnapshots = diffAuditSnapshots(event.before, event.after);
+  const changedFieldCount = new Set([
+    ...Object.keys(changedSnapshots.before ?? {}),
+    ...Object.keys(changedSnapshots.after ?? {}),
+  ]).size;
 
   return (
     <>
@@ -183,17 +206,7 @@ function AuditRow({
           <span className="secondary-cell">{titleCase(event.entity_type)}</span>
         </td>
         <td>
-          <Badge
-            tone={
-              event.action === "created"
-                ? "success"
-                : event.action === "deleted"
-                  ? "warning"
-                  : "accent"
-            }
-          >
-            {titleCase(event.action)}
-          </Badge>
+          <Badge tone={auditActionTone(event.action)}>{titleCase(event.action)}</Badge>
         </td>
         <td>
           <span className="audit-summary">{summarizeChange(event.before, event.after)}</span>
@@ -206,17 +219,23 @@ function AuditRow({
               onToggle();
             }}
             aria-expanded={expanded}
-            aria-label={expanded ? "Hide event payload" : "Show event payload"}
+            aria-controls={`audit-detail-${event.id}`}
+            aria-label={expanded ? "Hide technical event details" : "Show technical event details"}
           >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
         </td>
       </tr>
       {expanded && (
-        <tr className="audit-detail-row">
+        <tr className="audit-detail-row" id={`audit-detail-${event.id}`}>
           <td colSpan={6}>
             <div className="audit-record-reference">
-              Technical reference · {event.entity_type} #{event.entity_id}
+              <span>
+                Technical reference · {event.entity_type} #{event.entity_id}
+              </span>
+              <Badge tone="neutral">
+                {changedFieldCount} changed {changedFieldCount === 1 ? "field" : "fields"}
+              </Badge>
             </div>
             <div className="audit-payload">
               <div className="audit-payload-before">
@@ -352,4 +371,12 @@ function formatAuditTime(value: string) {
     minute: "2-digit",
     timeZone: "UTC",
   }).format(new Date(value));
+}
+
+function auditActionTone(action: string) {
+  const normalized = action.toLowerCase();
+  if (normalized.includes("delete") || normalized.includes("disable")) return "danger" as const;
+  if (normalized.includes("create") || normalized.includes("enable")) return "success" as const;
+  if (normalized.includes("archive") || normalized.includes("revoke")) return "warning" as const;
+  return "accent" as const;
 }

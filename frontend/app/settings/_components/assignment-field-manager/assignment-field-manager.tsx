@@ -135,11 +135,14 @@ export function AssignmentFieldManager({
             Define assignable policy categories and the conflict behavior each category requires.
           </p>
         </div>
-        {canManage && (
-          <Button onClick={() => openEditor()}>
-            <Plus size={15} /> Create field
-          </Button>
-        )}
+        <div className="heading-actions">
+          {!canManage && <Badge>Read only</Badge>}
+          {canManage && (
+            <Button onClick={() => openEditor()}>
+              <Plus size={15} /> Create field
+            </Button>
+          )}
+        </div>
       </div>
       {notice && (
         <div className="success-banner" role="status">
@@ -147,6 +150,18 @@ export function AssignmentFieldManager({
           {notice}
         </div>
       )}
+      <div className="cardinality-guide" aria-label="Cardinality reference">
+        <div>
+          <Badge tone="accent">One value</Badge>
+          <strong>Choose one winning assignment</strong>
+          <span>Highest policy priority wins when several rules match the same employee.</span>
+        </div>
+        <div>
+          <Badge tone="neutral">Many values</Badge>
+          <strong>Combine matching assignments</strong>
+          <span>Unique values from every matching policy are merged into a set.</span>
+        </div>
+      </div>
       <div className="toolbar">
         <div className="toolbar-left">
           <label className="search-box">
@@ -229,7 +244,25 @@ export function AssignmentFieldManager({
           </tbody>
         </DataTable>
         {filtered.length === 0 && (
-          <div className="empty-state compact">No assignment fields match those filters.</div>
+          <div className="empty-state compact">
+            <strong>{fields.length ? "No fields match" : "No assignment fields yet"}</strong>
+            <span>
+              {fields.length
+                ? "Adjust the search or cardinality filter."
+                : "Create a field before policies can produce assignment values."}
+            </span>
+            {fields.length > 0 && (
+              <button
+                className="text-button"
+                onClick={() => {
+                  setSearch("");
+                  setCardinality("all");
+                }}
+              >
+                <X size={13} /> Clear filters
+              </button>
+            )}
+          </div>
         )}
         <div className="pagination-footer">
           <span>{fields.length} total fields</span>
@@ -259,7 +292,7 @@ export function AssignmentFieldManager({
             </div>
             <div className="form-section">
               {error && (
-                <div className="error-banner">
+                <div className="error-banner" id="assignment-field-form-error" role="alert">
                   <CircleAlert size={13} />
                   {error}
                 </div>
@@ -272,8 +305,13 @@ export function AssignmentFieldManager({
                   </span>
                 </span>
                 <input
-                  className="input"
+                  className={`input${error && !name.trim() ? " field-invalid" : ""}`}
                   autoFocus
+                  required={!editingField}
+                  aria-invalid={Boolean(error && !name.trim())}
+                  aria-errormessage={
+                    error && !name.trim() ? "assignment-field-form-error" : undefined
+                  }
                   disabled={Boolean(editingField)}
                   value={name}
                   onChange={(event) => {
@@ -347,7 +385,14 @@ export function AssignmentFieldManager({
                     Allowed values <span className="required">Required</span>
                   </span>
                   <textarea
-                    className="textarea"
+                    className={`textarea${error && inputType === "select" && !optionsText.trim() ? " field-invalid" : ""}`}
+                    required
+                    aria-invalid={Boolean(error && inputType === "select" && !optionsText.trim())}
+                    aria-errormessage={
+                      error && inputType === "select" && !optionsText.trim()
+                        ? "assignment-field-form-error"
+                        : undefined
+                    }
                     rows={6}
                     value={optionsText}
                     onChange={(event) => {
