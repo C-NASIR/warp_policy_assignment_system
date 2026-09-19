@@ -1,299 +1,141 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowDown,
   ArrowRight,
-  BookOpenCheck,
-  Bot,
-  Building2,
-  CalendarClock,
+  ArrowUpRight,
   Check,
   CheckCircle2,
-  ChevronRight,
   CircleAlert,
-  Clock3,
-  Database,
-  Eye,
-  FileCheck2,
-  GitBranch,
-  History,
+  FileClock,
+  Fingerprint,
+  GitCompareArrows,
   KeyRound,
   Layers3,
   LockKeyhole,
-  MapPin,
   Network,
-  RefreshCw,
-  Scale,
-  Server,
+  ScanSearch,
   ShieldCheck,
   Sparkles,
   Users,
 } from "lucide-react";
 import styles from "../../landing.module.css";
+import { MobileNavigation } from "./mobile-navigation";
 
-const proofItems = [
-  {
-    icon: CalendarClock,
-    title: "Date-effective versions",
-    detail: "Rules evolve without rewriting history",
-  },
-  { icon: Layers3, title: "One + many values", detail: "Explicit cardinality for every field" },
-  {
-    icon: GitBranch,
-    title: "Rich workforce context",
-    detail: "Facts, tenure, groups, and org structure",
-  },
-  {
-    icon: CircleAlert,
-    title: "Visible conflicts",
-    detail: "Ambiguity stops instead of disappearing",
-  },
-  { icon: Eye, title: "Preview before commit", detail: "Real domain behavior, always rolled back" },
-  {
-    icon: History,
-    title: "Stored provenance",
-    detail: "The original decision, preserved over time",
-  },
-];
-
-const resolutionSteps = [
+const pillars = [
   {
     number: "01",
-    title: "Employee facts",
-    detail: "Department, location, tenure, manager, and org context",
+    icon: Network,
+    title: "Context becomes policy input",
+    copy: "Resolve assignments from employee facts, tenure, reporting lines, and inherited group membership—not scattered spreadsheets.",
   },
   {
     number: "02",
-    title: "Effective versions",
-    detail: "The policy definitions active on the evaluation date",
+    icon: ScanSearch,
+    title: "Impact is visible before commit",
+    copy: "Run proposed changes through the real resolution path and inspect every affected assignment before anything is saved.",
   },
   {
     number: "03",
-    title: "Direct + group matches",
-    detail: "Every matching rule and attached group origin",
+    icon: Layers3,
+    title: "Priority resolves overlap",
+    copy: "Use explicit precedence for competing policies. Equal-priority disagreement becomes a visible conflict, never a silent guess.",
   },
   {
     number: "04",
-    title: "Candidate values",
-    detail: "All possible outcomes, retained for explanation",
-  },
-  {
-    number: "05",
-    title: "Resolve",
-    detail: "Cardinality, priority, and explicit conflict semantics",
-  },
-  {
-    number: "06",
-    title: "Apply overrides",
-    detail: "Authorized exceptions after policy resolution",
-  },
-  {
-    number: "07",
-    title: "Record the decision",
-    detail: "Temporal assignment plus its explanation snapshot",
+    icon: Fingerprint,
+    title: "Every outcome keeps its reason",
+    copy: "Preserve the winning version, matched evidence, candidate values, group origin, overrides, and resolution strategy.",
   },
 ];
 
-const changeTriggers = [
-  { icon: MapPin, label: "Location" },
-  { icon: Building2, label: "Department" },
-  { icon: Clock3, label: "Tenure" },
-  { icon: Network, label: "Manager" },
-  { icon: Users, label: "Group" },
-  { icon: CalendarClock, label: "Policy date" },
+const workflow = [
+  [
+    "Define",
+    "Assignment fields",
+    "Set each governed outcome and whether it accepts one value or many.",
+  ],
+  [
+    "Describe",
+    "Workforce context",
+    "Bring together employee facts, reporting structure, locations, and groups.",
+  ],
+  [
+    "Author",
+    "Policies + priorities",
+    "Create dated rules with explicit conditions, outputs, and precedence.",
+  ],
+  ["Preview", "Population impact", "Inspect who changes, what changes, and which policy will win."],
+  [
+    "Activate",
+    "Decisions + audit",
+    "Publish the version and retain the history behind every result.",
+  ],
 ];
 
-const trustBadges = [
-  "OAuth + PKCE",
-  "52 typed tools",
-  "Same RBAC",
-  "Preview-first",
-  "Fully audited",
+const explanationQuestions = [
+  ["Which policy won?", "People Manager Responsibilities · v2"],
+  ["Which fact matched?", "Is Manager = Yes"],
+  ["What lost?", "Field Operations Readiness · priority 35"],
+  ["Was a group involved?", "No · direct condition match"],
+  ["Was it overridden?", "No manual override"],
 ];
 
-function Brand() {
+function Brand({ inverse = false }: { inverse?: boolean }) {
   return (
-    <Link className={styles.brand} href="/" aria-label="PolicyOS home">
-      <span className={styles.brandMark}>P</span>
+    <Link
+      className={`${styles.brand}${inverse ? ` ${styles.brandInverse}` : ""}`}
+      href="/"
+      aria-label="PolicyOS home"
+    >
+      <span className={styles.brandMark} aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </span>
       <span>PolicyOS</span>
     </Link>
   );
 }
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
+function Eyebrow({ children, inverse = false }: { children: React.ReactNode; inverse?: boolean }) {
   return (
-    <p className={styles.eyebrow}>
-      <span aria-hidden="true" />
-      {children}
+    <p className={`${styles.eyebrow}${inverse ? ` ${styles.eyebrowInverse}` : ""}`}>
+      <span aria-hidden="true">#</span> {children}
     </p>
   );
 }
 
-function HeroDecision() {
+function ProductWindow({
+  src,
+  alt,
+  label,
+  figure,
+  priority = false,
+}: {
+  src: string;
+  alt: string;
+  label: string;
+  figure: string;
+  priority?: boolean;
+}) {
   return (
-    <div
-      className={styles.heroVisual}
-      aria-label="PolicyOS assignment explanation for Rafael Morales"
-    >
-      <div className={styles.visualTopbar}>
-        <span>Assignment detail</span>
-        <span className={styles.engineStatus}>
-          <span aria-hidden="true" /> Engine ready
-        </span>
+    <figure className={styles.productWindow}>
+      <figcaption>
+        <span>{figure}</span>
+        <span>{label}</span>
+        <span aria-hidden="true">⌗</span>
+      </figcaption>
+      <div className={styles.productImage}>
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          priority={priority}
+          sizes="(max-width: 760px) 94vw, (max-width: 1100px) 88vw, 1120px"
+        />
       </div>
-      <div className={styles.personBar}>
-        <span className={styles.avatar}>RM</span>
-        <div>
-          <strong>Rafael Morales</strong>
-          <span>Field Operations · Manager</span>
-        </div>
-        <span className={styles.dateChip}>As of today</span>
-      </div>
-      <div className={styles.assignmentResult}>
-        <div className={styles.assignmentMeta}>
-          <span>Expense Approval Limit</span>
-          <span className={styles.resolvedBadge}>
-            <Check size={12} /> Resolved
-          </span>
-        </div>
-        <div className={styles.assignmentValueRow}>
-          <strong>USD 10,000</strong>
-          <span>One value</span>
-        </div>
-        <div className={styles.winnerCard}>
-          <div className={styles.winnerHeader}>
-            <span>
-              <Sparkles size={15} /> Winning policy
-            </span>
-            <span>Priority 45</span>
-          </div>
-          <strong>People Manager Responsibilities</strong>
-          <div className={styles.evidenceRow}>
-            <span>Matched evidence</span>
-            <span>Is Manager</span>
-            <strong>Yes</strong>
-          </div>
-        </div>
-        <div className={styles.candidateRow}>
-          <div>
-            <span>Also evaluated</span>
-            <strong>Field Operations Readiness</strong>
-          </div>
-          <div>
-            <span>USD 2,500</span>
-            <strong>Priority 35 · Lower priority</strong>
-          </div>
-        </div>
-      </div>
-      <div className={styles.explainBar}>
-        <span>
-          <FileCheck2 size={16} /> Candidate values, evidence, and decision strategy retained
-        </span>
-        <span>
-          Explain decision <ChevronRight size={15} />
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function ProductEvidence() {
-  return (
-    <section
-      id="explainability"
-      className={styles.evidenceSection}
-      aria-labelledby="evidence-title"
-    >
-      <div className={styles.sectionIntroRow}>
-        <div>
-          <Eyebrow>Real product evidence</Eyebrow>
-          <h2 id="evidence-title">See the decision—not just the result.</h2>
-        </div>
-        <p>
-          PolicyOS exposes the workflows administrators actually need: inspect a winner, preview a
-          risky change, understand an exception, and see who a policy reaches.
-        </p>
-      </div>
-      <div className={styles.evidenceLayout}>
-        <article className={styles.primaryEvidence}>
-          <div className={styles.imageFrame}>
-            <Image
-              src="/landing/product-evidence/assignment-explanation.jpg"
-              alt="PolicyOS assignment explanation showing Rafael Morales's USD 10,000 expense limit, the winning priority-45 manager policy, matched evidence, and candidate decision"
-              width={1280}
-              height={720}
-              sizes="(max-width: 800px) 100vw, 65vw"
-            />
-          </div>
-          <div className={styles.evidenceCopy}>
-            <span className={styles.evidenceIndex}>01</span>
-            <div>
-              <h3>Follow every decision to its source.</h3>
-              <p>
-                The stored explanation includes the winning version, matched facts, group origins,
-                candidates, priorities, and selection strategy used at resolution time.
-              </p>
-            </div>
-          </div>
-        </article>
-        <div className={styles.supportingEvidence}>
-          <article>
-            <div className={styles.imageFrame}>
-              <Image
-                src="/landing/product-evidence/change-preview.jpg"
-                alt="PolicyOS preview showing three assignment fields that would change if Priya Raman moved from Engineering to Product"
-                width={1280}
-                height={720}
-                sizes="(max-width: 800px) 100vw, 35vw"
-              />
-            </div>
-            <div>
-              <span className={styles.evidenceIndex}>02 · Preview</span>
-              <h3>Inspect impact before saving.</h3>
-              <p>
-                Priya&apos;s department move runs through the real mutation path, then rolls back.
-              </p>
-            </div>
-          </article>
-          <article>
-            <div className={styles.imageFrame}>
-              <Image
-                src="/landing/product-evidence/manual-override.jpg"
-                alt="PolicyOS showing Priya Raman's USD 5,000 manual override and the USD 2,500 policy result it replaced"
-                width={1280}
-                height={720}
-                sizes="(max-width: 800px) 100vw, 35vw"
-              />
-            </div>
-            <div>
-              <span className={styles.evidenceIndex}>03 · Provenance</span>
-              <h3>Make exceptions visible.</h3>
-              <p>
-                A manual USD 5,000 value stays connected to the USD 2,500 policy result it replaced.
-              </p>
-            </div>
-          </article>
-        </div>
-      </div>
-      <article className={styles.policyEvidence}>
-        <div>
-          <span className={styles.evidenceIndex}>04 · Version + impact</span>
-          <h3>Understand a policy as a dated system change.</h3>
-          <p>
-            People Manager Responsibilities shows its conditions, assignment outputs, effective
-            date, priority, version, and affected population in one review surface.
-          </p>
-        </div>
-        <div className={styles.imageFrame}>
-          <Image
-            src="/landing/product-evidence/policy-impact-version.jpg"
-            alt="People Manager Responsibilities policy showing its manager rule, three assignment outputs, effective date, version, priority, and population impact"
-            width={1280}
-            height={720}
-            sizes="(max-width: 800px) 100vw, 58vw"
-          />
-        </div>
-      </article>
-    </section>
+    </figure>
   );
 }
 
@@ -303,440 +145,344 @@ export function LandingPage() {
       <a className={styles.skipLink} href="#main">
         Skip to content
       </a>
+
       <header className={styles.header}>
         <Brand />
-        <nav className={styles.navigation} aria-label="Main navigation">
+        <nav className={styles.desktopNavigation} aria-label="Main navigation">
           <a href="#platform">Platform</a>
-          <a href="#how-it-works">How it works</a>
+          <a href="#workflow">How it works</a>
           <a href="#explainability">Explainability</a>
-          <a href="#agent-ready">Agent-ready</a>
-          <Link href="/learn" target="_blank" rel="noopener noreferrer">
-            Learn<span className="sr-only"> (opens in a new tab)</span>
-          </Link>
+          <a href="#governance">Governance</a>
+          <Link href="/learn">Learn</Link>
         </nav>
         <div className={styles.headerActions}>
-          <Link className={styles.signIn} href="/login">
-            Sign in
-          </Link>
-          <Link className={styles.primaryButton} href="/login">
-            Explore the demo <ArrowRight size={16} />
+          <Link href="/login">Sign in</Link>
+          <Link className={styles.headerCta} href="/signup">
+            Get started <ArrowUpRight size={15} />
           </Link>
         </div>
+        <MobileNavigation />
       </header>
 
       <main id="main">
         <section className={styles.hero} aria-labelledby="hero-title">
           <div className={styles.heroCopy}>
-            <Eyebrow>Policy assignment infrastructure</Eyebrow>
-            <h1 id="hero-title">
-              Policies that follow your people—<span>and explain every decision.</span>
-            </h1>
-            <p className={styles.heroDescription}>
-              Define date-effective rules across employee facts, location, tenure, groups, and org
-              structure. Preview their impact, reconcile every change, and trace each assignment to
-              its source.
+            <Eyebrow>Governed assignment infrastructure</Eyebrow>
+            <h1 id="hero-title">Turn workforce context into decisions you can defend.</h1>
+            <p>
+              PolicyOS converts employee facts and organizational context into governed
+              assignments—then shows the exact policy, priority, and evidence behind every result.
             </p>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryButton} href="/login">
-                Explore the demo <ArrowRight size={18} />
+              <Link className={styles.primaryCta} href="/signup">
+                Get started <ArrowRight size={17} />
               </Link>
-              <a className={styles.secondaryButton} href="#how-it-works">
-                See how it works <ChevronRight size={17} />
+              <a className={styles.secondaryCta} href="#product-proof">
+                See the product <ArrowDown size={16} />
               </a>
             </div>
-            <ul className={styles.heroProof} aria-label="PolicyOS product qualities">
-              <li>
-                <CheckCircle2 size={14} /> Deterministic resolution
-              </li>
-              <li>
-                <CheckCircle2 size={14} /> Preview before commit
-              </li>
-              <li>
-                <CheckCircle2 size={14} /> Complete provenance
-              </li>
-              <li>
-                <CheckCircle2 size={14} /> Agent-ready through MCP
-              </li>
-            </ul>
           </div>
-          <HeroDecision />
-        </section>
-
-        <section id="platform" className={styles.proofRail} aria-label="PolicyOS capabilities">
-          {proofItems.map(({ icon: Icon, title, detail }) => (
-            <article key={title}>
-              <Icon size={18} strokeWidth={1.7} />
-              <div>
-                <strong>{title}</strong>
-                <span>{detail}</span>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <section
-          id="how-it-works"
-          className={styles.resolutionSection}
-          aria-labelledby="resolution-title"
-        >
-          <div className={styles.sectionIntroRow}>
-            <div>
-              <Eyebrow>Deterministic by design</Eyebrow>
-              <h2 id="resolution-title">From workforce context to one explainable outcome.</h2>
-            </div>
+          <aside className={styles.heroBrief} aria-label="PolicyOS product summary">
+            <span className={styles.briefLabel}>System brief / 001</span>
             <p>
-              The resolver is a transparent policy engine—not an AI model. The same inputs always
-              produce the same assignments or the same explicit conflict.
+              Built for HR, IT, compliance, and operations teams that need policy assignment to be
+              consistent, reviewable, and accountable.
+            </p>
+            <dl>
+              <div>
+                <dt>Input</dt>
+                <dd>People + org context</dd>
+              </div>
+              <div>
+                <dt>Method</dt>
+                <dd>Rules + explicit priority</dd>
+              </div>
+              <div>
+                <dt>Output</dt>
+                <dd>Assignments + provenance</dd>
+              </div>
+            </dl>
+          </aside>
+
+          <div className={styles.heroProof} id="product-proof">
+            <div className={styles.heroProofNote}>
+              <span>Live product / seeded workspace</span>
+              <strong>One decision. Every reason intact.</strong>
+            </div>
+            <ProductWindow
+              src="/landing/product-evidence/assignment-explanation.jpg"
+              alt="PolicyOS employee assignment view showing a USD 10,000 expense approval limit, the winning People Manager Responsibilities policy, its priority, and the evidence that matched"
+              label="assignment explanation"
+              figure="fig. 01"
+              priority
+            />
+            <div className={styles.heroResultCard}>
+              <span>Resolved assignment</span>
+              <strong>USD 10,000</strong>
+              <div>
+                <CheckCircle2 size={16} />
+                <p>
+                  <b>People Manager Responsibilities</b>
+                  Priority 45 · Direct match
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.heroFooter}>
+            <span>Preview first</span>
+            <span>Resolve explicitly</span>
+            <span>Explain completely</span>
+          </div>
+        </section>
+
+        <section id="platform" className={styles.platform} aria-labelledby="platform-title">
+          <div className={styles.sectionHeading}>
+            <Eyebrow>Why PolicyOS</Eyebrow>
+            <h2 id="platform-title">Policy assignment is a system—not a spreadsheet ritual.</h2>
+            <p>
+              Design the rules once, expose the impact before activation, and give operators a
+              durable answer when someone asks why.
             </p>
           </div>
-          <ol className={styles.pipeline}>
-            {resolutionSteps.map((step) => (
-              <li key={step.number}>
-                <span className={styles.stepNumber}>{step.number}</span>
-                <div>
-                  <h3>{step.title}</h3>
-                  <p>{step.detail}</p>
+          <div className={styles.pillarGrid}>
+            {pillars.map(({ number, icon: Icon, title, copy }) => (
+              <article key={number}>
+                <div className={styles.pillarTopline}>
+                  <span>{number}</span>
+                  <Icon size={22} strokeWidth={1.6} />
                 </div>
-                <ChevronRight className={styles.stepArrow} size={17} aria-hidden="true" />
+                <h3>{title}</h3>
+                <p>{copy}</p>
+              </article>
+            ))}
+          </div>
+          <div className={styles.capabilityRail} aria-label="Additional PolicyOS capabilities">
+            <span>Groups + inherited context</span>
+            <span>Manual overrides</span>
+            <span>Versioned changes</span>
+            <span>Audit history</span>
+            <span>Access governance</span>
+          </div>
+        </section>
+
+        <section id="workflow" className={styles.workflow} aria-labelledby="workflow-title">
+          <div className={styles.workflowHeading}>
+            <Eyebrow>Operating model</Eyebrow>
+            <h2 id="workflow-title">From field definition to an auditable decision.</h2>
+          </div>
+          <ol className={styles.workflowSteps}>
+            {workflow.map(([verb, title, copy], index) => (
+              <li key={verb}>
+                <span className={styles.workflowNumber}>0{index + 1}</span>
+                <div>
+                  <span className={styles.workflowVerb}>{verb}</span>
+                  <h3>{title}</h3>
+                  <p>{copy}</p>
+                </div>
+                {index < workflow.length - 1 ? (
+                  <ArrowRight className={styles.workflowArrow} size={18} aria-hidden="true" />
+                ) : (
+                  <Check className={styles.workflowArrow} size={18} aria-hidden="true" />
+                )}
               </li>
             ))}
           </ol>
-          <div className={styles.cardinalityGrid}>
-            <article className={styles.cardinalityCard}>
-              <div className={styles.cardinalityIcon}>
-                <Scale size={22} />
-              </div>
-              <div>
-                <span className={styles.cardLabel}>One-value fields</span>
-                <h3>Priority decides—until equal priority disagrees.</h3>
-                <p>
-                  The highest priority wins only when candidates at that priority agree. Different
-                  values at equal priority produce a structured conflict that must be resolved.
-                </p>
-              </div>
-              <div className={styles.oneValueExample} aria-label="One-value conflict example">
-                <div>
-                  <span>Policy A</span>
-                  <strong>Semi-monthly</strong>
-                  <small>Priority 40</small>
-                </div>
-                <div>
-                  <span>Policy B</span>
-                  <strong>Biweekly</strong>
-                  <small>Priority 40</small>
-                </div>
-                <div className={styles.conflictResult}>
-                  <CircleAlert size={16} />
-                  <strong>Conflict surfaced</strong>
-                  <span>No silent tie-break</span>
-                </div>
-              </div>
-            </article>
-            <article className={styles.cardinalityCard}>
-              <div className={styles.cardinalityIcon}>
-                <Layers3 size={22} />
-              </div>
-              <div>
-                <span className={styles.cardLabel}>Many-value fields</span>
-                <h3>Unique values combine. Provenance stays deterministic.</h3>
-                <p>
-                  All unique values join the assignment. If policies contribute the same value,
-                  PolicyOS records one source by priority, then policy-version ID.
-                </p>
-              </div>
-              <div className={styles.manyValueExample} aria-label="Many-value resolution example">
-                <span>Slack</span>
-                <span>Google Workspace</span>
-                <span>GitHub Enterprise</span>
-                <div>
-                  <CheckCircle2 size={15} /> 3 unique values · sources retained
-                </div>
-              </div>
-            </article>
-          </div>
         </section>
 
-        <ProductEvidence />
-
-        <section className={styles.changeSection} aria-labelledby="change-title">
-          <div className={styles.changeIntro}>
-            <Eyebrow>Reconciliation over time</Eyebrow>
-            <h2 id="change-title">When the workforce changes, assignments keep up.</h2>
+        <section className={styles.previewSection} aria-labelledby="preview-title">
+          <div className={styles.previewCopy}>
+            <Eyebrow>Change control</Eyebrow>
+            <h2 id="preview-title">Know the blast radius before you save.</h2>
             <p>
-              PolicyOS is not a one-time calculator. Every supported change flows through the same
-              resolver and reconciliation path, preserving what changed and why.
+              Preview employee, group, and policy changes through the same domain path used to
+              commit them. Review changed fields, unchanged outcomes, sources, and conflicts—then
+              decide.
+            </p>
+            <ul>
+              <li>
+                <Check size={15} /> Real resolver behavior
+              </li>
+              <li>
+                <Check size={15} /> No preview data persisted
+              </li>
+              <li>
+                <Check size={15} /> Field-level before and after
+              </li>
+            </ul>
+          </div>
+          <ProductWindow
+            src="/landing/product-evidence/change-preview.jpg"
+            alt="PolicyOS change preview for Priya Raman showing which assignments would remain the same and which would change before confirmation"
+            label="employee change preview"
+            figure="fig. 02"
+          />
+        </section>
+
+        <section
+          id="explainability"
+          className={styles.explainability}
+          aria-labelledby="explainability-title"
+        >
+          <div className={styles.explainHeading}>
+            <Eyebrow inverse>Decision record</Eyebrow>
+            <h2 id="explainability-title">“Why?” should have a precise answer.</h2>
+            <p>
+              PolicyOS stores the decision context with the assignment, so today’s explanation does
+              not drift when policies change tomorrow.
             </p>
           </div>
-          <div className={styles.changeFlow}>
-            <div className={styles.triggerGrid} aria-label="Workforce change triggers">
-              {changeTriggers.map(({ icon: Icon, label }) => (
-                <span key={label}>
-                  <Icon size={17} /> {label}
+          <div className={styles.explainGrid}>
+            <div className={styles.decisionTrace}>
+              <div className={styles.traceHeader}>
+                <span>Expense Approval Limit</span>
+                <span className={styles.traceStatus}>
+                  <CheckCircle2 size={13} /> Resolved
                 </span>
+              </div>
+              <strong className={styles.traceValue}>USD 10,000</strong>
+              <div className={styles.traceWinner}>
+                <span>Winning policy / priority 45</span>
+                <strong>People Manager Responsibilities</strong>
+                <div>
+                  <span>Evidence</span>
+                  <b>Is Manager</b>
+                  <em>Yes</em>
+                </div>
+              </div>
+              <div className={styles.traceCandidate}>
+                <span>Lower-priority candidate</span>
+                <strong>Field Operations Readiness</strong>
+                <small>USD 2,500 · priority 35</small>
+              </div>
+              <div className={styles.traceReceipt}>
+                <FileClock size={16} /> Explanation snapshot retained with assignment
+              </div>
+            </div>
+            <dl className={styles.questionList}>
+              {explanationQuestions.map(([question, answer], index) => (
+                <div key={question}>
+                  <dt>
+                    <span>Q{index + 1}</span> {question}
+                  </dt>
+                  <dd>{answer}</dd>
+                </div>
               ))}
-            </div>
-            <div className={styles.flowConnector}>
-              <span />
-              <ChevronRight size={20} />
-            </div>
-            <div className={styles.reconcileCore}>
-              <RefreshCw size={22} />
-              <span>Same resolver</span>
-              <strong>Reconcile desired state</strong>
-              <small>Keep equal rows · close changed rows · insert replacements</small>
-            </div>
-            <div className={styles.flowConnector}>
-              <span />
-              <ChevronRight size={20} />
-            </div>
-            <div className={styles.timelineResult}>
-              <span>Assignment history</span>
-              <div>
-                <i />
-                <strong>Previous decision</strong>
-                <small>Closed at change time</small>
-              </div>
-              <div>
-                <i />
-                <strong>Current decision</strong>
-                <small>New explanation snapshot</small>
-              </div>
-            </div>
-          </div>
-          <p className={styles.boundaryNote}>
-            <CircleAlert size={15} /> Future calculations use current employee facts with future
-            policy versions and date-derived tenure. Historical employee facts are not independently
-            versioned; recorded assignment history remains authoritative.
-          </p>
-        </section>
-
-        <section id="agent-ready" className={styles.agentSection} aria-labelledby="agent-title">
-          <div className={styles.agentHeading}>
-            <Eyebrow>AI-native operations</Eyebrow>
-            <h2 id="agent-title">Agent-ready, without an AI backdoor.</h2>
-            <p>
-              The optional Streamable HTTP MCP server lets compatible agents inspect, explain,
-              preview, and administer PolicyOS. It is an interface over the application—not a second
-              implementation of policy logic.
-            </p>
-          </div>
-          <div className={styles.agentGrid}>
-            <div className={styles.transcript}>
-              <div className={styles.transcriptTop}>
-                <span>
-                  <Bot size={17} /> Agent session
-                </span>
-                <span>
-                  <span aria-hidden="true" /> User-bound
-                </span>
-              </div>
-              <div className={styles.userMessage}>
-                <span>You</span>
-                <p>“Preview moving Priya from Engineering to Product. Do not save anything.”</p>
-              </div>
-              <div className={styles.agentMessage}>
-                <span>
-                  <span className={styles.miniBrand}>P</span> PolicyOS
-                </span>
-                <p>
-                  <strong>3 assignment fields would change.</strong> No data was persisted.
-                </p>
-                <ul>
-                  <li>
-                    <span>Device Profile</span>
-                    <strong>Engineering Workstation → Managed Standard Laptop</strong>
-                  </li>
-                  <li>
-                    <span>Application Access</span>
-                    <strong>Access set updated</strong>
-                  </li>
-                  <li>
-                    <span>Information Access</span>
-                    <strong>Engineering access removed</strong>
-                  </li>
-                </ul>
-                <div className={styles.toolReceipt}>
-                  <CheckCircle2 size={15} /> preview_change · read-only result
-                </div>
-              </div>
-            </div>
-            <div className={styles.agentTrust}>
-              <div className={styles.trustPath} aria-label="MCP authorization path">
-                <div>
-                  <Bot size={18} />
-                  <span>MCP client</span>
-                </div>
-                <ChevronRight size={16} />
-                <div>
-                  <KeyRound size={18} />
-                  <span>OAuth user</span>
-                </div>
-                <ChevronRight size={16} />
-                <div>
-                  <Server size={18} />
-                  <span>MCP adapter</span>
-                </div>
-                <ChevronRight size={16} />
-                <div>
-                  <ShieldCheck size={18} />
-                  <span>FastAPI</span>
-                </div>
-              </div>
-              <div className={styles.trustStatement}>
-                <LockKeyhole size={24} />
-                <div>
-                  <h3>Same authorization. Same domain services.</h3>
-                  <p>
-                    Agents inherit the connected user&apos;s permissions and employee visibility.
-                    The adapter never accesses PostgreSQL directly; every tool call passes through
-                    FastAPI validation, RBAC, reconciliation, structured errors, and auditing.
-                  </p>
-                </div>
-              </div>
-              <div className={styles.trustBadges}>
-                {trustBadges.map((badge) => (
-                  <span key={badge}>{badge}</span>
-                ))}
-              </div>
-              <p className={styles.credentialNote}>
-                Login, MFA, and consent stay in the browser. Credentials and MFA codes never pass
-                through the agent. Tool schemas distinguish read-only, mutating, and destructive
-                work.
-              </p>
-            </div>
-          </div>
-          <div className={styles.webMcpNote}>
-            <Sparkles size={17} />
-            <p>
-              <strong>A separate in-browser enhancement.</strong> PolicyOS also registers five
-              WebMCP navigation tools to help compatible browsers open onboarding, policy authoring,
-              assignments, groups, and field setup. These navigate the visible UI; the external MCP
-              server handles authenticated product operations through FastAPI.
-            </p>
+            </dl>
           </div>
         </section>
 
-        <section className={styles.architectureSection} aria-labelledby="architecture-title">
-          <div className={styles.architectureCopy}>
-            <Eyebrow>One trusted system</Eyebrow>
-            <h2 id="architecture-title">Every interface converges on the same boundary.</h2>
+        <section className={styles.policyProof} aria-labelledby="policy-proof-title">
+          <div className={styles.policyProofCopy}>
+            <Eyebrow>Policy as a governed change</Eyebrow>
+            <h2 id="policy-proof-title">
+              Conditions, outputs, priority, version, and reach—in one view.
+            </h2>
             <p>
-              Browser, worker, and agent operations share the same domain behavior. PostgreSQL is
-              the source of truth; FastAPI owns validation and authorization; outcomes and material
-              changes are audited.
+              Review the policy definition beside the population it affects. Date-effective versions
+              preserve history while new changes move through preview and activation.
             </p>
-            <Link
-              href="/learn"
-              className={styles.textLink}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Explore the system from first principles <ArrowRight size={16} />
-              <span className="sr-only"> (opens in a new tab)</span>
+            <Link href="/learn/policyos/create-your-first-policy">
+              Learn how policy authoring works <ArrowRight size={16} />
             </Link>
           </div>
-          <div className={styles.architectureDiagram} aria-label="PolicyOS architecture overview">
-            <div className={styles.interfaceNodes}>
-              <span>
-                Browser<small>HTTP-only session</small>
-              </span>
-              <span>
-                Worker<small>scheduled reconciliation</small>
-              </span>
-              <span>
-                MCP adapter<small>user-bound OAuth</small>
-              </span>
-            </div>
-            <div className={styles.architectureArrow}>
-              <span />
-              <ChevronRight size={19} />
-            </div>
-            <div className={styles.apiNode}>
+          <ProductWindow
+            src="/landing/product-evidence/policy-impact-version.jpg"
+            alt="People Manager Responsibilities policy in PolicyOS showing its manager condition, three provided assignments, effective date, priority, version, and affected population"
+            label="policy version + population impact"
+            figure="fig. 03"
+          />
+        </section>
+
+        <section id="governance" className={styles.governance} aria-labelledby="governance-title">
+          <div className={styles.governanceHeading}>
+            <Eyebrow>Governance built into the path</Eyebrow>
+            <h2 id="governance-title">Control who can decide. Preserve what they changed.</h2>
+            <p>
+              The same authorization and validation boundary applies across the product. Sensitive
+              actions add deliberate checkpoints without obscuring routine work.
+            </p>
+          </div>
+          <div className={styles.governanceGrid}>
+            <article>
               <ShieldCheck size={22} />
-              <strong>FastAPI</strong>
-              <span>Authorization + validation boundary</span>
+              <span>01 / Access</span>
+              <h3>Role-based permissions</h3>
+              <p>Scope product actions and employee visibility to the signed-in user.</p>
+            </article>
+            <article>
+              <KeyRound size={22} />
+              <span>02 / Identity</span>
+              <h3>MFA + reauthentication</h3>
+              <p>Add a fresh proof of identity before sensitive account operations.</p>
+            </article>
+            <article>
+              <GitCompareArrows size={22} />
+              <span>03 / Change</span>
+              <h3>Versioned policy history</h3>
+              <p>
+                Move policy behavior forward without rewriting the record behind prior outcomes.
+              </p>
+            </article>
+            <article>
+              <FileClock size={22} />
+              <span>04 / Review</span>
+              <h3>Audit + access review</h3>
+              <p>Investigate recorded changes and surface privileged or stale access for review.</p>
+            </article>
+          </div>
+          <div className={styles.governanceFooter}>
+            <div>
+              <LockKeyhole size={18} />
+              <span>Preview-before-commit safeguards</span>
             </div>
-            <div className={styles.architectureArrow}>
-              <span />
-              <ChevronRight size={19} />
+            <div>
+              <CircleAlert size={18} />
+              <span>Explicit conflicts, not silent tie-breaks</span>
             </div>
-            <div className={styles.serviceNodes}>
-              <span>
-                <GitBranch size={17} /> Policy engine
-              </span>
-              <span>
-                <RefreshCw size={17} /> Reconciliation
-              </span>
-              <span>
-                <FileCheck2 size={17} /> Audit writes
-              </span>
-            </div>
-            <div className={styles.architectureArrow}>
-              <span />
-              <ChevronRight size={19} />
-            </div>
-            <div className={styles.databaseNode}>
-              <Database size={22} />
-              <strong>PostgreSQL</strong>
-              <span>Source of truth</span>
+            <div>
+              <Users size={18} />
+              <span>User-bound authorization</span>
             </div>
           </div>
         </section>
 
-        <section className={styles.learnSection} aria-labelledby="learn-title">
-          <div className={styles.learnIcon}>
-            <BookOpenCheck size={25} />
-          </div>
+        <section className={styles.finalCta} aria-labelledby="cta-title">
           <div>
-            <Eyebrow>Learn the model</Eyebrow>
-            <h2 id="learn-title">Understand policy assignment from first principles.</h2>
-            <p>
-              A focused curriculum connects domain concepts to the way PolicyOS handles rules,
-              cardinality, time, reconciliation, explanations, and authorization.
-            </p>
+            <Eyebrow inverse>Ready to make policy operational?</Eyebrow>
+            <h2 id="cta-title">Give every assignment a rule, a reason, and a record.</h2>
           </div>
-          <Link
-            href="/learn"
-            className={styles.secondaryButton}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open Learn <ArrowRight size={16} />
-            <span className="sr-only"> (opens in a new tab)</span>
-          </Link>
-        </section>
-
-        <section className={styles.cta} aria-labelledby="cta-title">
-          <div>
-            <Eyebrow>From rule to reason</Eyebrow>
-            <h2 id="cta-title">See every rule become an explainable decision.</h2>
-            <p>Explore the seeded Cedar Harbor workspace and follow real assignments end to end.</p>
-          </div>
-          <div className={styles.ctaActions}>
-            <Link className={styles.primaryButton} href="/login">
-              Explore the demo <ArrowRight size={18} />
+          <div className={styles.finalCtaActions}>
+            <Link href="/signup">
+              Get started <ArrowRight size={18} />
             </Link>
-            <Link
-              className={styles.secondaryButton}
-              href="/learn"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learn how it works <ChevronRight size={17} />
-              <span className="sr-only"> (opens in a new tab)</span>
-            </Link>
+            <Link href="/login">Sign in to a workspace</Link>
           </div>
+          <Sparkles className={styles.ctaSpark} size={44} aria-hidden="true" />
         </section>
       </main>
 
       <footer className={styles.footer}>
-        <Brand />
-        <span>Workforce policy assignments, resolved and explained.</span>
+        <div className={styles.footerLead}>
+          <Brand inverse />
+          <p>Workforce policy assignments, resolved and explained.</p>
+        </div>
         <div>
+          <span>Product</span>
+          <a href="#platform">Platform</a>
+          <a href="#workflow">How it works</a>
+          <a href="#explainability">Explainability</a>
+          <a href="#governance">Governance</a>
+        </div>
+        <div>
+          <span>Explore</span>
+          <Link href="/learn">Learn PolicyOS</Link>
+          <Link href="/signup">Get started</Link>
           <Link href="/login">Sign in</Link>
-          <Link href="/learn" target="_blank" rel="noopener noreferrer">
-            Learn<span className="sr-only"> (opens in a new tab)</span>
-          </Link>
+        </div>
+        <div className={styles.footerMeta}>
+          <span>PolicyOS</span>
+          <span>Deterministic by design.</span>
         </div>
       </footer>
     </div>

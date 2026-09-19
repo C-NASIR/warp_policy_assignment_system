@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Check, CircleAlert, KeyRound } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
+import { AuthFrame } from "@/components/features/auth";
 import { Button, FormField, TextInput } from "@/components/ui";
 
 export function RecoveryForm() {
@@ -71,102 +72,99 @@ export function RecoveryForm() {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card" aria-labelledby="recovery-title">
-        <div className="auth-brand">
-          <span className="brand-mark">P</span>
-          <span>
-            <strong>PolicyOS</strong>
-            <small>Assignment engine</small>
-          </span>
+    <AuthFrame
+      eyebrow="Account recovery"
+      title="Reset your password"
+      titleId="recovery-title"
+      description="Recovery links are short-lived, single-use, and sign out every active device."
+      icon={<KeyRound size={21} />}
+      contextLabel="Secure recovery"
+      contextTitle="Restore access without weakening the boundary."
+      contextBody="Recovery is intentionally narrow: short-lived tokens, optional MFA recovery proof, and session revocation after a successful reset."
+      contextPoints={[
+        "Single-use recovery tokens",
+        "MFA recovery proof when enabled",
+        "All active sessions are signed out",
+      ]}
+    >
+      {error && (
+        <div className="error-banner auth-message" role="alert">
+          <CircleAlert size={14} />
+          {error}
         </div>
-        <div className="auth-icon">
-          <KeyRound size={21} />
+      )}
+      {complete ? (
+        <div className="success-banner" role="status">
+          <Check size={14} />
+          Password reset complete. <Link href="/login">Return to sign in</Link>.
         </div>
-        <p className="eyebrow">Account recovery</p>
-        <h1 id="recovery-title">Reset your password</h1>
-        <p className="page-subtitle">
-          Recovery links are short-lived, single-use, and sign out every active device.
-        </p>
-        {error && (
-          <div className="error-banner auth-message" role="alert">
-            <CircleAlert size={14} />
-            {error}
-          </div>
-        )}
-        {complete ? (
-          <div className="success-banner" role="status">
+      ) : !requested ? (
+        <form className="auth-form" onSubmit={requestReset}>
+          <FormField label="Email address" htmlFor="recovery-email" required>
+            <TextInput
+              id="recovery-email"
+              required
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </FormField>
+          <Button className="auth-submit" disabled={busy} type="submit" fullWidth>
+            {busy ? "Requesting…" : "Request recovery"}
+          </Button>
+        </form>
+      ) : (
+        <form className="auth-form" onSubmit={finishReset}>
+          <div className="success-banner">
             <Check size={14} />
-            Password reset complete. <Link href="/login">Return to sign in</Link>.
+            If the account exists, recovery instructions have been generated.
           </div>
-        ) : !requested ? (
-          <form className="auth-form" onSubmit={requestReset}>
-            <FormField label="Email address" htmlFor="recovery-email" required>
-              <TextInput
-                id="recovery-email"
-                required
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </FormField>
-            <Button className="auth-submit" disabled={busy} type="submit" fullWidth>
-              {busy ? "Requesting…" : "Request recovery"}
-            </Button>
-          </form>
-        ) : (
-          <form className="auth-form" onSubmit={finishReset}>
-            <div className="success-banner">
-              <Check size={14} />
-              If the account exists, recovery instructions have been generated.
-            </div>
-            <FormField label="Recovery token" htmlFor="recovery-token" required>
-              <TextInput
-                id="recovery-token"
-                required
-                value={token}
-                onChange={(event) => setToken(event.target.value)}
-              />
-            </FormField>
-            <FormField label="MFA recovery code (if enabled)" htmlFor="recovery-factor">
-              <TextInput
-                id="recovery-factor"
-                value={factor}
-                onChange={(event) => setFactor(event.target.value)}
-              />
-            </FormField>
-            <FormField label="New password" htmlFor="recovery-password" required>
-              <TextInput
-                id="recovery-password"
-                required
-                type="password"
-                minLength={12}
-                maxLength={128}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </FormField>
-            <FormField label="Confirm password" htmlFor="recovery-confirmation" required>
-              <TextInput
-                id="recovery-confirmation"
-                required
-                type="password"
-                minLength={12}
-                maxLength={128}
-                value={confirmation}
-                onChange={(event) => setConfirmation(event.target.value)}
-              />
-            </FormField>
-            <Button className="auth-submit" disabled={busy} type="submit" fullWidth>
-              {busy ? "Resetting…" : "Reset password"}
-            </Button>
-          </form>
-        )}
-        <Link className="popover-footer" href="/login">
-          Back to sign in
-        </Link>
-      </section>
-    </main>
+          <FormField label="Recovery token" htmlFor="recovery-token" required>
+            <TextInput
+              id="recovery-token"
+              required
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+            />
+          </FormField>
+          <FormField label="MFA recovery code (if enabled)" htmlFor="recovery-factor">
+            <TextInput
+              id="recovery-factor"
+              value={factor}
+              onChange={(event) => setFactor(event.target.value)}
+            />
+          </FormField>
+          <FormField label="New password" htmlFor="recovery-password" required>
+            <TextInput
+              id="recovery-password"
+              required
+              type="password"
+              minLength={12}
+              maxLength={128}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </FormField>
+          <FormField label="Confirm password" htmlFor="recovery-confirmation" required>
+            <TextInput
+              id="recovery-confirmation"
+              required
+              type="password"
+              minLength={12}
+              maxLength={128}
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value)}
+            />
+          </FormField>
+          <Button className="auth-submit" disabled={busy} type="submit" fullWidth>
+            {busy ? "Resetting…" : "Reset password"}
+          </Button>
+        </form>
+      )}
+      <Link className="popover-footer" href="/login">
+        Back to sign in
+      </Link>
+    </AuthFrame>
   );
 }

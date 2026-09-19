@@ -4,6 +4,7 @@ import { ArrowRight, CircleAlert, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
+import { AuthFrame } from "@/components/features/auth/auth-frame/auth-frame";
 import { Button, FormField, TextInput } from "@/components/ui";
 import { firstAllowedPath } from "@/lib/permissions";
 import type { CurrentUser } from "@/lib/types";
@@ -61,92 +62,86 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card" aria-labelledby="login-title">
-        <Link href="/" className="auth-brand" aria-label="PolicyOS home">
-          <span className="brand-mark">P</span>
-          <span>
-            <strong>PolicyOS</strong>
-            <small>Assignment engine</small>
-          </span>
-        </Link>
-        <p className="eyebrow">Welcome back</p>
-        <h1 id="login-title">Sign in to PolicyOS</h1>
-        <p className="page-subtitle">Use the account created for this PolicyOS workspace.</p>
-        {error && (
-          <div className="error-banner auth-message" role="alert">
-            <CircleAlert size={14} />
-            {error}
-          </div>
-        )}
-        <form className="auth-form" onSubmit={submit}>
-          <FormField label="Email address" htmlFor="login-email" required>
-            <TextInput
-              id="login-email"
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@company.com"
-            />
-          </FormField>
-          <FormField label="Password" htmlFor="login-password" required>
-            <TextInput
-              id="login-password"
-              required
-              type="password"
-              maxLength={128}
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </FormField>
-          {factorRequired && (
-            <>
-              <FormField
-                label={useRecovery ? "Recovery code" : "Authenticator code"}
-                htmlFor="login-factor"
-                required
-              >
-                <TextInput
-                  id="login-factor"
-                  required
-                  inputMode={useRecovery ? "text" : "numeric"}
-                  autoComplete="one-time-code"
-                  value={factor}
-                  onChange={(event) => setFactor(event.target.value)}
-                  placeholder={useRecovery ? "xxxxxx-xxxxxx" : "000000"}
-                />
-              </FormField>
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => {
-                  setUseRecovery((value) => !value);
-                  setFactor("");
-                }}
-              >
-                {useRecovery ? "Use authenticator code" : "Use a recovery code"}
-              </Button>
-            </>
-          )}
-          <Button className="auth-submit" disabled={busy} type="submit" fullWidth>
-            {busy ? "Please wait…" : "Sign in"}
-            <ArrowRight size={14} />
-          </Button>
-        </form>
-        <Link className="popover-footer" href="/recover">
-          Forgot your password?
-        </Link>
-        <p className="auth-switch">
-          New to PolicyOS? <Link href="/signup">Sign up</Link>
-        </p>
-        <div className="auth-security">
-          <LockKeyhole size={13} />
-          <span>Your session is stored in a secure, HTTP-only cookie.</span>
+    <AuthFrame
+      eyebrow="Welcome back"
+      title="Sign in to PolicyOS"
+      titleId="login-title"
+      description="Use the account created for this PolicyOS workspace."
+      icon={<LockKeyhole size={20} />}
+    >
+      {error && (
+        <div className="error-banner auth-message" role="alert">
+          <CircleAlert size={14} />
+          {error}
         </div>
-      </section>
-    </main>
+      )}
+      <form className="auth-form" onSubmit={submit}>
+        <FormField label="Email address" htmlFor="login-email" required>
+          <TextInput
+            id="login-email"
+            required
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@company.com"
+          />
+        </FormField>
+        <FormField label="Password" htmlFor="login-password" required>
+          <TextInput
+            id="login-password"
+            required
+            type="password"
+            maxLength={128}
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </FormField>
+        {factorRequired && (
+          <>
+            <FormField
+              label={useRecovery ? "Recovery code" : "Authenticator code"}
+              htmlFor="login-factor"
+              required
+            >
+              <TextInput
+                id="login-factor"
+                required
+                inputMode={useRecovery ? "text" : "numeric"}
+                autoComplete="one-time-code"
+                value={factor}
+                onChange={(event) => setFactor(event.target.value)}
+                placeholder={useRecovery ? "xxxxxx-xxxxxx" : "000000"}
+              />
+            </FormField>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                setUseRecovery((value) => !value);
+                setFactor("");
+              }}
+            >
+              {useRecovery ? "Use authenticator code" : "Use a recovery code"}
+            </Button>
+          </>
+        )}
+        <Button className="auth-submit" disabled={busy} type="submit" fullWidth>
+          {busy ? "Please wait…" : "Sign in"}
+          <ArrowRight size={14} />
+        </Button>
+      </form>
+      <Link className="popover-footer" href="/recover">
+        Forgot your password?
+      </Link>
+      <p className="auth-switch">
+        New to PolicyOS? <Link href="/signup">Sign up</Link>
+      </p>
+      <div className="auth-security">
+        <LockKeyhole size={13} />
+        <span>Your session is stored in a secure, HTTP-only cookie.</span>
+      </div>
+    </AuthFrame>
   );
 }

@@ -206,6 +206,7 @@ export function AppShell({
     }));
   const isStandalonePage =
     ["/", "/login", "/signup", "/setup", "/recover"].includes(pathname) ||
+    pathname.startsWith("/oauth/authorize") ||
     pathname.startsWith("/learn");
   const isActive = (href: string) => (href === "/" ? pathname === href : pathname.startsWith(href));
   const currentPage =

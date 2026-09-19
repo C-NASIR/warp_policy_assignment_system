@@ -26,6 +26,13 @@
   --brand-accent-ink: #b72c00;
   --focus-ring: rgb(255 61 0 / 0.18);
 
+  /* Public marketing and authentication */
+  --public-canvas: #f7f4ed;
+  --public-ink: #171614;
+  --public-accent: #ff4f17;
+  --public-highlight: #ecf687;
+  --public-line: rgb(23 22 20 / 0.17);
+
   /* Semantic states */
   --info: #0090ff;
   --info-soft: #e9f4ff;

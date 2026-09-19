@@ -4,6 +4,7 @@ import { ArrowRight, Check, CircleAlert, LockKeyhole, ShieldCheck } from "lucide
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
+import { AuthFrame } from "@/components/features/auth/auth-frame/auth-frame";
 import { Button, FormField, TextInput } from "@/components/ui";
 import { firstAllowedPath } from "@/lib/permissions";
 import type { CurrentUser } from "@/lib/types";
@@ -44,100 +45,98 @@ export function SetupForm() {
       router.replace(firstAllowedPath(result as CurrentUser));
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Workspace setup could not be completed.");
+      setError(
+        reason instanceof Error ? reason.message : "Workspace setup could not be completed.",
+      );
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card" aria-labelledby="setup-title">
-        <Link href="/" className="auth-brand" aria-label="PolicyOS home">
-          <span className="brand-mark">P</span>
-          <span>
-            <strong>PolicyOS</strong>
-            <small>Assignment engine</small>
-          </span>
-        </Link>
-        <div className="auth-icon">
-          <ShieldCheck size={21} />
+    <AuthFrame
+      eyebrow="Workspace setup"
+      title="Create the Root account"
+      titleId="setup-title"
+      description="Create the first administrator account to set up your workspace. You can add your team once you’re inside."
+      icon={<ShieldCheck size={21} />}
+      contextLabel="Start with accountable access"
+      contextTitle="One trusted administrator starts the workspace."
+      contextBody="The Root account establishes the first security boundary. Additional users and roles can be created after setup is complete."
+      contextPoints={[
+        "Root setup closes after the first account",
+        "Passwords require at least 12 characters",
+        "Roles and access can be delegated in-product",
+      ]}
+    >
+      {error && (
+        <div className="error-banner auth-message" role="alert">
+          <CircleAlert size={14} />
+          {error}
         </div>
-        <p className="eyebrow">Workspace setup</p>
-        <h1 id="setup-title">Create the Root account</h1>
-        <p className="page-subtitle">
-          Create the first administrator account to set up your workspace. You can add your team
-          once you’re inside.
-        </p>
-        {error && (
-          <div className="error-banner auth-message" role="alert">
-            <CircleAlert size={14} />
-            {error}
-          </div>
-        )}
-        <form className="auth-form" onSubmit={submit}>
-          <FormField label="Full name" htmlFor="setup-name" required>
-            <TextInput
-              id="setup-name"
-              required
-              autoComplete="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. Avery Chen"
-            />
-          </FormField>
-          <FormField label="Email address" htmlFor="setup-email" required>
-            <TextInput
-              id="setup-email"
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@company.com"
-            />
-          </FormField>
-          <FormField label="Password" htmlFor="setup-password" required>
-            <TextInput
-              id="setup-password"
-              required
-              type="password"
-              minLength={12}
-              maxLength={128}
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </FormField>
-          <FormField label="Confirm password" htmlFor="setup-confirmation" required>
-            <TextInput
-              id="setup-confirmation"
-              required
-              type="password"
-              minLength={12}
-              maxLength={128}
-              autoComplete="new-password"
-              value={confirmation}
-              onChange={(event) => setConfirmation(event.target.value)}
-            />
-          </FormField>
-          <div className="auth-requirement">
-            <Check size={13} /> Use at least 12 characters. The password is stored only as a secure
-            hash.
-          </div>
-          <Button className="auth-submit" disabled={busy} type="submit" fullWidth>
-            {busy ? "Please wait…" : "Set up workspace"}
-            <ArrowRight size={14} />
-          </Button>
-        </form>
-        <p className="auth-switch">
-          Already have an account? <Link href="/login">Sign in</Link>
-        </p>
-        <div className="auth-security">
-          <LockKeyhole size={13} />
-          <span>Root setup closes permanently after this account is created.</span>
+      )}
+      <form className="auth-form" onSubmit={submit}>
+        <FormField label="Full name" htmlFor="setup-name" required>
+          <TextInput
+            id="setup-name"
+            required
+            autoComplete="name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="e.g. Avery Chen"
+          />
+        </FormField>
+        <FormField label="Email address" htmlFor="setup-email" required>
+          <TextInput
+            id="setup-email"
+            required
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@company.com"
+          />
+        </FormField>
+        <FormField label="Password" htmlFor="setup-password" required>
+          <TextInput
+            id="setup-password"
+            required
+            type="password"
+            minLength={12}
+            maxLength={128}
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </FormField>
+        <FormField label="Confirm password" htmlFor="setup-confirmation" required>
+          <TextInput
+            id="setup-confirmation"
+            required
+            type="password"
+            minLength={12}
+            maxLength={128}
+            autoComplete="new-password"
+            value={confirmation}
+            onChange={(event) => setConfirmation(event.target.value)}
+          />
+        </FormField>
+        <div className="auth-requirement">
+          <Check size={13} /> Use at least 12 characters. The password is stored only as a secure
+          hash.
         </div>
-      </section>
-    </main>
+        <Button className="auth-submit" disabled={busy} type="submit" fullWidth>
+          {busy ? "Please wait…" : "Set up workspace"}
+          <ArrowRight size={14} />
+        </Button>
+      </form>
+      <p className="auth-switch">
+        Already have an account? <Link href="/login">Sign in</Link>
+      </p>
+      <div className="auth-security">
+        <LockKeyhole size={13} />
+        <span>Root setup closes permanently after this account is created.</span>
+      </div>
+    </AuthFrame>
   );
 }

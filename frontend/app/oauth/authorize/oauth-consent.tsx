@@ -2,6 +2,7 @@
 
 import { CircleAlert, LockKeyhole } from "lucide-react";
 import { useState } from "react";
+import { AuthFrame } from "@/components/features/auth";
 import { Button } from "@/components/ui";
 import type { OAuthAuthorizationRequest } from "@/lib/backend";
 
@@ -41,7 +42,9 @@ export function OAuthConsent({ request }: { request: AuthorizationParameters }) 
       };
       if (!response.ok || !result.redirect_uri) {
         throw new Error(
-          result.error_description ?? result.error?.message ?? "Authorization could not be completed.",
+          result.error_description ??
+            result.error?.message ??
+            "Authorization could not be completed.",
         );
       }
       window.location.assign(result.redirect_uri);
@@ -52,40 +55,40 @@ export function OAuthConsent({ request }: { request: AuthorizationParameters }) 
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card" aria-labelledby="authorization-title">
-        <div className="auth-brand" aria-label="PolicyOS">
-          <span className="brand-mark">P</span>
-          <span>
-            <strong>PolicyOS</strong>
-            <small>Agent access</small>
-          </span>
+    <AuthFrame
+      eyebrow="Connect an agent"
+      title={<>Allow {request.client_name} to use PolicyOS?</>}
+      titleId="authorization-title"
+      description="The agent will act as you. PolicyOS will apply your current permissions, employee visibility, and assignment-field visibility to every request."
+      icon={<LockKeyhole size={21} />}
+      brandDetail="Agent access"
+      contextLabel="User-bound authorization"
+      contextTitle="Agent access never becomes an authorization shortcut."
+      contextBody="The connected client receives only the access already granted to you. PolicyOS keeps validation, role checks, and audit behavior on the same trusted path."
+      contextPoints={[
+        "OAuth authorization code flow with PKCE",
+        "Your current permissions apply to every request",
+        "Passwords and MFA codes are never shared",
+      ]}
+    >
+      {error && (
+        <div className="error-banner auth-message" role="alert">
+          <CircleAlert size={14} />
+          {error}
         </div>
-        <p className="eyebrow">Connect an agent</p>
-        <h1 id="authorization-title">Allow {request.client_name} to use PolicyOS?</h1>
-        <p className="page-subtitle">
-          The agent will act as you. PolicyOS will apply your current permissions, employee
-          visibility, and assignment-field visibility to every request.
-        </p>
-        {error && (
-          <div className="error-banner auth-message" role="alert">
-            <CircleAlert size={14} />
-            {error}
-          </div>
-        )}
-        <div className="auth-security">
-          <LockKeyhole size={13} />
-          <span>Your password and MFA codes are never shared with the agent.</span>
-        </div>
-        <div className="auth-actions">
-          <Button disabled={busy} fullWidth onClick={() => decide(true)}>
-            {busy ? "Please wait…" : "Allow access"}
-          </Button>
-          <Button disabled={busy} fullWidth variant="secondary" onClick={() => decide(false)}>
-            Deny
-          </Button>
-        </div>
-      </section>
-    </main>
+      )}
+      <div className="auth-security">
+        <LockKeyhole size={13} />
+        <span>Your password and MFA codes are never shared with the agent.</span>
+      </div>
+      <div className="auth-actions">
+        <Button disabled={busy} fullWidth onClick={() => decide(true)}>
+          {busy ? "Please wait…" : "Allow access"}
+        </Button>
+        <Button disabled={busy} fullWidth variant="secondary" onClick={() => decide(false)}>
+          Deny
+        </Button>
+      </div>
+    </AuthFrame>
   );
 }

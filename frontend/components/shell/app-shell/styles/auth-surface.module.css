@@ -6,23 +6,156 @@
 .productScope :global(.auth-page) {
   min-height: 100vh;
   display: grid;
+  grid-template-columns: minmax(340px, 0.9fr) minmax(500px, 1.1fr);
+  background: #f7f4ed;
+  color: #171614;
+}
+.productScope :global(.auth-context) {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(32px, 5vw, 72px);
+  overflow: hidden;
+  background: #171614;
+  color: #f7f4ed;
+}
+.productScope :global(.auth-context::before) {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgb(247 244 237 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(247 244 237 / 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+}
+.productScope :global(.auth-context::after) {
+  content: "";
+  position: absolute;
+  right: -90px;
+  bottom: 11%;
+  width: 220px;
+  height: 220px;
+  border: 1px solid #ff4f17;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.productScope :global(.auth-context-brand),
+.productScope :global(.auth-context-copy),
+.productScope :global(.auth-context-footer) {
+  position: relative;
+  z-index: 1;
+}
+.productScope :global(.auth-context-brand) {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 720;
+  letter-spacing: -0.04em;
+}
+.productScope :global(.auth-context .brand-mark) {
+  border: 1px solid #f7f4ed;
+  border-radius: 0;
+  background: #ff4f17;
+  color: #171614;
+}
+.productScope :global(.auth-context-copy) {
+  width: min(600px, 100%);
+  margin-block: 80px;
+}
+.productScope :global(.auth-context-label) {
+  margin-bottom: 20px;
+  color: #ff7245;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.productScope :global(.auth-context h2) {
+  max-width: 620px;
+  margin-bottom: 25px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(40px, 5vw, 74px);
+  font-weight: 500;
+  letter-spacing: -0.075em;
+  line-height: 0.98;
+}
+.productScope :global(.auth-context-copy > p:not(.auth-context-label)) {
+  max-width: 540px;
+  color: rgb(247 244 237 / 0.62);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.productScope :global(.auth-context ul) {
+  display: grid;
+  gap: 11px;
+  margin: 34px 0 0;
+  padding: 22px 0 0;
+  border-top: 1px solid rgb(247 244 237 / 0.18);
+  list-style: none;
+}
+.productScope :global(.auth-context li) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: rgb(247 244 237 / 0.72);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+}
+.productScope :global(.auth-context li svg) {
+  color: #ecf687;
+}
+.productScope :global(.auth-context-footer) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(247 244 237 / 0.18);
+  color: rgb(247 244 237 / 0.46);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.productScope :global(.auth-context-footer a) {
+  color: #f7f4ed;
+}
+.productScope :global(.auth-context-footer a:hover) {
+  color: #ecf687;
+}
+.productScope :global(.auth-stage) {
+  min-width: 0;
+  display: grid;
   place-items: center;
-  padding: 32px 18px;
-  background: radial-gradient(circle at 50% 0%, #f0efff 0, transparent 38%), var(--canvas);
+  padding: 48px clamp(24px, 6vw, 96px);
+  background-image:
+    linear-gradient(to right, rgb(23 22 20 / 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(23 22 20 / 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
 }
 .productScope :global(.auth-card) {
   width: min(440px, 100%);
-  padding: 30px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: rgb(255 255 255 / 0.94);
-  box-shadow: 0 24px 70px rgb(30 30 35 / 0.11);
+  padding: clamp(24px, 4vw, 38px);
+  border: 1px solid #171614;
+  border-radius: 0;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 10px 10px 0 rgb(23 22 20 / 0.11);
 }
 .productScope :global(.auth-brand) {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 34px;
+}
+.productScope :global(.auth-brand .brand-mark) {
+  border-radius: 0;
+  background: #ff4f17;
+  color: #171614;
 }
 .productScope :global(.auth-brand > span:last-child),
 .productScope :global(.auth-brand strong),
@@ -45,12 +178,16 @@
   display: grid;
   place-items: center;
   margin-bottom: 18px;
-  border-radius: 11px;
-  background: var(--accent-soft);
-  color: var(--accent-ink);
+  border: 1px solid #171614;
+  border-radius: 0;
+  background: #ecf687;
+  color: #171614;
 }
 .productScope :global(.auth-card h1) {
-  font-size: 24px;
+  margin-bottom: 10px;
+  font-size: clamp(25px, 3vw, 34px);
+  letter-spacing: -0.055em;
+  line-height: 1.08;
 }
 .productScope :global(.auth-form) {
   display: grid;
@@ -86,6 +223,7 @@
 .productScope :global(.auth-actions) {
   display: grid;
   gap: var(--space-3);
+  margin-top: 23px;
 }
 .productScope :global(.auth-switch) {
   display: block;
@@ -114,6 +252,61 @@
 .productScope :global(.auth-security svg) {
   color: var(--accent-ink);
 }
+
+@media (max-width: 900px) {
+  .productScope :global(.auth-page) {
+    grid-template-columns: 1fr;
+  }
+  .productScope :global(.auth-context) {
+    min-height: auto;
+    padding: 24px;
+  }
+  .productScope :global(.auth-context-copy) {
+    margin-block: 58px 40px;
+  }
+  .productScope :global(.auth-context h2) {
+    max-width: 680px;
+    font-size: clamp(38px, 8vw, 66px);
+  }
+  .productScope :global(.auth-context ul) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .productScope :global(.auth-stage) {
+    min-height: 700px;
+    padding-block: 64px;
+  }
+}
+
+@media (max-width: 600px) {
+  .productScope :global(.auth-context-copy) {
+    margin-block: 42px 0;
+  }
+  .productScope :global(.auth-context h2) {
+    max-width: 340px;
+    margin-bottom: 0;
+    font-size: 34px;
+  }
+  .productScope :global(.auth-context-copy > p:not(.auth-context-label)),
+  .productScope :global(.auth-context ul),
+  .productScope :global(.auth-context-footer) {
+    display: none;
+  }
+  .productScope :global(.auth-context::after) {
+    right: -76px;
+    bottom: -96px;
+    width: 180px;
+    height: 180px;
+  }
+  .productScope :global(.auth-stage) {
+    min-height: auto;
+    padding: 36px 16px 48px;
+  }
+  .productScope :global(.auth-card) {
+    padding: 24px 20px;
+    box-shadow: 6px 6px 0 rgb(23 22 20 / 0.11);
+  }
+}
+
 .productScope :global(.security-panel) {
   max-width: 700px;
 }
