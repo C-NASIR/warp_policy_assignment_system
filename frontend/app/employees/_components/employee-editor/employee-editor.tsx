@@ -2,7 +2,7 @@
 
 import { Check, CircleAlert, Eye, RefreshCw, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ManagerCombobox } from "./manager-combobox";
 import { EmployeeAssignmentPreviewPanel } from "./employee-assignment-preview";
 import { formatEmployeeId } from "@/lib/format";
@@ -28,6 +28,20 @@ const createBlankEmployee = (): EmployeeInput => ({
   manager_id: null,
 });
 
+function createEmployeeInput(employee?: Employee): EmployeeInput {
+  return employee
+    ? {
+        name: employee.name,
+        state: employee.state,
+        department: employee.department,
+        employee_type: employee.employee_type,
+        location: employee.location,
+        start_date: employee.start_date,
+        manager_id: employee.manager_id,
+      }
+    : createBlankEmployee();
+}
+
 export function EmployeeEditor({
   employee,
   manager,
@@ -44,20 +58,9 @@ export function EmployeeEditor({
   trigger?: ReactNode;
 }) {
   const router = useRouter();
+  const requestController = useRef<AbortController | null>(null);
   const [open, setOpen] = useState(!compact);
-  const [data, setData] = useState<EmployeeInput>(() =>
-    employee
-      ? {
-          name: employee.name,
-          state: employee.state,
-          department: employee.department,
-          employee_type: employee.employee_type,
-          location: employee.location,
-          start_date: employee.start_date,
-          manager_id: employee.manager_id,
-        }
-      : createBlankEmployee(),
-  );
+  const [data, setData] = useState<EmployeeInput>(() => createEmployeeInput(employee));
   const [preview, setPreview] = useState<EmployeeAssignmentPreview | null>(null);
   const [previewStale, setPreviewStale] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -75,8 +78,7 @@ export function EmployeeEditor({
   const [referenceLoading, setReferenceLoading] = useState(false);
   const [referenceError, setReferenceError] = useState("");
   useModalAccessibility(compact && open, () => {
-    resetReauthentication();
-    setOpen(false);
+    closeEditor();
   });
   useEffect(() => {
     if (!compact || !success) return;
@@ -119,6 +121,31 @@ export function EmployeeEditor({
     setMfaInvalid(false);
   }
 
+  function resetEditorSession() {
+    requestController.current?.abort();
+    requestController.current = null;
+    setData(createEmployeeInput(employee));
+    setPreview(null);
+    setPreviewStale(false);
+    setSubmitting(false);
+    setValidationAttempted(false);
+    setSuccess("");
+    setError("");
+    setReferenceError("");
+    resetReauthentication();
+  }
+
+  function openEditor() {
+    resetEditorSession();
+    setOpen(true);
+    void loadReferenceData();
+  }
+
+  function closeEditor() {
+    resetEditorSession();
+    setOpen(false);
+  }
+
   async function loadReferenceData() {
     if (referenceData || referenceLoading) return;
     setReferenceLoading(true);
@@ -155,11 +182,15 @@ export function EmployeeEditor({
     setError("");
     if (preview) setPreviewStale(true);
     setSubmitting(true);
+    const controller = new AbortController();
+    requestController.current?.abort();
+    requestController.current = controller;
     try {
       const response = await fetch("/api/backend/change-previews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(change),
+        signal: controller.signal,
       });
       const result = await response.json();
       if (!response.ok || result.valid === false)
@@ -172,15 +203,22 @@ export function EmployeeEditor({
       setPreviewStale(false);
       resetReauthentication();
     } catch (reason) {
+      if ((reason as Error).name === "AbortError") return;
       setError(reason instanceof Error ? reason.message : "Unable to preview this change.");
     } finally {
-      setSubmitting(false);
+      if (requestController.current === controller) {
+        requestController.current = null;
+        setSubmitting(false);
+      }
     }
   }
 
   async function confirm() {
     setSubmitting(true);
     setError("");
+    const controller = new AbortController();
+    requestController.current?.abort();
+    requestController.current = controller;
     try {
       if (reauthenticationRequired) {
         const missingPassword = !password;
@@ -200,6 +238,7 @@ export function EmployeeEditor({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ password, ...(mfaCode ? { mfa_code: mfaCode } : {}) }),
+          signal: controller.signal,
         });
         if (!reauthenticationResponse.ok) {
           const failure = await requestFailure(reauthenticationResponse);
@@ -218,6 +257,7 @@ export function EmployeeEditor({
         method: employee ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
       if (!response.ok) {
         const failure = await requestFailure(response);
@@ -236,14 +276,19 @@ export function EmployeeEditor({
         setData(createBlankEmployee());
         router.push("/employees");
       } else {
+        resetEditorSession();
         setSuccess("Employee updated and assignments recalculated.");
         setOpen(false);
         router.refresh();
       }
     } catch (reason) {
+      if ((reason as Error).name === "AbortError") return;
       setError(reason instanceof Error ? reason.message : "Unable to save this change.");
     } finally {
-      setSubmitting(false);
+      if (requestController.current === controller) {
+        requestController.current = null;
+        setSubmitting(false);
+      }
     }
   }
 
@@ -515,16 +560,7 @@ export function EmployeeEditor({
           {success}
         </div>
       )}
-      <Button
-        variant="secondary"
-        onClick={() => {
-          setSuccess("");
-          setError("");
-          resetReauthentication();
-          setOpen(true);
-          void loadReferenceData();
-        }}
-      >
+      <Button variant="secondary" onClick={openEditor}>
         {trigger}
       </Button>
       {open && (
@@ -537,14 +573,7 @@ export function EmployeeEditor({
           >
             <div className="modal-head">
               <h2>Edit {employee?.name}</h2>
-              <button
-                className="icon-button"
-                onClick={() => {
-                  resetReauthentication();
-                  setOpen(false);
-                }}
-                aria-label="Close editor"
-              >
+              <button className="icon-button" onClick={closeEditor} aria-label="Close editor">
                 <X size={16} />
               </button>
             </div>

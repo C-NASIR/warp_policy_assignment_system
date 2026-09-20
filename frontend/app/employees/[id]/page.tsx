@@ -117,30 +117,6 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
       </section>
       <div className={canReadAssignments ? "detail-grid" : "section-stack"}>
         <div className="section-stack">
-          {canReadAssignments && (
-            <Panel>
-              <PanelHeader
-                title="Current assignments"
-                action={<Badge tone="success">{assignments.length} resolved</Badge>}
-              />
-              <PanelBody>
-                {assignments.length ? (
-                  <div className="assignment-list">
-                    {assignments.map((item) => (
-                      <AssignmentCard
-                        assignment={item}
-                        canViewPolicies={hasPermission(user, "policies:read")}
-                        canViewGroups={hasPermission(user, "groups:read")}
-                        key={item.id}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty-state">No active assignments.</div>
-                )}
-              </PanelBody>
-            </Panel>
-          )}
           <Panel>
             <PanelHeader title="Employee profile" />
             <PanelBody>
@@ -173,6 +149,30 @@ export default async function EmployeeDetailPage({ params }: PageProps<"/employe
               </div>
             </PanelBody>
           </Panel>
+          {canReadAssignments && (
+            <Panel>
+              <PanelHeader
+                title="Current assignments"
+                action={<Badge tone="success">{assignments.length} resolved</Badge>}
+              />
+              <PanelBody>
+                {assignments.length ? (
+                  <div className="assignment-list">
+                    {assignments.map((item) => (
+                      <AssignmentCard
+                        assignment={item}
+                        canViewPolicies={hasPermission(user, "policies:read")}
+                        canViewGroups={hasPermission(user, "groups:read")}
+                        key={item.id}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state">No active assignments.</div>
+                )}
+              </PanelBody>
+            </Panel>
+          )}
           {canReadAssignments && (
             <OverrideManager
               key={`${overrides.map((item) => item.id).join("-")}:${historyPage.total}`}
