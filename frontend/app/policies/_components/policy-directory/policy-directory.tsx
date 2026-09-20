@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, BookOpenCheck, Search, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
-import { PaginationControls } from "@/components/shared";
+import {
+  AppliedFilterRow,
+  DirectoryLoadingState,
+  DirectoryResultsStatus,
+  PaginationControls,
+  useFilterNavigation,
+} from "@/components/shared";
 import { Badge, Button, DataTable, Panel, TextInput } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import type { Policy, PolicyImpact } from "@/lib/types";
@@ -24,13 +29,18 @@ export function PolicyDirectory({
   offset: number;
   filters: { search: string; status: string };
 }) {
-  const router = useRouter();
+  const navigation = useFilterNavigation(filters);
   const [search, setSearch] = useState(filters.search);
   const [status, setStatus] = useState(filters.status);
   const [sort, setSort] = useState<{
     key: "name" | "priority" | "effective" | "impact" | "status";
     direction: "asc" | "desc";
   }>({ key: "name", direction: "asc" });
+  const applied = navigation.filters;
+  const activeFilters = applied.search
+    ? [{ key: "search", label: `Search: ${applied.search}` }]
+    : [];
+
   const sorted = [...policies].sort((left, right) => {
     const leftVersion = left.versions.at(-1);
     const rightVersion = right.versions.at(-1);
@@ -62,12 +72,15 @@ export function PolicyDirectory({
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());
     if (status) query.set("status", status);
-    router.push(query.size ? `/policies?${query}` : "/policies");
+    navigation.navigate(query.size ? `/policies?${query}` : "/policies", {
+      search: search.trim(),
+      status,
+    });
   }
   function resetFilters() {
     setSearch("");
     setStatus("all");
-    router.push("/policies?status=all");
+    navigation.navigate("/policies?status=all", { search: "", status: "all" });
   }
 
   function selectStatus(nextStatus: string) {
@@ -75,12 +88,15 @@ export function PolicyDirectory({
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());
     query.set("status", nextStatus);
-    router.push(`/policies?${query}`);
+    navigation.navigate(`/policies?${query}`, { search: search.trim(), status: nextStatus });
   }
 
   function clearSearch() {
     setSearch("");
-    router.push(`/policies?status=${status}`);
+    navigation.navigate(`/policies?status=${applied.status}`, {
+      search: "",
+      status: applied.status,
+    });
   }
   return (
     <>
@@ -88,7 +104,9 @@ export function PolicyDirectory({
         <div className="directory-controls-head">
           <div>
             <span className="section-kicker">Policy library</span>
-            <strong>{total} policies in this view</strong>
+            <strong>
+              {navigation.isPending ? "Loading policies…" : `${total} policies in this view`}
+            </strong>
           </div>
           <div className="filter-tabs" role="group" aria-label="Filter policies by status">
             {[
@@ -98,11 +116,11 @@ export function PolicyDirectory({
               ["all", "All"],
             ].map(([value, label]) => (
               <button
-                className={status === value ? "active" : undefined}
+                className={applied.status === value ? "active" : undefined}
                 type="button"
                 key={value}
                 onClick={() => selectStatus(value)}
-                aria-pressed={status === value}
+                aria-pressed={applied.status === value}
               >
                 {label}
               </button>
@@ -125,27 +143,16 @@ export function PolicyDirectory({
               Search
             </Button>
           </div>
-          <span className="results-count">Sorted by {sort.key}</span>
+          <DirectoryResultsStatus pending={navigation.isPending}>
+            Sorted by {sort.key}
+          </DirectoryResultsStatus>
         </form>
-        {filters.search && (
-          <div className="active-filter-row" aria-label="Applied filters">
-            <span>Applied</span>
-            <button
-              className="filter-chip"
-              type="button"
-              onClick={clearSearch}
-              aria-label={`Remove search filter ${filters.search}`}
-            >
-              Search: {filters.search} <X size={11} aria-hidden="true" />
-            </button>
-            <button className="clear-filters" type="button" onClick={resetFilters}>
-              Reset view
-            </button>
-          </div>
-        )}
+        <AppliedFilterRow filters={activeFilters} onRemove={clearSearch} onClear={resetFilters} />
       </section>
-      <Panel as="div" clipped>
-        {sorted.length ? (
+      <Panel as="div" clipped aria-busy={navigation.isPending}>
+        {navigation.isPending ? (
+          <DirectoryLoadingState label="Loading policies…" />
+        ) : sorted.length ? (
           <DataTable>
             <thead>
               <tr>
@@ -224,14 +231,16 @@ export function PolicyDirectory({
             </button>
           </div>
         )}
-        <PaginationControls
-          path="/policies"
-          params={{ search: filters.search, status: filters.status }}
-          total={total}
-          limit={limit}
-          offset={offset}
-          itemLabel="policies"
-        />
+        {!navigation.isPending && (
+          <PaginationControls
+            path="/policies"
+            params={{ search: filters.search, status: filters.status }}
+            total={total}
+            limit={limit}
+            offset={offset}
+            itemLabel="policies"
+          />
+        )}
       </Panel>
     </>
   );

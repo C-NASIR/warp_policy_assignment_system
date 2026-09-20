@@ -1,9 +1,13 @@
 "use client";
 
-import { ChevronDown, ChevronUp, FilterX, Search, ScrollText } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronUp, Search, ScrollText } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
-import { PaginationControls } from "@/components/shared";
+import {
+  AppliedFilterRow,
+  DirectoryResultsStatus,
+  PaginationControls,
+  useFilterNavigation,
+} from "@/components/shared";
 import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import { formatDate, titleCase } from "@/lib/format";
 import type { AuditLog, AuditLogFacets } from "@/lib/types";
@@ -23,19 +27,54 @@ export function AuditLogExplorer({
   offset: number;
   filters: { search: string; entityType: string; action: string };
 }) {
-  const router = useRouter();
+  const navigation = useFilterNavigation(filters);
   const [search, setSearch] = useState(filters.search);
   const [entity, setEntity] = useState(filters.entityType);
   const [action, setAction] = useState(filters.action);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const hasFilters = Boolean(filters.search || filters.entityType || filters.action);
+  const applied = navigation.filters;
+  const activeFilters = [
+    applied.search ? { key: "search", label: `Search: ${applied.search}` } : null,
+    applied.entityType
+      ? { key: "entity_type", label: `Entity: ${titleCase(applied.entityType)}` }
+      : null,
+    applied.action ? { key: "action", label: `Action: ${titleCase(applied.action)}` } : null,
+  ].filter((item): item is { key: string; label: string } => Boolean(item));
+
   function applyFilters(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());
     if (entity) query.set("entity_type", entity);
     if (action) query.set("action", action);
-    router.push(query.size ? `/audit?${query}` : "/audit");
+    navigation.navigate(query.size ? `/audit?${query}` : "/audit", {
+      search: search.trim(),
+      entityType: entity,
+      action,
+    });
+  }
+
+  function clearFilters() {
+    setSearch("");
+    setEntity("");
+    setAction("");
+    navigation.navigate("/audit", { search: "", entityType: "", action: "" });
+  }
+
+  function removeFilter(key: string) {
+    const next = {
+      search: key === "search" ? "" : applied.search,
+      entityType: key === "entity_type" ? "" : applied.entityType,
+      action: key === "action" ? "" : applied.action,
+    };
+    if (key === "search") setSearch("");
+    if (key === "entity_type") setEntity("");
+    if (key === "action") setAction("");
+    const query = new URLSearchParams();
+    if (next.search) query.set("search", next.search);
+    if (next.entityType) query.set("entity_type", next.entityType);
+    if (next.action) query.set("action", next.action);
+    navigation.navigate(query.size ? `/audit?${query}` : "/audit", next);
   }
 
   return (
@@ -52,69 +91,69 @@ export function AuditLogExplorer({
           <ScrollText size={11} /> Append-only
         </Badge>
       </div>
-      <form className="toolbar" onSubmit={applyFilters}>
-        <div className="toolbar-left">
-          <label className="search-box">
-            <Search size={14} />
-            <TextInput
-              className="input"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search actor or change"
-              aria-label="Search audit log"
-            />
-          </label>
-          <SelectInput
-            className="filter-select"
-            value={entity}
-            onChange={(event) => setEntity(event.target.value)}
-            aria-label="Filter by entity"
-          >
-            <option value="">All entities</option>
-            {facets.entity_types.map((item) => (
-              <option key={item} value={item}>
-                {titleCase(item)}
-              </option>
-            ))}
-          </SelectInput>
-          <SelectInput
-            className="filter-select"
-            value={action}
-            onChange={(event) => setAction(event.target.value)}
-            aria-label="Filter by action"
-          >
-            <option value="">All actions</option>
-            {facets.actions.map((item) => (
-              <option key={item} value={item}>
-                {titleCase(item)}
-              </option>
-            ))}
-          </SelectInput>
-          <Button variant="secondary" type="submit">
-            Apply
-          </Button>
-          {hasFilters && (
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => {
-                setSearch("");
-                setEntity("");
-                setAction("");
-                router.push("/audit");
-              }}
-            >
-              <FilterX size={13} /> Clear
-            </Button>
-          )}
+      <section className="directory-controls" aria-label="Audit log controls">
+        <div className="directory-controls-head">
+          <div>
+            <span className="section-kicker">Audit trail</span>
+            <strong>{total} events</strong>
+          </div>
+          <DirectoryResultsStatus pending={navigation.isPending}>
+            {activeFilters.length
+              ? `${activeFilters.length} active ${activeFilters.length === 1 ? "filter" : "filters"}`
+              : "Showing all events"}
+          </DirectoryResultsStatus>
         </div>
-        <span className="results-count" role="status">
-          {total
-            ? `${offset + 1}–${Math.min(offset + limit, total)} of ${total} events`
-            : "0 events"}
-        </span>
-      </form>
-      <Panel as="div" clipped>
+        <form className="toolbar" onSubmit={applyFilters}>
+          <div className="toolbar-left">
+            <label className="search-box">
+              <Search size={14} />
+              <TextInput
+                className="input"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search actor or change"
+                aria-label="Search audit log"
+              />
+            </label>
+            <SelectInput
+              className="filter-select"
+              value={entity}
+              onChange={(event) => setEntity(event.target.value)}
+              aria-label="Filter by entity"
+            >
+              <option value="">All entities</option>
+              {facets.entity_types.map((item) => (
+                <option key={item} value={item}>
+                  {titleCase(item)}
+                </option>
+              ))}
+            </SelectInput>
+            <SelectInput
+              className="filter-select"
+              value={action}
+              onChange={(event) => setAction(event.target.value)}
+              aria-label="Filter by action"
+            >
+              <option value="">All actions</option>
+              {facets.actions.map((item) => (
+                <option key={item} value={item}>
+                  {titleCase(item)}
+                </option>
+              ))}
+            </SelectInput>
+            <Button variant="secondary" type="submit">
+              Apply filters
+            </Button>
+          </div>
+          <span className="results-count">
+            {total
+              ? `${offset + 1}–${Math.min(offset + limit, total)} of ${total} events`
+              : "0 events"}
+          </span>
+        </form>
+        <AppliedFilterRow filters={activeFilters} onRemove={removeFilter} onClear={clearFilters} />
+      </section>
+      <Panel as="div" className="results-region" clipped aria-busy={navigation.isPending}>
         <div className="audit-table-scroll">
           <DataTable className="audit-table">
             <colgroup>

@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search, Users, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
-import { PaginationControls, StateCombobox } from "@/components/shared";
+import {
+  AppliedFilterRow,
+  DirectoryResultsStatus,
+  PaginationControls,
+  StateCombobox,
+  useFilterNavigation,
+} from "@/components/shared";
 import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import { formatEmployeeId, initials } from "@/lib/format";
 import type { EmployeeDirectoryItem, EmployeeReferenceData } from "@/lib/types";
@@ -25,7 +30,7 @@ export function EmployeeDirectory({
   offset: number;
   filters: { search: string; state: string; department: string; employeeType: string };
 }) {
-  const router = useRouter();
+  const navigation = useFilterNavigation(filters);
   const [search, setSearch] = useState(filters.search);
   const [state, setState] = useState(filters.state);
   const [department, setDepartment] = useState(filters.department);
@@ -34,11 +39,12 @@ export function EmployeeDirectory({
     key: "name" | "department" | "location" | "employee_type";
     direction: "asc" | "desc";
   }>({ key: "name", direction: "asc" });
+  const applied = navigation.filters;
   const activeFilters = [
-    filters.search ? { key: "search", label: `Search: ${filters.search}` } : null,
-    filters.state ? { key: "state", label: `State: ${filters.state}` } : null,
-    filters.department ? { key: "department", label: filters.department } : null,
-    filters.employeeType ? { key: "employee_type", label: filters.employeeType } : null,
+    applied.search ? { key: "search", label: `Search: ${applied.search}` } : null,
+    applied.state ? { key: "state", label: `State: ${applied.state}` } : null,
+    applied.department ? { key: "department", label: applied.department } : null,
+    applied.employeeType ? { key: "employee_type", label: applied.employeeType } : null,
   ].filter((item): item is { key: string; label: string } => Boolean(item));
 
   const sorted = [...employees].sort((left, right) => {
@@ -66,7 +72,12 @@ export function EmployeeDirectory({
     if (state) query.set("state", state);
     if (department) query.set("department", department);
     if (type) query.set("employee_type", type);
-    router.push(query.size ? `/employees?${query}` : "/employees");
+    navigation.navigate(query.size ? `/employees?${query}` : "/employees", {
+      search: search.trim(),
+      state,
+      department,
+      employeeType: type,
+    });
   }
 
   function resetFilters() {
@@ -74,21 +85,31 @@ export function EmployeeDirectory({
     setState("");
     setDepartment("");
     setType("");
-    router.push("/employees");
+    navigation.navigate("/employees", {
+      search: "",
+      state: "",
+      department: "",
+      employeeType: "",
+    });
   }
 
   function removeFilter(key: string) {
     const query = new URLSearchParams();
-    if (filters.search && key !== "search") query.set("search", filters.search);
-    if (filters.state && key !== "state") query.set("state", filters.state);
-    if (filters.department && key !== "department") query.set("department", filters.department);
-    if (filters.employeeType && key !== "employee_type")
-      query.set("employee_type", filters.employeeType);
+    if (applied.search && key !== "search") query.set("search", applied.search);
+    if (applied.state && key !== "state") query.set("state", applied.state);
+    if (applied.department && key !== "department") query.set("department", applied.department);
+    if (applied.employeeType && key !== "employee_type")
+      query.set("employee_type", applied.employeeType);
     if (key === "search") setSearch("");
     if (key === "state") setState("");
     if (key === "department") setDepartment("");
     if (key === "employee_type") setType("");
-    router.push(query.size ? `/employees?${query}` : "/employees");
+    navigation.navigate(query.size ? `/employees?${query}` : "/employees", {
+      search: key === "search" ? "" : applied.search,
+      state: key === "state" ? "" : applied.state,
+      department: key === "department" ? "" : applied.department,
+      employeeType: key === "employee_type" ? "" : applied.employeeType,
+    });
   }
 
   return (
@@ -99,11 +120,11 @@ export function EmployeeDirectory({
             <span className="section-kicker">Directory</span>
             <strong>{total} employees</strong>
           </div>
-          <span className="results-count">
+          <DirectoryResultsStatus pending={navigation.isPending}>
             {activeFilters.length
               ? `${activeFilters.length} active ${activeFilters.length === 1 ? "filter" : "filters"}`
               : "Showing all employees"}
-          </span>
+          </DirectoryResultsStatus>
         </div>
         <form className="toolbar" onSubmit={applyFilters}>
           <div className="toolbar-left">
@@ -152,28 +173,10 @@ export function EmployeeDirectory({
             </Button>
           </div>
         </form>
-        {activeFilters.length > 0 && (
-          <div className="active-filter-row" aria-label="Applied filters">
-            <span>Applied</span>
-            {activeFilters.map((filter) => (
-              <button
-                className="filter-chip"
-                type="button"
-                key={filter.key}
-                onClick={() => removeFilter(filter.key)}
-                aria-label={`Remove ${filter.label} filter`}
-              >
-                {filter.label} <X size={11} aria-hidden="true" />
-              </button>
-            ))}
-            <button className="clear-filters" type="button" onClick={resetFilters}>
-              Clear all
-            </button>
-          </div>
-        )}
+        <AppliedFilterRow filters={activeFilters} onRemove={removeFilter} onClear={resetFilters} />
       </section>
 
-      <Panel as="div" clipped>
+      <Panel as="div" className="results-region" clipped aria-busy={navigation.isPending}>
         {sorted.length ? (
           <DataTable>
             <thead>

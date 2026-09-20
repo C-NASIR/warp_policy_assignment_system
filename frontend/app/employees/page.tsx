@@ -42,6 +42,7 @@ export default async function EmployeesPage({
         )}
       </div>
       <EmployeeDirectory
+        key={`${search}:${state}:${department}:${employeeType}`}
         employees={page.items}
         referenceData={referenceData}
         total={page.total}

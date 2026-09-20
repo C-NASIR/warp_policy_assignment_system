@@ -50,6 +50,7 @@ export default async function PoliciesPage({
         )}
       </div>
       <PolicyDirectory
+        key={`${search}:${status}`}
         policies={page.items}
         impacts={impacts}
         total={page.total}

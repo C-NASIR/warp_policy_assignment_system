@@ -22,6 +22,7 @@ export default async function AuditPage({
   ]);
   return (
     <AuditLogExplorer
+      key={`${search}:${entityType}:${action}`}
       events={page.items}
       facets={facets}
       total={page.total}

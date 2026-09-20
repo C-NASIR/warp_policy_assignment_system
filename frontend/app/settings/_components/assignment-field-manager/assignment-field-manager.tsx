@@ -1,7 +1,7 @@
 "use client";
 
 import { Braces, Check, CircleAlert, Pencil, Plus, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type SubmitEvent, useMemo, useState } from "react";
 import { Badge, Button, DataTable, Panel, SelectInput, TextInput } from "@/components/ui";
 import type { AssignmentField } from "@/lib/types";
 import { useModalAccessibility } from "@/lib/use-modal-accessibility";
@@ -14,6 +14,7 @@ export function AssignmentFieldManager({
   canManage?: boolean;
 }) {
   const [fields, setFields] = useState(initialFields);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [cardinality, setCardinality] = useState("all");
   const [open, setOpen] = useState(false);
@@ -162,14 +163,20 @@ export function AssignmentFieldManager({
           <span>Unique values from every matching policy are merged into a set.</span>
         </div>
       </div>
-      <div className="toolbar">
+      <form
+        className="toolbar"
+        onSubmit={(event: SubmitEvent<HTMLFormElement>) => {
+          event.preventDefault();
+          setSearch(searchInput.trim());
+        }}
+      >
         <div className="toolbar-left">
           <label className="search-box">
             <Search size={14} />
             <TextInput
               className="input"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
               placeholder="Search assignment fields"
               aria-label="Search assignment fields"
             />
@@ -184,9 +191,12 @@ export function AssignmentFieldManager({
             <option value="one">One value</option>
             <option value="many">Many values</option>
           </SelectInput>
+          <Button variant="secondary" type="submit">
+            Apply filters
+          </Button>
         </div>
         <span className="results-count">{filtered.length} fields</span>
-      </div>
+      </form>
       <Panel as="div" clipped>
         <DataTable>
           <thead>
@@ -255,6 +265,7 @@ export function AssignmentFieldManager({
               <button
                 className="text-button"
                 onClick={() => {
+                  setSearchInput("");
                   setSearch("");
                   setCardinality("all");
                 }}

@@ -15,7 +15,12 @@ import {
   X,
 } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useMemo, useState } from "react";
-import { PaginationControls } from "@/components/shared";
+import {
+  AppliedFilterRow,
+  DirectoryResultsStatus,
+  PaginationControls,
+  useFilterNavigation,
+} from "@/components/shared";
 import {
   Badge,
   Button,
@@ -25,7 +30,7 @@ import {
   SelectInput,
   TextInput,
 } from "@/components/ui";
-import { formatEmployeeId } from "@/lib/format";
+import { formatEmployeeId, titleCase } from "@/lib/format";
 import type {
   AssignmentFieldScopeOption,
   CollectionPage,
@@ -186,12 +191,22 @@ function UsersPanel({
   onError(text: string): void;
   onComplete(text: string): void;
 }) {
-  const router = useRouter();
+  const appliedFromServer = useMemo(
+    () => ({ search: filters.search, status: filters.status, role: initialRoleFilter }),
+    [filters.search, filters.status, initialRoleFilter],
+  );
+  const navigation = useFilterNavigation(appliedFromServer);
   const [search, setSearch] = useState(filters.search);
   const [status, setStatus] = useState(filters.status);
   const [role, setRole] = useState<RoleCandidate | null>(initialRoleFilter);
   const [pendingDisable, setPendingDisable] = useState<UserDirectoryItem | null>(null);
   const [disabling, setDisabling] = useState(false);
+  const applied = navigation.filters;
+  const activeFilters = [
+    applied.search ? { key: "search", label: `Search: ${applied.search}` } : null,
+    applied.status ? { key: "status", label: `Status: ${titleCase(applied.status)}` } : null,
+    applied.role ? { key: "role", label: `Role: ${applied.role.name}` } : null,
+  ].filter((item): item is { key: string; label: string } => Boolean(item));
 
   function applyFilters(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -199,14 +214,34 @@ function UsersPanel({
     if (search.trim()) query.set("search", search.trim());
     if (status) query.set("status", status);
     if (role) query.set("role_id", String(role.id));
-    router.push(`/access?${query}`);
+    navigation.navigate(`/access?${query}`, {
+      search: search.trim(),
+      status,
+      role,
+    });
   }
 
   function clearFilters() {
     setSearch("");
     setStatus("");
     setRole(null);
-    router.push("/access?tab=users");
+    navigation.navigate("/access?tab=users", { search: "", status: "", role: null });
+  }
+
+  function removeFilter(key: string) {
+    const next = {
+      search: key === "search" ? "" : applied.search,
+      status: key === "status" ? "" : applied.status,
+      role: key === "role" ? null : applied.role,
+    };
+    if (key === "search") setSearch("");
+    if (key === "status") setStatus("");
+    if (key === "role") setRole(null);
+    const query = new URLSearchParams({ tab: "users" });
+    if (next.search) query.set("search", next.search);
+    if (next.status) query.set("status", next.status);
+    if (next.role) query.set("role_id", String(next.role.id));
+    navigation.navigate(`/access?${query}`, next);
   }
 
   async function disable(user: UserDirectoryItem) {
@@ -223,36 +258,55 @@ function UsersPanel({
 
   return (
     <>
-      <form className="toolbar" onSubmit={applyFilters}>
-        <div className="toolbar-left">
-          <label className="search-box">
-            <Search size={14} />
-            <TextInput
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search users by name or email"
-              aria-label="Search users"
-            />
-          </label>
-          <SelectInput
-            className="filter-select"
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            aria-label="Filter users by status"
-          >
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-            <option value="disabled">Disabled</option>
-          </SelectInput>
-          <RoleCombobox selected={role} onChange={setRole} placeholder="Filter by role" />
-          <Button variant="secondary" type="submit">
-            Apply
-          </Button>
+      <section className="directory-controls" aria-label="User directory controls">
+        <div className="directory-controls-head">
+          <div>
+            <span className="section-kicker">User directory</span>
+            <strong>{page.total} users</strong>
+          </div>
+          <DirectoryResultsStatus pending={navigation.isPending}>
+            {activeFilters.length
+              ? `${activeFilters.length} active ${activeFilters.length === 1 ? "filter" : "filters"}`
+              : "Showing all users"}
+          </DirectoryResultsStatus>
         </div>
-        <div className="results-count">{page.total} users</div>
-      </form>
-      <Panel as="div" className="access-table" clipped>
+        <form className="toolbar" onSubmit={applyFilters}>
+          <div className="toolbar-left">
+            <label className="search-box">
+              <Search size={14} />
+              <TextInput
+                className="input"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search users by name or email"
+                aria-label="Search users"
+              />
+            </label>
+            <SelectInput
+              className="filter-select"
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              aria-label="Filter users by status"
+            >
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="disabled">Disabled</option>
+            </SelectInput>
+            <RoleCombobox selected={role} onChange={setRole} placeholder="Filter by role" />
+            <Button variant="secondary" type="submit">
+              Apply filters
+            </Button>
+          </div>
+        </form>
+        <AppliedFilterRow filters={activeFilters} onRemove={removeFilter} onClear={clearFilters} />
+      </section>
+      <Panel
+        as="div"
+        className="access-table results-region"
+        clipped
+        aria-busy={navigation.isPending}
+      >
         {page.items.length ? (
           <DataTable>
             <thead>
@@ -402,16 +456,25 @@ function RolesPanel({
   onError(text: string): void;
   onComplete(text: string): void;
 }) {
-  const router = useRouter();
+  const appliedFromServer = useMemo(() => ({ search: searchFilter }), [searchFilter]);
+  const navigation = useFilterNavigation(appliedFromServer);
   const [search, setSearch] = useState(searchFilter);
   const [pendingDelete, setPendingDelete] = useState<RoleDirectoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const activeFilters = navigation.filters.search
+    ? [{ key: "search", label: `Search: ${navigation.filters.search}` }]
+    : [];
 
   function applySearch(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const query = new URLSearchParams({ tab: "roles" });
     if (search.trim()) query.set("search", search.trim());
-    router.push(`/access?${query}`);
+    navigation.navigate(`/access?${query}`, { search: search.trim() });
+  }
+
+  function clearSearch() {
+    setSearch("");
+    navigation.navigate("/access?tab=roles", { search: "" });
   }
 
   async function remove(role: RoleDirectoryItem) {
@@ -428,24 +491,36 @@ function RolesPanel({
 
   return (
     <>
-      <form className="toolbar" onSubmit={applySearch}>
-        <div className="toolbar-left">
-          <label className="search-box">
-            <Search size={14} />
-            <TextInput
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search roles"
-              aria-label="Search roles"
-            />
-          </label>
-          <Button variant="secondary" type="submit">
-            Apply
-          </Button>
+      <section className="directory-controls" aria-label="Role directory controls">
+        <div className="directory-controls-head">
+          <div>
+            <span className="section-kicker">Role directory</span>
+            <strong>{page.total} roles</strong>
+          </div>
+          <DirectoryResultsStatus pending={navigation.isPending}>
+            {activeFilters.length ? "1 active filter" : "Showing all roles"}
+          </DirectoryResultsStatus>
         </div>
-        <div className="results-count">{page.total} roles</div>
-      </form>
-      <div className="role-grid">
+        <form className="toolbar" onSubmit={applySearch}>
+          <div className="toolbar-left">
+            <label className="search-box">
+              <Search size={14} />
+              <TextInput
+                className="input"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search roles"
+                aria-label="Search roles"
+              />
+            </label>
+            <Button variant="secondary" type="submit">
+              Apply filters
+            </Button>
+          </div>
+        </form>
+        <AppliedFilterRow filters={activeFilters} onRemove={clearSearch} onClear={clearSearch} />
+      </section>
+      <div className="role-grid results-region" aria-busy={navigation.isPending}>
         {page.items.map((role) => {
           const broadAccess =
             role.employee_scope === "all" || role.assignment_field_scope === "all";
