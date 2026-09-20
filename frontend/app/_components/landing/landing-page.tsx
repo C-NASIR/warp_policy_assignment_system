@@ -4,16 +4,15 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUpRight,
+  Bot,
+  Braces,
   Check,
   CheckCircle2,
   CircleAlert,
   FileClock,
-  Fingerprint,
   GitCompareArrows,
   KeyRound,
-  Layers3,
   LockKeyhole,
-  Network,
   ScanSearch,
   ShieldCheck,
   Sparkles,
@@ -26,27 +25,27 @@ import { PolicyOSMark } from "@/components/shared";
 const pillars = [
   {
     number: "01",
-    icon: Network,
-    title: "Context becomes policy input",
-    copy: "Resolve assignments from employee facts, tenure, reporting lines, and inherited group membership—not scattered spreadsheets.",
+    icon: Users,
+    title: "Onboard without a checklist chase",
+    copy: "Give each new hire the right access, equipment, training, benefits, and approval limits from the facts already in your people system.",
   },
   {
     number: "02",
-    icon: ScanSearch,
-    title: "Impact is visible before commit",
-    copy: "Run proposed changes through the real resolution path and inspect every affected assignment before anything is saved.",
+    icon: GitCompareArrows,
+    title: "Make org changes operational",
+    copy: "A department move, promotion, location change, or new manager can recalculate every dependent assignment together.",
   },
   {
     number: "03",
-    icon: Layers3,
-    title: "Priority resolves overlap",
-    copy: "Use explicit precedence for competing policies. Equal-priority disagreement becomes a visible conflict, never a silent guess.",
+    icon: ScanSearch,
+    title: "Answer employee questions fast",
+    copy: "Support teams can see the current outcome, its source, and the exact employee or group evidence behind it in one place.",
   },
   {
     number: "04",
-    icon: Fingerprint,
-    title: "Every outcome keeps its reason",
-    copy: "Preserve the winning version, matched evidence, candidate values, group origin, overrides, and resolution strategy.",
+    icon: ShieldCheck,
+    title: "Prove controls actually ran",
+    copy: "Dated versions, access boundaries, assignment history, and an audit journal turn recurring compliance work into inspectable operations.",
   },
 ];
 
@@ -148,8 +147,8 @@ export function LandingPage() {
         <nav className={styles.desktopNavigation} aria-label="Main navigation">
           <a href="#platform">Platform</a>
           <a href="#workflow">How it works</a>
-          <a href="#explainability">Explainability</a>
-          <a href="#governance">Governance</a>
+          <a href="#explainability">Support</a>
+          <a href="#mcp">AI + MCP</a>
           <Link href="/learn">Learn</Link>
         </nav>
         <div className={styles.headerActions}>
@@ -165,10 +164,10 @@ export function LandingPage() {
         <section className={styles.hero} aria-labelledby="hero-title">
           <div className={styles.heroCopy}>
             <Eyebrow>Governed assignment infrastructure</Eyebrow>
-            <h1 id="hero-title">Turn workforce context into decisions you can defend.</h1>
+            <h1 id="hero-title">The control plane for workforce policy.</h1>
             <p>
-              PolicyOS converts employee facts and organizational context into governed
-              assignments—then shows the exact policy, priority, and evidence behind every result.
+              Turn employee and organizational facts into the access, equipment, training, benefits,
+              and approval assignments that keep work moving.
             </p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryCta} href="/signup">
@@ -182,8 +181,8 @@ export function LandingPage() {
           <aside className={styles.heroBrief} aria-label="PolicyOS product summary">
             <span className={styles.briefLabel}>System brief / 001</span>
             <p>
-              Built for HR, IT, compliance, and operations teams that need policy assignment to be
-              consistent, reviewable, and accountable.
+              Built for HR, IT, compliance, and operations teams that need one operating model for
+              employee lifecycle decisions.
             </p>
             <dl>
               <div>
@@ -191,12 +190,12 @@ export function LandingPage() {
                 <dd>People + org context</dd>
               </div>
               <div>
-                <dt>Method</dt>
-                <dd>Rules + explicit priority</dd>
+                <dt>Engine</dt>
+                <dd>Rules + effective dates</dd>
               </div>
               <div>
-                <dt>Output</dt>
-                <dd>Assignments + provenance</dd>
+                <dt>Reach</dt>
+                <dd>Browser + MCP agents</dd>
               </div>
             </dl>
           </aside>
@@ -207,7 +206,7 @@ export function LandingPage() {
               <strong>One decision. Every reason intact.</strong>
             </div>
             <ProductWindow
-              src="/landing/product-evidence/assignment-explanation.jpg"
+              src="/landing/product-evidence/assignment-explanation-current.png"
               alt="PolicyOS employee assignment view showing a USD 10,000 expense approval limit, the winning People Manager Responsibilities policy, its priority, and the evidence that matched"
               label="assignment explanation"
               figure="fig. 01"
@@ -235,11 +234,11 @@ export function LandingPage() {
 
         <section id="platform" className={styles.platform} aria-labelledby="platform-title">
           <div className={styles.sectionHeading}>
-            <Eyebrow>Why PolicyOS</Eyebrow>
-            <h2 id="platform-title">Policy assignment is a system—not a spreadsheet ritual.</h2>
+            <Eyebrow>One platform, four operating problems</Eyebrow>
+            <h2 id="platform-title">Use workforce context where the work actually happens.</h2>
             <p>
-              Design the rules once, expose the impact before activation, and give operators a
-              durable answer when someone asks why.
+              PolicyOS coordinates employee lifecycle work across teams without forcing each team to
+              rebuild the same logic in tickets, checklists, and spreadsheets.
             </p>
           </div>
           <div className={styles.pillarGrid}>
@@ -255,18 +254,18 @@ export function LandingPage() {
             ))}
           </div>
           <div className={styles.capabilityRail} aria-label="Additional PolicyOS capabilities">
-            <span>Groups + inherited context</span>
-            <span>Manual overrides</span>
-            <span>Versioned changes</span>
-            <span>Audit history</span>
-            <span>Access governance</span>
+            <span>Identity + access</span>
+            <span>Equipment profiles</span>
+            <span>Required training</span>
+            <span>Benefits eligibility</span>
+            <span>Approval authority</span>
           </div>
         </section>
 
         <section id="workflow" className={styles.workflow} aria-labelledby="workflow-title">
           <div className={styles.workflowHeading}>
             <Eyebrow>Operating model</Eyebrow>
-            <h2 id="workflow-title">From field definition to an auditable decision.</h2>
+            <h2 id="workflow-title">A lifecycle your operators can run.</h2>
           </div>
           <ol className={styles.workflowSteps}>
             {workflow.map(([verb, title, copy], index) => (
@@ -292,9 +291,8 @@ export function LandingPage() {
             <Eyebrow>Change control</Eyebrow>
             <h2 id="preview-title">Know the blast radius before you save.</h2>
             <p>
-              Preview employee, group, and policy changes through the same domain path used to
-              commit them. Review changed fields, unchanged outcomes, sources, and conflicts—then
-              decide.
+              Simulate a transfer, promotion, group change, or policy revision against the live
+              resolver. See every downstream difference before the proposal can affect an employee.
             </p>
             <ul>
               <li>
@@ -309,7 +307,7 @@ export function LandingPage() {
             </ul>
           </div>
           <ProductWindow
-            src="/landing/product-evidence/change-preview.jpg"
+            src="/landing/product-evidence/change-preview-current.jpg"
             alt="PolicyOS change preview for Priya Raman showing which assignments would remain the same and which would change before confirmation"
             label="employee change preview"
             figure="fig. 02"
@@ -322,11 +320,11 @@ export function LandingPage() {
           aria-labelledby="explainability-title"
         >
           <div className={styles.explainHeading}>
-            <Eyebrow inverse>Decision record</Eyebrow>
-            <h2 id="explainability-title">“Why?” should have a precise answer.</h2>
+            <Eyebrow inverse>Employee support</Eyebrow>
+            <h2 id="explainability-title">Close the ticket with evidence, not guesswork.</h2>
             <p>
-              PolicyOS stores the decision context with the assignment, so today’s explanation does
-              not drift when policies change tomorrow.
+              Give HR and IT a support-grade view of the winning policy, competing candidates,
+              matched facts, group origin, and any manual exception.
             </p>
           </div>
           <div className={styles.explainGrid}>
@@ -371,33 +369,104 @@ export function LandingPage() {
 
         <section className={styles.policyProof} aria-labelledby="policy-proof-title">
           <div className={styles.policyProofCopy}>
-            <Eyebrow>Policy as a governed change</Eyebrow>
+            <Eyebrow>Policy operations</Eyebrow>
             <h2 id="policy-proof-title">
               Conditions, outputs, priority, version, and reach—in one view.
             </h2>
             <p>
-              Review the policy definition beside the population it affects. Date-effective versions
-              preserve history while new changes move through preview and activation.
+              Authors work with business language while operators keep a clear view of scope,
+              effective dates, population reach, and what a new version will replace.
             </p>
             <Link href="/learn/policyos/create-your-first-policy">
               Learn how policy authoring works <ArrowRight size={16} />
             </Link>
           </div>
           <ProductWindow
-            src="/landing/product-evidence/policy-impact-version.jpg"
+            src="/landing/product-evidence/policy-impact-version-current.png"
             alt="People Manager Responsibilities policy in PolicyOS showing its manager condition, three provided assignments, effective date, priority, version, and affected population"
             label="policy version + population impact"
             figure="fig. 03"
           />
         </section>
 
+        <section id="mcp" className={styles.mcpSection} aria-labelledby="mcp-title">
+          <div className={styles.mcpHeading}>
+            <Eyebrow>AI-ready by architecture</Eyebrow>
+            <h2 id="mcp-title">Give agents tools—not a shadow control plane.</h2>
+            <p>
+              PolicyOS exposes a Streamable HTTP MCP server with 52 strictly typed tools. Agents can
+              research, explain, preview, and administer the system through the same FastAPI
+              boundary used by the product.
+            </p>
+          </div>
+          <div className={styles.mcpConsole} aria-label="Example PolicyOS agent workflow">
+            <div className={styles.mcpConsoleHeader}>
+              <span>MCP session / user-bound</span>
+              <span>policyos.connected</span>
+            </div>
+            <div className={styles.mcpPrompt}>
+              <Bot size={19} aria-hidden="true" />
+              <p>
+                Preview Priya Raman’s move to Product and explain every assignment that would
+                change. Do not save anything.
+              </p>
+            </div>
+            <ol className={styles.mcpSequence}>
+              <li>
+                <span>01</span>
+                <div>
+                  <b>search_employees</b>
+                  <small>Resolve the employee through permitted visibility.</small>
+                </div>
+              </li>
+              <li>
+                <span>02</span>
+                <div>
+                  <b>preview_change</b>
+                  <small>Run the rollback-only domain workflow.</small>
+                </div>
+              </li>
+              <li>
+                <span>03</span>
+                <div>
+                  <b>explain_assignment</b>
+                  <small>Return sources, evidence, priority, and candidates.</small>
+                </div>
+              </li>
+            </ol>
+            <div className={styles.mcpResult}>
+              <CheckCircle2 size={17} /> 3 changes previewed · 0 records persisted
+            </div>
+          </div>
+          <div className={styles.mcpFacts}>
+            <article>
+              <Braces size={20} />
+              <strong>30</strong>
+              <span>read-only tools</span>
+              <p>Search, inspect impact, explain outcomes, and review history.</p>
+            </article>
+            <article>
+              <GitCompareArrows size={20} />
+              <strong>18</strong>
+              <span>mutating tools</span>
+              <p>Operate employees, policies, groups, roles, and overrides.</p>
+            </article>
+            <article>
+              <KeyRound size={20} />
+              <strong>OAuth</strong>
+              <span>authorization code + PKCE</span>
+              <p>Agents inherit the connected user’s permissions and visibility.</p>
+            </article>
+          </div>
+        </section>
+
         <section id="governance" className={styles.governance} aria-labelledby="governance-title">
           <div className={styles.governanceHeading}>
-            <Eyebrow>Governance built into the path</Eyebrow>
-            <h2 id="governance-title">Control who can decide. Preserve what they changed.</h2>
+            <Eyebrow>One security boundary</Eyebrow>
+            <h2 id="governance-title">Authorization survives every interface.</h2>
             <p>
-              The same authorization and validation boundary applies across the product. Sensitive
-              actions add deliberate checkpoints without obscuring routine work.
+              Browser users, background reconciliation, and connected agents all pass through the
+              same validation, permissions, employee visibility, and audit paths.
             </p>
           </div>
           <div className={styles.governanceGrid}>
@@ -447,7 +516,7 @@ export function LandingPage() {
         <section className={styles.finalCta} aria-labelledby="cta-title">
           <div>
             <Eyebrow inverse>Ready to make policy operational?</Eyebrow>
-            <h2 id="cta-title">Give every assignment a rule, a reason, and a record.</h2>
+            <h2 id="cta-title">Replace recurring coordination with one operating system.</h2>
           </div>
           <div className={styles.finalCtaActions}>
             <Link href="/signup">
@@ -462,13 +531,14 @@ export function LandingPage() {
       <footer className={styles.footer}>
         <div className={styles.footerLead}>
           <Brand inverse />
-          <p>Workforce policy assignments, resolved and explained.</p>
+          <p>Workforce policy operations for people, systems, and AI agents.</p>
         </div>
         <div>
           <span>Product</span>
           <a href="#platform">Platform</a>
           <a href="#workflow">How it works</a>
-          <a href="#explainability">Explainability</a>
+          <a href="#explainability">Employee support</a>
+          <a href="#mcp">AI + MCP</a>
           <a href="#governance">Governance</a>
         </div>
         <div>

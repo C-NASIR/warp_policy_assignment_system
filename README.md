@@ -4,7 +4,7 @@ An implemented policy-assignment system that turns date-effective workforce rule
 
 This repository is an independent implementation of Warp's **Policy Assignment System** project prompt. It is not an official Warp product.
 
-![PolicyOS explains why a manager received a USD 10,000 expense limit, including the winning policy, matched fact, priority, and candidate decision.](docs/assets/readme/employee-assignment-explanation.jpg)
+![PolicyOS explains why a manager received a USD 10,000 expense limit, including the winning policy, matched fact, priority, and candidate decision.](docs/assets/readme/employee-assignment-explanation.png)
 
 ## Thirty-second summary
 
@@ -24,11 +24,11 @@ docker compose up --build
 
 The first run builds the images and can take several minutes depending on network and Docker cache. Compose starts PostgreSQL, applies the Alembic migration, loads the fictional Cedar Harbor Wind Systems dataset, and then starts the FastAPI API, production Next.js frontend, demo reconciliation scheduler, and MCP adapter. PostgreSQL remains private to the Compose network.
 
-| Service | URL |
-|---|---|
-| PolicyOS | <http://localhost:3000> |
-| OpenAPI | <http://localhost:8000/docs> |
-| MCP | <http://localhost:8001/mcp> |
+| Service  | URL                          |
+| -------- | ---------------------------- |
+| PolicyOS | <http://localhost:3000>      |
+| OpenAPI  | <http://localhost:8000/docs> |
+| MCP      | <http://localhost:8001/mcp>  |
 
 Useful lifecycle commands:
 
@@ -94,17 +94,17 @@ See the [MCP adapter documentation](mcp_server/README.md) for connection, authen
 
 ## Warp criteria mapped to implementation
 
-| Warp criterion | PolicyOS implementation |
-|---|---|
-| Define assignment rules | Administrators build nested rules from trusted employee, department, location, tenure, and org-chart fields, then attach policies to explicit groups when needed. Canonical trees are compiled to OR-of-AND clauses. [Compiler tests](backend/tests/test_policy_compiler.py) |
-| Resolve an employee set for any date | Batch queries distinguish recorded history for past dates, persisted assignments for today, and non-persisting calculation for future dates. [Assignment-query tests](backend/tests/test_assignment_queries.py) |
-| Cardinality and conflicts | Fields declare `one` or `many`. Highest priority resolves `one`; equal-priority different values return a structured conflict. `many` unions values and selects duplicate provenance deterministically. [Resolution tests](backend/tests/test_assignment_values.py) |
-| Reconcile changing inputs | Employee and manager changes, group membership and attachments, policy mutations, policy boundaries, and tenure anniversaries flow through the same resolver. Due events are processed by an advisory-locked worker. [Reconciliation tests](backend/tests/test_policy_change_reconciliation.py) |
-| Non-engineer UX | Guided policy authoring, employee onboarding, previews, lifecycle controls, explanations, history, groups, overrides, audit filters, and an in-product learning center are implemented in the Next.js application. [Frontend guide](frontend/README.md) |
-| Explainability and auditability | Materialized assignments retain policy/override provenance, match evidence, candidate outcomes, and decision strategy. Assignment history records what was true; the transactional audit journal records who changed what. [Explanation tests](backend/tests/test_assignment_explanations.py) |
-| Architecture and scale judgment | PostgreSQL transactions and constraints protect the current synchronous model; the full-population policy fan-out is identified explicitly, with an outbox/batched evolution path. [System design](docs/system-design.md#12-scaling-characteristics) |
-| Developer experience | One-command Compose startup, Alembic-owned schema, health-gated services, an idempotent seed, OpenAPI, smoke tests, and focused component/domain suites make the system runnable and inspectable. [Compose file](compose.yaml) |
-| AI-native extension | A 52-tool Streamable HTTP MCP server exposes the product through user-bound OAuth/PKCE while preserving backend authorization, previews, validation, and audit behavior. [MCP adapter](mcp_server/README.md) |
+| Warp criterion                       | PolicyOS implementation                                                                                                                                                                                                                                                                         |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Define assignment rules              | Administrators build nested rules from trusted employee, department, location, tenure, and org-chart fields, then attach policies to explicit groups when needed. Canonical trees are compiled to OR-of-AND clauses. [Compiler tests](backend/tests/test_policy_compiler.py)                    |
+| Resolve an employee set for any date | Batch queries distinguish recorded history for past dates, persisted assignments for today, and non-persisting calculation for future dates. [Assignment-query tests](backend/tests/test_assignment_queries.py)                                                                                 |
+| Cardinality and conflicts            | Fields declare `one` or `many`. Highest priority resolves `one`; equal-priority different values return a structured conflict. `many` unions values and selects duplicate provenance deterministically. [Resolution tests](backend/tests/test_assignment_values.py)                             |
+| Reconcile changing inputs            | Employee and manager changes, group membership and attachments, policy mutations, policy boundaries, and tenure anniversaries flow through the same resolver. Due events are processed by an advisory-locked worker. [Reconciliation tests](backend/tests/test_policy_change_reconciliation.py) |
+| Non-engineer UX                      | Guided policy authoring, employee onboarding, previews, lifecycle controls, explanations, history, groups, overrides, audit filters, and an in-product learning center are implemented in the Next.js application. [Frontend guide](frontend/README.md)                                         |
+| Explainability and auditability      | Materialized assignments retain policy/override provenance, match evidence, candidate outcomes, and decision strategy. Assignment history records what was true; the transactional audit journal records who changed what. [Explanation tests](backend/tests/test_assignment_explanations.py)   |
+| Architecture and scale judgment      | PostgreSQL transactions and constraints protect the current synchronous model; the full-population policy fan-out is identified explicitly, with an outbox/batched evolution path. [System design](docs/system-design.md#12-scaling-characteristics)                                            |
+| Developer experience                 | One-command Compose startup, Alembic-owned schema, health-gated services, an idempotent seed, OpenAPI, smoke tests, and focused component/domain suites make the system runnable and inspectable. [Compose file](compose.yaml)                                                                  |
+| AI-native extension                  | A 52-tool Streamable HTTP MCP server exposes the product through user-bound OAuth/PKCE while preserving backend authorization, previews, validation, and audit behavior. [MCP adapter](mcp_server/README.md)                                                                                    |
 
 ## Core resolution model
 
@@ -141,17 +141,17 @@ Read the [system design](docs/system-design.md) for the domain model, time seman
 
 ### Preview before mutation
 
-![PolicyOS previews the assignment changes caused by moving Priya Raman from Engineering to Product before the change is confirmed.](docs/assets/readme/change-preview.jpg)
+![PolicyOS previews the assignment changes caused by moving Priya Raman from Engineering to Product before the change is confirmed.](docs/assets/readme/change-preview.png)
 
 The preview runs the real employee mutation and reconciliation services inside a savepoint that is always rolled back.
 
 ### Versioned policy and population impact
 
-![People Manager Responsibilities shows its rule, three assignment outputs, version number, effective date, priority, and population impact.](docs/assets/readme/policy-impact-and-version.jpg)
+![People Manager Responsibilities shows its rule, three assignment outputs, version number, effective date, priority, and population impact.](docs/assets/readme/policy-impact-and-version.png)
 
 ### Override provenance
 
-![Priya Raman's manual USD 5,000 expense limit shows the USD 2,500 policy result it replaced and the stored decision strategy.](docs/assets/readme/manual-override-provenance.jpg)
+![Priya Raman's manual USD 5,000 expense limit shows the USD 2,500 policy result it replaced and the stored decision strategy.](docs/assets/readme/manual-override-provenance.png)
 
 ## Correctness highlights
 
@@ -202,14 +202,14 @@ Tests cover resolution, version boundaries, group and org-chart rules, tenure sc
 
 ## Technology choices
 
-| Choice | Why it is here |
-|---|---|
-| Next.js 16 + React 19 | Product UI, server-rendered routes, and the same-origin session proxy. |
-| FastAPI + Pydantic | Typed HTTP contracts around explicit domain services and structured conflicts. |
-| SQLAlchemy 2 + Alembic | Transactional mappings with a single, reviewable schema lifecycle. |
-| PostgreSQL 17 | Referential integrity, temporal indexes, JSON explanation snapshots, row locks, advisory locks, and transactional audit writes. |
-| MCP + OAuth/PKCE | Optional user-bound agent access without bypassing backend authorization. |
-| Docker Compose | A reproducible evaluator environment with health-gated startup and seeded data. |
+| Choice                 | Why it is here                                                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Next.js 16 + React 19  | Product UI, server-rendered routes, and the same-origin session proxy.                                                          |
+| FastAPI + Pydantic     | Typed HTTP contracts around explicit domain services and structured conflicts.                                                  |
+| SQLAlchemy 2 + Alembic | Transactional mappings with a single, reviewable schema lifecycle.                                                              |
+| PostgreSQL 17          | Referential integrity, temporal indexes, JSON explanation snapshots, row locks, advisory locks, and transactional audit writes. |
+| MCP + OAuth/PKCE       | Optional user-bound agent access without bypassing backend authorization.                                                       |
+| Docker Compose         | A reproducible evaluator environment with health-gated startup and seeded data.                                                 |
 
 ## Tradeoffs and current boundaries
 

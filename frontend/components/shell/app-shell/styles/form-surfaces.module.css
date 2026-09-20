@@ -688,3 +688,56 @@
 .productScope :global(.modal-body) {
   padding: 18px;
 }
+
+@media (min-width: 961px) {
+  .productScope :global(.employee-editor-modal) {
+    display: flex;
+    height: min(668px, calc(100dvh - 48px));
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .productScope :global(.employee-editor-modal > .modal-head) {
+    flex: 0 0 auto;
+  }
+  .productScope :global(.employee-editor-modal > .modal-body) {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .productScope :global(.employee-editor-modal .form-shell) {
+    min-height: 0;
+    flex: 1 1 auto;
+    align-items: stretch;
+  }
+  .productScope :global(.employee-editor-modal .form-shell > .form-panel:first-child) {
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .productScope :global(.employee-editor-modal .preview-panel) {
+    position: static;
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+  .productScope :global(.employee-editor-modal .preview-panel-content) {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .productScope :global(.employee-editor-modal .preview-header),
+  .productScope :global(.employee-editor-modal .preview-panel > .form-section),
+  .productScope :global(.employee-editor-modal .preview-stale-content > .form-section) {
+    flex: 0 0 auto;
+  }
+  .productScope :global(.employee-editor-modal .preview-content) {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}

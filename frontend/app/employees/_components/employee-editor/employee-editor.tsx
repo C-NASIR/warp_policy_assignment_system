@@ -494,7 +494,9 @@ export function EmployeeEditor({
                   </span>
                 </div>
               )}
-              <div className={previewStale ? "preview-stale-content" : undefined}>
+              <div
+                className={`preview-panel-content${previewStale ? " preview-stale-content" : ""}`}
+              >
                 <EmployeeAssignmentPreviewPanel preview={preview} />
               </div>
             </>
@@ -528,7 +530,7 @@ export function EmployeeEditor({
       {open && (
         <div className="modal-backdrop" role="presentation">
           <section
-            className="modal-card"
+            className="modal-card employee-editor-modal"
             role="dialog"
             aria-modal="true"
             aria-label="Edit employee"

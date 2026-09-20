@@ -8,8 +8,8 @@ import styles from "../../landing.module.css";
 const links = [
   { href: "#platform", label: "Platform" },
   { href: "#workflow", label: "How it works" },
-  { href: "#explainability", label: "Explainability" },
-  { href: "#governance", label: "Governance" },
+  { href: "#explainability", label: "Employee support" },
+  { href: "#mcp", label: "AI + MCP" },
 ];
 
 export function MobileNavigation() {
