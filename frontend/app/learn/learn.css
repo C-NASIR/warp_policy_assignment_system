@@ -1,7 +1,7 @@
 .learn-route {
-  --learn-border: #dedee6;
-  --learn-soft: #f8f7ff;
-  --learn-accent: #554be7;
+  --learn-border: var(--border);
+  --learn-soft: var(--brand-accent-soft);
+  --learn-accent: var(--brand-accent-ink);
   min-width: 0;
   min-height: 100vh;
   background: var(--canvas);
@@ -32,9 +32,9 @@
   height: 100vh;
   height: 100dvh;
   padding: 22px 18px 28px;
-  border-right: 1px solid rgb(255 255 255 / 0.05);
-  background: var(--sidebar);
-  color: white;
+  border-right: 1px solid var(--border);
+  background: #fafafa;
+  color: var(--ink);
   overflow: hidden;
 }
 
@@ -46,11 +46,11 @@
   gap: 11px;
   min-height: 58px;
   padding: 8px 10px 17px;
-  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  border-bottom: 1px solid var(--border);
 }
 
 .learn-app-link:hover {
-  color: white;
+  color: var(--ink);
 }
 .learn-app-link > span:nth-child(2),
 .learn-app-link strong,
@@ -72,19 +72,12 @@
 }
 .learn-app-link:hover > svg {
   transform: translateX(-2px);
-  color: #918aff;
+  color: var(--brand-accent-ink);
 }
 .learn-app-mark {
   width: 34px;
   height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: linear-gradient(145deg, #786fff, #554be7);
-  color: white;
-  font-size: 15px;
-  font-weight: 800;
-  box-shadow: inset 0 1px rgb(255 255 255 / 0.25);
+  flex: 0 0 auto;
 }
 
 .learn-sidebar-home {
@@ -96,8 +89,9 @@
   margin: 16px 0 28px;
   padding: 11px 10px;
   border-radius: 9px;
-  background: rgb(255 255 255 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: none;
 }
 
 .learn-sidebar-home > span:last-child,
@@ -107,7 +101,7 @@
 }
 
 .learn-sidebar-home:hover {
-  background: rgb(255 255 255 / 0.12);
+  background: var(--surface-subtle);
 }
 .learn-sidebar-home strong {
   font-size: 14px;
@@ -115,7 +109,7 @@
 .learn-sidebar-home small {
   margin-top: 2px;
   color: var(--sidebar-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .learn-sidebar-icon {
   width: 38px;
@@ -123,8 +117,8 @@
   display: grid;
   place-items: center;
   border-radius: 9px;
-  background: rgb(99 91 255 / 0.18);
-  color: #aaa5ff;
+  background: var(--brand-accent-soft);
+  color: var(--brand-accent-ink);
 }
 
 .learn-sidebar-navigation {
@@ -135,7 +129,7 @@
   scroll-padding-block: 12px;
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
-  scrollbar-color: #55565a transparent;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .learn-nav-group {
@@ -146,8 +140,8 @@
 }
 .learn-nav-label {
   margin: 0 10px 18px;
-  color: #a6a1d0;
-  font-size: 10px;
+  color: var(--brand-accent-ink);
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.5;
   letter-spacing: 0.13em;
@@ -162,11 +156,11 @@
 }
 .learn-nav-subgroup + .learn-nav-subgroup {
   padding-top: 20px;
-  border-top: 1px solid rgb(255 255 255 / 0.07);
+  border-top: 1px solid var(--border);
 }
 .learn-nav-sublabel {
   margin: 0 10px 10px;
-  color: #eeeef2;
+  color: var(--ink);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.5;
@@ -183,7 +177,7 @@
   gap: 10px;
   padding: 9px 10px 9px 14px;
   border-radius: 7px;
-  color: #b8b9bc;
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
   transition:
@@ -191,28 +185,28 @@
     color 150ms ease;
 }
 .learn-nav-links a:hover {
-  background: rgb(255 255 255 / 0.06);
-  color: white;
+  background: var(--surface-muted);
+  color: var(--ink);
 }
 .learn-nav-links a.active {
-  background: rgb(130 119 255 / 0.13);
-  color: #eeecff;
+  background: var(--surface-muted);
+  color: var(--ink);
   font-weight: 600;
-  box-shadow: inset 2px 0 #a49bff;
+  box-shadow: inset 2px 0 var(--brand-accent);
 }
 .learn-nav-links a:focus-visible {
-  outline: 2px solid #aaa5ff;
+  outline: 2px solid var(--brand-accent);
   outline-offset: -2px;
 }
 .learn-nav-links small {
   color: #8c8d94;
-  font-size: 10px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
 }
 .learn-nav-links a.active small {
-  color: #b7afff;
+  color: var(--brand-accent-ink);
 }
 
 .learn-mobile-shell,
@@ -261,7 +255,7 @@
 .learn-prerequisites {
   margin: 18px 0 0;
   padding: 12px 14px;
-  border: 1px solid #d9d5f0;
+  border: 1px solid #f2cbbb;
   border-radius: 9px;
   background: var(--learn-soft);
   color: var(--muted);
@@ -290,7 +284,7 @@
 }
 .learn-body :where(a) {
   color: var(--accent-ink);
-  text-decoration-color: #bdb8ff;
+  text-decoration-color: #f2a98e;
   text-underline-offset: 3px;
 }
 .learn-body :where(strong) {
@@ -313,15 +307,15 @@
   gap: 10px;
   margin: 18px 0;
   padding: 12px;
-  border: 1px solid #d8d4ff;
+  border: 1px solid #f2cbbb;
   border-radius: 10px;
   background: var(--learn-soft);
   color: var(--accent-ink) !important;
   text-decoration: none !important;
 }
 .learn-policy-link:hover {
-  border-color: #aaa3ff;
-  background: #f1efff;
+  border-color: var(--brand-accent);
+  background: #fff7f3;
 }
 .learn-policy-link > span:first-child {
   width: 34px;
@@ -421,7 +415,7 @@
 .learn-pagination small {
   margin-bottom: 3px;
   color: var(--faint);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -483,9 +477,9 @@
   .learn-mobile-shell {
     display: block;
     margin: 0 -24px 28px;
-    border-bottom: 1px solid rgb(255 255 255 / 0.05);
-    background: var(--sidebar);
-    color: white;
+    border-bottom: 1px solid var(--border);
+    background: #fafafa;
+    color: var(--ink);
   }
   .learn-mobile-app-link {
     display: flex;
@@ -493,7 +487,7 @@
     gap: 10px;
     min-height: 60px;
     padding: 10px 24px;
-    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    border-bottom: 1px solid var(--border);
     font-size: 14px;
     font-weight: 750;
   }
@@ -511,20 +505,20 @@
     align-items: center;
     gap: 9px;
     padding: 14px 24px;
-    color: white;
+    color: var(--ink);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
   }
   .learn-mobile-navigation > summary svg {
-    color: #918aff;
+    color: var(--brand-accent-ink);
   }
   .learn-mobile-navigation > nav {
     max-height: 60vh;
     overflow-y: auto;
     overscroll-behavior-y: contain;
     padding: 24px 14px;
-    border-top: 1px solid rgb(255 255 255 / 0.08);
+    border-top: 1px solid var(--border);
   }
   .learn-mobile-navigation .learn-nav-links a {
     min-height: 44px;

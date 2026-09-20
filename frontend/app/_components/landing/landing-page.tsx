@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import styles from "../../landing.module.css";
 import { MobileNavigation } from "./mobile-navigation";
+import { PolicyOSMark } from "@/components/shared";
 
 const pillars = [
   {
@@ -88,11 +89,7 @@ function Brand({ inverse = false }: { inverse?: boolean }) {
       href="/"
       aria-label="PolicyOS home"
     >
-      <span className={styles.brandMark} aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </span>
+      <PolicyOSMark className={styles.brandMark} />
       <span>PolicyOS</span>
     </Link>
   );

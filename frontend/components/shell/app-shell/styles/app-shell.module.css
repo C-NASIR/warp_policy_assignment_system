@@ -28,24 +28,9 @@
   border-bottom: 1px solid var(--border);
 }
 .productScope :global(.brand-mark) {
-  position: relative;
   width: 28px;
   height: 28px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border-radius: 7px;
-  background: var(--surface-strong);
-  color: white;
-  font-weight: 700;
-  font-size: 13px;
-}
-.productScope :global(.brand-mark::after) {
-  content: "";
-  position: absolute;
-  inset: 0 0 0 auto;
-  width: 4px;
-  background: var(--brand-accent);
+  flex: 0 0 auto;
 }
 .productScope :global(.brand-title) {
   font-size: 14px;
@@ -55,7 +40,7 @@
 .productScope :global(.brand-subtitle) {
   color: var(--sidebar-muted);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-top: 2px;
@@ -76,7 +61,7 @@
   padding: 18px 8px 7px;
   color: var(--faint);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -124,7 +109,7 @@
   border-radius: 8px;
   background: var(--surface);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
@@ -143,7 +128,7 @@
   border: 1px solid currentColor;
   border-radius: 5px;
   font-family: inherit;
-  font-size: 9px;
+  font-size: 12px;
   opacity: 0.68;
 }
 .productScope :global(.company-switcher) {
@@ -161,7 +146,7 @@
   border-radius: 8px;
   background: var(--brand-accent-soft);
   color: var(--brand-accent-ink);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 }
 .productScope :global(.company-name) {
@@ -170,13 +155,13 @@
 }
 .productScope :global(.company-role) {
   color: var(--sidebar-muted);
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 2px;
 }
 .productScope :global(.account-employee-id) {
   margin-top: 2px;
   color: var(--sidebar-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.account-summary) {
   display: grid;
@@ -194,7 +179,7 @@
   border-radius: 8px;
   background: var(--brand-accent);
   color: white;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 .productScope :global(.account-copy) {
@@ -297,7 +282,7 @@
   border-radius: 9px;
   background: var(--surface-subtle);
   color: var(--faint);
-  font-size: 11px;
+  font-size: 12px;
   text-align: left;
   box-shadow: none;
   cursor: pointer;
@@ -354,7 +339,7 @@
 .productScope :global(.popover-head > div > span) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.popover-list) {
   padding: 5px 8px;
@@ -375,17 +360,17 @@
   display: block;
 }
 .productScope :global(.popover-item strong) {
-  font-size: 11px;
+  font-size: 12px;
 }
 .productScope :global(.popover-item small) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.popover-item time) {
   align-self: start;
   color: var(--faint);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.popover-footer) {
   display: block;
@@ -393,7 +378,7 @@
   border-top: 1px solid var(--border);
   background: var(--surface-subtle);
   color: var(--accent-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-align: center;
 }
@@ -410,7 +395,7 @@
   border-bottom: 1px solid #ead6aa;
   background: var(--warning-soft);
   color: var(--warning);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .productScope :global(.system-banner strong) {
@@ -427,7 +412,7 @@
   margin: 0 0 7px;
   color: var(--brand-accent-ink);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -490,7 +475,7 @@
   max-width: 260px;
   margin: 10px 0 20px;
   color: #aaa9a5;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .productScope :global(.coverage-score-track) {
@@ -520,7 +505,7 @@
 }
 .productScope :global(.snapshot-metric-head) {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.snapshot-metric-head svg) {
   color: var(--faint);
@@ -539,7 +524,7 @@
 .productScope :global(.snapshot-metric small) {
   margin-top: 4px;
   color: var(--faint);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.section-heading) {
   display: flex;
@@ -552,7 +537,7 @@
   display: block;
   color: var(--brand-accent-ink);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -564,7 +549,7 @@
 }
 .productScope :global(.section-note) {
   color: var(--faint);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.dashboard-grid) {
   display: grid;
@@ -592,7 +577,7 @@
   align-items: center;
   gap: 4px;
   color: var(--accent-ink);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 .productScope :global(.coverage-list) {
@@ -616,7 +601,7 @@
 .productScope :global(.coverage-caption) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.progress-track) {
   height: 6px;
@@ -631,7 +616,7 @@
 }
 .productScope :global(.coverage-value) {
   text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 .productScope :global(.activity-list) {
@@ -654,7 +639,7 @@
 }
 .productScope :global(.activity-copy) {
   color: #454642;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 .productScope :global(.activity-copy strong) {
@@ -663,7 +648,7 @@
 .productScope :global(.activity-time) {
   margin-top: 4px;
   color: var(--faint);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.quick-actions) {
   display: grid;
@@ -699,13 +684,13 @@
   display: block;
 }
 .productScope :global(.quick-action-title) {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 .productScope :global(.quick-action-caption) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.mobile-menu-button) {
   display: none;

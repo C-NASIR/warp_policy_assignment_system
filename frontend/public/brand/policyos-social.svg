@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M64 0H0V64" fill="none" stroke="#171614" stroke-opacity=".075" />
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#f7f4ed" />
+  <rect width="1200" height="630" fill="url(#grid)" />
+
+  <g transform="translate(70 58) scale(1.65)">
+    <g transform="rotate(2 16 16)">
+      <rect x="2" y="2" width="28" height="28" fill="#ff4f17" stroke="#171614" stroke-width="1.75" />
+      <path d="M9.5 10.5 19.5 20.5M9.5 21.5 19.5 11.5M19 16h5" fill="none" stroke="#171614" stroke-width="2" stroke-linecap="square" />
+    </g>
+  </g>
+  <text x="138" y="100" fill="#171614" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" letter-spacing="-2">PolicyOS</text>
+
+  <text x="70" y="188" fill="#d93808" font-family="Courier New, monospace" font-size="15" font-weight="700" letter-spacing="1.8">GOVERNED ASSIGNMENT INFRASTRUCTURE</text>
+  <text x="70" y="270" fill="#171614" font-family="Courier New, monospace" font-size="51" font-weight="500" letter-spacing="-2.8">Turn workforce</text>
+  <text x="70" y="328" fill="#171614" font-family="Courier New, monospace" font-size="51" font-weight="500" letter-spacing="-2.8">context into decisions</text>
+  <text x="70" y="386" fill="#171614" font-family="Courier New, monospace" font-size="51" font-weight="500" letter-spacing="-2.8">you can defend.</text>
+  <text x="72" y="495" fill="#666158" font-family="Arial, Helvetica, sans-serif" font-size="21">
+    <tspan x="72" dy="0">Define the rules. Preview the impact.</tspan>
+    <tspan x="72" dy="31">Keep every reason with the result.</tspan>
+  </text>
+
+  <g transform="translate(760 72)">
+    <rect width="372" height="486" fill="#171614" />
+    <text x="28" y="42" fill="#ff7245" font-family="Courier New, monospace" font-size="13" font-weight="700" letter-spacing="1.4">DECISION PATH / 001</text>
+    <line x1="28" y1="61" x2="344" y2="61" stroke="#f7f4ed" stroke-opacity=".2" />
+
+    <g transform="translate(28 96)">
+      <rect width="316" height="74" fill="none" stroke="#f7f4ed" stroke-opacity=".35" />
+      <text x="18" y="27" fill="#aaa79f" font-family="Courier New, monospace" font-size="11" letter-spacing="1">INPUT</text>
+      <text x="18" y="52" fill="#f7f4ed" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="600">People + organizational context</text>
+    </g>
+    <path d="M186 170V204" stroke="#ff4f17" stroke-width="2" />
+    <path d="m179 197 7 7 7-7" fill="none" stroke="#ff4f17" stroke-width="2" />
+    <g transform="translate(28 204)">
+      <rect width="316" height="74" fill="none" stroke="#f7f4ed" stroke-opacity=".35" />
+      <text x="18" y="27" fill="#aaa79f" font-family="Courier New, monospace" font-size="11" letter-spacing="1">METHOD</text>
+      <text x="18" y="52" fill="#f7f4ed" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="600">Rules + explicit priority</text>
+    </g>
+    <path d="M186 278V312" stroke="#ff4f17" stroke-width="2" />
+    <path d="m179 305 7 7 7-7" fill="none" stroke="#ff4f17" stroke-width="2" />
+    <g transform="translate(28 312)">
+      <rect width="316" height="92" fill="#f7f4ed" />
+      <text x="18" y="28" fill="#666158" font-family="Courier New, monospace" font-size="11" letter-spacing="1">RESOLVED OUTPUT</text>
+      <text x="18" y="60" fill="#171614" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700">Assignments + provenance</text>
+      <circle cx="286" cy="48" r="14" fill="#ecf687" stroke="#171614" />
+      <path d="m280 48 4 4 8-9" fill="none" stroke="#171614" stroke-width="2" />
+    </g>
+    <text x="28" y="449" fill="#aaa79f" font-family="Courier New, monospace" font-size="12">PREVIEW FIRST  /  EXPLAIN COMPLETELY</text>
+  </g>
+</svg>

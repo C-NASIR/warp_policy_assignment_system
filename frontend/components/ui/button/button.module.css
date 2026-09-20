@@ -46,7 +46,7 @@
 .small {
   min-height: 2rem;
   padding: 0.4375rem 0.625rem;
-  font-size: 0.625rem;
+  font-size: var(--text-xs);
 }
 
 .fullWidth {

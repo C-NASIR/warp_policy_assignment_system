@@ -33,7 +33,7 @@
 .caption {
   margin: var(--space-1) 0 0;
   color: var(--muted);
-  font-size: 0.625rem;
+  font-size: var(--text-xs);
   line-height: var(--leading-normal);
 }
 

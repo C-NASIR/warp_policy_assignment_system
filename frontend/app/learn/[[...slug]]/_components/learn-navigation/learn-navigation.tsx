@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, BookOpenCheck } from "lucide-react";
 import { KeepActiveLessonVisible } from "../keep-active-lesson-visible/keep-active-lesson-visible";
 import { getLearnNavigation } from "@/lib/learn-source";
+import { PolicyOSMark } from "@/components/shared";
 
 export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
   const navigation = getLearnNavigation();
@@ -46,7 +47,7 @@ export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
       <aside className="learn-sidebar" aria-label="Learning center navigation">
         <KeepActiveLessonVisible currentUrl={currentUrl} />
         <Link className="learn-app-link" href="/">
-          <span className="learn-app-mark">P</span>
+          <PolicyOSMark className="learn-app-mark" size={34} />
           <span>
             <strong>PolicyOS</strong>
             <small>Back to the app</small>
@@ -68,7 +69,7 @@ export function LearnNavigation({ currentUrl }: { currentUrl: string }) {
       </aside>
       <div className="learn-mobile-shell">
         <Link className="learn-mobile-app-link" href="/">
-          <span className="learn-app-mark">P</span>
+          <PolicyOSMark className="learn-app-mark" size={34} />
           <span>PolicyOS</span>
           <small>Back to app</small>
         </Link>

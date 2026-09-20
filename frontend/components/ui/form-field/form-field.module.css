@@ -9,7 +9,7 @@
 
 .label {
   color: var(--muted);
-  font-size: 0.6875rem;
+  font-size: var(--text-xs);
   font-weight: 650;
 }
 
@@ -61,7 +61,7 @@
 .hint,
 .error {
   margin: 0;
-  font-size: 0.625rem;
+  font-size: var(--text-xs);
   line-height: var(--leading-normal);
 }
 

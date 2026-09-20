@@ -1,5 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { PolicyOSMark } from "@/components/shared";
 
 const defaultPoints = [
   "Preview changes before they affect employees",
@@ -36,7 +37,7 @@ export function AuthFrame({
     <main className="auth-page">
       <aside className="auth-context" aria-label="About PolicyOS">
         <Link href="/" className="auth-context-brand" aria-label="PolicyOS home">
-          <span className="brand-mark">P</span>
+          <PolicyOSMark className="brand-mark" size={28} />
           <span>PolicyOS</span>
         </Link>
         <div className="auth-context-copy">
@@ -59,7 +60,7 @@ export function AuthFrame({
       <section className="auth-stage">
         <section className="auth-card" aria-labelledby={titleId}>
           <Link href="/" className="auth-brand" aria-label="PolicyOS home">
-            <span className="brand-mark">P</span>
+            <PolicyOSMark className="brand-mark" size={28} />
             <span>
               <strong>PolicyOS</strong>
               <small>{brandDetail}</small>

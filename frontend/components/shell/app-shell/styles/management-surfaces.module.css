@@ -9,7 +9,7 @@
 .productScope :global(.panel-caption) {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 .productScope :global(.panel-body.flush) {
@@ -74,7 +74,7 @@
   margin-bottom: 4px;
   color: var(--faint);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.075em;
   text-transform: uppercase;
@@ -84,7 +84,7 @@
   gap: 14px;
   margin-top: 5px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.management-card-meta span) {
   display: inline-flex;
@@ -155,7 +155,7 @@
 }
 .productScope :global(.group-overview-stats span) {
   color: var(--faint);
-  font-size: 8px;
+  font-size: 12px;
   text-transform: uppercase;
 }
 .productScope :global(.group-overview-stats strong) {
@@ -211,7 +211,7 @@
   padding-top: 14px;
   border-top: 1px solid var(--border);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.membership-draft-actions.top) {
   margin-top: 0;
@@ -244,7 +244,7 @@
 .productScope :global(.confirm-card p) {
   margin: 0 0 20px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.65;
 }
 .productScope :global(.confirm-card .heading-actions) {
@@ -302,12 +302,12 @@
   background: var(--surface-subtle);
 }
 .productScope :global(.cardinality-guide strong) {
-  font-size: 11px;
+  font-size: 12px;
 }
 .productScope :global(.cardinality-guide > div > span:last-child) {
   grid-column: 2;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.45;
 }
 .productScope :global(.choice-grid) {
@@ -344,12 +344,12 @@
   display: block;
 }
 .productScope :global(.choice-card strong) {
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.choice-card small) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .productScope :global(.fixed-cardinality) {
@@ -366,12 +366,12 @@
   display: block;
 }
 .productScope :global(.fixed-cardinality-value strong) {
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.fixed-cardinality-value small) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .productScope :global(.assignment-field-form-footer > .form-hint) {
@@ -428,7 +428,7 @@
 .productScope :global(.audit-time small) {
   margin-top: 4px;
   color: var(--faint);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.audit-actor) {
   overflow: hidden;
@@ -438,7 +438,7 @@
 .productScope :global(.audit-summary) {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .productScope :global(.audit-expand-button) {
@@ -460,7 +460,7 @@
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-family: var(--font-geist-mono);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.audit-payload) {
   display: grid;
@@ -531,7 +531,7 @@
   overflow: auto;
   color: #494853;
   font-family: var(--font-geist-mono);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;

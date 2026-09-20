@@ -111,7 +111,7 @@
 .productScope :global(.command-item small) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.command-empty) {
   padding: 34px 18px;
@@ -128,7 +128,7 @@
   border-top: 1px solid var(--border);
   background: var(--surface-subtle);
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.command-footer span) {
   display: inline-flex;
@@ -150,7 +150,7 @@
   border-radius: 8px;
   background: var(--surface);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 .productScope :global(.context-help:hover) {
@@ -171,7 +171,7 @@
 }
 .productScope :global(.rule-summary-label) {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.rule-summary-items) {
   display: grid;
@@ -188,13 +188,13 @@
   align-items: center;
   gap: 6px;
   color: #484944;
-  font-size: 11px;
+  font-size: 12px;
 }
 .productScope :global(.logic-pill) {
   min-width: 34px;
   margin-top: 3px;
   color: var(--accent-ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }

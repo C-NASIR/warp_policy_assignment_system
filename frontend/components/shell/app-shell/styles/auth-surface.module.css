@@ -58,10 +58,7 @@
   letter-spacing: -0.04em;
 }
 .productScope :global(.auth-context .brand-mark) {
-  border: 1px solid #f7f4ed;
-  border-radius: 0;
-  background: #ff4f17;
-  color: #171614;
+  flex: 0 0 auto;
 }
 .productScope :global(.auth-context-copy) {
   width: min(600px, 100%);
@@ -71,7 +68,7 @@
   margin-bottom: 20px;
   color: #ff7245;
   font-family: var(--font-geist-mono), monospace;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -105,7 +102,7 @@
   gap: 9px;
   color: rgb(247 244 237 / 0.72);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.auth-context li svg) {
   color: #ecf687;
@@ -119,7 +116,7 @@
   border-top: 1px solid rgb(247 244 237 / 0.18);
   color: rgb(247 244 237 / 0.46);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 9px;
+  font-size: 12px;
   text-transform: uppercase;
 }
 .productScope :global(.auth-context-footer a) {
@@ -153,9 +150,7 @@
   margin-bottom: 34px;
 }
 .productScope :global(.auth-brand .brand-mark) {
-  border-radius: 0;
-  background: #ff4f17;
-  color: #171614;
+  flex: 0 0 auto;
 }
 .productScope :global(.auth-brand > span:last-child),
 .productScope :global(.auth-brand strong),
@@ -168,7 +163,7 @@
 .productScope :global(.auth-brand small) {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -204,7 +199,7 @@
   align-items: flex-start;
   gap: 7px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .productScope :global(.auth-requirement svg),
@@ -334,7 +329,7 @@
 .productScope :global(.security-overview > div > span:first-child) {
   grid-column: 1 / -1;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 650;
   text-transform: uppercase;
 }
@@ -344,7 +339,7 @@
 }
 .productScope :global(.security-overview small) {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.security-workspace) {
   align-items: start;
@@ -364,7 +359,7 @@
   border-radius: 10px;
   background: #fff;
   color: #253047;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 .productScope :global(.mfa-qr svg) {
@@ -388,13 +383,13 @@
   border-bottom: 0;
 }
 .productScope :global(.security-list-item strong) {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   text-transform: capitalize;
 }
 .productScope :global(.security-list-item small) {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -444,11 +439,11 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .productScope :global(.review-finding small) {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 .productScope :global(.review-finding-copy) {
@@ -459,7 +454,7 @@
 .productScope :global(.review-finding-copy code) {
   color: var(--faint);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 8px;
+  font-size: 12px;
   text-transform: uppercase;
 }
 .productScope :global(.review-finding-actions) {
@@ -475,5 +470,5 @@
 }
 .productScope :global(.form-hint) {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }

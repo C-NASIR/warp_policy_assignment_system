@@ -115,7 +115,7 @@
 .productScope :global(.secondary-cell) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.secondary-cell.flush) {
   margin-top: 0;
@@ -129,7 +129,7 @@
   border-radius: 9px;
   background: var(--surface-muted);
   color: var(--ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
 }
 .productScope :global(.person-cell) {
@@ -173,7 +173,7 @@
 }
 .productScope :global(.results-count) {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .productScope :global(.directory-controls) {
   margin-bottom: 12px;
@@ -215,7 +215,7 @@
   border-top: 1px solid var(--border);
   color: var(--faint);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 9px;
+  font-size: 12px;
 }
 .productScope :global(.filter-chip) {
   min-height: 26px;
@@ -228,7 +228,7 @@
   background: var(--surface);
   color: var(--ink);
   font-family: var(--font-geist-sans), sans-serif;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
 }
 .productScope :global(.filter-chip:hover) {
@@ -240,7 +240,7 @@
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
 }
 .productScope :global(.clear-filters:hover) {
@@ -261,7 +261,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 620;
   cursor: pointer;
 }
@@ -280,7 +280,7 @@
   padding: 0 16px;
   border-top: 1px solid var(--border);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .productScope :global(.stat-grid) {
   display: grid;
@@ -302,7 +302,7 @@
 }
 .productScope :global(.stat-card span) {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 .productScope :global(.stat-card strong) {

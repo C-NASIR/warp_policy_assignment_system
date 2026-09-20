@@ -43,7 +43,7 @@
   margin: -5px 0 10px;
   color: var(--brand-accent-ink);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -59,7 +59,7 @@
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.logical-picker .select) {
   width: 86px;
@@ -78,7 +78,7 @@
 .productScope :global(.condition-row .input),
 .productScope :global(.condition-row .select) {
   height: 36px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.condition-duration-input) {
   position: relative;
@@ -92,7 +92,7 @@
   right: 10px;
   transform: translateY(-50%);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   pointer-events: none;
 }
 .productScope :global(.remove-button) {
@@ -142,7 +142,7 @@
   border: 0;
   background: transparent;
   color: var(--accent-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 680;
   cursor: pointer;
 }
@@ -172,7 +172,7 @@
 }
 .productScope :global(.impact-label) {
   color: #bcbcc2;
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.impact-meta) {
   display: flex;
@@ -186,7 +186,7 @@
   border-radius: 6px;
   color: #d6d6d2;
   font-family: var(--font-geist-mono), monospace;
-  font-size: 8px;
+  font-size: 12px;
 }
 .productScope :global(.match-list) {
   display: grid;
@@ -202,7 +202,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  font-size: 10px;
+  font-size: 12px;
 }
 .productScope :global(.plain-rule) {
   display: flex;
@@ -210,7 +210,7 @@
   align-items: center;
   gap: 7px;
   color: #484944;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
 }
 .productScope :global(.rule-token) {
@@ -256,11 +256,11 @@
   box-shadow: 0 0 0 1px var(--border-strong);
 }
 .productScope :global(.version-title) {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 .productScope :global(.version-caption) {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }

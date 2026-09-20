@@ -31,6 +31,7 @@ import type { LearnSearchEntry } from "@/lib/learn-source";
 import { hasPermission } from "@/lib/permissions";
 import type { CurrentUser, SecurityEvent } from "@/lib/types";
 import { Badge } from "@/components/ui";
+import { PolicyOSMark } from "@/components/shared";
 import shellStyles from "./styles/app-shell.module.css";
 import productStyles from "./styles/product-surfaces.module.css";
 import detailStyles from "./styles/detail-surfaces.module.css";
@@ -352,7 +353,7 @@ export function AppShell({
         )}
         <aside className={`sidebar${menuOpen ? " open" : ""}`} aria-label="Workspace navigation">
           <div className="brand">
-            <div className="brand-mark">P</div>
+            <PolicyOSMark className="brand-mark" size={28} />
             <div>
               <div className="brand-title">PolicyOS</div>
               <div className="brand-subtitle">Assignment engine</div>

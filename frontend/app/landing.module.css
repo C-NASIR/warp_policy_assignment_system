@@ -83,36 +83,9 @@
 }
 
 .brandMark {
-  position: relative;
   width: 29px;
   height: 29px;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid currentColor;
-  background: var(--marketing-orange);
-  color: var(--marketing-ink);
-  transform: rotate(2deg);
-}
-
-.brandMark > span {
-  position: absolute;
-  width: 12px;
-  height: 1.5px;
-  background: currentColor;
-  transform-origin: left center;
-}
-
-.brandMark > span:first-child {
-  transform: translate(-4px, -4px) rotate(45deg);
-}
-
-.brandMark > span:nth-child(2) {
-  transform: translate(-4px, 4px) rotate(-45deg);
-}
-
-.brandMark > span:last-child {
-  width: 10px;
-  transform: translate(2px, 0);
+  flex: 0 0 auto;
 }
 
 .brandInverse {
