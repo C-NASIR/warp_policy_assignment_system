@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
 import { KeyboardEvent, useId, useMemo, useState } from "react";
 import type { StateOption } from "@/lib/types";
 
@@ -36,8 +36,10 @@ export function StateCombobox({
   const listboxId = useId();
   const selected = states.find((option) => option.code === value) ?? null;
   const [query, setQuery] = useState(selected ? stateOptionLabel(selected) : "");
+  const [editing, setEditing] = useState(false);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const displayedValue = editing ? query : selected ? stateOptionLabel(selected) : "";
 
   const search =
     selected && query === stateOptionLabel(selected) ? "" : query.trim().toLocaleLowerCase();
@@ -56,6 +58,7 @@ export function StateCombobox({
 
   function choose(option: StateOption | null) {
     setQuery(option ? stateOptionLabel(option) : "");
+    setEditing(false);
     setActiveIndex(-1);
     onChange(option?.code ?? "");
     setOpen(false);
@@ -83,7 +86,10 @@ export function StateCombobox({
     <div
       className="manager-combobox"
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setEditing(false);
+          setOpen(false);
+        }
       }}
     >
       <div className="manager-combobox-control">
@@ -102,13 +108,16 @@ export function StateCombobox({
           aria-label={ariaLabel}
           autoComplete="off"
           required={required}
-          value={query}
+          value={displayedValue}
           onFocus={() => {
+            setQuery(selected ? stateOptionLabel(selected) : "");
+            setEditing(true);
             setOpen(true);
             setActiveIndex(-1);
           }}
           onChange={(event) => {
             setQuery(event.target.value);
+            setEditing(true);
             setActiveIndex(-1);
             onChange("");
             setOpen(true);
@@ -116,7 +125,7 @@ export function StateCombobox({
           onKeyDown={onKeyDown}
           placeholder={placeholder}
         />
-        {query && (
+        {displayedValue && (
           <button
             className="manager-combobox-clear"
             type="button"
@@ -154,7 +163,14 @@ export function StateCombobox({
                       onMouseEnter={() => setActiveIndex(index)}
                       onClick={() => choose(option)}
                     >
-                      {stateOptionLabel(option)}
+                      <span>{stateOptionLabel(option)}</span>
+                      {option.code === selected?.code && (
+                        <Check
+                          className="manager-combobox-option-check"
+                          size={14}
+                          aria-hidden="true"
+                        />
+                      )}
                     </button>
                   );
                 })}

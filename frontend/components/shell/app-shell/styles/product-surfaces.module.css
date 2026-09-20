@@ -177,7 +177,7 @@
 }
 .productScope :global(.directory-controls) {
   margin-bottom: 12px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--border);
   border-radius: 11px;
   background: var(--surface);

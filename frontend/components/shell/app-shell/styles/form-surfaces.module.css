@@ -129,7 +129,10 @@
 }
 .productScope :global(.manager-combobox-option) {
   width: 100%;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 9px 10px;
   border: 0;
   border-radius: 6px;
@@ -141,9 +144,13 @@
   cursor: pointer;
 }
 .productScope :global(.manager-combobox-option:hover),
-.productScope :global(.manager-combobox-option.active) {
+.productScope :global(.manager-combobox-option.active),
+.productScope :global(.manager-combobox-option[aria-selected="true"]) {
   background: var(--accent-soft);
   color: var(--accent-ink);
+}
+.productScope :global(.manager-combobox-option-check) {
+  flex: 0 0 auto;
 }
 .productScope :global(.manager-combobox-status) {
   padding: 10px;
