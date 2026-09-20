@@ -4,7 +4,7 @@ An implemented policy-assignment system that turns date-effective workforce rule
 
 This repository is an independent implementation of Warp's **Policy Assignment System** project prompt. It is not an official Warp product.
 
-![PolicyOS explains why a manager received a USD 10,000 expense limit, including the winning policy, matched fact, priority, and candidate decision.](docs/assets/readme/employee-assignment-explanation.png)
+![PolicyOS explains why a manager received a USD 10,000 expense limit, including the winning policy, matched fact, priority, and candidate decision.](docs/assets/readme/dashboard.png)
 
 ## Thirty-second summary
 
