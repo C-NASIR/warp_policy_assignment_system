@@ -68,6 +68,7 @@ def get_authenticated_principal(
         Depends(bearer_scheme),
     ],
 ) -> AuthenticatedPrincipal:
+    _require_trusted_session_origin(request)
     if credentials is not None:
         if (
             credentials.scheme.lower() != "bearer"
@@ -86,7 +87,6 @@ def get_authenticated_principal(
             session_token,
             client_ip=request.client.host if request.client else None,
         )
-        _require_trusted_session_origin(request)
         if user.password_change_required:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -123,6 +123,7 @@ def get_authenticated_human_session(
     request: Request,
 ) -> AuthenticatedHumanSession:
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    _require_trusted_session_origin(request)
     if not session_token:
         raise AuthenticationError(
             "A user session is required",
@@ -133,7 +134,7 @@ def get_authenticated_human_session(
         session_token,
         client_ip=request.client.host if request.client else None,
     )
-    _require_trusted_session_origin(request)
+    
     return AuthenticatedHumanSession(user=user, session=auth_session)
 
 

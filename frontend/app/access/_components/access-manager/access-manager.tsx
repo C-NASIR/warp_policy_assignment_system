@@ -1032,7 +1032,7 @@ function UserForm({
 
   return (
     <div className="modal-backdrop">
-      <form className="form-dialog access-form-dialog" onSubmit={submit}>
+      <form className="form-dialog access-form-dialog user-form-dialog" onSubmit={submit}>
         <div className="modal-head">
           <div>
             <p className="eyebrow">Human account</p>

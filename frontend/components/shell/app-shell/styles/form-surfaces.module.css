@@ -289,6 +289,13 @@
 .productScope :global(.access-form-dialog .modal-head .eyebrow) {
   margin-bottom: 4px;
 }
+.productScope :global(.user-form-dialog .field-grid) {
+  column-gap: 20px;
+  row-gap: 24px;
+}
+.productScope :global(.user-form-dialog .role-picker) {
+  margin-top: 24px;
+}
 .productScope :global(.access-form-dialog .sensitive-confirmation) {
   flex: 0 0 auto;
   display: grid;
