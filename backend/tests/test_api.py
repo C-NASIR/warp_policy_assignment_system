@@ -249,6 +249,92 @@ def test_policy_update_validates_nested_tree_and_value_references(client):
     assert executable_patch.status_code == 422
 
 
+def test_policy_accepts_round_trips_and_evaluates_three_group_levels(client):
+    root = {
+        "name": "Root Admin",
+        "email": "root@example.com",
+        "password": "root password for nested policy testing",
+    }
+    assert client.post("/auth/setup-root", json=root).status_code == 201
+    client.headers.pop("Authorization", None)
+    client.headers["Origin"] = "http://localhost:3000"
+    assert (
+        client.post(
+            "/auth/login",
+            json={"email": root["email"], "password": root["password"]},
+        ).status_code
+        == 200
+    )
+
+    field = create_field(client, "regional_badge", "one")
+    condition_tree = {
+        "logical_operator": "and",
+        "conditions": [
+            {"field": "employee_type", "operator": "=", "value": "regular"}
+        ],
+        "child_groups": [
+            {
+                "logical_operator": "or",
+                "conditions": [
+                    {"field": "state", "operator": "=", "value": "CA"},
+                    {"field": "state", "operator": "=", "value": "NY"},
+                ],
+            },
+            {
+                "logical_operator": "and",
+                "conditions": [
+                    {
+                        "field": "department",
+                        "operator": "=",
+                        "value": "Engineering",
+                    }
+                ],
+                "child_groups": [
+                    {
+                        "logical_operator": "or",
+                        "conditions": [
+                            {
+                                "field": "location",
+                                "operator": "=",
+                                "value": "Chicago",
+                            },
+                            {
+                                "field": "location",
+                                "operator": "=",
+                                "value": "Remote",
+                            },
+                        ],
+                    }
+                ],
+            },
+        ],
+    }
+    policy = create_policy(
+        client,
+        "Regional engineering badge",
+        10,
+        condition_tree,
+        [{"assignment_field_definition_id": field["id"], "value": "eligible"}],
+    )
+
+    persisted_tree = policy["versions"][0]["condition_group"]
+    assert len(persisted_tree["child_groups"]) == 2
+    assert len(persisted_tree["child_groups"][1]["child_groups"]) == 1
+
+    employee = client.post(
+        "/employees",
+        json={
+            "name": "Nested Match",
+            "state": "CA",
+            "department": "Engineering",
+            "employee_type": "regular",
+            "location": "Chicago",
+        },
+    ).json()
+    assignments = client.get(f"/employees/{employee['id']}/assignments").json()
+    assert [assignment["value"] for assignment in assignments] == ["eligible"]
+
+
 def test_employee_date_comparison_policy_is_accepted_and_applied(client):
     badge = create_field(client, "tenure_badge", "one")
     response = client.post(

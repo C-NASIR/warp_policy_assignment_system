@@ -6,6 +6,7 @@ from app.models import (
     ConditionFieldDefinition,
     ConditionGroup,
 )
+from app.policy_condition_limits import MAX_COMPILED_CLAUSES
 
 
 class PolicyCompilationError(ValueError):
@@ -77,11 +78,21 @@ def _compile_group(root: ConditionGroup, ancestors: set[int]) -> list[CompiledCl
         raise PolicyCompilationError("Condition groups must contain a condition or child group")
 
     if root.logical_operator == "or":
+        clause_count = sum(len(operand) for operand in operands)
+        _require_clause_limit(clause_count)
         return [clause for operand in operands for clause in operand]
     if root.logical_operator == "and":
         clauses: list[CompiledClause] = [()]
         for operand in operands:
+            _require_clause_limit(len(clauses) * len(operand))
             clauses = [left + right for left in clauses for right in operand]
         return clauses
 
     raise PolicyCompilationError(f"Unsupported logical operator: {root.logical_operator}")
+
+
+def _require_clause_limit(clause_count: int) -> None:
+    if clause_count > MAX_COMPILED_CLAUSES:
+        raise PolicyCompilationError(
+            f"A policy may compile to at most {MAX_COMPILED_CLAUSES} clauses"
+        )

@@ -3,14 +3,27 @@
 import { Check, CircleAlert, Eye, Plus, RefreshCw, Sparkles, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { BuilderCondition, ConditionRow, defaultCondition } from "./condition-row";
+import { useRef, useState } from "react";
+import { ConditionGroupEditor } from "./condition-group-editor";
+import {
+  MAX_COMPILED_CLAUSES,
+  MAX_CONDITION_GROUP_DEPTH,
+  MAX_CONDITION_GROUPS,
+  MAX_POLICY_CONDITIONS,
+  conditionTreeStats,
+  conditionTreeValidationError,
+  defaultCondition,
+  initializeConditionTree,
+  maximumBuilderIds,
+  serializeConditionTree,
+  type BuilderCondition,
+  type BuilderConditionGroup,
+} from "./condition-tree";
 import { Badge, Button, WorkflowProgress } from "@/components/ui";
 import { AssignmentValueInput } from "@/components/shared";
 import { formatEmployeeId, initials } from "@/lib/format";
 import type {
   AssignmentField,
-  Condition,
   ConditionField,
   Employee,
   EmployeeReferenceData,
@@ -43,23 +56,14 @@ export function PolicyBuilder({
   const [priority, setPriority] = useState(baseVersion?.priority ?? 1);
   const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
   const [effectiveUntil, setEffectiveUntil] = useState("");
-  const [logic, setLogic] = useState<"and" | "or">(
-    baseVersion?.condition_group.logical_operator ?? "and",
+  const [conditionTree, setConditionTree] = useState<BuilderConditionGroup>(() =>
+    initializeConditionTree(baseVersion?.condition_group, conditionFields.length > 0),
   );
-  const initialConditions: Condition[] = baseVersion?.condition_group.conditions.length
-    ? baseVersion.condition_group.conditions
-    : conditionFields.length
-      ? [defaultCondition()]
-      : [];
-  const [conditions, setConditions] = useState<BuilderCondition[]>(() =>
-    initialConditions.map((item, index) => ({ ...item, rowId: index + 1 })),
-  );
-  const initialChild = baseVersion?.condition_group.child_groups[0];
-  const [childLogic, setChildLogic] = useState<"and" | "or">(
-    initialChild?.logical_operator ?? "or",
-  );
-  const [childConditions, setChildConditions] = useState<BuilderCondition[]>(() =>
-    (initialChild?.conditions ?? []).map((item, index) => ({ ...item, rowId: index + 100 })),
+  const nextBuilderIds = useRef(
+    (() => {
+      const maximumIds = maximumBuilderIds(conditionTree);
+      return { group: maximumIds.groupId + 1, condition: maximumIds.conditionId + 1 };
+    })(),
   );
   const [outputs, setOutputs] = useState<BuilderOutput[]>(() =>
     (baseVersion?.values.length
@@ -88,23 +92,28 @@ export function PolicyBuilder({
     setSuccess("");
   }
 
-  function setCondition(rowId: number, patch: Partial<BuilderCondition>) {
-    setConditions((current) =>
-      current.map((item) => (item.rowId === rowId ? { ...item, ...patch } : item)),
-    );
-    markPreviewStale();
-  }
   function setOutput(rowId: number, patch: Partial<BuilderOutput>) {
     setOutputs((current) =>
       current.map((item) => (item.rowId === rowId ? { ...item, ...patch } : item)),
     );
     markPreviewStale();
   }
-  function setChildCondition(rowId: number, patch: Partial<BuilderCondition>) {
-    setChildConditions((current) =>
-      current.map((item) => (item.rowId === rowId ? { ...item, ...patch } : item)),
-    );
+  function changeConditionTree(nextTree: BuilderConditionGroup) {
+    setConditionTree(nextTree);
     markPreviewStale();
+  }
+
+  function createCondition(): BuilderCondition {
+    return { rowId: nextBuilderIds.current.condition++, ...defaultCondition() };
+  }
+
+  function createGroup(): BuilderConditionGroup {
+    return {
+      groupId: nextBuilderIds.current.group++,
+      logical_operator: "or",
+      conditions: [createCondition()],
+      child_groups: [],
+    };
   }
 
   function versionPayload() {
@@ -112,27 +121,7 @@ export function PolicyBuilder({
       priority,
       effective_from: effectiveFrom,
       effective_until: effectiveUntil || null,
-      condition_group: {
-        logical_operator: logic,
-        conditions: conditions.map((item) => ({
-          field: item.field,
-          operator: item.operator,
-          value: item.value,
-        })),
-        child_groups: childConditions.length
-          ? [
-              {
-                logical_operator: childLogic,
-                conditions: childConditions.map((item) => ({
-                  field: item.field,
-                  operator: item.operator,
-                  value: item.value,
-                })),
-                child_groups: [],
-              },
-            ]
-          : [],
-      },
+      condition_group: serializeConditionTree(conditionTree),
       values: outputs.map((item) => ({
         assignment_field_definition_id: item.assignment_field_definition_id,
         value: item.value,
@@ -146,15 +135,16 @@ export function PolicyBuilder({
       setError("No assignment fields. Add assignment fields before you can create a policy.");
       return;
     }
+    const conditionError = conditionTreeValidationError(conditionTree);
     if (
       !name.trim() ||
       !effectiveFrom ||
       (effectiveUntil && effectiveUntil < effectiveFrom) ||
-      [...conditions, ...childConditions].some((item) => !item.field || !item.value.trim()) ||
+      conditionError ||
       outputs.length === 0 ||
       outputs.some((item) => !item.assignment_field_definition_id || !item.value.trim())
     ) {
-      setError("Complete the highlighted fields before previewing this policy.");
+      setError(conditionError ?? "Complete the highlighted fields before previewing this policy.");
       return;
     }
     setError("");
@@ -205,6 +195,8 @@ export function PolicyBuilder({
     setHasPreview(true);
     setPreviewStale(false);
   }
+
+  const treeStats = conditionTreeStats(conditionTree);
 
   async function save() {
     setSaving(true);
@@ -369,143 +361,31 @@ export function PolicyBuilder({
                 </div>
               </div>
             </div>
-            <div className="rule-group">
-              <div className="rule-group-head">
-                <label className="logical-picker">
-                  Employees matching{" "}
-                  <select
-                    className="select"
-                    value={logic}
-                    onChange={(event) => {
-                      setLogic(event.target.value as "and" | "or");
-                      markPreviewStale();
-                    }}
-                  >
-                    <option value="and">ALL</option>
-                    <option value="or">ANY</option>
-                  </select>{" "}
-                  of
-                </label>
-                <Badge tone="accent">Backend evaluated</Badge>
-              </div>
-              {conditions.map((condition) => (
-                <ConditionRow
-                  key={condition.rowId}
-                  condition={condition}
-                  conditionFields={conditionFields}
-                  employees={employees}
-                  referenceData={referenceData}
-                  validationAttempted={validationAttempted}
-                  errorMessageId="policy-form-error"
-                  removeDisabled={conditions.length <= 1}
-                  removeLabel="Remove condition"
-                  onChange={(patch) => setCondition(condition.rowId, patch)}
-                  onRemove={() => {
-                    setConditions((current) =>
-                      current.filter((item) => item.rowId !== condition.rowId),
-                    );
-                    markPreviewStale();
-                  }}
-                />
-              ))}
-              {childConditions.length > 0 && (
-                <div className="rule-group nested">
-                  <div className="rule-group-head">
-                    <label className="logical-picker">
-                      Nested group matching{" "}
-                      <select
-                        className="select"
-                        value={childLogic}
-                        onChange={(event) => {
-                          setChildLogic(event.target.value as "and" | "or");
-                          markPreviewStale();
-                        }}
-                      >
-                        <option value="and">ALL</option>
-                        <option value="or">ANY</option>
-                      </select>{" "}
-                      of
-                    </label>
-                    <button
-                      className="remove-button"
-                      onClick={() => {
-                        setChildConditions([]);
-                        markPreviewStale();
-                      }}
-                      aria-label="Remove nested group"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                  {childConditions.map((condition) => (
-                    <ConditionRow
-                      key={condition.rowId}
-                      condition={condition}
-                      conditionFields={conditionFields}
-                      employees={employees}
-                      referenceData={referenceData}
-                      validationAttempted={validationAttempted}
-                      errorMessageId="policy-form-error"
-                      removeLabel="Remove nested condition"
-                      onChange={(patch) => setChildCondition(condition.rowId, patch)}
-                      onRemove={() => {
-                        setChildConditions((current) =>
-                          current.filter((item) => item.rowId !== condition.rowId),
-                        );
-                        markPreviewStale();
-                      }}
-                    />
-                  ))}
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      setChildConditions((current) => [
-                        ...current,
-                        {
-                          rowId: Math.max(...current.map((item) => item.rowId), 99) + 1,
-                          ...defaultCondition(),
-                        },
-                      ]);
-                      markPreviewStale();
-                    }}
-                  >
-                    <Plus size={13} /> Add nested condition
-                  </button>
-                </div>
-              )}
-              <div className="heading-actions">
-                <button
-                  className="text-button"
-                  onClick={() => {
-                    setConditions((current) => [
-                      ...current,
-                      {
-                        rowId: Math.max(...current.map((item) => item.rowId), 0) + 1,
-                        ...defaultCondition(),
-                      },
-                    ]);
-                    markPreviewStale();
-                  }}
-                >
-                  <Plus size={13} /> Add condition
-                </button>
-                {childConditions.length === 0 && (
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      setChildConditions([
-                        {
-                          rowId: 100,
-                          ...defaultCondition(),
-                        },
-                      ]);
-                      markPreviewStale();
-                    }}
-                  >
-                    <Plus size={13} /> Add nested group
-                  </button>
-                )}
-              </div>
+            <ConditionGroupEditor
+              group={conditionTree}
+              conditionFields={conditionFields}
+              employees={employees}
+              referenceData={referenceData}
+              validationAttempted={validationAttempted}
+              stats={treeStats}
+              onChange={changeConditionTree}
+              createCondition={createCondition}
+              createGroup={createGroup}
+            />
+            <div className={styles.conditionLimits} aria-live="polite">
+              <span>
+                {treeStats.depth}/{MAX_CONDITION_GROUP_DEPTH} group levels
+              </span>
+              <span>
+                {treeStats.groups}/{MAX_CONDITION_GROUPS} groups
+              </span>
+              <span>
+                {treeStats.conditions}/{MAX_POLICY_CONDITIONS} conditions
+              </span>
+              <span>
+                {Math.min(treeStats.compiledClauses, MAX_COMPILED_CLAUSES + 1)}/
+                {MAX_COMPILED_CLAUSES} evaluation clauses
+              </span>
             </div>
           </section>
           <section className="form-section">

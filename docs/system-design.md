@@ -77,7 +77,7 @@ erDiagram
     EMPLOYEE_ASSIGNMENT }o--o| EMPLOYEE_OVERRIDE : override_source
 ```
 
-The [SQLAlchemy model](../backend/app/models.py) keeps stable policy identity separate from versioned behavior. A policy version owns a canonical condition tree for authoring and round-tripping, plus compiled clauses for evaluation. Compilation preserves meaning while turning a nested expression into a list of AND clauses joined by OR. Condition fields are system-controlled inputs with types, operators, UI metadata, resolver keys, and dependency metadata; administrators cannot upload executable expressions.
+The [SQLAlchemy model](../backend/app/models.py) keeps stable policy identity separate from versioned behavior. A policy version owns a canonical condition tree for authoring and round-tripping, plus compiled clauses for evaluation. Compilation preserves meaning while turning a nested expression into a list of AND clauses joined by OR. Authoring is bounded to three group levels, 20 total groups, 50 total conditions, and 200 compiled clauses; the API validates all four limits and the compiler independently stops clause expansion. These limits keep the visual rule understandable and prevent combinatorial expansion. Condition fields are system-controlled inputs with types, operators, UI metadata, resolver keys, and dependency metadata; administrators cannot upload executable expressions.
 
 `AssignmentFieldDefinition` defines an output domain and either one- or many-valued cardinality. `PolicyFieldValue` normalizes outputs relationally, which makes candidates and sources queryable. Controlled fields validate values against declared options.
 

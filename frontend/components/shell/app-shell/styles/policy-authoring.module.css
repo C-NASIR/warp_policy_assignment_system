@@ -146,6 +146,11 @@
   font-weight: 680;
   cursor: pointer;
 }
+.productScope :global(.text-button:disabled) {
+  color: var(--faint);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
 .productScope :global(.output-list) {
   display: grid;
   gap: 8px;

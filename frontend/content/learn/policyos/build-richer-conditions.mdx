@@ -40,11 +40,13 @@ Read the structure aloud: full-time **AND** (Design **OR** Engineering). Rachel 
 
 You can also use derived inputs. **Tenure >= 2 years** describes completed calendar service based on the employee's start date and the evaluation date. You don't enter a separate tenure value on Rachel's employee record. Manager-related inputs are also available through the condition catalog.
 
-The current visual builder supports outer conditions and one nested group of conditions. It offers ALL/ANY and the comparisons allowed for each selected input; it has no general NOT control. More deeply nested existing rules aren't fully represented by this editor, so don't use it to recreate such a rule unless its entire structure is accounted for.
+The visual builder supports multiple sibling groups and up to three group levels total: the outer group plus two nested levels. Every group can independently match **ALL** or **ANY** of its conditions and child groups. The editor preserves the complete tree when you create a new version, but it has no general NOT control.
+
+To keep rules reviewable and evaluation bounded, one policy can contain at most 20 groups and 50 conditions. Nested logic is compiled into at most 200 OR-of-AND evaluation clauses. The counters below the builder show current usage, and the API enforces the same limits for every client.
 
 Choose **Preview impact** before saving, following the previous lesson's save and status checks. The connected engine evaluates derived facts such as completed-calendar tenure and reporting relationships. Pay special attention around anniversaries and indirect reporting relationships, then confirm the persisted result after saving.
 
-If you open **New version** on an existing policy instead, previewing follows the connected version-review workflow described later. Inspect every prefilled condition rather than assuming the editor copied an arbitrary rule tree completely.
+If you open **New version** on an existing policy instead, previewing follows the connected version-review workflow described later. The complete supported condition tree is prefilled; inspect it and preview the resulting population before saving.
 
 <PolicyLink href="/policies" permission="policies:read">
   Open the policy directory

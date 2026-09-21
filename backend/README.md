@@ -6,7 +6,7 @@ For product behavior and cross-component architecture, see the [project README](
 
 ## Core behavior
 
-- Policies have immutable, inclusive date-effective versions. Conditions are compiled to OR-of-AND clauses over trusted employee and organization fields.
+- Policies have immutable, inclusive date-effective versions. Conditions are compiled to OR-of-AND clauses over trusted employee and organization fields. Condition trees are limited to three group levels, 20 groups, 50 conditions, and 200 compiled clauses.
 - Assignment fields are either `one` or `many`. A one-valued field rejects different values tied at the winning priority; a many-valued field unions unique values with deterministic provenance.
 - Groups contribute policies to their members. Manual overrides replace policy-derived values for one field, but do not hide policy conflicts.
 - Every persisted assignment has a half-open `[effective_from, effective_until)` interval and an immutable explanation snapshot.

@@ -2,22 +2,13 @@
 
 import { Trash2 } from "lucide-react";
 import { ConditionValueInput } from "./condition-value-input";
+import type { BuilderCondition } from "./condition-tree";
 import type { Condition, ConditionField, Employee, EmployeeReferenceData } from "@/lib/types";
-
-export type BuilderCondition = Condition & { rowId: number };
 
 export function authorableConditionFields(fields: ConditionField[]) {
   const authorable = fields.filter((field) => field.key !== "name");
   const employee = authorable.find((field) => field.key === "employee_id");
   return employee ? [employee, ...authorable.filter((field) => field !== employee)] : authorable;
-}
-
-export function defaultCondition(): Omit<BuilderCondition, "rowId"> {
-  return {
-    field: "",
-    operator: "=",
-    value: "",
-  };
 }
 
 export function ConditionRow({

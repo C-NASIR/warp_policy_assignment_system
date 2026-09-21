@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from app.dates import current_date, ensure_utc
+from app.policy_condition_limits import validate_condition_tree_limits
 from app.services.condition_fields import ConditionFieldError, normalize_condition
 from app.states import StateGroup, normalize_state_code
 
@@ -690,6 +691,7 @@ class PolicyVersionCreate(BaseModel):
             and self.effective_until < self.effective_from
         ):
             raise ValueError("effective_until cannot be before effective_from")
+        validate_condition_tree_limits(self.condition_group)
         return self
 
 
