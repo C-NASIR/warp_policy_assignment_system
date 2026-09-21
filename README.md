@@ -8,7 +8,7 @@ This repository is an independent implementation of Warp's **Policy Assignment S
 
 
 ## Introduction Video 
-[Watch the video here](https://youtu.be/YbF5Kc3qRUs?si=mTDZLY26hp1eVh-q)
+[Watch the video here](https://www.youtube.com/watch?v=YbF5Kc3qRUs&t=0s)
 
 
 ## Thirty-second summary
