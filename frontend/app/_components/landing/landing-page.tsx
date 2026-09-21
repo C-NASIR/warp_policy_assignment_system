@@ -8,11 +8,12 @@ import {
   Braces,
   Check,
   CheckCircle2,
-  CircleAlert,
   FileClock,
   GitCompareArrows,
   KeyRound,
+  Layers3,
   LockKeyhole,
+  Network,
   ScanSearch,
   ShieldCheck,
   Sparkles,
@@ -147,7 +148,7 @@ export function LandingPage() {
         <nav className={styles.desktopNavigation} aria-label="Main navigation">
           <a href="#platform">Platform</a>
           <a href="#workflow">How it works</a>
-          <a href="#explainability">Support</a>
+          <a href="#access-control">Access</a>
           <a href="#mcp">AI + MCP</a>
           <Link href="/learn">Learn</Link>
         </nav>
@@ -460,55 +461,61 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="governance" className={styles.governance} aria-labelledby="governance-title">
+        <section
+          id="access-control"
+          className={styles.governance}
+          aria-labelledby="access-control-title"
+        >
           <div className={styles.governanceHeading}>
-            <Eyebrow>One security boundary</Eyebrow>
-            <h2 id="governance-title">Authorization survives every interface.</h2>
+            <Eyebrow>Scoped human access</Eyebrow>
+            <h2 id="access-control-title">
+              Give every operator the right actions—and the right view.
+            </h2>
             <p>
-              Browser users, background reconciliation, and connected agents all pass through the
-              same validation, permissions, employee visibility, and audit paths.
+              Create user accounts independently from employee records, attach one or more reusable
+              roles, and control both what each person can do and which workforce data they can see.
             </p>
           </div>
           <div className={styles.governanceGrid}>
             <article>
+              <Users size={22} />
+              <span>01 / Accounts</span>
+              <h3>Provision access explicitly</h3>
+              <p>An employee record never creates a login or silently grants product authority.</p>
+            </article>
+            <article>
               <ShieldCheck size={22} />
-              <span>01 / Access</span>
-              <h3>Role-based permissions</h3>
-              <p>Scope product actions and employee visibility to the signed-in user.</p>
+              <span>02 / Roles</span>
+              <h3>Bundle action permissions</h3>
+              <p>Separate reading, authoring, activation, access administration, and audit work.</p>
             </article>
             <article>
-              <KeyRound size={22} />
-              <span>02 / Identity</span>
-              <h3>MFA + reauthentication</h3>
-              <p>Add a fresh proof of identity before sensitive account operations.</p>
-            </article>
-            <article>
-              <GitCompareArrows size={22} />
-              <span>03 / Change</span>
-              <h3>Versioned policy history</h3>
+              <Network size={22} />
+              <span>03 / People</span>
+              <h3>Follow the reporting tree</h3>
               <p>
-                Move policy behavior forward without rewriting the record behind prior outcomes.
+                Limit visibility to everyone, a user’s own record, or their management hierarchy.
               </p>
             </article>
             <article>
-              <FileClock size={22} />
-              <span>04 / Review</span>
-              <h3>Audit + access review</h3>
-              <p>Investigate recorded changes and surface privileged or stale access for review.</p>
+              <Layers3 size={22} />
+              <span>04 / Domains</span>
+              <h3>Scope assignment fields</h3>
+              <p>Let a role see every assignment domain, selected fields, or none at all.</p>
             </article>
           </div>
           <div className={styles.governanceFooter}>
             <div>
               <LockKeyhole size={18} />
-              <span>Preview-before-commit safeguards</span>
+              <span>Multiple roles combine grants</span>
             </div>
             <div>
-              <CircleAlert size={18} />
-              <span>Explicit conflicts, not silent tie-breaks</span>
+              <Network size={18} />
+              <span>Reporting scope includes descendants</span>
             </div>
             <div>
-              <Users size={18} />
-              <span>User-bound authorization</span>
+              <ScanSearch size={18} />
+              <span>Broad and stale access stays reviewable</span>
             </div>
           </div>
         </section>
@@ -539,7 +546,7 @@ export function LandingPage() {
           <a href="#workflow">How it works</a>
           <a href="#explainability">Employee support</a>
           <a href="#mcp">AI + MCP</a>
-          <a href="#governance">Governance</a>
+          <a href="#access-control">Access control</a>
         </div>
         <div>
           <span>Explore</span>

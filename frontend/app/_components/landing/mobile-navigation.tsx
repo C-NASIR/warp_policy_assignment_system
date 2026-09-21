@@ -8,7 +8,7 @@ import styles from "../../landing.module.css";
 const links = [
   { href: "#platform", label: "Platform" },
   { href: "#workflow", label: "How it works" },
-  { href: "#explainability", label: "Employee support" },
+  { href: "#access-control", label: "Access control" },
   { href: "#mcp", label: "AI + MCP" },
 ];
 

@@ -64,6 +64,19 @@ The account works immediately for the read and preview walkthrough below. MFA is
 7. Optional: sign in as Priya, Elena, Rafael, or Kai using the [role comparison credentials](docs/seed-data-credentials.txt) to see action, employee, and assignment-field scopes applied together.
 8. Optional: connect an MCP-compatible client to `http://localhost:8001/mcp`, authorize as a seeded user, and ask it to explain Priya Raman's expense limit or preview her move from Engineering to Product.
 
+## Scoped human access
+
+PolicyOS supports multiple application users through role-based access control with independent data-visibility scopes. This is more precise than a simple administrator/member hierarchy:
+
+- User accounts are created explicitly and remain separate from employee records. Recording a manager or employee never grants application access by itself.
+- Reusable roles bundle action permissions with an employee scope (`all`, `reporting_tree`, `self`, or `none`) and an assignment-field scope (`all`, `selected`, or `none`).
+- A user can hold multiple roles. Their allowed actions and visible data are the union of those grants; a narrow role does not override a broader grant.
+- Reporting-tree access follows the linked employee's direct and indirect reports, while selected-field scope can expose only the assignment domains relevant to that operator.
+- The backend applies these boundaries to records, derived assignments, previews, audit data, browser sessions, and user-bound MCP agents. Out-of-scope direct resources are hidden with `404` responses.
+- Access review surfaces privileged users without MFA, stale users, unused roles, and roles with broad scopes.
+
+This is scoped authorization inside one workspace, not SaaS multitenancy. The current data model has no tenant partition; supporting isolated customer organizations would require an explicit tenant boundary throughout storage, queries, credentials, and audit data. See [Manage access](frontend/content/learn/policyos/manage-access.mdx), [Limit access with scopes](frontend/content/learn/policyos/limit-access-with-scopes.mdx), and the [backend authorization model](backend/README.md#authentication-and-authorization).
+
 ## AI-native administration through MCP
 
 PolicyOS also exposes an optional Model Context Protocol server, allowing MCP-compatible agents to inspect and administer the policy system using natural language.
