@@ -150,7 +150,9 @@ export function LandingPage() {
           <a href="#workflow">How it works</a>
           <a href="#access-control">Access</a>
           <a href="#mcp">AI + MCP</a>
-          <Link href="/learn">Learn</Link>
+          <Link href="/learn" target="_blank" rel="noopener noreferrer">
+            Learn
+          </Link>
         </nav>
         <div className={styles.headerActions}>
           <Link href="/login">Sign in</Link>
@@ -378,7 +380,11 @@ export function LandingPage() {
               Authors work with business language while operators keep a clear view of scope,
               effective dates, population reach, and what a new version will replace.
             </p>
-            <Link href="/learn/policyos/create-your-first-policy">
+            <Link
+              href="/learn/policyos/create-your-first-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Learn how policy authoring works <ArrowRight size={16} />
             </Link>
           </div>
@@ -550,7 +556,9 @@ export function LandingPage() {
         </div>
         <div>
           <span>Explore</span>
-          <Link href="/learn">Learn PolicyOS</Link>
+          <Link href="/learn" target="_blank" rel="noopener noreferrer">
+            Learn PolicyOS
+          </Link>
           <Link href="/signup">Get started</Link>
           <Link href="/login">Sign in</Link>
         </div>

@@ -69,7 +69,7 @@ export function MobileNavigation() {
                 {link.label}
               </a>
             ))}
-            <Link href="/learn" onClick={close}>
+            <Link href="/learn" target="_blank" rel="noopener noreferrer" onClick={close}>
               <span>05</span>
               Learn
               <ArrowUpRight size={16} aria-hidden="true" />
