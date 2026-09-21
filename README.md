@@ -6,6 +6,11 @@ This repository is an independent implementation of Warp's **Policy Assignment S
 
 ![PolicyOS explains why a manager received a USD 10,000 expense limit, including the winning policy, matched fact, priority, and candidate decision.](docs/assets/readme/dashboard.png)
 
+
+## Introduction Video 
+[Watch the video here](https://youtu.be/YbF5Kc3qRUs?si=mTDZLY26hp1eVh-q)
+
+
 ## Thirty-second summary
 
 - **Versioned over time:** immutable policy versions have inclusive effective-date ranges; past assignments are recorded, today's are materialized, and future assignments can be calculated without changing state.
