@@ -123,12 +123,12 @@ def get_authenticated_human_session(
     request: Request,
 ) -> AuthenticatedHumanSession:
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
-    _require_trusted_session_origin(request)
     if not session_token:
         raise AuthenticationError(
             "A user session is required",
             code="authentication_required",
         )
+    _require_trusted_session_origin(request)
     user, auth_session = authenticate_session(
         session,
         session_token,
